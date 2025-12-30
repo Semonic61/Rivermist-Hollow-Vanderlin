@@ -9,18 +9,19 @@
 	soundenv = 19
 	ambush_mobs = null
 	first_time_text = "RIVERMIST HOLLOW OUTSKIRTS"
-	background_track = 'sound/music/area/field.ogg'
-	background_track_dusk = 'sound/music/area/septimus.ogg'
-	background_track_night = 'sound/music/area/sleeping.ogg'
+	background_track = 'modular_rmh/sound/music/area/field_day.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/field_dusk.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/field_night.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/field_dawn.ogg'
 	converted_type = /area/indoors/shelter/rmh_field
 	//deathsight_message = "somewhere nar the town"
 
 /area/indoors/shelter/rmh_field
 	icon_state = "rtfield"
-	background_track = 'sound/music/area/field.ogg'
-	background_track_dusk = 'sound/music/area/septimus.ogg'
-	background_track_night = 'sound/music/area/sleeping.ogg'
-
+	background_track = 'modular_rmh/sound/music/area/field_day.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/field_dusk.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/field_night.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/field_dawn.ogg'
 /area/outdoors/rmh_field/north
 	name = "North Forest"
 	first_time_text = "NORTH FOREST"
@@ -185,9 +186,10 @@
 	name = "indoors"
 	icon = 'modular_rmh/icons/turf/areas.dmi'
 	icon_state = "indoors"
-	background_track = 'sound/music/area/towngen.ogg'
-	background_track_dusk = 'sound/music/area/septimus.ogg'
-	background_track_night = 'sound/music/area/sleeping.ogg'
+	background_track = 'modular_rmh/sound/music/area/town_day.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/town_dawn.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/town_dusk.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/town_night.ogg'
 	converted_type = /area/outdoors/exposed/town/rmh
 	//deathsight_message = "the town of Rivermist Hollow and all its bustling souls"
 
@@ -195,9 +197,10 @@
 	name = "Rivermist Hollow"
 	first_time_text = "RIVERMIST HOLLOW"
 	icon_state = "town"
-	background_track = 'sound/music/area/towngen.ogg'
-	background_track_dusk = 'sound/music/area/septimus.ogg'
-	background_track_night = 'sound/music/area/sleeping.ogg'
+	background_track = 'modular_rmh/sound/music/area/town_day.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/town_dawn.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/town_dusk.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/town_night.ogg'
 
 /area/outdoors/town/rmh/roofs
 	name = "Rivermist Hollow Rooftops"
@@ -206,18 +209,20 @@
 	ambientnight = DRONING_MOUNTAIN
 	//spookysounds = SPOOKY_GEN
 	//spookynight = SPOOKY_GEN
-	background_track = 'sound/music/area/field.ogg'
-	background_track_dusk = 'sound/music/area/septimus.ogg'
-	background_track_night = 'sound/music/area/sleeping.ogg'
+	background_track = 'modular_rmh/sound/music/area/town_day.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/town_dawn.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/town_dusk.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/town_night.ogg'
 	soundenv = 17
 	converted_type = /area/indoors/shelter/town/rmh/roofs
 
 /area/indoors/shelter/town/rmh/roofs
 	name = "Rivermist Hollow Rooftops"
 	icon_state = "roofs"
-	background_track = 'sound/music/area/field.ogg'
-	background_track_dusk = 'sound/music/area/septimus.ogg'
-	background_track_night = 'sound/music/area/sleeping.ogg'
+	background_track = 'modular_rmh/sound/music/area/town_day.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/town_dawn.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/town_dusk.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/town_night.ogg'
 
 /area/under/town/rmh/basement
 	name = "basement"

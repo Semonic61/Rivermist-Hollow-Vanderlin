@@ -173,6 +173,12 @@
 	},
 /turf/open/floor/churchmarble,
 /area/under/underdark/rmh/shar)
+"cx" = (
+/obj/effect/decal/cobbleedge{
+	dir = 10
+	},
+/turf/open/floor/greenstone/runed,
+/area/under/underdark/rmh/caves)
 "cy" = (
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh/mountain)
@@ -234,6 +240,19 @@
 	},
 /turf/open/floor/greenstone/runed,
 /area/indoors/town/rmh/magician/pass)
+"cZ" = (
+/turf/open/floor/churchrough/purple,
+/area/under/underdark/rmh/main)
+"da" = (
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/obj/structure/fluff/walldeco/church/line,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "db" = (
 /obj/effect/decal/cleanable/debris/glass,
 /turf/open/floor/dirt,
@@ -264,6 +283,13 @@
 /obj/structure/trap/wall_projectile,
 /turf/open/floor/dirt,
 /area/under/underdark/rmh/shrub)
+"dB" = (
+/obj/effect/decal/cobbleedge{
+	pixel_y = 0;
+	dir = 6
+	},
+/turf/open/floor/greenstone,
+/area/under/underdark/rmh/caves)
 "dF" = (
 /obj/structure/fluff/statue/small,
 /turf/closed/wall/mineral/decostone/moss/blue/cand,
@@ -274,6 +300,12 @@
 	dir = 8
 	},
 /area/under/underdark/rmh/shar)
+"dH" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "dR" = (
 /obj/effect/decal/cleanable/debris/stone,
 /obj/effect/decal/cleanable/blood/old,
@@ -290,9 +322,24 @@
 /obj/item/natural/stoneblock,
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh)
+"ea" = (
+/obj/item/natural/rock,
+/turf/open/floor/greenstone,
+/area/under/underdark/rmh/caves)
 "eb" = (
 /turf/open/floor/churchrough,
 /area/under/underdark/rmh/shar)
+"ec" = (
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8;
+	pixel_y = 6
+	},
+/obj/structure/fluff/walldeco/church/line,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "ee" = (
 /obj/structure/table/church/end,
 /obj/item/reagent_containers/glass/cup/golden{
@@ -311,6 +358,14 @@
 /obj/effect/decal/cleanable/debris/glass,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/shar)
+"ev" = (
+/obj/structure/rack/underworld,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/obj/effect/spawner/map_spawner/loot/armor,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "eE" = (
 /obj/item/candle/skull,
 /turf/open/floor/churchrough,
@@ -324,9 +379,26 @@
 /obj/effect/decal/cleanable/dreamfiend_ichor/huge,
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh/shar)
+"eQ" = (
+/obj/structure/well/fountain/mana,
+/turf/open/floor/cobble,
+/area/under/underdark/rmh/caves)
+"eT" = (
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "eV" = (
 /turf/open/water/cleanshallow,
 /area/under/underdark/rmh/glimmerlakes)
+"eX" = (
+/obj/structure/stairs/stone/church{
+	pixel_y = 0;
+	dir = 1
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "eY" = (
 /obj/structure/table/wood,
 /turf/open/floor/tile/brownbrick,
@@ -374,6 +446,18 @@
 /obj/item/natural/bundle/stoneblock,
 /turf/open/floor/tile/brownbrick,
 /area/under/underdark/rmh/shar)
+"fs" = (
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "fu" = (
 /obj/effect/decal/cleanable/debris/wood,
 /turf/open/floor/tile/brownbrick,
@@ -402,6 +486,14 @@
 /obj/structure/flora/grass/mushroom,
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh/shrub)
+"fO" = (
+/obj/structure/door/stone{
+	damage_deflection = 100
+	},
+/turf/open/floor/concrete{
+	color = "#a59cf7"
+	},
+/area/under/underdark/rmh/main)
 "fR" = (
 /obj/effect/decal/cleanable/debris/wood,
 /turf/open/floor/cobblerock/alt,
@@ -419,6 +511,21 @@
 /obj/structure/spider/stickyweb,
 /turf/open/floor/grass/yel,
 /area/under/underdark/rmh/deepwastes)
+"fY" = (
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/obj/structure/fluff/walldeco/church/line,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
+"fZ" = (
+/turf/closed/wall/mineral/underbrick{
+	damage_deflection = 1000
+	},
+/area/under/underdark/rmh/main)
 "ga" = (
 /obj/structure/fermentation_keg/random/water,
 /obj/item/reagent_containers/glass/bucket/wooden,
@@ -435,6 +542,9 @@
 	},
 /turf/open/floor/churchmarble,
 /area/under/underdark/rmh/shar)
+"gd" = (
+/turf/open/floor/cobble,
+/area/under/underdark/rmh/caves)
 "gn" = (
 /obj/effect/decal/cleanable/debris/stone,
 /obj/effect/decal/cleanable/blood/old,
@@ -456,6 +566,13 @@
 	},
 /turf/open/floor/ruinedwood/spiral,
 /area/under/underdark/rmh/main)
+"gw" = (
+/obj/item/natural/rock/mana_crystal,
+/turf/open/floor/cobble/alt,
+/area/under/underdark/rmh/caves)
+"gB" = (
+/turf/open/floor/mushroom,
+/area/under/underdark/rmh/shar)
 "gF" = (
 /obj/effect/spawner/map_spawner/loot/cheap_jewelry_spawner,
 /obj/structure/closet/crate/chest/gold,
@@ -503,6 +620,9 @@
 /obj/structure/window/stained/zizo,
 /turf/open/floor/church,
 /area/under/underdark/rmh/shar)
+"hZ" = (
+/turf/open/floor/church/purple,
+/area/under/underdark/rmh/main)
 "ib" = (
 /obj/item/natural/stone,
 /turf/open/floor/tile/brownbrick,
@@ -576,6 +696,9 @@
 /mob/living/simple_animal/hostile/retaliate/spider,
 /turf/open/floor/grass/yel,
 /area/under/underdark/rmh/deepwastes)
+"jm" = (
+/turf/open/floor/mushroom,
+/area/under/underdark/rmh)
 "jr" = (
 /obj/structure/trap/chill,
 /turf/open/floor/grass/cold{
@@ -646,6 +769,12 @@
 	},
 /turf/open/floor/church,
 /area/under/underdark/rmh/shar)
+"kf" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "kj" = (
 /turf/open/floor/greenstone/runed,
 /area/indoors/town/rmh/magician/pass)
@@ -656,15 +785,43 @@
 	},
 /turf/open/floor/carpet/red,
 /area/under/underdark/rmh/shar)
+"kt" = (
+/obj/effect/wisp/prestidigitation{
+	pixel_x = 0;
+	name = "Will-o'-the-wisp";
+	desc = "A small, fiery ball of light made up of mystical energy."
+	},
+/turf/open/floor/greenstone/runed,
+/area/under/underdark/rmh/caves)
 "kx" = (
 /turf/open/floor/tile/masonic/inverted,
 /area/under/underdark/rmh/shar)
+"kC" = (
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4;
+	pixel_y = 6
+	},
+/obj/structure/fluff/walldeco/church/line,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "kD" = (
 /obj/effect/decal/cleanable/blood/gibs/limb{
 	dir = 8
 	},
 /turf/open/floor/church,
 /area/under/underdark/rmh/shar)
+"kJ" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "kM" = (
 /obj/structure/fluff/railing/wood/west,
 /obj/structure/fluff/railing/border{
@@ -721,6 +878,10 @@
 	},
 /turf/open/floor/ruinedwood/spiral,
 /area/under/underdark/rmh/main)
+"lD" = (
+/obj/item/natural/rock/random_ore,
+/turf/open/floor/cobble,
+/area/under/underdark/rmh/caves)
 "lG" = (
 /obj/structure/fluff/railing/border/east,
 /obj/item/natural/glass/shard,
@@ -847,6 +1008,12 @@
 "nV" = (
 /turf/closed/wall/mineral/decostone/moss/blue/cand,
 /area/under/underdark/rmh/shar)
+"nW" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "oa" = (
 /turf/open/lava,
 /area/under/underdark/rmh)
@@ -864,6 +1031,10 @@
 	},
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/desert)
+"ox" = (
+/mob/living/carbon/human/species/skeleton/npc/warrior/skilled,
+/turf/open/floor/churchrough/purple,
+/area/under/underdark/rmh/main)
 "oD" = (
 /turf/open/floor/concrete,
 /area/under/cavelava/rmh/lava_hollows)
@@ -1147,6 +1318,12 @@
 /obj/effect/decal/cleanable/debris/wood,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/shar)
+"sO" = (
+/obj/effect/decal/cobbleedge{
+	dir = 9
+	},
+/turf/open/floor/greenstone,
+/area/under/underdark/rmh/caves)
 "sP" = (
 /obj/item/natural/stone,
 /turf/open/floor/cobble,
@@ -1213,7 +1390,7 @@
 /turf/open/floor/ruinedwood/spiral,
 /area/under/underdark/rmh/main)
 "tB" = (
-/obj/effect/spawner/map_spawner/loot/armor,
+/obj/effect/spawner/map_spawner/loot/dungeon/armor,
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh/deepwastes)
 "tG" = (
@@ -1229,6 +1406,13 @@
 /obj/effect/spawner/map_spawner/loot/cheap_jewelry_spawner,
 /turf/open/floor/churchbrick,
 /area/under/underdark/rmh/shar)
+"tK" = (
+/obj/structure/fluff/walldeco/church/line,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "tL" = (
 /obj/item/key/custom{
 	lockid = "underdark_dtc";
@@ -1241,6 +1425,23 @@
 /obj/structure/spider/stickyweb,
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh/deepwastes)
+"tW" = (
+/obj/machinery/light/fueled/firebowl/church/unholyfire{
+	pixel_y = 4
+	},
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
+"tZ" = (
+/mob/living/carbon/human/species/skeleton/npc/warrior/skilled,
+/turf/open/floor/mushroom,
+/area/under/underdark/rmh)
+"un" = (
+/obj/structure/fluff/walldeco/church/line,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "ut" = (
 /turf/open/water/swamp/deep,
 /area/under/underdark/rmh)
@@ -1253,6 +1454,9 @@
 	dir = 8
 	},
 /area/under/underdark/rmh/shar)
+"uC" = (
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "uI" = (
 /obj/effect/decal/cleanable/debris/glass,
 /turf/open/floor/churchmarble,
@@ -1316,6 +1520,13 @@
 "vX" = (
 /turf/open/floor/tile/masonic/single,
 /area/under/underdark/rmh/shar)
+"vY" = (
+/obj/effect/decal/cobbleedge{
+	dir = 4;
+	pixel_y = 0
+	},
+/turf/open/floor/greenstone,
+/area/under/underdark/rmh/caves)
 "wh" = (
 /turf/open/floor/tile/masonic{
 	dir = 4
@@ -1375,6 +1586,10 @@
 "wS" = (
 /obj/structure/door/iron/bars,
 /turf/open/floor/cobble,
+/area/under/underdark/rmh/main)
+"wT" = (
+/obj/structure/trap/poison,
+/turf/open/floor/church,
 /area/under/underdark/rmh/main)
 "xb" = (
 /obj/item/natural/wood/plank,
@@ -1497,6 +1712,12 @@
 	},
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh/flow)
+"ys" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "yv" = (
 /obj/item/natural/wood/plank,
 /obj/effect/decal/cleanable/debris/wood,
@@ -1540,6 +1761,14 @@
 /obj/effect/decal/remains/human,
 /turf/open/floor/churchrough,
 /area/under/underdark/rmh/shar)
+"zk" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/obj/structure/fluff/walldeco/church/line,
+/mob/living/carbon/human/species/skeleton/npc/warrior/skilled,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "zq" = (
 /obj/structure/fluff/traveltile{
 	aportalgoesto = "bogtoud";
@@ -1611,6 +1840,12 @@
 /obj/structure/chair/stool,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/shar)
+"Au" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "Ax" = (
 /obj/structure/rack,
 /turf/open/floor/cobblerock/alt,
@@ -1648,6 +1883,9 @@
 /obj/structure/table/church/m/alt,
 /turf/open/floor/tile/masonic/inverted,
 /area/under/underdark/rmh/shar)
+"Bb" = (
+/turf/open/floor/mushroom,
+/area/under/underdark/rmh/caves)
 "Bc" = (
 /obj/effect/spawner/map_spawner/loot/decrepit_equipment_spawner,
 /turf/open/floor/cobblerock/alt,
@@ -1762,6 +2000,12 @@
 /obj/effect/decal/cleanable/debris/wood,
 /turf/open/floor/cobble,
 /area/indoors/shelter)
+"De" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "Df" = (
 /obj/structure/spider/stickyweb,
 /obj/structure/spider/stickyweb,
@@ -1822,10 +2066,27 @@
 	name = "solid rock"
 	},
 /area/under/underdark/rmh/deepwastes)
+"DQ" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/turf/open/floor/churchrough,
+/area/under/underdark/rmh/main)
 "DT" = (
 /obj/effect/decal/cleanable/debris/glass,
 /turf/open/floor/tile/harem,
 /area/under/underdark/rmh/shar)
+"DU" = (
+/obj/structure/fluff/walldeco/church/line,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/mob/living/carbon/human/species/skeleton/npc/warrior/skilled,
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "DV" = (
 /turf/open/floor/ruinedwood/spiral,
 /area/under/underdark/rmh/shar)
@@ -1841,11 +2102,24 @@
 /obj/item/natural/stone,
 /turf/open/floor/tile/harem,
 /area/under/underdark/rmh/shar)
+"El" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "Eq" = (
 /obj/effect/decal/cleanable/debris/stone,
 /obj/effect/decal/cleanable/dreamfiend_ichor/large,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/shar)
+"Et" = (
+/obj/item/natural/rock/mana_crystal,
+/turf/open/floor/naturalstone,
+/area/under/underdark/rmh/caves)
 "Ex" = (
 /obj/structure/fluff/railing/wood/west,
 /obj/structure/fluff/railing/wood,
@@ -1922,7 +2196,7 @@
 "Fq" = (
 /obj/effect/decal/remains/human,
 /obj/effect/spawner/map_spawner/loot/valuable_jewelry_spawner,
-/obj/effect/spawner/map_spawner/loot/armor,
+/obj/effect/spawner/map_spawner/loot/dungeon/armor,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/deepwastes)
 "Fr" = (
@@ -2078,6 +2352,13 @@
 	},
 /turf/open/floor/church,
 /area/under/underdark/rmh/shar)
+"IG" = (
+/obj/structure/rack/underworld,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "IJ" = (
 /obj/structure/trap/chill,
 /turf/open/floor/naturalstone,
@@ -2097,6 +2378,12 @@
 	},
 /turf/open/floor/hexstone,
 /area/under/underdark/rmh/shar)
+"IX" = (
+/obj/structure/window/stained/silver/alt,
+/turf/closed/wall/mineral/underbrick{
+	damage_deflection = 1000
+	},
+/area/under/underdark/rmh/main)
 "IY" = (
 /obj/structure/fluff/railing/wood/east,
 /turf/open/floor/ruinedwood/spiral,
@@ -2106,6 +2393,15 @@
 /obj/effect/decal/cleanable/debris/stone,
 /turf/open/floor/cobble,
 /area/under/underdark/rmh)
+"Jb" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/obj/machinery/light/fueled/firebowl/church/unholyfire{
+	pixel_y = 4
+	},
+/turf/open/floor/churchrough,
+/area/under/underdark/rmh/main)
 "Jh" = (
 /obj/structure/closet/crate/chest/neu_iron,
 /obj/item/key/custom{
@@ -2135,6 +2431,14 @@
 	},
 /turf/open/floor/hexstone,
 /area/under/underdark/rmh/shar)
+"Ju" = (
+/obj/structure/rack/underworld,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/obj/effect/spawner/map_spawner/loot/coin/high,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "Jz" = (
 /turf/open/floor/hexstone,
 /area/under/underdark/rmh/shar)
@@ -2153,6 +2457,15 @@
 /obj/structure/trap/saw_blades,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/shar)
+"JO" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "JP" = (
 /obj/structure/flora/grass,
 /obj/structure/spider/stickyweb,
@@ -2178,22 +2491,51 @@
 "Ko" = (
 /turf/open/floor/churchbrick,
 /area/under/underdark/rmh/shar)
+"Kt" = (
+/obj/structure/rack/underworld,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/obj/effect/spawner/map_spawner/loot/valuable_candle_spawner,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "Kv" = (
 /obj/structure/trap/fire{
 	alpha = 0
 	},
 /turf/open/floor/cobblerock/alt,
 /area/under/cavelava/rmh/lava_hollows)
+"Kw" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/obj/structure/fluff/walldeco/church/line,
+/mob/living/carbon/human/species/skeleton/npc/warrior/skilled,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "Kx" = (
 /obj/effect/decal/cleanable/debris/glass,
 /obj/effect/decal/cleanable/debris/wood,
 /turf/open/floor/churchrough,
 /area/under/underdark/rmh/shar)
+"KJ" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/obj/machinery/light/fueled/firebowl/church/unholyfire{
+	pixel_y = 4
+	},
+/turf/open/floor/churchrough,
+/area/under/underdark/rmh/main)
 "KK" = (
 /obj/item/natural/wood/plank,
 /obj/effect/decal/cleanable/dirt/cobweb,
 /turf/open/floor/tile/brownbrick,
 /area/under/underdark/rmh/shar)
+"KU" = (
+/obj/structure/stairs/stone/church,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "KW" = (
 /obj/effect/decal/cleanable/dreamfiend_ichor,
 /turf/open/floor/churchbrick,
@@ -2240,6 +2582,15 @@
 /obj/effect/decal/remains/human,
 /turf/open/floor/church,
 /area/under/underdark/rmh/shar)
+"Ls" = (
+/obj/structure/door/stone{
+	damage_deflection = 100
+	},
+/obj/structure/trap/poison,
+/turf/open/floor/concrete{
+	color = "#a59cf7"
+	},
+/area/under/underdark/rmh/main)
 "Lt" = (
 /obj/item/coin/copper,
 /turf/open/floor/churchbrick,
@@ -2268,6 +2619,16 @@
 /obj/machinery/light/fueled/firebowl/church,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/shar)
+"LN" = (
+/mob/living/carbon/human/species/skeleton/npc/warrior/skilled,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "LP" = (
 /obj/structure/trap/fire{
 	alpha = 0
@@ -2285,6 +2646,14 @@
 "LV" = (
 /turf/closed/wall/mineral/wood,
 /area/indoors/shelter)
+"LX" = (
+/obj/structure/rack/underworld,
+/obj/structure/fluff/walldeco/church/line{
+	dir = 8
+	},
+/obj/effect/spawner/map_spawner/loot/weapon,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "Ma" = (
 /obj/structure/bed/inn{
 	dir = 1
@@ -2360,9 +2729,12 @@
 /area/under/underdark/rmh/shar)
 "No" = (
 /obj/effect/decal/remains/human,
-/obj/effect/spawner/map_spawner/loot/armor,
+/obj/effect/spawner/map_spawner/loot/dungeon/armor,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/deepwastes)
+"Np" = (
+/turf/open/floor/cobble/alt,
+/area/under/underdark/rmh/caves)
 "Nq" = (
 /turf/closed/wall/mineral/underbrick,
 /area/under/underdark/rmh/shar)
@@ -2380,6 +2752,17 @@
 /obj/effect/decal/cleanable/debris/stone,
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh)
+"NC" = (
+/mob/living/carbon/human/species/skeleton/npc/warrior/skilled,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
+"NF" = (
+/obj/effect/decal/cobbleedge{
+	pixel_y = 0;
+	dir = 5
+	},
+/turf/open/floor/greenstone/runed,
+/area/under/underdark/rmh/caves)
 "NH" = (
 /obj/structure/table/wood{
 	dir = 6;
@@ -2387,6 +2770,13 @@
 	},
 /turf/open/floor/carpet/red,
 /area/under/underdark/rmh/shar)
+"NP" = (
+/obj/effect/decal/cobbleedge{
+	dir = 10;
+	pixel_y = 0
+	},
+/turf/open/floor/greenstone,
+/area/under/underdark/rmh/caves)
 "NQ" = (
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/mountain)
@@ -2456,6 +2846,15 @@
 /obj/effect/decal/remains/human,
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh/caves)
+"OW" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/turf/open/floor/churchrough,
+/area/under/underdark/rmh/main)
 "OX" = (
 /obj/item/chair/fancy,
 /turf/open/floor/hexstone,
@@ -2464,6 +2863,10 @@
 /obj/item/natural/glass/shard,
 /turf/open/floor/churchrough,
 /area/under/underdark/rmh/shar)
+"Pb" = (
+/obj/structure/fluff/walldeco/church/line,
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "Pl" = (
 /obj/effect/decal/cleanable/debris/glass,
 /turf/open/floor/tile/masonic,
@@ -2546,7 +2949,7 @@
 	opacity = 1;
 	name = "fog"
 	},
-/turf/open/floor/cobblerock/alt,
+/turf/open/floor/church/purple,
 /area/under/underdark/rmh/main)
 "Qz" = (
 /turf/open/floor/tile/brownbrick,
@@ -2606,6 +3009,9 @@
 /obj/item/coin/copper,
 /turf/open/floor/herringbone,
 /area/under/underdark/rmh/shar)
+"RU" = (
+/turf/open/floor/greenstone,
+/area/under/underdark/rmh/caves)
 "RV" = (
 /mob/living/simple_animal/hostile/dreamfiend/ancient,
 /turf/open/floor/churchmarble,
@@ -2676,6 +3082,10 @@
 	},
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/shar)
+"ST" = (
+/obj/item/natural/rock,
+/turf/open/floor/cobble,
+/area/under/underdark/rmh/caves)
 "SU" = (
 /turf/open/floor/naturalstone,
 /area/under/underdark/rmh/glimmerlakes)
@@ -2775,6 +3185,13 @@
 /obj/item/coin/copper/pile,
 /turf/open/floor/herringbone,
 /area/under/underdark/rmh/shar)
+"Uj" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/obj/structure/fluff/walldeco/church/line,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "Uk" = (
 /obj/structure/kneestingers,
 /turf/open/floor/dirt,
@@ -2860,7 +3277,7 @@
 	aportalgoesto = "mainmapud2";
 	aportalid = "ud2"
 	},
-/turf/open/floor/naturalstone,
+/turf/open/floor/church/purple,
 /area/under/underdark/rmh/main)
 "Vm" = (
 /turf/open/floor/cobblerock/alt,
@@ -2883,6 +3300,18 @@
 "VE" = (
 /turf/open/floor/cobblerock/alt,
 /area/indoors/shelter)
+"VG" = (
+/obj/structure/flora/pillar{
+	pixel_y = 6
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "VO" = (
 /obj/structure/fluff/traveltile{
 	aportalgoesto = "mainmapud3";
@@ -3013,6 +3442,15 @@
 /obj/effect/decal/cleanable/debris/wood,
 /turf/open/floor/churchrough,
 /area/under/underdark/rmh/shar)
+"Yf" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/obj/structure/fluff/walldeco/church/line{
+	dir = 4
+	},
+/turf/open/floor/churchmarble,
+/area/under/underdark/rmh/main)
 "Yj" = (
 /obj/structure/flora/grass/water/reeds{
 	layer = 5
@@ -3022,6 +3460,12 @@
 "Yk" = (
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/main)
+"Yo" = (
+/obj/effect/decal/cobbleedge{
+	dir = 5
+	},
+/turf/open/floor/greenstone,
+/area/under/underdark/rmh/caves)
 "Yt" = (
 /obj/structure/window/stained/zizo{
 	icon_state = "stained-zizobr"
@@ -3041,6 +3485,13 @@
 /obj/structure/chair/stool,
 /turf/open/floor/churchmarble,
 /area/under/underdark/rmh/shar)
+"YR" = (
+/obj/structure/fluff/walldeco/church/line{
+	dir = 1
+	},
+/mob/living/carbon/human/species/skeleton/npc/warrior/skilled,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
 "YT" = (
 /obj/effect/decal/cleanable/dirt/cobweb,
 /turf/open/floor/churchrough,
@@ -3054,6 +3505,11 @@
 /obj/effect/decal/cleanable/dirt/cobweb,
 /turf/open/floor/churchmarble,
 /area/under/underdark/rmh/shar)
+"Zb" = (
+/turf/open/floor/concrete{
+	color = "#a59cf7"
+	},
+/area/under/underdark/rmh/main)
 "Zd" = (
 /obj/machinery/light/fueled/firebowl/standing/blue,
 /turf/open/floor/tile/masonic/spiral,
@@ -3074,6 +3530,14 @@
 "Zv" = (
 /turf/open/floor/cobblerock/alt,
 /area/under/underdark/rmh/flow)
+"Zw" = (
+/obj/structure/fluff/walldeco/church/line,
+/turf/open/floor/church,
+/area/under/underdark/rmh/main)
+"Zy" = (
+/obj/structure/flora/grass/mushroom,
+/turf/open/floor/mushroom,
+/area/under/underdark/rmh)
 "ZB" = (
 /obj/structure/kneestingers,
 /turf/open/floor/naturalstone,
@@ -9455,10 +9919,10 @@ ic
 xt
 xt
 xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -9709,12 +10173,12 @@ xt
 xt
 xt
 xt
-ic
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -9962,12 +10426,12 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
 ic
 ic
 ic
@@ -10219,8 +10683,8 @@ xt
 xt
 xt
 xt
-xt
-xt
+jm
+jm
 xt
 xt
 xt
@@ -10908,8 +11372,8 @@ gP
 gP
 xt
 xt
-xt
-ic
+jm
+jm
 xt
 xt
 xt
@@ -11164,8 +11628,8 @@ xt
 xt
 xt
 xt
-ic
-ic
+jm
+jm
 xt
 xt
 xt
@@ -11420,10 +11884,10 @@ xt
 gP
 xt
 ic
-ic
-xt
-xt
-xt
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -11676,11 +12140,11 @@ xt
 xt
 xt
 xt
-ic
-xt
-xt
-ic
-xt
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -11931,13 +12395,13 @@ ic
 xt
 xt
 gP
+jm
 xt
-xt
-xt
-xt
-ic
-ic
-xt
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -12187,106 +12651,106 @@ ic
 ic
 xt
 xt
-xt
-xt
-xt
-fx
-ic
-xt
-xt
-xt
-xt
-xt
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
+jm
+jm
+jm
+Zy
+jm
+jm
 xt
 xt
 xt
 xt
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
 xt
 xt
 xt
 xt
 xt
+jm
+xt
+xt
+jm
 xt
 xt
 ic
@@ -12444,106 +12908,106 @@ ic
 xt
 xt
 xt
-xt
-xt
-gP
-fx
-xt
-xt
-xt
-xt
-xt
-xt
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
+jm
+jm
+Zy
+Zy
+jm
+jm
 xt
 xt
 xt
 xt
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
 xt
 xt
 xt
 xt
+jm
+jm
+jm
+jm
 xt
 xt
 ic
@@ -12700,12 +13164,12 @@ ic
 ic
 Xf
 xt
-gP
-gP
-gP
-fx
-xt
-xt
+Zy
+Zy
+Zy
+Zy
+jm
+jm
 Wv
 xt
 xt
@@ -12796,10 +13260,10 @@ UR
 UR
 xt
 xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
 xt
 xt
 ic
@@ -12956,11 +13420,11 @@ ic
 ic
 xt
 xt
-xt
-gP
-gP
-gP
-xt
+jm
+Zy
+Zy
+Zy
+jm
 xt
 xt
 xt
@@ -13052,10 +13516,10 @@ UR
 UR
 UR
 xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -13188,9 +13652,9 @@ xt
 xt
 xt
 xt
-xt
-xt
-ic
+jm
+jm
+jm
 UR
 UR
 UR
@@ -13213,9 +13677,9 @@ ic
 xt
 xt
 xt
-xt
-gP
-gP
+jm
+Zy
+Zy
 xt
 xt
 xt
@@ -13309,10 +13773,10 @@ UR
 UR
 UR
 xt
+jm
 xt
-xt
-xt
-xt
+jm
+jm
 xt
 xt
 ic
@@ -13444,11 +13908,11 @@ xt
 xt
 xt
 xt
-xt
-xt
-ic
-ic
-xt
+jm
+jm
+jm
+jm
+jm
 UR
 UR
 UR
@@ -13470,8 +13934,8 @@ xt
 xt
 xt
 xt
-xt
-gP
+jm
+Zy
 xt
 xt
 xt
@@ -13566,8 +14030,8 @@ UR
 UR
 xt
 xt
-xt
-xt
+jm
+jm
 xt
 xt
 xt
@@ -13701,15 +14165,15 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-ic
-ic
-ic
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -13727,7 +14191,7 @@ xt
 xt
 xt
 gP
-xt
+jm
 xt
 xt
 ic
@@ -13823,9 +14287,9 @@ UR
 UR
 xt
 xt
-xt
-xt
-xt
+jm
+jm
+jm
 xt
 xt
 ic
@@ -13958,16 +14422,16 @@ UR
 xt
 xt
 xt
-xt
-xt
-xt
-ic
-ic
-ic
-xt
-xt
-xt
-xt
+fZ
+fZ
+IX
+fZ
+fZ
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -14080,8 +14544,8 @@ UR
 xt
 xt
 xt
-xt
-xt
+jm
+jm
 xt
 xt
 xt
@@ -14215,17 +14679,17 @@ UR
 UR
 xt
 xt
-xt
-ic
-ic
-xt
-xt
-ic
-xt
-xt
-xt
-xt
-xt
+fZ
+eX
+uC
+KU
+fZ
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 ic
 ic
@@ -14337,7 +14801,7 @@ UR
 xt
 xt
 xt
-xt
+jm
 xt
 xt
 xt
@@ -14470,19 +14934,19 @@ UR
 UR
 UR
 UR
-xt
-xt
-ic
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
+fZ
+fZ
+fZ
+fZ
+Ls
+fZ
+fZ
+fZ
+fZ
+jm
+jm
+jm
+jm
 Xf
 ic
 ic
@@ -14727,142 +15191,142 @@ UR
 UR
 UR
 UR
-xt
-xt
-xt
-xt
-xt
-ic
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-ic
-ic
-xr
-xr
-xr
-ic
-ic
-xt
-xt
-xt
-xt
+fZ
+cZ
+cZ
+cZ
+cZ
+cZ
+cZ
+cZ
+IX
+jm
+jm
+jm
+jm
 xt
 ic
-xt
-xt
-ic
-xt
-xt
-xt
-xt
-xt
-xt
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
 ic
 xr
 xr
 xr
 ic
+ic
 xt
 xt
+xt
+xt
+xt
+ic
+xt
+xt
+ic
+xt
+xt
+xt
+xt
+xt
+xt
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+xt
+xt
+xt
+xt
+xt
+xt
+xt
+xt
+xt
+xt
+ic
+xr
+xr
+xr
+ic
+xt
+jm
 xt
 xt
 xt
@@ -14984,16 +15448,131 @@ UR
 UR
 UR
 UR
+fZ
+cZ
+cZ
+cZ
+cZ
+cZ
+cZ
+cZ
+fZ
+tZ
+jm
+jm
+jm
+xt
+ic
+ic
+xr
+xr
+ic
+ic
+ic
+xt
+xt
+xt
 xt
 xt
 xt
 xt
 ic
-ic
 xt
 xt
 xt
-ic
+xt
+xt
+xr
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+xD
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+UR
+xt
+xt
+xt
+xt
+xt
+xt
 xt
 xt
 xt
@@ -15003,125 +15582,10 @@ ic
 xr
 xr
 ic
-ic
-ic
 xt
-xt
-xt
-xt
-xt
-xt
-xt
-ic
-xt
-xt
-xt
-xt
-xt
-xr
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-xD
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-UR
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-ic
-ic
-xr
-xr
-ic
-xt
-xt
-xt
-xt
+jm
+jm
+jm
 xt
 xt
 xt
@@ -15237,23 +15701,23 @@ UR
 UR
 UR
 UR
-UR
-UR
-UR
+fZ
+fZ
+fZ
+fZ
+fZ
+cZ
+cZ
+fZ
+fZ
+Zb
+Zb
+Zb
+fZ
+fZ
 xt
-xt
-xt
-xt
-xt
-ic
-xt
-ic
-xt
-ic
-ic
-xt
-xt
-xt
+jm
+jm
 xt
 ic
 xr
@@ -15377,8 +15841,8 @@ xr
 ic
 xt
 xt
-xt
-xt
+jm
+jm
 xt
 xt
 ic
@@ -15492,22 +15956,22 @@ UR
 UR
 UR
 UR
-UR
-UR
-UR
-UR
-Yk
-xt
-xt
-xt
-xt
-ic
-ic
-ic
-xt
-xt
-xt
-xt
+fZ
+fZ
+fZ
+OW
+KJ
+OW
+fZ
+cZ
+cZ
+fZ
+eT
+uC
+uC
+uC
+eT
+fZ
 xt
 xt
 xt
@@ -15633,9 +16097,9 @@ xr
 xr
 ic
 xt
-xt
-xt
-xt
+jm
+jm
+jm
 xt
 ic
 xt
@@ -15749,22 +16213,22 @@ UR
 UR
 UR
 UR
-UR
+fZ
 Qx
 Ve
-Yk
-Yk
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-ic
-xt
-xt
+hZ
+hZ
+hZ
+Zb
+cZ
+cZ
+Zb
+uC
+El
+De
+un
+uC
+Zb
 xt
 xt
 xt
@@ -15890,10 +16354,10 @@ xr
 xr
 ic
 ic
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -16006,22 +16470,22 @@ UR
 UR
 UR
 UR
-UR
-OC
+fZ
+Qx
 Ve
-Yk
-UC
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-ic
-xt
-xt
-xt
+hZ
+hZ
+hZ
+Zb
+cZ
+cZ
+Zb
+uC
+nW
+tW
+Pb
+uC
+Zb
 xt
 xt
 ic
@@ -16147,11 +16611,11 @@ xr
 xr
 xr
 ic
-xt
-xt
-xt
-xt
-ic
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -16263,22 +16727,22 @@ UR
 UR
 UR
 UR
-UR
+fZ
 Qx
 Ve
-Yk
-UC
-ic
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
+hZ
+hZ
+hZ
+Zb
+cZ
+cZ
+Zb
+uC
+Yf
+dH
+tK
+uC
+Zb
 xt
 ic
 ic
@@ -16404,10 +16868,10 @@ xr
 xr
 xr
 ic
-ic
+jm
 xt
-xt
-xt
+jm
+jm
 xt
 ic
 ic
@@ -16520,22 +16984,22 @@ UR
 UR
 UR
 UR
-UR
-UR
-UC
-Yk
-Yk
-ic
-ic
-xt
-xt
-xt
-xt
-ic
-xt
-ic
-ic
-xt
+fZ
+fZ
+fZ
+DQ
+Jb
+DQ
+fZ
+cZ
+cZ
+fZ
+eT
+uC
+uC
+uC
+eT
+fZ
 xt
 ic
 ic
@@ -16661,11 +17125,11 @@ xr
 xr
 ic
 ic
-ic
+jm
 xt
-xt
-xt
-xt
+jm
+jm
+jm
 xt
 xt
 xt
@@ -16779,20 +17243,20 @@ UR
 UR
 UR
 UR
-UR
-UR
-UC
-xt
-xt
-xt
-xt
-xt
-ic
-xt
-ic
-ic
-xt
-xt
+fZ
+fZ
+fZ
+fZ
+fZ
+cZ
+cZ
+fZ
+fZ
+Zb
+Zb
+Zb
+fZ
+fZ
 ic
 ic
 ic
@@ -16919,10 +17383,10 @@ xr
 ic
 ic
 ic
+jm
 xt
 xt
-xt
-xt
+jm
 xt
 xt
 xt
@@ -17038,17 +17502,17 @@ UR
 UR
 UR
 UR
-UC
-xt
-xt
-xt
-xt
-ic
-BM
-ic
-xt
-xt
-xt
+UR
+UR
+fZ
+cZ
+cZ
+cZ
+cZ
+cZ
+cZ
+ox
+fZ
 xt
 ic
 ic
@@ -17177,9 +17641,9 @@ xr
 ic
 ic
 xt
+jm
 xt
-xt
-xt
+jm
 xt
 xt
 ic
@@ -17296,16 +17760,16 @@ UR
 UR
 UR
 UR
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-ic
-xt
-xt
+UR
+fZ
+cZ
+cZ
+cZ
+cZ
+cZ
+cZ
+cZ
+IX
 xt
 ic
 ic
@@ -17553,16 +18017,16 @@ UR
 UR
 UR
 UR
-xt
-xt
-xt
-xt
-xt
-xt
-ic
-xt
-xt
-xt
+UR
+fZ
+fZ
+fZ
+fZ
+fO
+fZ
+fZ
+fZ
+fZ
 ic
 ic
 xr
@@ -17813,11 +18277,11 @@ UR
 UR
 xt
 xt
-xt
-xt
-ic
-xt
-xt
+fZ
+eX
+uC
+KU
+fZ
 xt
 xt
 ic
@@ -18070,11 +18534,11 @@ UR
 UR
 xt
 xt
-xt
-xt
-ic
-xt
-xt
+fZ
+fZ
+IX
+fZ
+fZ
 xt
 ic
 ic
@@ -21550,11 +22014,11 @@ be
 be
 aH
 aH
+gB
+gB
+gB
 be
-be
-be
-be
-be
+gB
 aH
 aH
 aH
@@ -21805,13 +22269,13 @@ be
 be
 be
 be
-aH
-aH
-aH
+gB
+gB
+gB
+gB
 be
-be
-be
-be
+gB
+gB
 be
 aH
 be
@@ -22061,13 +22525,13 @@ aH
 aH
 be
 be
-be
+gB
 aH
-aH
+gB
+gB
+gB
 be
-be
-be
-be
+gB
 be
 be
 be
@@ -22318,12 +22782,12 @@ aH
 aH
 be
 be
-be
-be
-aH
-be
-be
-be
+gB
+gB
+gB
+gB
+gB
+gB
 be
 be
 aH
@@ -22575,10 +23039,10 @@ aH
 aH
 be
 be
-be
-be
-be
-be
+gB
+gB
+gB
+gB
 be
 be
 be
@@ -22832,8 +23296,8 @@ aH
 be
 be
 be
-be
-aH
+gB
+gB
 be
 be
 be
@@ -31567,8 +32031,8 @@ yl
 aH
 aH
 be
-be
-be
+gB
+gB
 aH
 aH
 aH
@@ -31825,7 +32289,7 @@ aH
 aH
 be
 be
-be
+gB
 aH
 be
 be
@@ -32082,8 +32546,8 @@ aH
 be
 be
 be
-be
-aH
+gB
+gB
 be
 be
 aH
@@ -32338,9 +32802,9 @@ aH
 aH
 be
 be
-be
-be
-aH
+gB
+gB
+gB
 aH
 be
 aH
@@ -32597,10 +33061,10 @@ be
 be
 be
 be
-be
-be
+gB
+gB
 aH
-aH
+gB
 aH
 be
 be
@@ -32854,10 +33318,10 @@ be
 be
 be
 be
+gB
+gB
 be
-be
-be
-be
+gB
 be
 aH
 aH
@@ -33112,9 +33576,9 @@ be
 be
 be
 be
-be
-be
-aH
+gB
+gB
+gB
 be
 aH
 be
@@ -33369,9 +33833,9 @@ be
 be
 be
 be
-be
-be
-aH
+gB
+gB
+gB
 aH
 be
 be
@@ -33629,7 +34093,7 @@ be
 be
 be
 aH
-be
+gB
 be
 be
 be
@@ -37233,8 +37697,8 @@ xt
 xt
 xt
 xt
-xt
-xt
+jm
+jm
 xt
 xt
 ic
@@ -37489,9 +37953,9 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
+jm
+jm
+jm
 xt
 ic
 ic
@@ -37743,11 +38207,11 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -37999,10 +38463,10 @@ xt
 xt
 xt
 xt
+jm
+jm
 xt
-xt
-xt
-xt
+jm
 xt
 xt
 xt
@@ -38255,7 +38719,7 @@ ic
 ic
 xt
 xt
-xt
+jm
 xt
 xt
 xt
@@ -40818,7 +41282,7 @@ xt
 xt
 xt
 xt
-xt
+jm
 ic
 xt
 xt
@@ -41052,10 +41516,10 @@ by
 xt
 xt
 xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -41072,10 +41536,10 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-ic
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -41306,14 +41770,14 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -41328,14 +41792,14 @@ ic
 xt
 xt
 xt
-xt
-xt
-ic
-ic
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -41561,12 +42025,12 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -41585,13 +42049,13 @@ xt
 xt
 xt
 xt
-xt
-ic
-ic
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -41815,11 +42279,11 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -41841,8 +42305,8 @@ xt
 xt
 xt
 xt
-xt
-ic
+jm
+jm
 ic
 ic
 ic
@@ -42098,7 +42562,7 @@ xt
 xt
 xt
 xt
-xt
+jm
 xt
 xt
 xt
@@ -43333,10 +43797,10 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -43591,14 +44055,14 @@ xt
 xt
 xt
 xt
+jm
+jm
+jm
 xt
+jm
+jm
 xt
-xt
-xt
-xt
-xt
-xt
-xt
+jm
 xt
 ic
 ic
@@ -43851,14 +44315,14 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 ic
 ic
@@ -44110,13 +44574,13 @@ xt
 xt
 xt
 xt
+jm
+jm
+jm
 xt
-xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
 xt
 xt
 xt
@@ -44370,12 +44834,12 @@ xt
 xt
 xt
 xt
+jm
 xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -44632,7 +45096,7 @@ xt
 xt
 xt
 xt
-xt
+jm
 xt
 xt
 xt
@@ -47959,9 +48423,9 @@ xt
 xt
 xt
 xt
-xt
-xt
-xt
+jm
+jm
+jm
 xt
 xt
 xt
@@ -48214,17 +48678,17 @@ xt
 xt
 xt
 xt
+jm
+jm
+jm
 xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -48466,13 +48930,13 @@ xt
 ic
 ic
 xt
-xt
-xt
-xt
-xt
-xt
-xt
-xt
+jm
+jm
+jm
+jm
+jm
+jm
+jm
 xt
 xt
 xt
@@ -48722,10 +49186,10 @@ xt
 ic
 ic
 ic
+jm
+jm
 xt
-xt
-xt
-xt
+jm
 xt
 xt
 xt
@@ -48978,9 +49442,9 @@ xt
 xt
 ic
 ic
-xt
-xt
-xt
+jm
+jm
+jm
 xt
 xt
 xt
@@ -69212,15 +69676,15 @@ fe
 fe
 fe
 gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+fZ
+fZ
+IX
+fZ
+IX
+fZ
+IX
+fZ
+fZ
 gW
 gW
 gW
@@ -69469,15 +69933,15 @@ fe
 fe
 fe
 fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+fZ
+Au
+eX
+Lh
+Lh
+Lh
+KU
+Zw
+fZ
 gW
 gW
 gW
@@ -69726,15 +70190,15 @@ fe
 fe
 fe
 fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+fZ
+kJ
+kf
+kf
+kf
+kf
+kf
+zk
+fZ
 gW
 gW
 gW
@@ -69983,15 +70447,15 @@ fe
 fe
 fe
 fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+fZ
+fZ
+fO
+fZ
+fZ
+fZ
+fO
+fZ
+fZ
 gW
 gW
 gW
@@ -70234,21 +70698,21 @@ fe
 fe
 fe
 fe
-fe
-fe
-fe
-fe
-fe
-fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+UR
+UR
+UR
+fZ
+JO
+ys
+Kw
+fZ
+fs
+ys
+da
+fZ
 gW
 gW
 gW
@@ -70491,22 +70955,22 @@ fe
 fe
 fe
 fe
-fe
-fe
-fe
-fe
-fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+UR
+UR
+UR
+IX
+Au
+NC
+Zw
+IX
+Kt
+uC
+Zw
+fZ
+fZ
 gW
 gW
 gW
@@ -70748,22 +71212,22 @@ fe
 fe
 fe
 fe
-fe
-fe
-fe
-fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+UR
+UR
+UR
+fZ
+YR
+uC
+Zw
+fZ
+IG
+wT
+uC
+ec
+IX
 gW
 gW
 gW
@@ -71005,22 +71469,22 @@ fe
 fe
 fe
 fe
-fe
 UR
 UR
 UR
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+fZ
+VG
+Ju
+fY
+fZ
+El
+De
+un
+Zw
+fZ
 gW
 gW
 gW
@@ -71262,22 +71726,22 @@ fe
 fe
 fe
 fe
-fe
 UR
 UR
 UR
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+fZ
+fZ
+fZ
+fZ
+fZ
+nW
+tW
+Pb
+Zw
+IX
 gW
 gW
 gW
@@ -71519,22 +71983,22 @@ fe
 fe
 fe
 fe
-fe
 UR
 UR
 UR
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+fZ
+fs
+LX
+da
+fZ
+Yf
+dH
+DU
+Zw
+fZ
 gW
 gW
 gW
@@ -71776,22 +72240,22 @@ fe
 fe
 fe
 fe
-fe
-fe
 UR
 UR
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+UR
+fZ
+Au
+uC
+Zw
+fZ
+ev
+uC
+uC
+kC
+IX
 gW
 gW
 gW
@@ -72033,22 +72497,22 @@ fe
 fe
 fe
 fe
-fe
-fe
-fe
-fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+UR
+UR
+UR
+IX
+YR
+uC
+Zw
+IX
+IG
+uC
+Zw
+fZ
+fZ
 gW
 gW
 gW
@@ -72290,21 +72754,21 @@ fe
 fe
 fe
 fe
-fe
-fe
-fe
-fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+UR
+UR
+UR
+UR
+UR
+UR
+fZ
+kJ
+kf
+Uj
+fZ
+VG
+kf
+fY
+fZ
 gW
 gW
 gW
@@ -72552,16 +73016,16 @@ fe
 fe
 fe
 fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+fe
+fZ
+fZ
+fO
+fZ
+fZ
+fZ
+fO
+fZ
+fZ
 gW
 gW
 gW
@@ -72809,16 +73273,16 @@ fe
 fe
 fe
 fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+fe
+fZ
+LN
+ys
+ys
+ys
+ys
+ys
+Kw
+fZ
 gW
 gW
 gW
@@ -73067,15 +73531,15 @@ fe
 fe
 fe
 fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+fZ
+Au
+eX
+Lh
+Lh
+Lh
+KU
+Zw
+fZ
 gW
 gW
 gW
@@ -73324,15 +73788,15 @@ fe
 fe
 fe
 fe
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
-gW
+fZ
+fZ
+IX
+fZ
+IX
+fZ
+IX
+fZ
+fZ
 gW
 gW
 gW
@@ -107888,7 +108352,7 @@ uP
 uP
 uP
 uP
-uP
+Bb
 uP
 pL
 pL
@@ -108144,11 +108608,11 @@ uP
 pL
 uP
 uP
-uP
-uP
-uP
-pL
-pL
+Bb
+Bb
+Bb
+Bb
+Bb
 pL
 pL
 pL
@@ -108401,11 +108865,11 @@ uP
 uP
 uP
 uP
-uP
-uP
-uP
-uP
-uP
+Bb
+Bb
+Bb
+Bb
+Bb
 pL
 pL
 pL
@@ -108659,10 +109123,10 @@ pL
 uP
 uP
 uP
-uP
-uP
-uP
-uP
+Bb
+Bb
+Bb
+Bb
 pL
 pL
 pL
@@ -108968,8 +109432,8 @@ uP
 pL
 pL
 pL
-pL
-pL
+Bb
+Bb
 pL
 pL
 Eg
@@ -109209,8 +109673,8 @@ pL
 pL
 pL
 pL
-uP
-uP
+Bb
+Bb
 pL
 uP
 Fv
@@ -109223,9 +109687,9 @@ uP
 uP
 uP
 uP
-uP
-uP
-uP
+Bb
+Bb
+Bb
 uP
 uP
 pL
@@ -109465,6 +109929,8 @@ pL
 uP
 uP
 pL
+Bb
+Bb
 pL
 pL
 pL
@@ -109477,11 +109943,9 @@ pL
 pL
 pL
 pL
-pL
-pL
-pL
-pL
-uP
+Bb
+Bb
+Bb
 pL
 uP
 uP
@@ -109702,7 +110166,7 @@ pL
 pL
 pL
 pL
-pL
+Bb
 uP
 pL
 uP
@@ -109713,15 +110177,15 @@ pL
 pL
 pL
 uP
-uP
+Bb
 uP
 uP
 uP
 pL
 uP
 uP
-pL
-uP
+Bb
+Bb
 uP
 pL
 pL
@@ -109736,7 +110200,7 @@ UR
 pL
 pL
 pL
-uP
+Bb
 pL
 pL
 uP
@@ -109957,22 +110421,22 @@ UR
 pL
 pL
 uP
-uP
-pL
-uP
-uP
-pL
-pL
-uP
-uP
-pL
-uP
-uP
-uP
+Bb
+Bb
+Bb
 uP
 pL
 pL
 uP
+uP
+pL
+uP
+Bb
+Bb
+Bb
+Bb
+Bb
+Bb
 uP
 uP
 uP
@@ -110198,9 +110662,9 @@ UR
 UR
 UR
 pL
-pL
-uP
-uP
+Et
+RU
+kt
 pL
 pL
 pL
@@ -110212,22 +110676,22 @@ UR
 pL
 pL
 uP
+Bb
+Bb
+Bb
+pL
+Bb
+Bb
+Bb
 uP
 pL
-uP
-pL
-uP
-uP
-uP
-uP
-pL
-uP
-uP
-uP
-uP
-uP
-uP
-uP
+Bb
+Bb
+Bb
+Bb
+Bb
+Bb
+Bb
 uP
 uP
 pL
@@ -110455,12 +110919,12 @@ UR
 UR
 UR
 pL
-pL
-uP
-pL
-pL
-pL
-pL
+kt
+sO
+Np
+lD
+NP
+RU
 pL
 uP
 UR
@@ -110468,22 +110932,22 @@ pL
 pL
 pL
 pL
-pL
-uP
-pL
-uP
-uP
-uP
-uP
-pL
-pL
-pL
-uP
+Bb
+Bb
+Bb
+Bb
+Bb
 uP
 uP
 pL
 pL
 pL
+uP
+uP
+Bb
+Bb
+pL
+Bb
 pL
 pL
 pL
@@ -110712,21 +111176,21 @@ UR
 UR
 UR
 pL
-pL
-uP
-pL
-pL
-uP
-pL
-uP
-uP
-pL
-pL
-pL
-pL
+sO
+Np
+Np
+NF
+gd
+kt
 uP
 uP
-uP
+pL
+pL
+pL
+Bb
+Bb
+Bb
+Bb
 pL
 uP
 uP
@@ -110761,7 +111225,7 @@ pL
 pL
 pL
 uP
-pL
+Bb
 pL
 uP
 uP
@@ -110969,11 +111433,11 @@ UR
 UR
 UR
 pL
-pL
-uP
-uP
-uP
-uP
+gd
+gd
+eQ
+cx
+gw
 uP
 pL
 uP
@@ -111017,13 +111481,13 @@ pL
 pL
 uP
 pL
-pL
+Bb
 pL
 pL
 pL
 uP
-pL
-pL
+Bb
+Bb
 pL
 pL
 Eg
@@ -111226,12 +111690,12 @@ UR
 UR
 pL
 pL
-pL
-pL
-pL
-uP
-uP
-uP
+ST
+Np
+Np
+Np
+Np
+RU
 pL
 uP
 uP
@@ -111272,15 +111736,15 @@ uP
 uP
 uP
 uP
-uP
-pL
+Bb
+Bb
 Fv
 uP
 uP
 uP
-pL
-pL
-pL
+Bb
+Bb
+Bb
 pL
 Eg
 Eg
@@ -111483,12 +111947,12 @@ UR
 UR
 pL
 pL
-pL
-pL
-pL
-pL
-pL
-pL
+Yo
+vY
+gd
+gd
+dB
+RU
 pL
 pL
 pL
@@ -111528,14 +111992,14 @@ uP
 uP
 pL
 pL
-pL
-pL
+Bb
+Bb
 uP
 uP
 pL
 uP
 pL
-pL
+Bb
 pL
 pL
 pL
@@ -111741,10 +112205,10 @@ UR
 pL
 pL
 pL
+kt
+ea
 pL
-pL
-pL
-pL
+kt
 pL
 pL
 pL
