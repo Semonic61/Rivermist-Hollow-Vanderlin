@@ -1,18 +1,16 @@
 /datum/job/archivist
-	title = "Archivist"
-	tutorial = "A well-traveled and well-learned seeker of wisdom, the Archivist bears the mark of Noc's influence.\
-	Tasked with recording the court's events and educating the ungrateful whelps the monarch calls heirs.\
-	Your work may go unappreciated now, but one dae historians will sing of your dedication and insight."
+	title = "Librarian"
+	tutorial = "A quiet keeper of knowledge, the Librarian tends the town’s modest collection of books, scrolls, and records.\
+	Tasked with preserving local history, copying worn texts, and guiding curious townsfolk toward what wisdom the shelves can offer."
 	department_flag = NOBLEMEN
 	job_flags = (JOB_ANNOUNCE_ARRIVAL | JOB_SHOW_IN_CREDITS | JOB_EQUIP_RANK | JOB_NEW_PLAYER_JOINABLE)
 	display_order = 19 //lol?
 	faction = FACTION_TOWN
-	total_positions = 1
-	spawn_positions = 1
+	total_positions = 2
+	spawn_positions = 2
 	bypass_lastclass = TRUE
 
-	allowed_races = RACES_PLAYER_NONDISCRIMINATED
-	blacklisted_species = list(SPEC_ID_HALFLING)
+	allowed_races = RACES_PLAYER_ALL
 	cmode_music = 'sound/music/cmode/nobility/CombatCourtMagician.ogg'
 	outfit = /datum/outfit/archivist
 	spells = list(
