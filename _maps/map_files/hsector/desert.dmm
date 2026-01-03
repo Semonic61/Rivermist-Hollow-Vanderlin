@@ -8603,6 +8603,10 @@
 /obj/machinery/light/fueled/firebowl/standing,
 /turf/open/floor/sandstone,
 /area/under/town/rmh/basement)
+"zk" = (
+/obj/effect/landmark/start/gravedigger,
+/turf/open/floor/sand/sandbrick,
+/area/outdoors/rmh_desert/port)
 "zl" = (
 /obj/structure/trap/wall_projectile/fireball{
 	dir = 8
@@ -16521,6 +16525,10 @@
 /obj/effect/decal/cleanable/dirt/dust,
 /turf/open/floor/blocks/stonered/tiny,
 /area/indoors/rmh_desert_phouse)
+"XH" = (
+/obj/effect/landmark/start/grabber,
+/turf/open/floor/ruinedwood/spiral,
+/area/outdoors/rmh_desert/port)
 "XI" = (
 /obj/structure/hotspring/border/five,
 /obj/structure/fluff/walldeco/church/line{
@@ -161956,7 +161964,7 @@ mz
 UM
 aV
 UM
-TO
+XH
 Nx
 Ig
 vq
@@ -166076,7 +166084,7 @@ gY
 gY
 TO
 TO
-TO
+XH
 gY
 dx
 rV
@@ -171733,7 +171741,7 @@ nM
 Ou
 Ou
 nM
-LS
+zk
 Vu
 El
 nR

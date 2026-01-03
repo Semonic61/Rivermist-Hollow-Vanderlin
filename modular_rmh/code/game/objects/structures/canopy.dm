@@ -1,6 +1,6 @@
 /obj/structure/fluff/canopy
 	name = "Canopy"
-	desc = ""
+	desc = "A simple market canopy/booth roofing."
 	icon = 'modular_rmh/icons/obj/decor.dmi'
 	icon_state = "canopy"
 	density = FALSE
@@ -30,87 +30,57 @@
 /obj/structure/fluff/canopy/booth/booth_green02
 	icon_state = "canopyg-booth-2"
 
+/obj/structure/fluff/canopy/side
+	icon_state = "canopyb-side"
+
+/obj/structure/fluff/canopy/side/end
+	icon_state = "canopyb-side-end"
+
 /obj/structure/fluff/canopy/booth/CanPass(atom/movable/mover, turf/target)
-	if(get_dir(loc, mover) == dir)
+	SHOULD_CALL_PARENT(TRUE)
+	. = ..()
+	if(get_dir(mover.loc, loc) == dir)
 		return 0
-	return !density
+	return .
 
 /obj/structure/fluff/canopy/booth/CanAStarPass(ID, to_dir, caller)
 	if(to_dir == dir)
-		return FALSE // don't even bother climbing over it
+		return FALSE
 	return ..()
 
-/obj/structure/fluff/canopy/booth/CheckExit(atom/movable/O, turf/target)
+/obj/structure/fluff/canopy/booth/Exit(atom/movable/O, turf/target)
+	SHOULD_CALL_PARENT(TRUE)
+	. = ..()
 	if(get_dir(O.loc, target) == dir)
 		return 0
-	return !density
+	return .
 
-/obj/structure/fluff/canopy/MouseDrop(mob/over)
+/obj/structure/fluff/canopy/MouseDrop(over_object, item_src, over_location)
 	. = ..()
+	var/mob/actor = over_object
+	if(!actor) return
+	if(!ishuman(actor)) return
+	if(!Adjacent(actor)) return
+	if(!(in_range(item_src, actor) || actor.contents.Find(item_src)))
+		return
+	visible_message(span_notice("[actor] tears down [item_src]."))
+	if(do_after(actor, 30, target = item_src))
+		playsound(item_src, 'sound/foley/dropsound/cloth_drop.ogg', 100, FALSE)
+		new /obj/item/grown/log/tree/small(get_turf(item_src))
+		new /obj/item/natural/cloth(get_turf(item_src))
+		qdel(item_src)
 
-///Crafting
-
-/datum/crafting_recipe/roguetown/structure/display_booth01
-	name = "display booth"
-	result = list(/obj/structure/fluff/canopy, /obj/structure/table/wood/crafted)
-	reqs = list(/obj/item/grown/log/tree/small = 2,
-				/obj/item/natural/cloth = 2)
-	verbage_simple = "construct"
-	verbage = "constructs"
-
-/datum/crafting_recipe/roguetown/structure/display_booth02
-	name = "display booth green"
-	result = list(/obj/structure/fluff/canopy/green, /obj/structure/table/wood/crafted)
-	reqs = list(/obj/item/grown/log/tree/small = 2,
-				/obj/item/natural/cloth = 2)
-	verbage_simple = "construct"
-	verbage = "constructs"
-
-
-/datum/crafting_recipe/roguetown/structure/booth
-	name = "market booth"
-	result = list(/obj/structure/fluff/canopy/booth)
-	reqs = list(/obj/item/grown/log/tree/small = 1,
-				/obj/item/natural/cloth = 2)
-	verbage_simple = "construct"
-	verbage = "constructs"
+/datum/blueprint_recipe/carpentry/canopy
+	abstract_type = /datum/blueprint_recipe/carpentry
+	name = "market canopy"
+	desc = "A simple market canopy/booth roofing."
+	result_type = /obj/structure/fluff/canopy/booth
+	required_materials = list(
+		/obj/item/grown/log/tree/small = 1,
+		/obj/item/natural/cloth = 2
+	)
+	supports_directions = TRUE
 	craftdiff = 0
-
-/datum/crafting_recipe/roguetown/structure/booth02
-	name = "market booth"
-	result = list(/obj/structure/fluff/canopy/booth/booth02)
-	reqs = list(/obj/item/grown/log/tree/small = 1,
-				/obj/item/natural/cloth = 2)
-	verbage_simple = "construct"
-	verbage = "constructs"
-	craftdiff = 0
-
-/datum/crafting_recipe/roguetown/structure/booth_green
-	name = "green market booth"
-	result = list(/obj/structure/fluff/canopy/booth/booth_green)
-	reqs = list(/obj/item/grown/log/tree/small = 1,
-				/obj/item/natural/cloth = 2)
-	verbage_simple = "construct"
-	verbage = "constructs"
-	craftdiff = 0
-
-/datum/crafting_recipe/roguetown/structure/booth_green_02
-	name = "green market booth02"
-	result = list(/obj/structure/fluff/canopy/booth/booth_green02)
-	reqs = list(/obj/item/grown/log/tree/small = 1,
-				/obj/item/natural/cloth = 2)
-	verbage_simple = "construct"
-	verbage = "constructs"
-	craftdiff = 0
-
-/obj/structure/fluff/canopy/MouseDrop(over_object, src_location, over_location)
-	. = ..()
-	if(over_object == usr && Adjacent(usr) && (in_range(src, usr) || usr.contents.Find(src)))
-		if(!ishuman(usr))
-			return
-		visible_message(span_notice("[usr] tears down [src]."))
-		if(do_after(usr, 30, target = src))
-			playsound(src,'sound/foley/dropsound/cloth_drop.ogg', 100, FALSE)
-			new /obj/item/grown/log/tree/small  (get_turf(src))
-			new /obj/item/natural/cloth (get_turf(src))
-			qdel(src)
+	build_time = 2 SECONDS
+	verbage = "construct"
+	verbage_tp = "constructs"

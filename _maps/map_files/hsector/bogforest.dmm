@@ -28,6 +28,10 @@
 "aj" = (
 /turf/open/floor/dirt/snowy,
 /area/outdoors/bog/rmh/north)
+"al" = (
+/obj/effect/landmark/start/gravedigger,
+/turf/open/floor/dirt,
+/area/outdoors/woods/rmh)
 "ap" = (
 /obj/structure/flora/newleaf/corner{
 	dir = 9
@@ -2052,6 +2056,10 @@
 /obj/effect/decal/remains/fox,
 /turf/open/floor/grass/red,
 /area/outdoors/woods/rmh)
+"re" = (
+/obj/effect/landmark/start/forestguard,
+/turf/open/floor/ruinedwood,
+/area/indoors)
 "rf" = (
 /obj/structure/rack,
 /obj/item/weapon/polearm/spear,
@@ -4906,6 +4914,11 @@
 "Pf" = (
 /turf/open/floor/dirt,
 /area/outdoors/bog/rmh/north)
+"Pg" = (
+/obj/effect/decal/cleanable/debris/wood,
+/obj/effect/landmark/start/gravedigger,
+/turf/open/floor/ruinedwood,
+/area/indoors/shelter/bog)
 "Ph" = (
 /obj/structure/curtain/bounty,
 /turf/open/floor/twig,
@@ -5145,6 +5158,7 @@
 /area/outdoors/woods/rmh)
 "QU" = (
 /obj/structure/fluff/railing/wood/east,
+/obj/effect/landmark/start/forestguard,
 /turf/open/floor/ruinedwood,
 /area/outdoors/rmh_air)
 "QV" = (
@@ -5553,6 +5567,10 @@
 /area/under/cave/orcdungeon{
 	name = "oldruins"
 	})
+"Ux" = (
+/obj/effect/landmark/start/forestwarden,
+/turf/open/floor/ruinedwood,
+/area/indoors)
 "Uz" = (
 /obj/structure/chair/bench/ancientlog,
 /turf/open/floor/dirt,
@@ -58118,7 +58136,7 @@ yQ
 NH
 wB
 wB
-HX
+al
 HX
 mL
 zY
@@ -64772,7 +64790,7 @@ cW
 yQ
 yQ
 VP
-DQ
+Pg
 ks
 DQ
 nk
@@ -101507,9 +101525,9 @@ Pe
 Pe
 Pe
 vF
+Ux
 Zv
-Zv
-Zv
+re
 fi
 sg
 Pe
