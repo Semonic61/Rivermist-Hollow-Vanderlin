@@ -75,15 +75,31 @@
 	message = "mumbles."
 	emote_type = EMOTE_AUDIBLE
 
+/mob/living/carbon/human/verb/emote_mumble()
+	set name = "Mumble"
+	set category = "Noises"
+
+	emote("mumble", intentional = TRUE)
+
 /datum/emote/living/carbon/human/pale
 	key = "pale"
 	message = "goes pale for a second."
+
+/mob/living/carbon/human/verb/emote_pale()
+	set name = "Go pale"
+	set category = "Emotes"
+	emote("pale", intentional = TRUE)
 
 /datum/emote/living/carbon/human/raise
 	key = "raise"
 	key_third_person = "raises"
 	message = "raises a hand."
 	hands_use_check = TRUE
+
+/mob/living/carbon/human/verb/emote_raise()
+	set name = "Raise hand"
+	set category = "Emotes"
+	emote("raise", intentional = TRUE)
 
 /datum/emote/living/carbon/human/salute
 	key = "salute"
@@ -92,10 +108,20 @@
 	message_param = "salutes to %t."
 	hands_use_check = TRUE
 
+/mob/living/carbon/human/verb/emote_salute()
+	set name = "Salute"
+	set category = "Emotes"
+	emote("salute", intentional = TRUE)
+
 /datum/emote/living/carbon/human/shrug
 	key = "shrug"
 	key_third_person = "shrugs"
 	message = "shrugs."
+
+/mob/living/carbon/human/verb/emote_shrug()
+	set name = "Shrug"
+	set category = "Emotes"
+	emote("shrug", intentional = TRUE)
 
 /datum/emote/living/carbon/human/wag
 	key = "wag"
