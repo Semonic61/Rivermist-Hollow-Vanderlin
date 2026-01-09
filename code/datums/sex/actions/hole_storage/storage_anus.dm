@@ -48,7 +48,6 @@
 		return
 	var/success
 	if(user == target)
-	if(user == target)
 		success = SEND_SIGNAL(user, COMSIG_HOLE_TRY_FIT, dildo, hole_id, target, TRUE, FALSE)
 	else
 		success = SEND_SIGNAL(target, COMSIG_HOLE_TRY_FIT, dildo, hole_id, target, TRUE, FALSE)

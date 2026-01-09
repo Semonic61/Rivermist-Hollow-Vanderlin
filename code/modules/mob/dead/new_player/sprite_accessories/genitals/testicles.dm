@@ -12,14 +12,17 @@
 /datum/sprite_accessory/genitals/testicles/adjust_appearance_list(list/appearance_list, obj/item/organ/organ, obj/item/bodypart/bodypart, mob/living/carbon/owner)
 	gender_genitals_adjust(appearance_list, organ, bodypart, owner, OFFSET_TESTICLES)
 
-/datum/sprite_accessory/testicles/is_visible(obj/item/organ/organ, obj/item/bodypart/bodypart, mob/living/carbon/owner)
-	if(owner.underwear)
-		return FALSE
+/datum/sprite_accessory/genitals/testicles/is_visible(obj/item/organ/organ, obj/item/bodypart/bodypart, mob/living/carbon/owner)
+	if(owner)
+		if(owner.underwear)
+			return FALSE
 
-	var/obj/item/organ/genitals/penis/penis = owner.getorganslot(ORGAN_SLOT_PENIS)
-	if(penis && penis.sheath_type == SHEATH_TYPE_SLIT)
+		var/obj/item/organ/genitals/penis/penis = owner.getorganslot(ORGAN_SLOT_PENIS)
+		if(penis && penis.sheath_type == SHEATH_TYPE_SLIT)
+			return FALSE
+		return is_human_part_visible(owner, HIDEJUMPSUIT|HIDEUNDIESBOT|HIDECROTCH)
+	else
 		return FALSE
-	return is_human_part_visible(owner, HIDEJUMPSUIT|HIDEUNDIESBOT)
 
 /datum/sprite_accessory/genitals/testicles/pair
 	name = "Pair"

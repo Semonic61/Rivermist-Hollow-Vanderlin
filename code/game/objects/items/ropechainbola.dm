@@ -101,36 +101,27 @@
 				to_chat(user, span_warning("[C] is missing two or one legs."))
 
 /obj/item/rope/proc/apply_cuffs(mob/living/carbon/target, mob/user, leg = FALSE)
-	if(!leg)
+	if(leg)
+		if(target.legcuffed)
+			return FALSE
+	else
 		if(target.handcuffed)
 			return FALSE
 
-		if(!user.temporarilyRemoveItemFromInventory(src) )
-			return FALSE
-
-		var/obj/item/cuffs = src
-
-		cuffs.forceMove(target)
-		target.set_handcuffed(cuffs)
-
-		target.update_handcuffed()
+	if(!user.temporarilyRemoveItemFromInventory(src))
 		return FALSE
-	else
-		if(target.legcuffed)
-			return FALSE
 
-		if(!user.temporarilyRemoveItemFromInventory(src) )
-			return FALSE
+	var/obj/item/cuffs = src
 
-		var/obj/item/cuffs = src
-
-		cuffs.forceMove(target)
+	cuffs.forceMove(target)
+	if(leg)
 		target.legcuffed = cuffs
-
 		target.add_movespeed_modifier(MOVESPEED_ID_LEGCUFF_SLOWDOWN, multiplicative_slowdown = legcuff_multiplicative_slowdown)
-
 		target.update_inv_legcuffed()
-		return FALSE
+	else
+		target.set_handcuffed(cuffs)
+		target.update_handcuffed()
+	return TRUE
 
 /obj/item/rope/chain
 	name = "chain"

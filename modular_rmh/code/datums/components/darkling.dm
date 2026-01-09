@@ -22,6 +22,8 @@
 			current_light_stress = max(current_light_stress - 6, 0)
 		return
 	var/incoming = get_light_stress_value(darkling)
+	if(incoming < 0)
+		incoming *= 3
 	current_light_stress = clamp(current_light_stress + incoming, 0, max_light_stress)
 	apply_stress_effects(darkling)
 
@@ -54,16 +56,16 @@
 	if(!T)
 		return 0
 	var/light_amount = T.get_lumcount()
-	var/resistance = 0.5 * (darkling.STAEND / 10)
-	resistance += get_face_covered(darkling)
+	var/resistance = 0.5 * ((darkling.STAEND + 5) / 10)
+	resistance += get_face_covered(darkling) * 1.25
 	resistance += darkling.get_eye_protection()
-	var/multiplier = 2.0
+	var/multiplier = 1.5
 	if(GLOB.tod == "day" && T.can_see_sky() && light_amount > 0.4)
-		multiplier += 1.5
-	return max((light_amount * multiplier) - resistance, 0)
+		multiplier += 1
+	return (light_amount * multiplier) - resistance
 
 /datum/component/darkling/proc/get_face_covered(var/mob/living/carbon/darkling)
-	if((darkling.wear_mask && (darkling.wear_mask.flags_inv & HIDEFACE)) || (darkling.head && (darkling.head.flags_inv & HIDEFACE)))
+	if((darkling.wear_mask && (darkling.wear_mask.flags_inv & HIDEFACE)) || (darkling.head && (darkling.head.flags_inv & (HIDEFACE | HIDEHAIR))))
 		return 1
 	return 0
 

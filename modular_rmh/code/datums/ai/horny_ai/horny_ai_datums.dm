@@ -99,10 +99,14 @@
 	var/last_orgasm_time = arousal_data["last_ejaculation_time"]
 
 	var/datum/sex_session/session = get_sex_session(basic_mob, target_living)
+	if(!session) //if we took too long and it's deleted
+		basic_mob.start_sex_session(target_living)
+		session = get_sex_session(basic_mob, target_living)
 
 	//check if we are sated
 	if(last_orgasm_time > world.time - 10 SECONDS || is_spent || controller.blackboard[BB_HORNY_TIME_START] < world.time - 5 MINUTES)
-		session.stop_current_action()
+		if(session)
+			session.stop_current_action()
 		finish_action(controller, TRUE, target_key)
 		return
 
@@ -117,16 +121,35 @@
 	//do stun here
 	if(world.time > controller.blackboard[BB_HORNY_STUN_COOLDOWN] && knockdown_need)
 		if(basic_mob.Adjacent(target_living))
-			if(iscarbon(basic_mob))
-				target_living.SetStun(40)
-				target_living.SetKnockdown(50)
+			var/prob2defend
+			var/obj/item/mainhand = target_living.get_active_held_item()
+			var/obj/item/offhand = target_living.get_inactive_held_item()
+			var/parry_data = target_living.calculate_parry_values(mainhand, offhand)
+			prob2defend += CLAMP(parry_data["defense_bonus"]/80, 0, 40)
+			prob2defend += CLAMP(target_living.STASPD / 20 * 50, 0, 50)
+			if(target_living.body_position == LYING_DOWN)
+				prob2defend *= 0.1
+			if(target_living.cmode)
+				prob2defend *= 1.2
+			if(target_living.surrendering)
+				prob2defend *= 0.1
+			prob2defend = CLAMP(prob2defend, 0, 85)
+
+			if(prob(100-prob2defend))
+				if(iscarbon(basic_mob))
+					target_living.SetStun(40)
+					target_living.SetKnockdown(50)
+				else
+					target_living.SetStun(100)
+					target_living.SetKnockdown(200)
+				if(target_living.body_position != LYING_DOWN)
+					target_living.emote("gasp")
+				controller.set_blackboard_key(BB_HORNY_STUN_COOLDOWN, world.time + 10 SECONDS)
+				basic_mob.visible_message(span_danger("[basic_mob] tackles [target_living] down to the ground, dazing them!"))
 			else
-				target_living.SetStun(100)
-				target_living.SetKnockdown(200)
-			if(target_living.body_position != LYING_DOWN)
-				target_living.emote("gasp")
-			controller.set_blackboard_key(BB_HORNY_STUN_COOLDOWN, world.time + 10 SECONDS)
-			basic_mob.visible_message(span_danger("[basic_mob] tackles [target_living] down to the ground, dazing them!"))
+				controller.set_blackboard_key(BB_HORNY_STUN_COOLDOWN, world.time + 5 SECONDS)
+				basic_mob.visible_message(span_danger("[basic_mob] fails to tackle [target_living] down!"))
+
 			knockdown_need = FALSE
 			return
 		else
@@ -135,11 +158,7 @@
 	//do grab here
 	if(iscarbon(basic_mob))
 		var/mob/living/carbon/carbon_mob = controller.pawn
-		var/target_restrained = FALSE
-		if(iscarbon(target_living))
-			var/mob/living/carbon/carbon_target = target_living
-			target_restrained = carbon_target.handcuffed || carbon_target.legcuffed
-		if(!carbon_mob.pulling && !target_restrained)
+		if(!carbon_mob.pulling)
 			carbon_mob.drop_all_held_items()
 			var/sel_zone
 			if(prob(30)) // chance to gag
@@ -187,23 +206,32 @@
 		//do tie up here
 		if(iscarbon(basic_mob) && human_target.body_position == LYING_DOWN && !human_target.get_active_held_item())
 			var/mob/living/carbon/c_mob = controller.pawn
-			if(basic_mob.Adjacent(human_target) && !human_target.handcuffed && human_target.get_num_arms(TRUE) > 1)
-				c_mob.visible_message(span_danger("[c_mob] begins to tie up [human_target]'s limbs!"))
-				if(do_after(c_mob, 1.5 SECONDS, human_target))
+			if(basic_mob.Adjacent(human_target) && human_target.get_num_arms(TRUE) > 1 && !human_target.handcuffed)
+				c_mob.visible_message(span_danger("[c_mob] begins to tie up [human_target]'s hands!"))
+				session.stop_current_action()
+				if(do_after(c_mob, 1 SECONDS, human_target))
 					// Create and use rope cuffs
 					var/obj/item/rope/rope_item = new /obj/item/rope
-
 					if(rope_item.apply_cuffs(human_target, c_mob))
-						var/obj/item/rope/leg_rope = new /obj/item/rope
-						if(!leg_rope.apply_cuffs(human_target, c_mob, TRUE))  // TRUE for legcuffs
-							qdel(leg_rope)
-						c_mob.stop_pulling()
+						return
 					else
 						qdel(rope_item)
-				return
+
+			if(basic_mob.Adjacent(human_target) && !human_target.legcuffed)
+				c_mob.visible_message(span_danger("[c_mob] begins to tie up [human_target]'s legs!"))
+				session.stop_current_action()
+				if(do_after(c_mob, 1 SECONDS, human_target))
+					// Create and use rope cuffs
+					var/obj/item/rope/leg_rope = new /obj/item/rope
+					if(leg_rope.apply_cuffs(human_target, c_mob, TRUE))  // TRUE for legcuffs
+						c_mob.stop_pulling()
+						return
+					else
+						qdel(leg_rope)
 
 
 	//starting the action
+
 	if(session)
 		//make it depend on anger or smth
 		var/action_type = basic_mob.select_horny_ai_act(target_living)
