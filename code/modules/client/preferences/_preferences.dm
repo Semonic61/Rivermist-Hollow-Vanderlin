@@ -647,6 +647,7 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 			if(lock_html)
 				HTML += lock_html
 				continue
+			var/job_display = used_name
 			HTML += {"
 				<style>
 					.tutorialhover {
@@ -678,7 +679,7 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 
 				</style>
 
-				<div class="tutorialhover">[used_name]</font>
+				<div class="tutorialhover"> [job.class_setup_examine ? "<a href='?src=[REF(job)];explainjob=1'><font>[job_display]</font></a>" : "<font>[job_display]</font>"]</span>
 				<span class="tutorial">[job.tutorial]<br>
 				Slots: [job.get_total_positions()]</span>
 				</div>

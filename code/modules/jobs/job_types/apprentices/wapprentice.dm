@@ -20,6 +20,7 @@
 	banned_leprosy = FALSE
 	can_have_apprentices = FALSE
 	magic_user = TRUE
+	spell_points = 4
 
 	allowed_races = RACES_PLAYER_ALL
 	allowed_ages = list(AGE_CHILD, AGE_ADULT)
@@ -54,7 +55,7 @@
 	. = ..()
 	if(spawned.age == AGE_ADULT)
 		spawned.adjust_skillrank(/datum/skill/magic/arcane, 1, TRUE)
-		spawned.adjust_spell_points(4)
+		spawned.adjust_spell_points(spell_points)
 
 
 /datum/outfit/mageapprentice

@@ -162,6 +162,14 @@ SUBSYSTEM_DEF(role_class_handler)
 		if(target_datum in found_menu.rolled_classes) // We found the target datum in one of the classes they rolled aka in the list of options they got visible,
 			found_menu.rolled_class_is_full(target_datum) //  inform the datum of its error.
 
+/datum/controller/subsystem/role_class_handler/proc/get_advclass_by_name(advclass_name)
+	for(var/category in sorted_class_categories)
+		for(var/datum/job/advclass/class as anything in sorted_class_categories[category])
+			if(class.title != advclass_name)
+				continue
+			return class
+	return null
+
 /datum/controller/subsystem/role_class_handler/proc/cancel_class_handler(mob/living/carbon/human/H)
 	H.finish_class_hugbox()
 

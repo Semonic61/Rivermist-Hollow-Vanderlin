@@ -15,6 +15,7 @@
 	always_show_on_latechoices = FALSE
 	job_reopens_slots_on_death = FALSE
 	shows_in_list = FALSE
+	class_setup_examine = FALSE
 	can_have_apprentices = FALSE
 	scales = FALSE
 

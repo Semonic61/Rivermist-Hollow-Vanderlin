@@ -201,6 +201,16 @@
 	var/pack_title = "JOB PACKS"
 	var/pack_message = "Choose a job pack"
 
+
+	///The job's subclasses, if any. Overrides jobstats if present.
+	var/list/job_subclasses
+
+	///Whether this class can be clicked on for details.
+	var/class_setup_examine = TRUE
+
+	///The job's stat UPPER ceilings, clamped after statpacks and job stats are applied.
+	var/list/stat_ceilings
+
 /datum/job/New()
 	. = ..()
 	if(give_bank_account)
@@ -802,3 +812,148 @@
 
 
 	return TRUE
+
+/datum/job/Topic(href, list/href_list)
+	if(href_list["explainjob"])
+		var/list/dat = list()
+		var/show_traits = TRUE
+		var/sclass_count = 0
+		if(length(job_subclasses) && length(jobstats))
+			CRASH("[REF(src)] has definitions for both class and subclass stats. Likely not intended, and they will stack!")
+		if(length(job_subclasses))
+			dat += "This class has the following subclasses: "
+			for(var/sclass in job_subclasses)
+				sclass_count++
+				var/datum/job/advclass/adv = sclass
+				var/datum/job/advclass/adv_ref = SSrole_class_handler.get_advclass_by_name(initial(adv.title))
+				dat += "<details><summary><b><font color ='#ece9e9'>[adv_ref.title]</font></b></summary>"
+				dat += "<table align='center'; width='100%'; height='100%';border: 1px solid white;border-collapse: collapse>"
+				dat += "<tr style='vertical-align:top'>"
+				dat += "<td width = 70%><i><font color ='#ece9e9'>[adv_ref.tutorial]</font></i></td>"
+				dat += "<td width = 30%; style='text-align:right'>"
+				if(length(adv_ref.jobstats))
+					dat += "<font color ='#7a4d0a'>Stat Bonuses:</font><font color ='#d4b164'>"
+					for(var/stat in adv_ref.jobstats)
+						dat += "<br>[capitalize(stat)]: <b>[adv_ref.jobstats[stat] < 0 ? "<font color = '#cf2a2a'>" : "<font color = '#91cf68'>"]\Roman[adv_ref.jobstats[stat]]</font></b>"
+				dat += "<br></td></tr></table></font>"
+				/*if(length(adv_ref.adv_stat_ceiling))
+					dat += "["<font color = '#cf2a2a'><b>This subclass has the following stat limits: "]</b></font><br>"
+					dat += " | "
+					for(var/stat in adv_ref.adv_stat_ceiling)
+						dat += "["[capitalize(stat)]: <b>\Roman[adv_ref.adv_stat_ceiling[stat]]</b>"] | "
+					dat += "<i><br>Regardless of your statpacks or race choice, you will not be able to exceed these stats on spawn.</i></font>"*/
+				if(adv_ref.spell_points > 0)
+					dat += "<font color = '#a3a7e0'>Starting Spellpoints: <b>[adv_ref.spell_points]</b></font>"
+				if(length(adv_ref.languages))
+					dat += "<details><summary><i>Known Languages</i></summary>"
+					for(var/i in 1 to length(adv_ref.languages))
+						var/datum/language/lang = adv_ref.languages[i]
+						dat += "<i>[initial(lang.name)][i == length(adv_ref.languages) ? "" : ", "]</i>"
+					dat += "</details>"
+				dat += "<table align='center'; width='100%'; height='100%';border: 1px solid white;border-collapse: collapse>"
+				dat += "<tr style='vertical-align:top'>"
+				dat += "<td width = 50%>"	//Table for SubClass Traits | Class Skills
+				if(length(adv_ref.traits) || (!length(adv_ref.traits) && length(traits)))
+					var/list/traitlist
+					if(length(adv_ref.traits))
+						traitlist = adv_ref.traits
+						dat += "<br><font color ='#7a4d0a'><b>Sub</b>class Traits:</font> "
+					else if(!length(adv_ref.traits) && length(traits))
+						traitlist = traits
+						show_traits = FALSE
+						dat += "<font color ='#7a4d0a'><b>Class</b> Traits:</font> "
+					for(var/trait in traitlist)
+						dat += "<details><summary><i><font color ='#ccbb82'>[trait]</font></i></summary>"
+						dat += "<i><font color = '#a3ffe0'>[GLOB.roguetraits[trait]]</font></i></details>"
+					dat += "</font>"
+					dat += "<br>"
+				dat += "</td>"	//Trait Table end
+				if(length(adv_ref.skills))
+					dat += "<td width = 50%; style='text-align:right'>"
+					var/list/notable_skills = list()
+					for(var/sk in adv_ref.skills)
+						if(adv_ref.skills[sk] > SKILL_LEVEL_JOURNEYMAN)
+							notable_skills[sk] = adv_ref.skills[sk]
+						else if(ispath(sk, /datum/skill/combat))
+							notable_skills[sk] = adv_ref.skills[sk]
+					if(!length(notable_skills))	//Nothing above Jman AND no Combat skills.
+						dat += "<i>This subclass has no notable skills.</i>"
+					else
+						notable_skills = sortTim(notable_skills,/proc/cmp_numeric_dsc, TRUE)
+						var/max_skills = 5	//We don't want to print out /all/ of them, as it messes up the formatting.
+						dat += "<font color ='#7a4d0a'>Notable Skills: </font>"
+						for(var/sk in notable_skills)
+							if(max_skills > 0)
+								var/datum/skill/skill = sk
+								dat += "<font color ='#d4b164'><br>[initial(skill.name)] — [SSskills.level_names[notable_skills[sk]]]</font>"
+								max_skills--
+						LAZYCLEARLIST(notable_skills)
+				dat += "</td></tr></table>"//Skill table end
+				/*if(adv_ref.extra_context)
+					dat += "<font color ='#a06c1e'>[adv_ref.extra_context]"
+					dat += "</font>"*/
+				dat += "</details>"
+		dat += "<hr>"
+		if(length(jobstats))
+			dat += "Starting Stats:<font color ='#d4b164'>"
+			for(var/stat in jobstats)
+				dat += "<br>[capitalize(stat)]: <b>[jobstats[stat] < 0 ? "<font color = '#cf2a2a'>" : "<font color = '#91cf68'>"]\Roman[jobstats[stat]]</font></b>"
+			dat += "</font>"	//Ends the stats colors
+			if(length(stat_ceilings))
+				dat += "["<br><font color = '#cf2a2a'><b>This class has the following stat limits:</b> "]<br>"
+				dat += " | "
+				for(var/stat in stat_ceilings)
+					dat += "["[capitalize(stat)]: <b>\Roman[stat_ceilings[stat]]</b>"] | "
+				dat += "<br><i>Regardless of your statpacks or race choice, you will not be able to exceed these stats on spawn.</i></font>"
+				dat += "</font>"	//Ends the stat limit colors
+		if(length(traits) && (show_traits || sclass_count > 1))
+			dat += "<b>Class</b></font> Traits: "
+			for(var/trait in traits)
+				dat += "<details><summary><i><font color ='#ccbb82'>[trait]</font></i></summary>"
+				dat += "<i><font color = '#a3ffe0'>[GLOB.roguetraits[trait]]</font></i></details>"
+			dat += "</font>"
+		dat += "<br><i>This information is not all-encompassing. Many classes have other quirks and skills that define them.</i>"
+		if(istype(src,/datum/job/jester))
+			LAZYCLEARLIST(dat)
+			dat = list("<font color = '#d151ab'><center>Come one, come all, where Psydon Lies! <br>Let Xylix roll the dice, <br>unto our untimely demise! <br>Ahahaha!</center>")
+			dat += "<center><b><font size = 4>STR: ???</b><br>"
+			dat += "<b>WIL: ???</b><br>"
+			dat += "<b>CON: ???</b><br>"
+			dat += "<b>PER: ???</b><br>"
+			dat += "<b>INT: ???</b><br>"
+			dat += "<b>FOR: ???</b><br></center></font>"
+		var/height = 550
+		if(sclass_count >= 10)
+			height = 925
+		var/datum/browser/popup = new(usr, "classhelp", "<div style='text-align: center'>[title]</div>", width = 475, height = height)
+		popup.set_content(dat.Join())
+		popup.open(FALSE)
+		if(winexists(usr, "classhelp"))
+			winset(usr, "classhelp", "focus=true")
+	if(href_list["jobsubclassinfo"])
+		var/list/dat = list()
+		for(var/adv in job_subclasses)
+			var/datum/job/advclass/advpath = adv
+			var/datum/job/advclass/subclass = SSrole_class_handler.get_advclass_by_name(initial(advpath.title))
+			if(subclass.total_positions != -1)
+				dat += "[subclass.title] — <b>"
+				if(subclass.current_positions >= subclass.total_positions)
+					dat += "FULL!"
+				else
+					dat += "[subclass.current_positions] / [subclass.total_positions]"
+				dat += "</b><br>"
+		var/datum/browser/popup = new(usr, "subclassslots", "<div style='text-align: center'>[title]</div>", width = 200, height = 300)
+		popup.set_content(dat.Join())
+		popup.open(FALSE)
+		if(winexists(usr, "subclassslots"))
+			winset(usr, "subclassslots", "focus=true")
+	. = ..()
+
+/datum/job/proc/has_limited_subclasses()
+	if(length(job_subclasses) <= 0)
+		return FALSE
+	for(var/adv in job_subclasses)
+		var/datum/job/advclass/subclass = adv
+		if(initial(subclass.total_positions) != -1)
+			return TRUE
+	return FALSE
