@@ -144,6 +144,7 @@
 		return
 	body.visible_message(span_blue("With a loud pop, [body.name] suddenly disappears!"))
 	playsound(get_turf(body), 'sound/magic/repulse.ogg', 100, FALSE, -1)
+	body.ExtinguishMob()
 	body.forceMove(T)
 	body.revive(full_heal = TRUE, admin_revive = TRUE)
 
