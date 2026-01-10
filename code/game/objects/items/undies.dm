@@ -33,6 +33,17 @@
 			if(do_after(user, 50, target = H))
 				H.equip_to_slot_if_possible(src, ITEM_SLOT_UNDERWEAR, disable_warning = TRUE)
 
+/obj/item/clothing/undies/equipped(mob/living/carbon/user, slot)
+	. = ..()
+	if(user.mouth == src)
+		slot_flags = ITEM_SLOT_MOUTH
+		user.update_body()
+		user.update_body_parts()
+
+/obj/item/clothing/undies/dropped(mob/user)
+	. = ..()
+	slot_flags = ITEM_SLOT_MOUTH | ITEM_SLOT_UNDERWEAR
+
 /obj/item/clothing/undies/bikini
 	name = "bikini"
 	icon_state = "bikini"

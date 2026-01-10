@@ -1,5 +1,5 @@
 /obj/item/clothing/legwears
-	name = "stockings(under)"
+	name = "stockings"
 	desc = "A legwear made just for the pure aesthetics. Popular in courts and brothels alike."
 	icon = 'modular_rmh/icons/clothing/stockings.dmi'
 	mob_overlay_icon = 'modular_rmh/icons/mob/sprite_accessory/stockings.dmi'
@@ -30,6 +30,18 @@
 			user.visible_message(span_notice("[user] tries to put [src] on [H]..."))
 			if(do_after(user, 50, target = H))
 				H.equip_to_slot_if_possible(src, ITEM_SLOT_SOCKS, disable_warning = TRUE)
+
+
+/obj/item/clothing/legwears/equipped(mob/living/carbon/user, slot)
+	. = ..()
+	if(user.mouth == src)
+		slot_flags = ITEM_SLOT_MOUTH
+		user.update_body()
+		user.update_body_parts()
+
+/obj/item/clothing/legwears/dropped(mob/user)
+	. = ..()
+	slot_flags = ITEM_SLOT_MOUTH | ITEM_SLOT_SOCKS
 
 
 /obj/item/clothing/legwears/random/Initialize()
