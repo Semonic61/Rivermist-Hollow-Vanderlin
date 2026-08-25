@@ -471,6 +471,12 @@
 	debris = list(/obj/item/grown/log/tree/small, /obj/item/gear/metal)
 	climb_offset = 10
 
+/obj/structure/table/wood/smooth
+	name = "wooden table"
+	icon = MAP_SWITCH('icons/obj/smooth_structures/tablewood_smooth.dmi', 'icons/obj/structures.dmi')
+	icon_state = "tablewood_smooth"
+	smoothing_flags = SMOOTH_BITMASK | SMOOTH_OBJ
+
 /*	..................   More tables   ................... */
 /obj/structure/table/wood/reinf_long
 	icon_state = "tablewood_reinf"

@@ -936,6 +936,24 @@
 /turf/open/floor/tile/masonic/spiral
 	icon_state = "masonicspiral"
 
+/turf/open/floor/tile/masonic/moondark
+	icon_state = "moontile_dark"
+
+/turf/open/floor/tile/masonic/moonbw
+	icon_state = "moontile_bw"
+
+/turf/open/floor/tile/masonic/full
+	icon_state = "masonicfull_white"
+
+/turf/open/floor/tile/masonic/full/inverted
+	icon_state = "masonicfull_black"
+
+/turf/open/floor/tile/masonic/arrow
+	icon_state = "masonicarrow"
+
+/turf/open/floor/tile/masonic/arrow/inverted
+	icon_state = "masonicarrow_invert"
+
 /turf/open/floor/tile/brick
 	icon_state = "bricktile"
 
