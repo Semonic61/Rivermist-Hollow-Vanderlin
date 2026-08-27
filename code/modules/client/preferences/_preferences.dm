@@ -2352,6 +2352,7 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 
 				if("select_quirks")
 					open_quirk_menu(user)
+					return
 				if("alignment")
 					var/new_alignment = tgui_input_list(user, "SELECT YOUR HERO'S MORALITY", "CUT FROM THE SAME CLOTH", ALL_ALIGNMENTS_LIST, alignment)
 					if(new_alignment)

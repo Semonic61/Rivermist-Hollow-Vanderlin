@@ -95,6 +95,8 @@
 
 /mob/living/getorganslot(slot)
 	RETURN_TYPE(/obj/item/organ)
+	if(!(slot in internal_organs_slot))
+		return null
 	var/list/organs = internal_organs_slot[slot]
 	if(length(organs))
 		return pick(organs)
@@ -152,6 +154,8 @@
 
 /mob/living/carbon/getorganslot(slot)
 	RETURN_TYPE(/obj/item/organ)
+	if(!(slot in internal_organs_slot))
+		return null
 	if(length(internal_organs_slot[slot]))
 		return pick(internal_organs_slot[slot])
 

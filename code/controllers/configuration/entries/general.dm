@@ -523,3 +523,13 @@
  */
 /datum/config_entry/number/tgui_max_chunk_count
 	config_entry_value = 32
+
+/datum/config_entry/flag/auto_profile
+
+/datum/config_entry/number/profiler_interval
+	config_entry_value = 300 SECONDS
+	min_val = 1 SECONDS
+
+/datum/config_entry/flag/forbid_all_profiling
+
+/datum/config_entry/flag/forbid_admin_profiling

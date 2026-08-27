@@ -113,7 +113,7 @@
 
 	log_game("The round has ended.")
 
-	INVOKE_ASYNC(world, TYPE_PROC_REF(/world, flush_byond_tracy))
+	INVOKE_ASYNC(Tracy, TYPE_PROC_REF(/datum/tracy, flush))
 
 	to_chat(world, "<BR><BR><BR><span class='reallybig'>So ends this tale of Rivermist Hollow.</span>")
 	get_end_reason()

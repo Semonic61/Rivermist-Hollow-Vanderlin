@@ -1,3 +1,7 @@
+#if defined(OPENDREAM) && !defined(SPACEMAN_DMM)
+#define OPENDREAM_REAL
+#endif
+
 //#define TESTING				//By using the testing("message") proc you can create debug-feedback for people with this
 								//uncommented, but not visible in the release version)
 
@@ -57,6 +61,7 @@
 #define REFERENCE_TRACKING
 // actually look for refs
 #define GC_FAILURE_HARD_LOOKUP
+#define REFERENCE_TRACKING_LOG_APART
 #endif // REFERENCE_DOING_IT_LIVE
 
 
@@ -149,4 +154,13 @@
 #define NO_DUNGEON
 #define FORCE_MAP "projectkalypso"
 #define FORCE_MAP_DIRECTORY "_maps"
+#endif
+
+// Local reference tracking with its own log; this may stall the server during searches.
+//#define REFERENCE_TRACKING_STANDARD
+#ifdef REFERENCE_TRACKING_STANDARD
+#define REFERENCE_TRACKING
+#define GC_FAILURE_HARD_LOOKUP
+#define FIND_REF_NO_CHECK_TICK
+#define REFERENCE_TRACKING_LOG_APART
 #endif
