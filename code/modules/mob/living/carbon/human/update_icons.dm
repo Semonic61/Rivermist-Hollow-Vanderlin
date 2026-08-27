@@ -61,8 +61,10 @@ GLOBAL_PROTECT(no_child_icons)
 
 
 /mob/living/carbon/human/update_body()
+	if(status_flags & BUILDING_ORGANS)
+		return
 	dna?.species?.handle_body(src) //create destroy moment
-	..()
+	return ..()
 
 /mob/living/carbon/human/proc/update_organ_colors()
 	var/list/colors = color_key_source_list_from_carbon(src)
@@ -161,6 +163,8 @@ GLOBAL_PROTECT(no_child_icons)
 				if(!wound.mob_overlay)
 					continue
 				wound_overlays |= wound.mob_overlay
+			if(BP.is_artery_torn())
+				wound_overlays |= "s1"
 			for(var/wound_overlay in wound_overlays)
 				var/mutable_appearance/damage_overlay = mutable_appearance(limb_icon, "[BP.body_zone]_[wound_overlay]", -DAMAGE_LAYER)
 				damage_overlays += damage_overlay

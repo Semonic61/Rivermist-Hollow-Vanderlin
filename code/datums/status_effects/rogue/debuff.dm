@@ -4,6 +4,7 @@
 ///////////////////////////
 
 /datum/status_effect/debuff/hungryt1
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "hungryt1"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/hungryt1
 	effectedstats = list(STAT_SPEED = -1, STAT_STRENGTH = -1, STAT_CONSTITUTION = -1, STAT_ENDURANCE = -1)
@@ -27,6 +28,7 @@
 		C.remove_stress(/datum/stress_event/peckish)
 
 /datum/status_effect/debuff/hungryt2
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "hungryt2"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/hungryt2
 	effectedstats = list(STAT_SPEED = -4, STAT_STRENGTH = -2, STAT_CONSTITUTION = -2, STAT_ENDURANCE = -1)
@@ -50,6 +52,7 @@
 		C.remove_stress(/datum/stress_event/hungry)
 
 /datum/status_effect/debuff/hungryt3
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "hungryt3"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/hungryt3
 	effectedstats = list(STAT_SPEED = -6, STAT_STRENGTH = -6, STAT_CONSTITUTION = -6, STAT_ENDURANCE = -6)
@@ -92,6 +95,7 @@
 	to_chat(owner, "<span class='danger'>I am starving to death! I need to eat something before it's too late!</span>")
 
 /datum/status_effect/debuff/wiz
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "wiz"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/wiz
 	effectedstats = list(STAT_INTELLIGENCE = -5)
@@ -105,6 +109,7 @@
 
 
 /datum/status_effect/debuff/thirstyt1
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "thirsty1"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/thirstyt1
 	effectedstats = list(STAT_ENDURANCE = -1, STAT_SPEED = -1)
@@ -129,6 +134,7 @@
 		C.remove_stress(/datum/stress_event/drym)
 
 /datum/status_effect/debuff/thirstyt2
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "thirsty2"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/thirstyt2
 	effectedstats = list(STAT_SPEED = -4, STAT_ENDURANCE = -4)
@@ -152,6 +158,7 @@
 		C.remove_stress(/datum/stress_event/thirst)
 
 /datum/status_effect/debuff/thirstyt3
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "thirsty3"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/thirstyt3
 	effectedstats = list(STAT_STRENGTH = -6, STAT_SPEED = -6, STAT_ENDURANCE = -6)
@@ -196,6 +203,7 @@
 /////////
 
 /datum/status_effect/debuff/uncookedfood
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "uncookedfood"
 	effectedstats = null
 	duration = 4 SECONDS
@@ -216,6 +224,7 @@
 		C.add_stress(/datum/stress_event/uncookedfood)
 
 /datum/status_effect/debuff/badmeal
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "badmeal"
 	effectedstats = null
 	alert_type = null
@@ -234,6 +243,7 @@
 		C.add_stress(/datum/stress_event/badmeal)
 
 /datum/status_effect/debuff/burnedfood
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "burnedfood"
 	effectedstats = null
 	alert_type = null
@@ -253,6 +263,7 @@
 	icon_state = "burntmeal"
 
 /datum/status_effect/debuff/rotfood
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "rotfood"
 	effectedstats = null
 	alert_type = null
@@ -274,6 +285,7 @@
 		C.add_stress(/datum/stress_event/rotfood)
 
 /datum/status_effect/debuff/bleeding
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "bleedingt1"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/bleedingt1
 	effectedstats = list(STAT_SPEED = -2)
@@ -285,6 +297,7 @@
 	icon_state = "bleed1"
 
 /datum/status_effect/debuff/bleedingworse
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "bleedingt2"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/bleedingt2
 	effectedstats = list(STAT_STRENGTH = -1, STAT_SPEED = -4)
@@ -296,6 +309,7 @@
 	icon_state = "bleed2"
 
 /datum/status_effect/debuff/bleedingworst
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "bleedingt3"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/bleedingt3
 	effectedstats = list(STAT_STRENGTH = -3, STAT_SPEED = -6)
@@ -307,6 +321,7 @@
 	icon_state = "bleed3"
 
 /datum/status_effect/debuff/sleepytime
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "sleepytime"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/sleepytime
 	effectedstats = list(STAT_SPEED = -2, STAT_ENDURANCE = -2)
@@ -338,6 +353,7 @@
 	icon_state = "muscles"
 
 /datum/status_effect/debuff/netted
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "net"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/netted
 	duration = 2 MINUTES
@@ -366,6 +382,7 @@
 	icon_state = "sleepy"
 
 /datum/status_effect/debuff/trainsleep
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "trainsleep"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/trainsleep
 	effectedstats = list(STAT_STRENGTH = -1, STAT_SPEED = -1, STAT_ENDURANCE = -1)
@@ -376,6 +393,7 @@
 	icon_state = "muscles"
 
 /datum/status_effect/debuff/barbfalter
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "barbfalter"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/barbfalter
 	duration = 30 SECONDS
@@ -387,6 +405,7 @@
 	icon_state = "muscles"
 
 /datum/status_effect/debuff/revive
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "revive"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/revive
 	duration = 15 MINUTES
@@ -398,6 +417,7 @@
 	icon_state = "muscles"
 
 /datum/status_effect/debuff/chilled
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "chilled"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/chilled
 	effectedstats = list(STAT_SPEED = -5, STAT_STRENGTH = -2, STAT_ENDURANCE = -2)
@@ -433,6 +453,7 @@
 	return ..()
 
 /datum/status_effect/debuff/eoradrunk
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "eoradrunk"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/drunk
 	effectedstats = list(STAT_STRENGTH = -2, STAT_FORTUNE = -5, STAT_PERCEPTION = -2, STAT_SPEED = -3) //debuff stats important in attacking
@@ -444,6 +465,7 @@
 	icon_state = "drunk"
 
 /datum/status_effect/debuff/mesmerised
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "mesmerised"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/mesmerised
 	effectedstats = list(STAT_STRENGTH = -2, STAT_FORTUNE = -2, STAT_PERCEPTION = -2, STAT_SPEED = -2) //
@@ -456,6 +478,7 @@
 
 
 /datum/status_effect/debuff/call_to_slaughter
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "call_to_slaughter"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/call_to_slaughter
 	effectedstats = list(STAT_ENDURANCE = -2, STAT_CONSTITUTION = -2)
@@ -467,6 +490,7 @@
 	icon_state = "call_to_slaughter"
 
 /datum/status_effect/debuff/baothadruqks
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "baothadruqks"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/baothadruqks
 	effectedstats = list(STAT_PERCEPTION = -2, STAT_SPEED = -1, STAT_FORTUNE = -5)
@@ -478,6 +502,7 @@
 	icon_state = "drunk"
 
 /datum/status_effect/debuff/lux_drained
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "lux_drained"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/lux_drained
 	effectedstats = list(STAT_FORTUNE = -3, STAT_CONSTITUTION = -1, STAT_ENDURANCE = -1, STAT_INTELLIGENCE = -1, STAT_PERCEPTION = -1, STAT_SPEED = -1, STAT_STRENGTH = -1)
@@ -489,6 +514,7 @@
 
 //charflaw variant of lux_drained, used when the flaw is selected
 /datum/status_effect/debuff/flaw_lux_taken
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "lux_taken"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/flaw_lux_taken
 	effectedstats = list(STAT_FORTUNE = -3, STAT_CONSTITUTION = -1, STAT_ENDURANCE = -1, STAT_INTELLIGENCE = -1, STAT_PERCEPTION = -1, STAT_SPEED = -1, STAT_STRENGTH = -1)
@@ -500,6 +526,7 @@
 
 
 /datum/status_effect/debuff/stinky_person
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "stinky_person"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/stinky_person
 	duration = -1
@@ -519,6 +546,7 @@
 	stinky_component?.RemoveComponent()
 
 /datum/status_effect/debuff/tainted_lux
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "tainted_lux"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/tainted_lux
 	effectedstats = list(STAT_FORTUNE = -2)
@@ -529,6 +557,7 @@
 	desc = span_danger("Something within me is broken... what was once bright now writhes with a poisoned pulse...")
 
 /datum/status_effect/debuff/received_tainted_lux
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "received_tainted_lux"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/received_tainted_lux
 	effectedstats = list(STAT_FORTUNE = -2)
@@ -539,6 +568,7 @@
 	desc = span_danger("It stirs inside me... but it is wrong, twisted... if this is a soul, then it has been corrupted long before it reached me...")
 
 /datum/status_effect/debuff/corrupted_by_tainted_lux
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "corrupted_by_tainted_lux"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/corrupted_by_tainted_lux
 	effectedstats = list(STAT_FORTUNE = -4)
@@ -549,6 +579,7 @@
 	desc = span_danger("It filled my veins with light and rot alike... I can feel it crawling under my skin, whispering that I should never have done it...")
 
 /datum/status_effect/debuff/electrified
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "electrified"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/electrified
 	duration = 20 SECONDS
@@ -593,6 +624,7 @@
 	icon_state = "dazed"
 
 /datum/status_effect/debuff/cursed
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "cursed"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/cursed
 	effectedstats = list(STAT_FORTUNE = -5) // More severe so that the permanent debuff from having the perk makes it actually worth it.

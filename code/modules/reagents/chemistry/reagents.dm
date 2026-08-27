@@ -128,7 +128,6 @@ GLOBAL_LIST_INIT(name2reagent, build_name2reagent())
 				record_round_statistic(STATS_ALCOHOL_CONSUMED, adjusted_metabolization_rate)
 			if(istype(src, /datum/reagent/water))
 				record_round_statistic(STATS_WATER_CONSUMED, adjusted_metabolization_rate)
-	return TRUE
 
 /datum/reagent/proc/on_transfer(atom/A, method=TOUCH, trans_volume, mob/transfered_by = null) //Called after a reagent is transfered
 	if(iscarbon(A))

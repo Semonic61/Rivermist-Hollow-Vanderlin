@@ -59,6 +59,8 @@ have ways of interacting with a specific atom and control it. They posses a blac
 	var/list/movement_path
 	///Cooldown for JPS movement, how often we're allowed to try making a new path
 	COOLDOWN_DECLARE(repath_cooldown)
+	///Cooldown for loot scanning
+	COOLDOWN_DECLARE(loot_scan_cooldown)
 	///AI paused time
 	var/paused_until = 0
 	///Idle cooldown so that mobs dont run around like rockets
@@ -314,7 +316,10 @@ have ways of interacting with a specific atom and control it. They posses a blac
 			if(get_dist(pawn, entered_client) <= AI_ALERT_ON_CLIENT_DIST)
 				enter_alert_mode(AI_ALERT_ON_CLIENT_TIME)
 				break
-	reset_ai_status()
+	if(ai_status == AI_STATUS_IDLE)
+		set_ai_status(AI_STATUS_ON)
+	else
+		reset_ai_status()
 
 /datum/ai_controller/proc/on_client_exit(datum/source, datum/exited)
 	SIGNAL_HANDLER
@@ -421,7 +426,7 @@ have ways of interacting with a specific atom and control it. They posses a blac
 	if(!("[pawn_turf?.z]" in GLOB.weatherproof_z_levels))
 		if(SSmapping.level_has_any_trait(pawn_turf?.z, list(ZTRAIT_IGNORE_WEATHER_TRAIT)))
 			GLOB.weatherproof_z_levels |= "[pawn_turf?.z]"
-	if("[pawn_turf?.z]" in GLOB.weatherproof_z_levels)
+	if(!(pawn_turf?.z in SSmobs.town_z))
 		if(!length(SSmobs.clients_by_zlevel[pawn_turf?.z]))
 			return AI_STATUS_OFF
 	if(should_idle())

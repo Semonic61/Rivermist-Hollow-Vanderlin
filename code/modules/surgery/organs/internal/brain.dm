@@ -76,13 +76,12 @@
 	C.update_body()
 
 
-/obj/item/organ/brain/handle_blood(delta_time, times_fired)
+/obj/item/organ/brain/handle_blood(delta_time, times_fired, in_bleedout)
 	if(!iscarbon(owner))
 		return
 	var/mob/living/carbon/carbon_owner = owner
 	var/effective_blood_oxygenation = GET_EFFECTIVE_BLOOD_VOL(carbon_owner.get_blood_oxygenation(), carbon_owner.total_blood_req)
 	var/arterial_efficiency = get_slot_efficiency(ORGAN_SLOT_ARTERY)
-	var/in_bleedout = carbon_owner.in_bleedout()
 	if(arterial_efficiency && !is_failing())
 		// Arteries get an extra flat 5 blood regen
 		current_blood = min(current_blood + 5 * (0.5 * delta_time) * (arterial_efficiency/ORGAN_OPTIMAL_EFFICIENCY), max_blood_storage)
@@ -108,8 +107,19 @@
 		if(artery?.current_blood)
 			var/prev_blood = artery.current_blood
 			artery.current_blood = max(artery.current_blood - (blood_req * 0.5 * delta_time), 0)
+			artery.consider_processing()
 			current_blood = max(prev_blood - artery.current_blood, 0)
 		//Don't apply damage, this is handled by the organ process datum, if necessary
+	consider_processing(in_bleedout)
+
+/obj/item/organ/brain/consider_processing(in_bleedout = FALSE)
+	if(..())
+		return TRUE
+	if(!iscarbon(owner))
+		return FALSE
+	var/mob/living/carbon/carbon_owner = owner
+	needs_processing = GET_EFFECTIVE_BLOOD_VOL(carbon_owner.get_blood_oxygenation(), carbon_owner.total_blood_req) < BLOOD_VOLUME_SAFE
+	return needs_processing
 
 /obj/item/organ/brain/get_mechanics_examine(mob/user)
 	. = ..()
@@ -306,7 +316,7 @@
 	QDEL_LIST(traumas)
 	return ..()
 
-/obj/item/organ/brain/on_life(delta_time, times_fired)
+/obj/item/organ/brain/on_life(delta_time, times_fired, in_bleedout, virus_immunity, antibiotics, immunity_weakness, passed_temp)
 	. = ..()
 	if(damage >= BRAIN_DAMAGE_DEATH) //rip
 		// Brain damage can finalize death synchronously, before the owner's next updatehealth(). Give
@@ -361,7 +371,7 @@
 		else if(brain_message)
 			return brain_message
 
-/obj/item/organ/brain/can_heal(delta_time, times_fired)
+/obj/item/organ/brain/can_heal(delta_time, times_fired, in_bleedout)
 	. = TRUE
 	if(!owner || !iscarbon(owner))
 		return FALSE
@@ -372,7 +382,7 @@
 		return FALSE
 	if(current_blood <= 0)
 		return FALSE
-	if(carbon_owner.undergoing_cardiac_arrest())
+	if(in_bleedout)
 		return FALSE
 	var/effective_blood_oxygenation = GET_EFFECTIVE_BLOOD_VOL(carbon_owner.get_blood_oxygenation(), carbon_owner.total_blood_req)
 	if(effective_blood_oxygenation < BLOOD_VOLUME_SAFE)

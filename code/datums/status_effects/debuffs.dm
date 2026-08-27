@@ -8,7 +8,7 @@
 		restored_mob.cmode = restored_cmode
 //STUN EFFECTS
 /datum/status_effect/incapacitating
-	tick_interval = 0
+	tick_interval = STATUS_EFFECT_NO_TICK
 	status_type = STATUS_EFFECT_REPLACE
 	alert_type = null
 	remove_on_fullheal = TRUE
@@ -144,6 +144,7 @@
 	id = "sleeping"
 	alert_type = /atom/movable/screen/alert/status_effect/asleep
 	needs_update_stat = TRUE
+	tick_interval = 0 //??? this is what it was set at the parent level IDK man
 	var/sleptonground = FALSE
 
 /datum/status_effect/incapacitating/sleeping/on_creation(mob/living/new_owner)
@@ -254,6 +255,7 @@
 	id = "strandling"
 	status_type = STATUS_EFFECT_UNIQUE
 	alert_type = /atom/movable/screen/alert/status_effect/strandling
+	tick_interval = STATUS_EFFECT_NO_TICK
 
 /datum/status_effect/strandling/on_apply()
 	ADD_TRAIT(owner, TRAIT_MAGIC_CHOKE, "dumbmoron")
@@ -322,7 +324,7 @@
 	id = "trance"
 	status_type = STATUS_EFFECT_UNIQUE
 	duration = 300
-	tick_interval = 10
+	tick_interval = 1 SECONDS
 	var/stun = TRUE
 	alert_type = /atom/movable/screen/alert/status_effect/trance
 

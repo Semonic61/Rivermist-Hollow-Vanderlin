@@ -135,6 +135,10 @@
 	LAZYNULL(organ_efficiency_modification)
 	return ..()
 
+/obj/item/organ/vv_edit_var(var_name, var_value)
+	. = ..()
+	consider_processing()
+
 /obj/item/organ/attack(mob/living/carbon/M, mob/user, list/modifiers)
 	if(M == user && ishuman(user))
 		var/mob/living/carbon/human/H = user
@@ -221,12 +225,11 @@
 		organ_flags &= ~ORGAN_DEAD
 		return TRUE
 
-/obj/item/organ/proc/handle_blood(delta_time, times_fired)
+/obj/item/organ/proc/handle_blood(delta_time, times_fired, in_bleedout)
 	if(!iscarbon(owner))
 		return
 	var/mob/living/carbon/carbon_owner = owner
 	var/arterial_efficiency = get_slot_efficiency(ORGAN_SLOT_ARTERY)
-	var/in_bleedout = carbon_owner.in_bleedout()
 	var/failer
 	if(arterial_efficiency)
 		failer = is_failing_without_bleedout()
@@ -254,6 +257,7 @@
 		if(artery?.current_blood)
 			var/prev_blood = artery.current_blood
 			artery.current_blood = max(artery.current_blood - (blood_req * 0.5 * delta_time), 0)
+			artery.consider_processing()
 			current_blood = max(prev_blood - artery.current_blood, 0)
 		if((current_blood <= 0) && !(organ_flags & ORGAN_LIMB_SUPPORTER))
 			applyOrganDamage(0.2 * delta_time)
@@ -333,14 +337,15 @@
 		A.Grant(M)
 	update_accessory_colors()
 	update_appearance()
-	M.update_organ_requirements()
+	if(!(M.status_flags & BUILDING_ORGANS))
+		M.update_organ_requirements()
 	if(iscarbon(M))
 		var/mob/living/carbon/carbon_owner = M
 		var/checked_zone = check_zone(current_zone)
 		LAZYADD(carbon_owner.organs_by_zone[checked_zone], src)
-		if(visible_organ)
+		if(visible_organ && !(M.status_flags & BUILDING_ORGANS))
 			carbon_owner.update_body_parts(TRUE)
-		if(organ_flags & ORGAN_LIMB_SUPPORTER)
+		if((organ_flags & ORGAN_LIMB_SUPPORTER) && !(M.status_flags & BUILDING_ORGANS))
 			var/obj/item/bodypart/affected = carbon_owner.get_bodypart(current_zone)
 			affected?.update_limb_efficiency()
 	STOP_PROCESSING(SSobj, src)
@@ -363,16 +368,17 @@
 	update_appearance()
 
 	START_PROCESSING(SSobj, src)
-	M.update_organ_requirements()
+	if(!(M.status_flags & BUILDING_ORGANS))
+		M.update_organ_requirements()
 	if(iscarbon(M))
 		var/mob/living/carbon/carbon_owner = M
 		var/checked_initial_zone = check_zone(initial_zone)
 		LAZYREMOVE(carbon_owner.organs_by_zone[checked_initial_zone], src)
 		if((organ_flags & ORGAN_VITAL) && !special && !(carbon_owner.status_flags & GODMODE))
 			carbon_owner.death()
-		if(visible_organ)
+		if(visible_organ && !(M.status_flags & BUILDING_ORGANS))
 			carbon_owner.update_body_parts(TRUE)
-		if(organ_flags & ORGAN_LIMB_SUPPORTER)
+		if((organ_flags & ORGAN_LIMB_SUPPORTER) && !(M.status_flags & BUILDING_ORGANS))
 			var/obj/item/bodypart/affected = carbon_owner.get_bodypart(initial_zone)
 			affected?.update_limb_efficiency()
 
@@ -416,6 +422,7 @@
 			kill_organ()
 		else if(owner?.is_player_character())
 			germ_level = INFECTION_LEVEL_THREE - 1
+	consider_processing()
 
 /obj/item/organ/proc/kill_organ()
 	. = FALSE
@@ -437,29 +444,31 @@
 	return FALSE
 
 /// Runs decay both inside and outside a person
-/obj/item/organ/proc/on_death(delta_time, times_fired)
+/obj/item/organ/proc/on_death(delta_time, times_fired, passed_temp)
 	if(!owner && !isbodypart(loc))
 		if(isnull(loc))
 			STOP_PROCESSING(SSobj, src)
 		organ_flags |= ORGAN_CUT_AWAY
-	if(can_decay())
+	if(can_decay(passed_temp))
 		decay(delta_time)
 	else
 		STOP_PROCESSING(SSobj, src)
 
 /// Infection/rot checks
-/obj/item/organ/proc/can_decay()
+/obj/item/organ/proc/can_decay(passed_temp)
 	if(isreagentcontainer(loc))
 		return FALSE /// preserving ah.
-	check_cold()
+	check_cold(passed_temp)
 	if(CHECK_BITFIELD(organ_flags, ORGAN_FROZEN|ORGAN_DEAD|ORGAN_SYNTHETIC|ORGAN_INDESTRUCTIBLE))//I'll let arteries not rot to make life easier
 		return FALSE
 	return TRUE
 
 // Checks to see if the organ is frozen from temperature and adds the ORGAN_FROZEN flag if so
-/obj/item/organ/proc/check_cold()
+/obj/item/organ/proc/check_cold(passed_temp)
 	var/local_temp
-	if(!owner)
+	if(!isnull(passed_temp))
+		local_temp = passed_temp
+	else if(!owner)
 		//Only concern is adding an organ to a freezer when the area around it is cold.
 		if(isturf(loc))
 			var/turf/turf_loc = loc
@@ -484,12 +493,10 @@
 
 
 /// Malus caused by germs
-/obj/item/organ/proc/handle_germ_effects(delta_time, times_fired)
+/obj/item/organ/proc/handle_germ_effects(delta_time, times_fired, virus_immunity, antibiotics, immunity_weakness)
 	if(!iscarbon(owner))
 		return
 	var/mob/living/carbon/carbon_owner = owner
-	var/virus_immunity = carbon_owner.virus_immunity()
-	var/antibiotics = carbon_owner.get_antibiotics()
 	var/player_character = carbon_owner.is_player_character()
 	var/germ_gain_multiplier = player_character ? 0.25 : 1
 	var/recovery_multiplier = player_character ? 2 : 1
@@ -500,7 +507,7 @@
 
 	if(germ_level >= INFECTION_LEVEL_ONE/2)
 		//Aiming for germ level to go from ambient to INFECTION_LEVEL_TWO in an average of 15 minutes, when immunity is full.
-		if(antibiotics < 5 && DT_PROB(round(germ_level/6 * carbon_owner.immunity_weakness() * 0.005), delta_time))
+		if(antibiotics < 5 && DT_PROB(round(germ_level/6 * immunity_weakness * 0.005), delta_time))
 			if(virus_immunity > 0)
 				adjust_germ_level(clamp(round(1/virus_immunity), 1, 10) * (0.5 * delta_time) * germ_gain_multiplier) // Immunity starts at 100. This doubles infection rate at 50% immunity. Rounded to nearest whole.
 			else // Will only trigger if immunity has hit zero. Once it does, 10x infection rate.
@@ -514,7 +521,7 @@
 		var/obj/item/bodypart/bodypart = carbon_owner.get_bodypart(current_zone)
 		if(bodypart)
 			//Spread germs
-			if(antibiotics < 5 && bodypart.germ_level < germ_level && (bodypart.germ_level < INFECTION_LEVEL_ONE*2 || DT_PROB(carbon_owner.immunity_weakness() * 0.15, delta_time)))
+			if(antibiotics < 5 && bodypart.germ_level < germ_level && (bodypart.germ_level < INFECTION_LEVEL_ONE*2 || DT_PROB(immunity_weakness * 0.15, delta_time)))
 				bodypart.adjust_germ_level(1 * (0.5 * delta_time) * germ_gain_multiplier)
 		//Cause organ damage about once every ~30 seconds
 		//The bodypart deals with dealing raw toxin damage, let's not stack onto the problem now
@@ -530,12 +537,11 @@
 				bodypart.adjust_germ_level(1 * (0.5 * delta_time) * germ_gain_multiplier)
 
 /// Antibiotics combating germs and stuff
-/obj/item/organ/proc/handle_antibiotics(delta_time, times_fired)
+/obj/item/organ/proc/handle_antibiotics(delta_time, times_fired, antibiotics)
 	if(!owner || !iscarbon(owner) || (germ_level <= 0))
 		return
 
 	var/mob/living/carbon/carbon_owner = owner
-	var/antibiotics = carbon_owner.get_antibiotics()
 	if(antibiotics <= 0)
 		return
 
@@ -547,32 +553,39 @@
 		if(carbon_owner.body_position == LYING_DOWN)
 			adjust_germ_level(-SANITIZATION_LYING * (0.5 * delta_time) * recovery_multiplier)
 
-/obj/item/organ/proc/on_life(delta_time, times_fired)	//repair organ damage if the organ is not failing
+/obj/item/organ/proc/consider_processing(in_bleedout = FALSE)
+	needs_processing = in_bleedout || damage >= DAMAGE_PRECISION || germ_level > 0 || current_blood < max_blood_storage || failure_time > 0 || is_failing()
+	return needs_processing
+
+/obj/item/organ/proc/on_life(delta_time, times_fired, in_bleedout, virus_immunity, antibiotics, immunity_weakness, passed_temp)	//repair organ damage if the organ is not failing
 	SHOULD_CALL_PARENT(TRUE)
 	if(!owner)
 		return
+	var/old_damage = damage
 
 	/// Handle germs before anything else!
-	if(can_decay())
-		handle_germ_effects(delta_time, times_fired)
-		handle_antibiotics(delta_time, times_fired)
+	if(can_decay(passed_temp))
+		handle_germ_effects(delta_time, times_fired, virus_immunity, antibiotics, immunity_weakness)
+		handle_antibiotics(delta_time, times_fired, antibiotics)
 	else
 		germ_level = 0
 
 	/// Handle blood
-	handle_blood(delta_time, times_fired)
+	handle_blood(delta_time, times_fired, in_bleedout)
 
 	if(is_failing())
 		handle_failing_organ(delta_time, times_fired)
-		return
+	else
+		// Decrease failure time while healthy
+		if(failure_time > 0)
+			failure_time = max(0, failure_time - delta_time)
 
-	// Decrease failure time while healthy
-	if(failure_time > 0)
-		failure_time = max(0, failure_time - delta_time)
-
-	// Damage decrements by a percent of maxhealth
-	if(can_heal(delta_time, times_fired) && damage)
-		handle_healing(delta_time, times_fired)
+		// Damage decrements by a percent of maxhealth
+		if(can_heal(delta_time, times_fired, in_bleedout) && damage)
+			handle_healing(delta_time, times_fired)
+	consider_processing(in_bleedout)
+	if(old_damage != damage)
+		. |= ORGAN_PROCESS_UPDATE_HEALTH
 
 ///Organs don't die instantly, and neither should you when you get fucked up
 /obj/item/organ/proc/handle_failing_organ(delta_time, times_fired)
@@ -584,7 +597,7 @@
 
 
 /// healing checks
-/obj/item/organ/proc/can_heal(delta_time, times_fired)
+/obj/item/organ/proc/can_heal(delta_time, times_fired, in_bleedout)
 	. = TRUE
 	if(!owner)
 		return FALSE
@@ -596,10 +609,8 @@
 		return FALSE
 	if(current_blood <= 0)
 		return FALSE
-	if(iscarbon(owner))
-		var/mob/living/carbon/carbon_owner = owner
-		if(carbon_owner.undergoing_cardiac_arrest())
-			return FALSE
+	if(in_bleedout)
+		return FALSE
 	if(owner.get_chem_effect(CE_TOXIN))
 		return FALSE
 
@@ -724,6 +735,7 @@
 	prev_damage = damage
 	if(mess && owner)
 		to_chat(owner, mess)
+	consider_processing()
 
 ///SETS an organ's damage to the amount "d", and in doing so clears or sets the failing flag, good for when you have an effect that should fix an organ if broken
 /obj/item/organ/proc/setOrganDamage(d)	//use mostly for admin heals

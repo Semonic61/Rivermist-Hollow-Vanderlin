@@ -5,13 +5,14 @@
 	var/static/sound/fastbeat = sound('sound/heart/fastbeat.ogg', volume = 10, channel = CHANNEL_HEARTBEAT, repeat = TRUE)
 
 /datum/organ_process/heart/handle_process(mob/living/carbon/owner, delta_time, times_fired)
+	var/return_flags = NONE
 	if(owner.needs_heart())
-		handle_pulse(owner, delta_time, times_fired)
 		handle_heart_failure(owner, delta_time, times_fired)
+		handle_pulse(owner, delta_time, times_fired)
 		if(owner.pulse)
 			handle_heartbeat(owner, delta_time, times_fired)
-	handle_blood(owner, delta_time, times_fired)
-	return TRUE
+	return_flags |= handle_blood(owner, delta_time, times_fired)
+	return return_flags
 
 /// Handles the failure messaging and cardiac arrest flagging for a failing heart.
 /// Separated from handle_pulse so the logic is readable and the failed flag is managed cleanly.
@@ -177,10 +178,12 @@
 		else
 			temp_bleed += resulting_bleed
 	if(temp_bleed)
-		if(owner.bleed(temp_bleed) && (temp_bleed >= 1.5))
-			var/bleed_sound = "sound/gore/blood[rand(1, 6)].ogg"
-			if((temp_bleed > 1) && (owner.body_position == STANDING_UP))
-				playsound(owner, bleed_sound, 60, FALSE)
+		if(owner.bleed(temp_bleed, FALSE))
+			. |= ORGAN_PROCESS_UPDATE_HEALTH
+			if(temp_bleed >= 1.5)
+				var/bleed_sound = "sound/gore/blood[rand(1, 6)].ogg"
+				if(owner.body_position == STANDING_UP)
+					playsound(owner, bleed_sound, 60, FALSE)
 
 	if(!HAS_TRAIT(owner, TRAIT_BLOODLOSS_IMMUNE) && owner.stat != DEAD)
 		switch(owner.blood_volume)
@@ -201,8 +204,7 @@
 		owner.remove_status_effect(/datum/status_effect/debuff/bleedingworse)
 		owner.remove_status_effect(/datum/status_effect/debuff/bleedingworst)
 
-	var/bleed_rate = owner.get_bleed_rate()
-	if(bleed_rate)
+	if(temp_bleed)
 		owner.add_stress(/datum/stress_event/bleeding)
 	else
 		owner.remove_stress(/datum/stress_event/bleeding)

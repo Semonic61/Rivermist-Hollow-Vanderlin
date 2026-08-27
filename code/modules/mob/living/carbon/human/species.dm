@@ -948,7 +948,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 		C.setToxLoss(0, TRUE, TRUE)
 
 	if(TRAIT_NOMETABOLISM in inherent_traits)
-		C.reagents.end_metabolization(src, keep_liverless = TRUE)
+		C.reagents?.end_metabolization(src, keep_liverless = TRUE)
 
 	if(inherent_factions)
 		for(var/i in inherent_factions)
@@ -975,6 +975,10 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 
 	on_gender_update(C)
 	C.update_organ_requirements() //post species trait gains
+
+	if(!(C.status_flags & BUILDING_ORGANS))
+		C.regenerate_icons()
+
 	SEND_SIGNAL(C, COMSIG_SPECIES_GAIN, src, old_species)
 
 /datum/species/proc/get_inherent_attribute_sheet()
@@ -2315,11 +2319,11 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 		// Apply damage
 		if(burn_damage > 0)
 			var/final_damage = CLAMP(burn_damage * H.physiology.heat_mod, 0, CONFIG_GET(number/per_tick/max_fire_damage))
-			H.apply_damage(final_damage, BURN, spread_damage = TRUE, flashes = FALSE)
+			INVOKE_ASYNC(H, PROC_REF(apply_damage), final_damage, BURN, spread_damage = TRUE, flashes = FALSE)
 			if(!H.has_smoke_protection())
-				H.apply_damage(final_damage/4, OXY, flashes = FALSE) // Smoke inhalation
+				INVOKE_ASYNC(H, PROC_REF(apply_damage), final_damage / 4, OXY, flashes = FALSE) // Smoke inhalation
 			if(H.stat < UNCONSCIOUS && prob(burn_damage * 10 / 4))
-				H.emote("pain")
+				INVOKE_ASYNC(H, TYPE_PROC_REF(/mob, emote), "pain")
 		// Apply building heat debuffs
 		apply_heat_debuffs(H, debuff_level)
 	// Cold damage and effects
@@ -2333,7 +2337,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 		debuff_level = calculate_cold_debuff_level(cold_deficit)
 		// Apply damage
 		if(cold_damage > 0)
-			H.apply_damage(cold_damage * H.physiology.cold_mod, BURN, flashes = FALSE)
+			INVOKE_ASYNC(H, PROC_REF(apply_damage), cold_damage * H.physiology.cold_mod, BURN, flashes = FALSE)
 		// Apply building cold debuffs
 		apply_cold_debuffs(H, debuff_level, cold_deficit)
 	// Clear effects when in safe range

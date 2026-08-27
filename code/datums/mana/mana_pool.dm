@@ -73,6 +73,9 @@
 
 	var/next_message = 0
 
+	/// Whether this pool is currently registered with SSmagic.
+	VAR_PRIVATE/is_processing = FALSE
+
 /datum/mana_pool/New(atom/parent = null)
 	. = ..()
 	donation_budget_this_tick = max_donation_rate_per_second
@@ -80,7 +83,7 @@
 
 	update_intrinsic_recharge()
 
-	START_PROCESSING(SSmagic, src)
+	update_processing_state()
 
 /datum/mana_pool/Destroy(force, ...)
 	attunements = null
@@ -107,6 +110,26 @@
 	parent = null
 
 	return ..()
+
+/datum/mana_pool/proc/needs_processing()
+	if(ethereal_recharge_rate != 0 && amount < get_softcap())
+		return TRUE
+	if(intrinsic_recharge_sources && amount < get_softcap())
+		return TRUE
+	if(length(transferring_to))
+		return TRUE
+	if(amount > get_softcap())
+		return TRUE
+	return FALSE
+
+/datum/mana_pool/proc/update_processing_state()
+	var/should_process = needs_processing()
+	if(should_process && !is_processing)
+		is_processing = TRUE
+		START_PROCESSING(SSmagic, src)
+	else if(!should_process && is_processing)
+		is_processing = FALSE
+		STOP_PROCESSING(SSmagic, src)
 
 /datum/mana_pool/proc/set_parent(atom/parent)
 	src.parent = parent
@@ -309,7 +332,8 @@
 
 /// Perform a "natural" transfer where we use the default transfer rate, capped by the usual math
 /datum/mana_pool/proc/transfer_mana_to(datum/mana_pool/target_pool)
-	return transfer_specific_mana(target_pool, get_transfer_rate_for(target_pool))
+	. = transfer_specific_mana(target_pool, get_transfer_rate_for(target_pool))
+	update_processing_state()
 
 /// Returns the amount of mana we want to give in a given tick
 /datum/mana_pool/proc/get_transfer_rate_for(datum/mana_pool/target_pool)
@@ -364,6 +388,7 @@
 
 	UnregisterSignal(target_pool, COMSIG_PARENT_QDELETING)
 
+	update_processing_state()
 	return MANA_POOL_TRANSFER_STOP
 
 /datum/mana_pool/proc/incoming_transfer_start(datum/mana_pool/donator)
@@ -396,10 +421,10 @@
 		var/datum/hud/human/hud_used = holder.hud_used
 		if(hud_used?.mana)
 			var/filled = round((src.amount / get_softcap()) * 100, 10)
-			if(filled < 10)
-				return
-			filled = clamp(filled, 0, 120)
-			hud_used.mana.icon_state = "mana[filled]"
+			if(filled >= 10)
+				filled = clamp(filled, 0, 120)
+				hud_used.mana.icon_state = "mana[filled]"
+	update_processing_state()
 
 ///this takes a string and adds it to our halters creates the list if it doesn't exist
 /datum/mana_pool/proc/halt_mana_disperse(string)
@@ -434,6 +459,7 @@
 	var/old_flags = intrinsic_recharge_sources
 	intrinsic_recharge_sources |= new_bitflags
 	update_intrinsic_recharge(old_flags)
+	update_processing_state()
 
 /datum/mana_pool/proc/update_intrinsic_recharge(previous_recharge_sources = NONE)
 	if (intrinsic_recharge_sources & MANA_ALL_LEYLINES)
@@ -458,6 +484,7 @@
 	ethereal_recharge_rate = new_value
 	if ((ethereal_recharge_rate > 0) && isnull(attunements_to_generate))
 		attunements_to_generate = get_default_attunements_to_generate()
+	update_processing_state()
 
 /datum/mana_pool/proc/get_default_attunements_to_generate()
 	RETURN_TYPE(/list/datum/attunement)

@@ -410,3 +410,10 @@ DEFINE_BITFIELD(organ_flags, list(
 
 /// How often can we annoy the player about their bleeding? This duration is extended if it's not serious bleeding
 #define BLEEDING_MESSAGE_BASE_CD 15 SECONDS
+
+/// `/obj/item/bodypart/on_life()` requests one deferred health update.
+#define BODYPART_LIFE_UPDATE_HEALTH (1<<0)
+/// `/datum/organ_process/handle_process()` requests one deferred health update.
+#define ORGAN_PROCESS_UPDATE_HEALTH (1<<1)
+/// `/mob/living/carbon/handle_shock()` requests one deferred health update.
+#define SHOCK_PROCESS_UPDATE_HEALTH (1<<0)

@@ -128,7 +128,7 @@
 
 /mob/living/carbon/proc/handle_shock_stage(delta_time, times_fired)
 	if(!can_feel_pain())
-		setShockStage(0)
+		. |= setShockStage(0, deferred = TRUE)
 		remove_movespeed_modifier(MOVESPEED_ID_SHOCK, FALSE)
 		remove_movespeed_modifier(MOVESPEED_ID_CARDIAC_ARREST, TRUE)
 		hud_used?.update_chromatic_aberration(intensity = 0)
@@ -141,22 +141,22 @@
 
 	//Cardiac arrest automatically throws us into sofcrit territory
 	if(undergoing_cardiac_arrest())
-		setShockStage(max(shock_stage, SHOCK_STAGE_4))
+		. |= setShockStage(max(shock_stage, SHOCK_STAGE_4), deferred = TRUE)
 		add_movespeed_modifier(MOVESPEED_ID_CARDIAC_ARREST, TRUE, multiplicative_slowdown = 5)
 	else
 		remove_movespeed_modifier(MOVESPEED_ID_CARDIAC_ARREST, TRUE)
 
 	if(traumatic_shock >= max(SHOCK_STAGE_2, 0.8 * shock_stage))
-		adjustShockStage(0.5 * delta_time * endurance_scalar)
+		. |= adjustShockStage(0.5 * delta_time * endurance_scalar, deferred = TRUE)
 	else if(!undergoing_cardiac_arrest())
-		setShockStage(min(shock_stage, SHOCK_STAGE_7))
+		. |= setShockStage(min(shock_stage, SHOCK_STAGE_7), deferred = TRUE)
 		var/recovery = 0.5 * delta_time
 		//Lower shock faster the less pain we feel
 		if(traumatic_shock < 0.5 * shock_stage)
 			recovery += 0.5 * delta_time
 		if(traumatic_shock < 0.25 * shock_stage)
 			recovery += 0.5 * delta_time
-		adjustShockStage(-recovery / endurance_scalar)
+		. |= adjustShockStage(-recovery / endurance_scalar, deferred = TRUE)
 
 	//Shock makes us slow
 	if(shock_stage >= (SHOCK_STAGE_2 / endurance_scalar))
@@ -175,7 +175,7 @@
 		custom_pain("[pick("It hurts so much", "I really need some opium", "Ooh, the pain")]!", 10, nopainloss = TRUE)
 
 	if((shock_stage >= SHOCK_STAGE_2) && (previous_shock_stage < SHOCK_STAGE_2))
-		emote("is having trouble keeping [p_their()] eyes open.")
+		INVOKE_ASYNC(src, PROC_REF(emote), "is having trouble keeping [p_their()] eyes open.")
 		//Attempt to inject combat cocktail for the first time
 		endorphinate()
 
@@ -188,7 +188,7 @@
 		custom_pain("[pick("The pain is excruciating", "Please, just end the pain", "My whole body is going numb")]!", 40, nopainloss = TRUE)
 
 	if((shock_stage >= SHOCK_STAGE_4) && (previous_shock_stage < SHOCK_STAGE_4))
-		emote("becomes limp.")
+		INVOKE_ASYNC(src, PROC_REF(emote), "becomes limp.")
 		if(!HAS_TRAIT(src, TRAIT_NOPAINSTUN))
 			Immobilize(rand(2, 3) SECONDS)
 		//Attempt to inject combat cocktail a second time
@@ -200,7 +200,7 @@
 			if(!HAS_TRAIT(src, TRAIT_NOPAINSTUN))
 				Knockdown(2 SECONDS)
 		if(DT_PROB(2, delta_time))
-			emote("gasp")
+			INVOKE_ASYNC(src, PROC_REF(emote), "gasp")
 
 	if((shock_stage >= SHOCK_STAGE_5) && (previous_shock_stage >= SHOCK_STAGE_5))
 		if(DT_PROB(2.5, delta_time))
@@ -217,8 +217,8 @@
 
 	if((shock_stage >= SHOCK_STAGE_7) && (previous_shock_stage < SHOCK_STAGE_7))
 		if(body_position != LYING_DOWN)
-			emote("can no longer stand, collapsing!")
-		emote("gargle")
+			INVOKE_ASYNC(src, PROC_REF(emote), "can no longer stand, collapsing!")
+		INVOKE_ASYNC(src, PROC_REF(emote), "gargle")
 		if(!HAS_TRAIT(src, TRAIT_NOPAINSTUN))
 			Paralyze(5 SECONDS)
 		//Attempt to inject combat cocktail, even though at this point it won't help much
@@ -230,13 +230,13 @@
 		if(DT_PROB(1, delta_time))
 			Unconscious(5)
 		if(DT_PROB(4, delta_time))
-			emote("gargle")
+			INVOKE_ASYNC(src, PROC_REF(emote), "gargle")
 
 	if((shock_stage >= SHOCK_STAGE_8) && (previous_shock_stage < SHOCK_STAGE_8))
 		//Attempt to inject combat cocktail - ONE FINAL TIME
 		endorphinate()
 		//Death is near...
-		emote("scream")
+		INVOKE_ASYNC(src, PROC_REF(emote), "scream")
 		if(!HAS_TRAIT(src, TRAIT_NOPAINSTUN))
 			Unconscious(10 SECONDS)
 

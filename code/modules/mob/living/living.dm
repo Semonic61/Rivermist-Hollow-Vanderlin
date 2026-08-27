@@ -34,6 +34,9 @@
 		LoadComponent(/datum/component/field_of_vision, FOV_90_DEGREES, get_fov_angle(FOV_90_DEGREES))
 		update_fov_angles()
 	recalculate_stats()
+	var/turf/current_turf = get_turf(src)
+	if(current_turf)
+		update_z(current_turf.z)
 	//for organ spawning
 	if(ai_controller)
 		var/datum/ai_planning_subtree/horny/hornybehavior = locate() in ai_controller.planning_subtrees
@@ -49,6 +52,7 @@
 		SSmatthios_mobs.unregister_mob(src)
 	if(cached_island_id)
 		SSisland_mobs.remove_mob(src)
+	update_z(null)
 
 	surgeries = null
 	if(LAZYLEN(status_effects))
@@ -2278,8 +2282,10 @@
 /mob/living/proc/update_z(new_z) // 1+ to register, null to unregister
 	if (registered_z != new_z)
 		if (registered_z)
-			SSmobs.clients_by_zlevel[registered_z] -= src
+			SSmobs.mobs_by_zlevel[registered_z] -= src
 		if (client)
+			if (registered_z)
+				SSmobs.clients_by_zlevel[registered_z] -= src
 			//Check the amount of clients exists on the Z level we're leaving from,
 			//this excludes us because at this point we are not registered to any z level.
 			var/old_level_new_clients = (registered_z ? SSmobs.clients_by_zlevel[registered_z].len : null)
@@ -2301,7 +2307,9 @@
 
 			registered_z = new_z
 		else
-			registered_z = null
+			registered_z = new_z
+		if (registered_z)
+			SSmobs.mobs_by_zlevel[registered_z] |= src
 
 /mob/living/onTransitZ(old_z,new_z)
 	..()
