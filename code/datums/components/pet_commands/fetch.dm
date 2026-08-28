@@ -76,7 +76,7 @@
 	if (!can_see(parent, thrown_thing, length = sense_radius))
 		return
 
-	var/mob/thrower = throwingdatum?.thrower
+	var/mob/thrower = throwingdatum?.get_thrower()
 	if(thrower)
 		try_activate_command(thrower)
 		set_command_target(parent, thrown_thing)

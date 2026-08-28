@@ -68,7 +68,7 @@
 
 // ------------------------------------------------------------
 
-/datum/outfit/adventurer_fighter/sellsword_hireling/post_equip(mob/living/carbon/human/H)
+/datum/job/advclass/combat/adventurer_fighter/sellsword_hireling/after_spawn(mob/living/carbon/human/H, client/player_client)
 	. = ..()
 
 	var/list/selectableweapon = list(
@@ -79,9 +79,9 @@
 		"Spear" = /obj/item/weapon/polearm/spear,
 	)
 
-	var/weaponchoice = H.select_equippable(H, selectableweapon, message = "Choose Your Martial Training", title = "Sellsword")
+	var/weaponchoice = H.select_equippable(player_client, selectableweapon, message = "Choose Your Martial Training", title = "Sellsword")
 
-	if(!weaponchoice)
+	if(QDELETED(H) || !weaponchoice)
 		return
 
 	var/grant_shield = TRUE

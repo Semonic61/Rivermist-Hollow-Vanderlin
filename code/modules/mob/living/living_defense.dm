@@ -258,9 +258,9 @@
 		var/zone = ran_zone(BODY_ZONE_CHEST, 65)//Hits a random part of the body, geared towards the chest
 		SEND_SIGNAL(I, COMSIG_MOVABLE_IMPACT_ZONE, src, zone)
 		if(!blocked)
-			var/mob/living/thrower
-			if(isliving(throwingdatum?.thrower))
-				thrower = throwingdatum.thrower
+			var/mob/living/thrower = throwingdatum?.get_thrower()
+			if(!istype(thrower))
+				thrower = null
 			var/armor = run_armor_check(zone, damage_type, "", "", I.armor_penetration, damage = I.throwforce, used_weapon = I, attacker = thrower)
 			next_attack_msg.Cut()
 			var/nodmg = FALSE
@@ -281,10 +281,7 @@
 				if(iscarbon(src))
 					var/obj/item/bodypart/affecting = get_bodypart(zone)
 					if(affecting)
-						var/throwee = null
-						if(throwingdatum)
-							throwee = isliving(throwingdatum.thrower) ? throwingdatum.thrower : null
-						affecting.bodypart_attacked_by(I.thrown_bclass, real_damage, throwee, affecting.body_zone, crit_message = TRUE, incoming_germ = I.germ_level, pre_applied = TRUE)
+						affecting.bodypart_attacked_by(I.thrown_bclass, real_damage, thrower, affecting.body_zone, crit_message = TRUE, incoming_germ = I.germ_level, pre_applied = TRUE)
 					I.do_special_attack_effect(I.thrownby, affecting, null, src, zone, thrown = TRUE)
 				else
 					simple_woundcritroll(I.thrown_bclass, I.throwforce, null, zone, crit_message = TRUE)

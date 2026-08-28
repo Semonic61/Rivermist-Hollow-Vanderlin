@@ -305,12 +305,7 @@ Turf and target are separate in case you want to teleport some distance from a t
 	return assembled
 
 /proc/is_blocked_turf(turf/T, exclude_mobs)
-	if(T.density)
-		return 1
-	for(var/atom/A as anything in T)
-		if(A.density && (!exclude_mobs || !ismob(A)))
-			return 1
-	return 0
+	return !T || T.is_blocked_turf(exclude_mobs)
 
 /proc/is_anchored_dense_turf(turf/T) //like the older version of the above, fails only if also anchored
 	if(T.density)

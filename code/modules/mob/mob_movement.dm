@@ -157,14 +157,18 @@
 
 	. = ..()
 
+	var/movement_distance = 1
 	if((direct & (direct - 1)) && mob.loc == new_loc) //moved diagonally successfully
-		add_delay *= sqrt(2)
+		movement_distance = sqrt(2)
+		add_delay *= movement_distance
 
 	var/after_glide = 0
 	if(visual_delay)
 		after_glide = visual_delay
 	else
-		after_glide = DELAY_TO_GLIDE_SIZE(add_delay)
+		// Match the next available movement tick without rounding away fractional movement speed.
+		var/glide_delay = max(world.tick_lag, CEILING(move_delay + add_delay - world.time, world.tick_lag))
+		after_glide = MOVEMENT_ADJUSTED_GLIDE_SIZE(glide_delay, movement_distance)
 
 	mob.set_glide_size(after_glide)
 

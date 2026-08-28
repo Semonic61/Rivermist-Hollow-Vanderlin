@@ -567,8 +567,8 @@
 #define FLIP_DIRECTION_CLOCKWISE 1
 #define FLIP_DIRECTION_ANTICLOCKWISE 0
 
-/mob/living/proc/jump_action_resolve(atom/A, jadded, jrange, jextra)
-	var/do_a_flip
+/mob/living/proc/jump_action_resolve(atom/target, stamina_cost, range, extra_tile)
+	var/do_a_flip = FALSE
 	var/flip_direction = FLIP_DIRECTION_CLOCKWISE
 	var/prev_pixel_z = pixel_z
 	var/prev_transform = transform
@@ -577,37 +577,40 @@
 		if((dir & SOUTH) || (dir & WEST))
 			flip_direction = FLIP_DIRECTION_ANTICLOCKWISE
 
-	if(adjust_stamina(min(jadded,100)))
+	if(adjust_stamina(min(stamina_cost, 100)))
 		if(do_a_flip)
 			var/flip_angle = flip_direction ? 120 : -120
-			animate(src, pixel_z = pixel_z + 6, transform = turn(transform, flip_angle), time = 1)
+			animate(src, pixel_z = pixel_z + 6, transform = turn(transform, flip_angle), time = 1, flags = ANIMATION_PARALLEL)
 			animate(transform = turn(transform, flip_angle), time=1)
 			animate(pixel_z = prev_pixel_z, transform = turn(transform, flip_angle), time=1)
 			animate(transform = prev_transform, time = 0)
 		else
-			animate(src, pixel_z = pixel_z + 6, time = 1)
+			animate(src, pixel_z = pixel_z + 6, time = 1, flags = ANIMATION_PARALLEL)
 			animate(pixel_z = prev_pixel_z, transform = turn(transform, pick(-12, 0, 12)), time=2)
 			animate(transform = prev_transform, time = 0)
 
-		if(jextra)
-			throw_at(A, jrange, 1, src, spin = FALSE)
-			while(src.throwing)
-				sleep(1)
-			throw_at(get_step(src, src.dir), 1, 1, src, spin = FALSE)
-		else
-			throw_at(A, jrange, 1, src, spin = FALSE)
-			while(src.throwing)
-				sleep(1)
-		if(isopenturf(src.loc))
-			var/turf/open/T = src.loc
-			if(T.landsound)
-				playsound(T, T.landsound, 100, FALSE)
-			T.Entered(src)
+		throw_at(target, range, 1, spin = FALSE, callback = CALLBACK(src, PROC_REF(jump_ended), extra_tile))
 	else
-		animate(src, pixel_z = pixel_z + 6, time = 1)
+		animate(src, pixel_z = pixel_z + 6, time = 1, flags = ANIMATION_PARALLEL)
 		animate(pixel_z = prev_pixel_z, transform = turn(transform, pick(-12, 0, 12)), time=2)
 		animate(transform = prev_transform, time = 0)
-		throw_at(A, 1, 1, src, spin = FALSE)
+		throw_at(target, 1, 1, spin = FALSE)
+
+/mob/living/proc/jump_ended(extra_tile)
+	if(QDELETED(src) || isopenspace(loc))
+		return
+	if(isopenturf(loc))
+		var/turf/open/landing_turf = loc
+		if(landing_turf.landsound)
+			playsound(landing_turf, landing_turf.landsound, 100, FALSE)
+	if(extra_tile && isturf(loc))
+		addtimer(CALLBACK(src, PROC_REF(jump_extra_step), loc), 0.1 SECONDS)
+
+/// Let the first throw finish cleanup before beginning the running jump's final step.
+/mob/living/proc/jump_extra_step(turf/landing_turf)
+	if(QDELETED(src) || throwing || loc != landing_turf)
+		return
+	throw_at(get_step(src, dir), 1, 1, spin = FALSE)
 
 #undef FLIP_DIRECTION_CLOCKWISE
 #undef FLIP_DIRECTION_ANTICLOCKWISE

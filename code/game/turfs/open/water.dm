@@ -738,6 +738,10 @@
 
 	if(!swimming_mob.zMove(direction, z_move_flags = z_move_flags))
 		return FALSE
+	if(QDELETED(swimming_mob))
+		return TRUE
+	var/datum/status_effect/swimming/swimming_status = swimming_mob.has_status_effect(/datum/status_effect/swimming)
+	swimming_status?.spend_swimming_stamina()
 	if(swimming_mob.stat == DEAD)
 		return TRUE
 	if(direction == UP)

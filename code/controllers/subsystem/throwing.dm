@@ -57,8 +57,8 @@ SUBSYSTEM_DEF(throwing)
 	var/maxrange
 	///The speed of the projectile thrownthing being thrown.
 	var/speed
-	///If a mob is the one who has thrown the object, then it's moved here. This can be null and must be null checked before trying to use it.
-	var/mob/thrower
+	/// The thrower may disappear before impact; resolve this through get_thrower().
+	var/datum/weakref/thrower_ref
 	///A variable that helps in describing objects thrown at an angle, if it should be moved diagonally first or last.
 	var/diagonals_first
 	///Set to TRUE if the throw is exclusively diagonal (45 Degree angle throws for example)
@@ -89,6 +89,8 @@ SUBSYSTEM_DEF(throwing)
 	var/delayed_time = 0
 	///The last world.time value stored when the thrownthing was moving.
 	var/last_move = 0
+	/// Prevent impacts or callbacks from finalizing the same throw twice.
+	var/finalized = FALSE
 
 /datum/thrownthing/New(thrownthing, target, init_dir, maxrange, speed, thrower, diagonals_first, force, gentle, callback, target_zone)
 	. = ..()
@@ -101,7 +103,7 @@ SUBSYSTEM_DEF(throwing)
 	src.init_dir = init_dir
 	src.maxrange = maxrange
 	src.speed = speed
-	src.thrower = thrower
+	thrower_ref = WEAKREF(thrower)
 	src.diagonals_first = diagonals_first
 	src.force = force
 	src.gentle = gentle
@@ -109,12 +111,20 @@ SUBSYSTEM_DEF(throwing)
 	src.target_zone = target_zone
 
 /datum/thrownthing/Destroy()
-	SSthrowing.processing -= thrownthing
-	SSthrowing.currentrun -= thrownthing
-	thrownthing.throwing = null
+	if(thrownthing)
+		// A landing callback may already have started a new throw on this atom.
+		if(SSthrowing.processing[thrownthing] == src)
+			SSthrowing.processing -= thrownthing
+		if(SSthrowing.currentrun?[thrownthing] == src)
+			SSthrowing.currentrun -= thrownthing
+		if(thrownthing.throwing == src)
+			thrownthing.throwing = null
+		UnregisterSignal(thrownthing, COMSIG_PARENT_QDELETING)
 	thrownthing = null
-	thrower = null
+	thrower_ref = null
 	initial_target = null
+	target_turf = null
+	starting_turf = null
 	callback = null
 	return ..()
 
@@ -124,9 +134,21 @@ SUBSYSTEM_DEF(throwing)
 
 	qdel(src)
 
+/// Returns the thrower, or null if it has been deleted.
+/datum/thrownthing/proc/get_thrower()
+	return thrower_ref?.resolve()
+
 /datum/thrownthing/proc/tick()
+	if(QDELETED(src) || finalized)
+		return
 	var/atom/movable/AM = thrownthing
-	if (!isturf(AM.loc) || !AM.throwing)
+	if(QDELETED(AM))
+		qdel(src)
+		return
+	if(AM.throwing && AM.throwing != src)
+		qdel(src)
+		return
+	if(!isturf(AM.loc) || !AM.throwing)
 		finalize()
 		return
 
@@ -135,6 +157,7 @@ SUBSYSTEM_DEF(throwing)
 		return
 
 	var/atom/movable/actual_target = initial_target?.resolve()
+	var/atom/thrower = get_thrower()
 
 	if(dist_travelled) //to catch sneaky things moving on our tile while we slept
 		for(var/atom/movable/obstacle as anything in get_turf(thrownthing))
@@ -145,7 +168,7 @@ SUBSYSTEM_DEF(throwing)
 			if(obstacle.pass_flags_self & LETPASSTHROW)
 				if(!(ismob(thrownthing) || ismobholder(thrownthing)) || !(obstacle.pass_flags_self & NOTLETPASSTHROWNMOB))
 					continue
-			if (obstacle == actual_target || (obstacle.density && !(obstacle.flags_1 & ON_BORDER_1) && !(obstacle in AM.buckled_mobs)))
+			if (obstacle == actual_target || (obstacle.density && !(obstacle.flags_1 & ON_BORDER_1) && !(obstacle in AM.buckled_mobs) && !(AM in obstacle.buckled_mobs)))
 				finalize(TRUE, obstacle)
 				return
 
@@ -175,8 +198,13 @@ SUBSYSTEM_DEF(throwing)
 			return
 
 		if(!AM.Move(step, get_dir(AM, step), DELAY_TO_GLIDE_SIZE(1 / speed))) // we hit something during our move...
-			if(AM.throwing) // ...but finalize() wasn't called on Bump() because of a higher level definition that doesn't always call parent.
+			if(!QDELETED(src) && AM.throwing == src) // ...but finalize() wasn't called on Bump() because of a higher level definition that doesn't always call parent.
 				finalize()
+			return
+		if(QDELETED(src) || finalized || QDELETED(AM))
+			return
+		if(AM.throwing && AM.throwing != src)
+			qdel(src)
 			return
 
 		dist_travelled++
@@ -192,9 +220,11 @@ SUBSYSTEM_DEF(throwing)
 /datum/thrownthing/proc/finalize(hit = FALSE, target=null)
 	set waitfor = FALSE
 	//done throwing, either because it hit something or it finished moving
-	if(!thrownthing)
+	if(QDELETED(src) || finalized || QDELETED(thrownthing))
 		return
-	thrownthing.throwing = null
+	finalized = TRUE
+	if(thrownthing.throwing == src)
+		thrownthing.throwing = null
 	if (!hit)
 		for (var/atom/movable/obstacle as anything in get_turf(thrownthing)) //looking for our target on the turf we land on.
 			if (obstacle == target)
@@ -215,8 +245,10 @@ SUBSYSTEM_DEF(throwing)
 
 	if (callback)
 		callback.Invoke()
+		if(QDELETED(src) || QDELETED(thrownthing))
+			return
 
-	if(!(thrownthing.atom_flags & Z_FALLING)) // I don't think you can zfall while thrown but hey, just in case.
+	if(!thrownthing.currently_z_moving && !thrownthing.throwing)
 		var/turf/T = get_turf(thrownthing)
 		if(T)
 			T.zFall(thrownthing)

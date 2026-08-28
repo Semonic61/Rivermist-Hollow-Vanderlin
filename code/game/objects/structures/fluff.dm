@@ -215,8 +215,8 @@
 	if(. && density && mover.throwing && isitem(mover))
 		var/obj/item/I = mover
 		var/chance = 100 - (I.w_class-1) * 30
-		if(isliving(I.throwing.thrower))
-			var/mob/living/L = I.throwing.thrower
+		var/mob/living/L = I.throwing.get_thrower()
+		if(istype(L))
 			chance += (GET_MOB_ATTRIBUTE_VALUE(L, STAT_FORTUNE) - 10) * 10
 		return prob(clamp(chance, 0, 100))
 

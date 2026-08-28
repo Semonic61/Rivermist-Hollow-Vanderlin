@@ -2280,36 +2280,34 @@
 			reset_perspective()
 
 /mob/living/proc/update_z(new_z) // 1+ to register, null to unregister
-	if (registered_z != new_z)
-		if (registered_z)
-			SSmobs.mobs_by_zlevel[registered_z] -= src
-		if (client)
-			if (registered_z)
-				SSmobs.clients_by_zlevel[registered_z] -= src
-			//Check the amount of clients exists on the Z level we're leaving from,
-			//this excludes us because at this point we are not registered to any z level.
-			var/old_level_new_clients = (registered_z ? SSmobs.clients_by_zlevel[registered_z].len : null)
-			if(registered_z && old_level_new_clients == 0)
-				if(SSmapping.level_has_any_trait(registered_z, list(ZTRAIT_IGNORE_WEATHER_TRAIT)) && !SSmapping.level_has_any_trait(new_z, list(ZTRAIT_IGNORE_WEATHER_TRAIT)))
-					for(var/datum/ai_controller/controller as anything in GLOB.ai_controllers_by_zlevel[registered_z])
-						controller.set_ai_status(AI_STATUS_OFF)
+	if(registered_z == new_z)
+		return
 
-			if (new_z)
-				//Check the amount of clients exists on the Z level we're moving towards, excluding ourselves.
-				var/new_level_old_clients = SSmobs.clients_by_zlevel[new_z].len
-				SSmobs.clients_by_zlevel[new_z] += src
+	if(registered_z)
+		var/list/old_clients = SSmobs.clients_by_zlevel[registered_z]
+		var/had_client_registration = (src in old_clients)
+		// Logout can already have cleared client; registration still needs to be removed.
+		old_clients -= src
+		SSmobs.mobs_by_zlevel[registered_z] -= src
+		if(had_client_registration && !length(old_clients))
+			for(var/datum/ai_controller/controller as anything in GLOB.ai_controllers_by_zlevel[registered_z])
+				// Preserve the local town/idle policy instead of forcing every NPC off.
+				controller.reset_ai_status()
 
-				if(new_level_old_clients == 0) //No one was here before, wake up all the AIs.
-					for (var/datum/ai_controller/controller as anything in GLOB.ai_controllers_by_zlevel[new_z])
-						//We don't set them directly on, for instances like AIs acting while dead and other cases that may exist in the future.
-						//This isn't a problem for AIs with a client since the client will prevent this from being called anyway.
-						controller.set_ai_status(controller.get_expected_ai_status())
+	registered_z = new_z
+	if(!new_z)
+		return
 
-			registered_z = new_z
-		else
-			registered_z = new_z
-		if (registered_z)
-			SSmobs.mobs_by_zlevel[registered_z] |= src
+	SSmobs.mobs_by_zlevel[new_z] |= src
+	if(!client)
+		return
+
+	var/list/new_clients = SSmobs.clients_by_zlevel[new_z]
+	var/first_client = !length(new_clients)
+	new_clients |= src
+	if(first_client)
+		for(var/datum/ai_controller/controller as anything in GLOB.ai_controllers_by_zlevel[new_z])
+			controller.reset_ai_status()
 
 /mob/living/onTransitZ(old_z,new_z)
 	..()

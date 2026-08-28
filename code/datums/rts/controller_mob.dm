@@ -554,12 +554,12 @@
 	update_z(new_z)
 
 /mob/camera/proc/update_z(new_z) // 1+ to register, null to unregister
-	if (registered_z != new_z)
-		if (registered_z)
-			SSmobs.camera_players_by_zlevel[registered_z] -= src
-		if (client)
-			if (new_z)
-				SSmobs.camera_players_by_zlevel[new_z] += src
-			registered_z = new_z
-		else
-			registered_z = null
+	if(!client)
+		new_z = null
+	if(registered_z == new_z)
+		return
+	if(registered_z)
+		SSmobs.camera_players_by_zlevel[registered_z] -= src
+	if(new_z)
+		SSmobs.camera_players_by_zlevel[new_z] |= src
+	registered_z = new_z

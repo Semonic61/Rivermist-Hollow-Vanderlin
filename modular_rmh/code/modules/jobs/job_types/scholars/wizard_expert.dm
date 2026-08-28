@@ -101,7 +101,7 @@
 	. = ..()
 	equipped_human.mana_pool?.set_intrinsic_recharge(MANA_ALL_LEYLINES)
 
-/datum/outfit/guild_wizard/expert/post_equip(mob/living/carbon/human/equipped_human, visuals_only)
+/datum/job/advclass/guild_wizard/expert/after_spawn(mob/living/carbon/human/spawned, client/player_client)
 	. = ..()
 	var/static/list/selectablehat = list(
 		"Witch hat" = /obj/item/clothing/head/wizhat/witch,
@@ -110,7 +110,9 @@
 		"Black hood" = /obj/item/clothing/head/roguehood/colored/black,
 		"None" = null,
 	)
-	equipped_human.select_equippable(equipped_human, selectablehat, message = "Choose your hat of choice", title = "WIZARD")
+	spawned.select_equippable(player_client, selectablehat, message = "Choose your hat of choice", title = "WIZARD")
+	if(QDELETED(spawned))
+		return
 
 	var/static/list/selectablerobe = list(
 		"Black robes" = /obj/item/clothing/shirt/robe/colored/black,
@@ -121,7 +123,7 @@
 		"Lowcut tunic" = /obj/item/clothing/shirt/undershirt/lowcut,
 		"Silk dress" = /obj/item/clothing/shirt/dress/silkdress/colored/random,
 	)
-	equipped_human.select_equippable(equipped_human, selectablerobe, message = "Choose your attire of choice", title = "WIZARD")
+	spawned.select_equippable(player_client, selectablerobe, message = "Choose your attire of choice", title = "WIZARD")
 
 
 // ─────────────────────────────
@@ -193,7 +195,7 @@
 	. = ..()
 	equipped_human.mana_pool?.set_intrinsic_recharge(MANA_ALL_LEYLINES)
 
-/datum/outfit/guild_wizard/adept/post_equip(mob/living/carbon/human/equipped_human, visuals_only)
+/datum/job/advclass/guild_wizard/adept/after_spawn(mob/living/carbon/human/spawned, client/player_client)
 	. = ..()
 	var/static/list/selectablehat = list(
 		"Witch hat" = /obj/item/clothing/head/wizhat/witch,
@@ -202,7 +204,9 @@
 		"Black hood" = /obj/item/clothing/head/roguehood/colored/black,
 		"None" = null,
 	)
-	equipped_human.select_equippable(equipped_human, selectablehat, message = "Choose your hat of choice", title = "WIZARD")
+	spawned.select_equippable(player_client, selectablehat, message = "Choose your hat of choice", title = "WIZARD")
+	if(QDELETED(spawned))
+		return
 
 	var/static/list/selectablerobe = list(
 		"Black robes" = /obj/item/clothing/shirt/robe/colored/black,
@@ -213,4 +217,4 @@
 		"Lowcut tunic" = /obj/item/clothing/shirt/undershirt/lowcut,
 		"Silk dress" = /obj/item/clothing/shirt/dress/silkdress/colored/random,
 	)
-	equipped_human.select_equippable(equipped_human, selectablerobe, message = "Choose your attire of choice", title = "WIZARD")
+	spawned.select_equippable(player_client, selectablerobe, message = "Choose your attire of choice", title = "WIZARD")

@@ -55,7 +55,7 @@
 		if(canconsume(C, silent = TRUE))
 			if(reagents.total_volume)
 				playsound(C, 'sound/items/sniff.ogg', 100, FALSE)
-				reagents.trans_to(C, 1, transfered_by = thrownthing.thrower, method = "swallow")
+				reagents.trans_to(C, 1, transfered_by = thrownthing.get_thrower(), method = "swallow")
 				qdel(src)
 
 /obj/item/reagent_containers/powder/attack(mob/M, mob/user, list/modifiers)

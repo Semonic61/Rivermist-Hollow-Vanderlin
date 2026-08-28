@@ -244,7 +244,6 @@
 	if(!on_rails || momentum > 0)
 		return
 
-	obj_flags |= BLOCK_Z_OUT_DOWN
 	var/movedir = bumped_atom.dir
 	var/turf/next_turf = get_step(src, movedir)
 	if(!can_travel_on_turf(next_turf, movedir))
@@ -277,6 +276,7 @@
 	if(momentum <= 0)
 		return
 
+	obj_flags |= BLOCK_Z_OUT_DOWN
 	setDir(movedir)
 	var/datum/move_loop/loop = SSmove_manager.move(src, dir, delay = calculate_delay(), subsystem = SSminecarts, flags = MOVEMENT_LOOP_START_FAST|MOVEMENT_LOOP_IGNORE_PRIORITY, move_loop_type = /datum/move_loop/minecart)
 	RegisterSignal(loop, COMSIG_MOVELOOP_PREPROCESS_CHECK, PROC_REF(check_rail))

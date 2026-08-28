@@ -52,7 +52,7 @@
 	head = null
 	mask = null
 	neck = null
-	cloak = null
+	cloak = /obj/item/clothing/cloak/raincloak
 	armor = null
 	shirt = /obj/item/clothing/shirt/undershirt/colored/black
 	wrists = null
@@ -76,8 +76,15 @@
 
 /datum/outfit/adventurer_rogue/thief/post_equip(mob/living/carbon/human/H, visuals_only = FALSE)
 	. = ..()
+	var/obj/item/clothing/cloak/raincloak/thiefcloak = H.cloak
+	if(istype(thiefcloak))
+		thiefcloak.color = "#2f352f"
+		H.update_inv_cloak()
 
-	if(visuals_only)
+/datum/job/advclass/combat/adventurer_rogue/thief/after_spawn(mob/living/carbon/human/H, client/player_client)
+	. = ..()
+	var/obj/item/clothing/cloak/raincloak/thiefcloak = H.cloak
+	if(!istype(thiefcloak))
 		return
 
 	var/list/thiefcloak_colors = list(\
@@ -104,7 +111,8 @@
 		"Ashen Black"	="#2f352f",\
 	)
 
-	var/thiefcloak_color_selection = input(H, "What color was I again?", "The Cloak", "Ashen Black") in thiefcloak_colors
-	var/obj/item/clothing/cloak/raincloak/thiefcloak = new()
+	var/thiefcloak_color_selection = input(player_client || H, "What color was I again?", "The Cloak", "Ashen Black") in thiefcloak_colors
+	if(QDELETED(H) || QDELETED(thiefcloak) || H.cloak != thiefcloak || !(thiefcloak_color_selection in thiefcloak_colors))
+		return
 	thiefcloak.color = thiefcloak_colors[thiefcloak_color_selection]
-	H.equip_to_slot(thiefcloak, ITEM_SLOT_CLOAK, TRUE)
+	H.update_inv_cloak()

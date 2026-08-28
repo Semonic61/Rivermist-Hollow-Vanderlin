@@ -184,7 +184,9 @@
 
 /mob/living/simple_animal/hostile/gnome_homunculus/hitby(atom/movable/AM, skipcatch, hitpush, blocked, datum/thrownthing/throwingdatum, damage_type)
 	. = ..()
-	SEND_SIGNAL(src, COMSIG_EMOTION_STORE, throwingdatum?.thrower, EMOTION_SCARED, "[throwingdatum.thrower] throw thing at me!", 0)
+	var/mob/thrower = throwingdatum?.get_thrower()
+	if(thrower)
+		SEND_SIGNAL(src, COMSIG_EMOTION_STORE, thrower, EMOTION_SCARED, "[thrower] throw thing at me!", 0)
 
 /mob/living/simple_animal/hostile/gnome_homunculus/attackby(obj/item/item, mob/living/user, list/modifiers)
 	// Check what kind of item interaction this is

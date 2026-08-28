@@ -575,9 +575,6 @@ GLOBAL_LIST_EMPTY(active_lifts_by_type)
 		platform.horizontal_speed = 0.1
 		base_horizontal_speed = 0.1
 		horizontal_speed = 0.1
-		if(!platform.fake)
-			platform.obj_flags &= ~BLOCK_Z_OUT_DOWN
-			platform.alpha = 0
 		for(var/atom/movable/movable in platform.lift_load)
 			if(ismob(movable))
 				platform.RemoveItemFromLift(movable)
@@ -587,6 +584,10 @@ GLOBAL_LIST_EMPTY(active_lifts_by_type)
 			ADD_TRAIT(movable, TRAIT_I_AM_INVISIBLE_ON_A_BOAT, REF(src))
 			movable.density = FALSE
 			movable.alpha = 0
+
+		if(!platform.fake)
+			platform.obj_flags &= ~BLOCK_Z_OUT_DOWN
+			platform.alpha = 0
 
 		for(var/obj/structure/industrial_lift/tram/moving_platform in platform.moving_lifts)
 			if(moving_platform.fake)
@@ -604,18 +605,19 @@ GLOBAL_LIST_EMPTY(active_lifts_by_type)
 		if(!platform.fake)
 			platform.obj_flags |= BLOCK_Z_OUT_DOWN
 			platform.alpha = 255
-		for(var/atom/movable/movable in objects_pre_alpha)
-			movable.alpha = objects_pre_alpha[movable]
-			REMOVE_TRAIT(movable, TRAIT_I_AM_INVISIBLE_ON_A_BOAT, REF(src))
-			objects_pre_alpha -= movable
-			movable.density = initial(movable.density)
-
 		for(var/obj/structure/industrial_lift/tram/moving_platform in platform.moving_lifts)
 			if(moving_platform.fake)
 				continue
 			moving_platform.horizontal_speed = 4
 			moving_platform.obj_flags |= BLOCK_Z_OUT_DOWN
 			moving_platform.alpha = 255
+
+	// Restore every platform before removing the cargo's fall protection.
+	for(var/atom/movable/movable in objects_pre_alpha)
+		movable.alpha = objects_pre_alpha[movable]
+		REMOVE_TRAIT(movable, TRAIT_I_AM_INVISIBLE_ON_A_BOAT, REF(src))
+		objects_pre_alpha -= movable
+		movable.density = initial(movable.density)
 
 /datum/lift_master/tram/proc/try_process_order(fence = FALSE)
 	var/total_coin_value = 0
