@@ -47,6 +47,16 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define TRAIT_UI_BLOCKED "uiblocked"
 /// Inability to pull things. Turned into a trait from [MOBILITY_PULL] to be able to track sources.
 #define TRAIT_PULL_BLOCKED "pullblocked"
+/// Makes a mob non-dense without overriding other sources, such as lying down.
+#define TRAIT_UNDENSE "undense"
+/// Prevents a buckled mob from controlling its carrier.
+#define TRAIT_CANT_RIDE "cant_ride"
+/// Suspends AI planning and execution independently of client and idle state.
+#define TRAIT_AI_PAUSED "ai_paused"
+/// Suspends AI movement without disabling other behaviors.
+#define TRAIT_AI_MOVEMENT_HALTED "ai_movement_halted"
+/// Prevents throwing items.
+#define TRAIT_NO_THROWING "no_throwing"
 /// Abstract condition that prevents movement if being pulled and might be resisted against. Handcuffs and straight jackets, basically.
 #define TRAIT_RESTRAINED "restrained"
 /// Generically incapacitated, cannot interact

@@ -1594,3 +1594,11 @@
 
 #undef ATTACK_ANIMATION_PIXEL_DIFF
 #undef ATTACK_ANIMATION_TIME
+
+/atom/movable/proc/set_anchored(new_value)
+	SHOULD_CALL_PARENT(TRUE)
+	if(anchored == new_value)
+		return
+	. = anchored
+	anchored = new_value
+	SEND_SIGNAL(src, COMSIG_MOVABLE_SET_ANCHORED, new_value)

@@ -934,7 +934,7 @@ GLOBAL_LIST_EMPTY(kidnap_escape_markers)
 			continue
 		if(nearby.has_status_effect(/datum/status_effect/defeat_knockout))
 			continue
-		if(faction_check_mob(nearby))
+		if(faction_check_atom(nearby))
 			allies++
 			continue
 		// Only real people (players / humanoids) count as rescuers, not wandering critters.
@@ -1232,7 +1232,7 @@ GLOBAL_LIST_INIT(npc_distress_thanks, list(
 	if(spot)
 		var/mob/living/carbon/human/npc_in_distress/poor_soul = new(spot)
 		if(captive_faction)
-			poor_soul.faction = captive_faction.Copy()
+			poor_soul.set_faction(captive_faction.Copy())
 	return INITIALIZE_HINT_QDEL
 
 // Faction-matched spawners so captives share their captors' faction (place in the matching lair).
@@ -1264,7 +1264,7 @@ GLOBAL_LIST_INIT(npc_distress_thanks, list(
 /mob/living/carbon/human/proc/become_npc_in_distress(decays = TRUE, list/captor_faction = null)
 	npc_in_distress_drop_carried()
 	if(captor_faction)
-		faction = captor_faction.Copy() // share the captors' faction so they won't attack the new captive
+		set_faction(captor_faction) // share the captors' faction so they won't attack the new captive
 	visible_message(span_warning("[src]'s eyes go vacant - just another wretch lost to the dark."))
 	var/mob/dead/observer/ghost = ghostize(FALSE)
 	AddComponent(/datum/component/npc_in_distress, decays)

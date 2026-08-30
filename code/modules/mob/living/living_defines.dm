@@ -182,7 +182,8 @@
 
 	var/list/implants = null
 
-	var/datum/riding/riding_datum
+	/// May this mob be buckled and unbuckled without forcing it?
+	var/can_buckle_to = TRUE
 
 	var/datum/language/selected_default_language
 

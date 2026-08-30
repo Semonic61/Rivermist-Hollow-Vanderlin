@@ -1,4 +1,5 @@
 /mob/living/simple_animal/hostile/retaliate/wolf
+	living_flags = MOVES_ON_ITS_OWN|CAN_BE_FIREMANNED
 	icon = 'icons/roguetown/mob/monster/vol.dmi'
 	name = "wolf"
 	desc = "Usually content to leave menfolk alone if well-fed, but something in the wilds turns them hungry, persistent, and vicious."

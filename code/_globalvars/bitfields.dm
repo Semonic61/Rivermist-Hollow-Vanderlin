@@ -215,6 +215,7 @@ DEFINE_BITFIELD(item_flags, list(
 	"BEING_REMOVED" = BEING_REMOVED,
 	"DROPDEL" = DROPDEL,
 	"FORCE_STRING_OVERRIDE" = FORCE_STRING_OVERRIDE,
+	"HAND_ITEM" = HAND_ITEM,
 	"IN_INVENTORY" = IN_INVENTORY,
 	"IN_STORAGE" = IN_STORAGE,
 	"NEEDS_PERMIT" = NEEDS_PERMIT,
@@ -234,8 +235,7 @@ DEFINE_BITFIELD(job_flags, list(
 DEFINE_BITFIELD(living_flags, list(
 	// Enable after porting upstream #6425 (blood update/capability flags).
 	// "BLOOD_UPDATE_QUEUED" = BLOOD_UPDATE_QUEUED,
-	// Enable after porting upstream #6332 (buckling refactor).
-	// "CAN_BE_FIREMANNED" = CAN_BE_FIREMANNED,
+	"CAN_BE_FIREMANNED" = CAN_BE_FIREMANNED,
 	// Enable after porting upstream #6425 (blood update/capability flags).
 	// "LIVING_CAN_HAVE_BLOOD" = LIVING_CAN_HAVE_BLOOD,
 	"MOVES_ON_ITS_OWN" = MOVES_ON_ITS_OWN,

@@ -286,10 +286,10 @@
 		clear_quirks()
 	update_body()
 	update_eyes()
-	faction = list(FACTION_ORCS)
+	set_faction(list(FACTION_ORCS))
 	var/turf/turf = get_turf(src)
 	if(SSterrain_generation.get_island_at_location(turf))
-		faction |= "islander"
+		add_faction("islander")
 	name = "goblin"
 	real_name = "goblin"
 	ADD_TRAIT(src, TRAIT_NOMOOD, TRAIT_GENERIC)
@@ -322,7 +322,7 @@
 		return
 	var/should_update = FALSE
 	var/is_matthios = FALSE
-	if(FACTION_MATTHIOS in C.faction)
+	if(C.has_faction(FACTION_MATTHIOS))
 		is_matthios = TRUE
 	if(amount > 20 MINUTES)
 		for(var/obj/item/bodypart/B in C.bodyparts)

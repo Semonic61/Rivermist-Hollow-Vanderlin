@@ -1339,7 +1339,7 @@ GLOBAL_VAR_INIT(quest_preview_preload_bootstrapped, FALSE)
 	for(var/mob/living/nearby_mob in view(7, landmark))
 		if(QDELETED(nearby_mob) || nearby_mob.stat == DEAD || nearby_mob.client)
 			continue
-		if("quest" in nearby_mob.faction)
+		if(nearby_mob.has_faction("quest"))
 			continue
 		return TRUE
 	return FALSE

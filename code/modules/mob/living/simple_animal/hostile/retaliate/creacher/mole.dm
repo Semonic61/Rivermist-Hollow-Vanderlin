@@ -83,15 +83,15 @@
 		gender = FEMALE
 	update_appearance(UPDATE_OVERLAYS)
 	AddElement(/datum/element/ai_flee_while_injured, 0.75, retreat_health)
-	if(tame)
-		tamed(owner)
 	ADD_TRAIT(src, TRAIT_IGNOREDAMAGESLOWDOWN, TRAIT_GENERIC)
 
 /mob/living/simple_animal/hostile/retaliate/mole/tamed(mob/user)
 	. = ..()
+	if(.)
+		return
 	deaggroprob = 30
 	if(can_buckle)
-		AddComponent(/datum/component/riding/mole)
+		AddElement(/datum/element/ridable, /datum/component/riding/creature/mole)
 
 /mob/living/simple_animal/hostile/retaliate/mole/update_overlays()
 	. = ..()

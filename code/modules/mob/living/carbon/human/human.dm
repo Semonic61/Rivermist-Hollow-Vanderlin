@@ -154,7 +154,7 @@
 		user.visible_message(span_notice("[livinguser] is trying to mount [src]..."))
 		if(!do_after(livinguser, 15, target = src))
 			return
-		if(!istype(livinguser))
+		if(!istype(livinguser) || QDELETED(src) || !Adjacent(livinguser) || !HAS_TRAIT(src, TRAIT_PONYGIRL_RIDEABLE))
 			return
 		if(livinguser.incapacitated())
 			return
@@ -168,12 +168,6 @@
 			return
 		if(!buckle_mob(user, TRUE, FALSE))
 			return
-		var/datum/component/riding/human/riding_datum = LoadComponent(/datum/component/riding/human)
-		riding_datum.vehicle_move_delay = 4
-		if(user.mind)
-			var/riding_skill = user.get_skill_level(/datum/skill/misc/riding)
-			if(riding_skill)
-				riding_datum.vehicle_move_delay = max(1, 3 - (riding_skill * 0.2))
 		return TRUE
 
 /mob/living/carbon/human/Initialize()
@@ -197,6 +191,7 @@
 
 	. = ..()
 
+	AddElement(/datum/element/ridable, /datum/component/riding/creature/human)
 	AddElement(/datum/element/footstep, footstep_type, 1, -6)
 	GLOB.human_list += src
 	if(ai_controller && flee_in_pain)
@@ -917,23 +912,19 @@
 			var/datum/job/lord_job = SSjob.GetJobType(human_job.type)
 			lord_job?.get_informed_title(src, TRUE, new_title)
 
-/mob/living/carbon/human/MouseDrop_T(mob/living/target, mob/living/user)
-	if(pulling == target && stat == CONSCIOUS)
-		//If they dragged themselves and we're currently aggressively grabbing them try to piggyback
-		if(user == target && can_piggyback(target))
-			if(cmode)
-				to_chat(target, span_warning("[src] is too alert to let you piggyback!"))
-				return FALSE
-			piggyback(target)
-			return TRUE
-		//If you dragged them to you and you're aggressively grabbing try to carry them
-		else if(user != target && can_be_firemanned(target))
-			var/obj/G = get_active_held_item()
-			if(G)
-				if(istype(G, /obj/item/grabbing))
-					fireman_carry(target)
-					return TRUE
-	. = ..()
+/mob/living/carbon/human/mouse_buckle_handling(mob/living/target, mob/living/user)
+	if(!istype(target) || !istype(user) || pulling != target || stat != CONSCIOUS)
+		return FALSE
+	if(user == target && can_piggyback(target))
+		if(cmode)
+			to_chat(target, span_warning("[src] is too alert to let you piggyback!"))
+			return FALSE
+		piggyback(target)
+		return TRUE
+	if(user == src && can_be_firemanned(target) && istype(get_active_held_item(), /obj/item/grabbing))
+		fireman_carry(target)
+		return TRUE
+	return FALSE
 
 /mob/proc/return_accent_list()
 	if(!accent)
@@ -946,92 +937,38 @@
 /mob/living/carbon/human/proc/can_piggyback(mob/living/carbon/target)
 	return (istype(target) && target.stat == CONSCIOUS)
 
-/mob/living/carbon/human/proc/can_be_firemanned(mob/living/carbon/target)
-	return (ishuman(target) && target.body_position == LYING_DOWN)
+/mob/living/carbon/human/proc/can_be_firemanned(mob/living/target)
+	return !QDELETED(target) && ((ishuman(target) && target.body_position == LYING_DOWN) || (isanimal(target) && (target.living_flags & CAN_BE_FIREMANNED)))
 
-/mob/living/carbon/human/proc/fireman_carry(mob/living/carbon/target)
-	var/carrydelay = 5 SECONDS //if you have latex you are faster at grabbing
+/mob/living/carbon/human/proc/fireman_carry(mob/living/target)
+	if(!can_be_firemanned(target) || incapacitated(IGNORE_GRAB) || pulling != target || !Adjacent(target))
+		return FALSE
+	var/fitness_level = GET_MOB_SKILL_VALUE_OLD(src, /datum/attribute/skill/misc/athletics) - 1
+	var/carry_delay = max(1 SECONDS, 5 SECONDS - fitness_level * (1/3) SECONDS)
+	var/region = (r_grab?.grabbed == target && l_grab?.grabbed == target) ? "back" : "shoulder"
+	visible_message(span_notice("[src] starts lifting [target] onto [p_their()] [region]..."))
 
-	var/backnotshoulder = FALSE
-	if(r_grab && l_grab)
-		if(r_grab.grabbed == target)
-			if(l_grab.grabbed == target)
-				backnotshoulder = TRUE
-
-	if(can_be_firemanned(target) && !incapacitated(IGNORE_GRAB))
-		if(backnotshoulder)
-			visible_message("<span class='notice'>[src] starts lifting [target] onto their back...</span>")
-		else
-			visible_message("<span class='notice'>[src] starts lifting [target] onto their shoulder...</span>")
-		if(do_after(src, carrydelay, target))
-			//Second check to make sure they're still valid to be carried
-			if(can_be_firemanned(target) && !incapacitated(IGNORE_GRAB))
-				buckle_mob(target, TRUE, TRUE, 90, 0, 0)
-				update_carry_weight()
-				return
-	to_chat(src, "<span class='warning'>I fail to carry [target].</span>")
+	if(!do_after(src, carry_delay, target) || QDELETED(src) || !can_be_firemanned(target))
+		return FALSE
+	if(incapacitated(IGNORE_GRAB) || pulling != target || !Adjacent(target))
+		return FALSE
+	return buckle_mob(target, force = TRUE, check_loc = FALSE, buckle_mob_flags = CARRIER_NEEDS_ARM)
 
 /mob/living/carbon/human/proc/piggyback(mob/living/carbon/target)
-	if(can_piggyback(target))
-		visible_message("<span class='notice'>[target] starts to climb onto [src]...</span>")
-		if(do_after(target, 1.5 SECONDS, src))
-			if(can_piggyback(target))
-				if(target.incapacitated(IGNORE_GRAB) || incapacitated(IGNORE_GRAB))
-					to_chat(target, "<span class='warning'>I can't piggyback ride [src].</span>")
-					return
-				buckle_mob(target, TRUE, TRUE, FALSE, 0, 0)
-				update_carry_weight()
-	else
-		to_chat(target, "<span class='warning'>I can't piggyback ride [src].</span>")
+	if(!can_piggyback(target) || pulling != target || cmode || !Adjacent(target))
+		return FALSE
+	visible_message(span_notice("[target] starts to climb onto [src]..."))
+	if(!do_after(target, 1.5 SECONDS, src) || QDELETED(src) || QDELETED(target))
+		return FALSE
+	if(!can_piggyback(target) || pulling != target || cmode || !Adjacent(target) || target.incapacitated(IGNORE_GRAB) || incapacitated(IGNORE_GRAB))
+		return FALSE
+	return buckle_mob(target, force = TRUE, check_loc = FALSE, buckle_mob_flags = RIDER_NEEDS_ARMS)
 
-/mob/living/carbon/human/buckle_mob(mob/living/target, force = FALSE, check_loc = TRUE, lying_buckle = FALSE, hands_needed = 0, target_hands_needed = 0)
-	if(!force)//humans are only meant to be ridden through piggybacking and special cases
-		return
-	if(!is_type_in_typecache(target, can_ride_typecache))
-		target.visible_message("<span class='warning'>[target] really can't seem to mount [src]...</span>")
-		return
-	buckle_lying = lying_buckle
-	var/datum/component/riding/human/riding_datum = LoadComponent(/datum/component/riding/human)
-	if(target_hands_needed)
-		riding_datum.ride_check_rider_restrained = TRUE
-	if(buckled_mobs && ((target in buckled_mobs) || (buckled_mobs.len >= max_buckled_mobs)) || buckled)
-		return
-	var/equipped_hands_self
-	var/equipped_hands_target
-	if(hands_needed)
-		equipped_hands_self = riding_datum.equip_buckle_inhands(src, hands_needed, target)
-	if(target_hands_needed)
-		equipped_hands_target = riding_datum.equip_buckle_inhands(target, target_hands_needed)
-
-	if(hands_needed || target_hands_needed)
-		if(hands_needed && !equipped_hands_self)
-			src.visible_message("<span class='warning'>[src] can't get a grip on [target] because their hands are full!</span>",
-				"<span class='warning'>I can't get a grip on [target] because your hands are full!</span>")
-			return
-		else if(target_hands_needed && !equipped_hands_target)
-			target.visible_message("<span class='warning'>[target] can't get a grip on [src] because their hands are full!</span>",
-				"<span class='warning'>I can't get a grip on [src] because your hands are full!</span>")
-			return
-
-	//stop_pulling()
-	riding_datum.handle_vehicle_layer()
-	. = ..(target, force, check_loc)
-// Attaches the rider's sprite to a specific point
-	if(. && istype(src, /mob/living/carbon/human))
-		var/mob/living/carbon/human/H = src
-		var/obj/item/bodypart/taur/T = H.get_bodypart(BODY_ZONE_TAUR)
-		if(istype(T, /obj/item/bodypart/taur/jdeer))
-			var/mob/rider = target
-			rider.transform = rider.transform.Translate(0, 16)
-
-/mob/living/carbon/human/unbuckle_mob(target, force = FALSE)
-	. = ..()
-	if(. && istype(src, /mob/living/carbon/human))
-		var/mob/living/carbon/human/H = src
-		var/obj/item/bodypart/taur/T = H.get_bodypart(BODY_ZONE_TAUR)
-		if(istype(T, /obj/item/bodypart/taur/jdeer))
-			var/mob/rider = target
-			rider.transform = rider.transform.Translate(0, -16)
+/mob/living/carbon/human/buckle_mob(mob/living/target, force = FALSE, check_loc = TRUE, buckle_mob_flags = NONE)
+	// Human carrying remains opt-in through piggyback, lifting, and RMH's special mounts.
+	if((!force && !HAS_TRAIT(src, TRAIT_PONYGIRL_RIDEABLE)) || (!ishuman(target) && !can_be_firemanned(target)))
+		return FALSE
+	return ..()
 
 /mob/living/carbon/human/proc/is_shove_knockdown_blocked() //If you want to add more things that block shove knockdown, extend this
 	var/list/body_parts = list(head, wear_mask, wear_armor, wear_pants, backl, backr, gloves, shoes, belt, wear_ring)
@@ -1057,7 +994,12 @@
 	update_body_parts(redraw = TRUE)
 	//underwear = "Nude"
 
-/mob/living/carbon/human/post_unbuckle_mob()
+/mob/living/carbon/human/post_buckle_mob(mob/living/buckled_mob)
+	. = ..()
+	update_carry_weight()
+
+/mob/living/carbon/human/post_unbuckle_mob(mob/living/unbuckled_mob)
+	. = ..()
 	update_carry_weight()
 
 /mob/living/carbon/human/adjust_nutrition(change) //Honestly FUCK the oldcoders for putting nutrition on /mob someone else can move it up because holy hell I'd have to fix SO many typechecks
@@ -1095,7 +1037,7 @@
 	updateappearance(mutcolor_update = TRUE)
 
 	job = target.job // NOT assigned_role
-	faction = target.faction
+	SET_FACTION_AND_ALLIES_FROM(src, target)
 	deathsound = target.deathsound
 	gender = target.gender
 	real_name = target.real_name
@@ -1210,10 +1152,10 @@
 			if(SSmapping.level_has_any_trait(turf.z, list(ZTRAIT_IGNORE_WEATHER_TRAIT)))
 				GLOB.weatherproof_z_levels |= "[turf.z]"
 		if("[turf.z]" in GLOB.weatherproof_z_levels)
-			faction |= FACTION_MATTHIOS
+			add_faction(FACTION_MATTHIOS)
 			SSmatthios_mobs.register_mob(src)
 		if(SSterrain_generation.get_island_at_location(turf))
-			faction |= "islander"
+			add_faction("islander")
 			SSisland_mobs.register_mob(src, SSterrain_generation.get_island_at_location(turf))
 
 /**

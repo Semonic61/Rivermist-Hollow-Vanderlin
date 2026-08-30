@@ -11,7 +11,7 @@
 	if(!can_seelie_perch_on(target))
 		return FALSE
 
-	target.buckle_mob(src, TRUE, FALSE, FALSE, 0, 0)
+	target.buckle_mob(src, force = TRUE, check_loc = FALSE)
 	if(buckled != target)
 		return FALSE
 	if(ishuman(target))

@@ -29,7 +29,7 @@
 	var/mob/living/simple_animal/hostile/retaliate/leylinelycan/lycan = controller.pawn
 	var/obj/structure/leyline/source = controller.blackboard[BB_LEYLINE_SOURCE]
 
-	if(prob(15))
+	if(controller.can_move() && prob(15))
 		step_rand(lycan)
 
 	if(!source || QDELETED(source))

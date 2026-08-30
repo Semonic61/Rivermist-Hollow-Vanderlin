@@ -449,8 +449,8 @@ GLOBAL_LIST_EMPTY(personal_objective_minds)
 /datum/mind/proc/enslave_mind_to_creator(mob/living/creator)
 	enslaved_to = creator
 
-	current.faction |= creator.faction
-	creator.faction |= current.faction
+	APPLY_FACTION_AND_ALLIES_FROM(current, creator)
+	APPLY_FACTION_AND_ALLIES_FROM(creator, current)
 
 	if(creator.mind.special_role)
 		message_admins("[ADMIN_LOOKUPFLW(current)] has been created by [ADMIN_LOOKUPFLW(creator)], an antagonist.")

@@ -110,8 +110,6 @@
 
 /mob/living/simple_animal/hostile/retaliate/Initialize()
 	. = ..()
-	if(tame)
-		tamed(owner)
 	ADD_TRAIT(src, TRAIT_SIMPLE_WOUNDS, TRAIT_GENERIC)
 	ADD_TRAIT(src, TRAIT_NOPAIN, TRAIT_GENERIC) //this causes too many mob issues
 	ADD_TRAIT(src, TRAIT_NOPAINSTUN, TRAIT_GENERIC) //this causes too many mob issues
@@ -154,6 +152,7 @@
 	var/mob/living/simple_animal/A = new adult_growth(loc)
 	if(tame && !A.tame)
 		A.tamed(owner)
+	APPLY_FACTION_AND_ALLIES_FROM(A, src)
 
 	var/datum/component/generic_mob_hunger/old_hunger = GetComponent(/datum/component/generic_mob_hunger)
 	var/datum/component/generic_mob_hunger/hunger = A.GetComponent(/datum/component/generic_mob_hunger)

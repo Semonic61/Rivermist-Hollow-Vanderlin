@@ -197,7 +197,7 @@
 		return
 
 	for(var/mob/living/L in get_turf(src))
-		if(L.faction.Find(FACTION_MINOTAURS))
+		if(L.has_faction(FACTION_MINOTAURS))
 			continue
 
 		L.adjustFireLoss(damage_per_tick)

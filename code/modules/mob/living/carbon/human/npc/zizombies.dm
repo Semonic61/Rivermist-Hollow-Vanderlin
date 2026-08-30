@@ -144,10 +144,10 @@
 		clear_quirks()
 	update_body()
 	update_eyes()
-	faction = list(FACTION_UNDEAD)
+	set_faction(list(FACTION_UNDEAD))
 	var/turf/turf = get_turf(src)
 	if(SSterrain_generation.get_island_at_location(turf))
-		faction |= "islander"
+		add_faction("islander")
 	name = "zizombie"
 	real_name = "zizombie"
 	mob_biotypes |= MOB_UNDEAD
@@ -211,7 +211,7 @@
 		return
 	var/should_update = FALSE
 	var/is_matthios = FALSE
-	if(FACTION_MATTHIOS in C.faction)
+	if(C.has_faction(FACTION_MATTHIOS))
 		is_matthios = TRUE
 	if(amount > 20 MINUTES)
 		for(var/obj/item/bodypart/B in C.bodyparts)

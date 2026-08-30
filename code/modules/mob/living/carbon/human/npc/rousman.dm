@@ -232,10 +232,10 @@ GLOBAL_LIST_EMPTY(rousman_ambush_objects)
 		clear_quirks()
 	update_body()
 	update_eyes()
-	faction = list(FACTION_RATS)
+	set_faction(list(FACTION_RATS))
 	var/turf/turf = get_turf(src)
 	if(SSterrain_generation.get_island_at_location(turf))
-		faction |= "islander"
+		add_faction("islander")
 	name = "rousman"
 	real_name = "rousman"
 	ADD_TRAIT(src, TRAIT_NOMOOD, TRAIT_GENERIC)
@@ -261,7 +261,7 @@ GLOBAL_LIST_EMPTY(rousman_ambush_objects)
 		return
 	var/should_update = FALSE
 	var/is_matthios = FALSE
-	if(FACTION_MATTHIOS in C.faction)
+	if(C.has_faction(FACTION_MATTHIOS))
 		is_matthios = TRUE
 	if(amount > 20 MINUTES)
 		for(var/obj/item/bodypart/B in C.bodyparts)

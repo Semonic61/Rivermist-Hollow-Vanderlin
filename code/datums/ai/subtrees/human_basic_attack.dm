@@ -74,7 +74,7 @@
 	. = ..()
 	var/mob/living/carbon/human/pawn = controller.pawn
 	var/atom/target = controller.blackboard[BB_BASIC_MOB_CURRENT_TARGET]
-	if(!pawn || QDELETED(target))
+	if(!pawn || QDELETED(target) || !controller.can_move())
 		return
 
 	var/datum/targetting_datum/td = controller.blackboard[BB_TARGETTING_DATUM]
@@ -103,7 +103,7 @@
 	var/mob/living/carbon/human/pawn = controller.pawn
 	var/atom/target = controller.blackboard[target_key]
 	var/datum/targetting_datum/td = controller.blackboard[targetting_datum_key]
-	if(!pawn || QDELETED(target) || !td || !td.can_engage_target(pawn, target))
+	if(!pawn || QDELETED(target) || !td || !td.can_engage_target(pawn, target) || !controller.can_move())
 		finish_action(controller, FALSE)
 		return
 
@@ -526,7 +526,7 @@
 		return FALSE
 	if(pawn.ai_controller.blackboard[BB_HUMAN_NPC_HARASS_MODE])
 		return FALSE
-	if(!target || !isturf(pawn.loc) || !isturf(target.loc))
+	if(!target || !isturf(pawn.loc) || !isturf(target.loc) || !pawn.ai_controller.can_move())
 		return FALSE
 
 	if(world.time < pawn.ai_controller.blackboard[BB_HUMAN_NPC_JUKE_COOLDOWN])

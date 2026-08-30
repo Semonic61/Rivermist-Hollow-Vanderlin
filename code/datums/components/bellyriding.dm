@@ -97,7 +97,9 @@
 		restore_old_state(victim)
 		return
 
-	if(!wearer.buckle_mob(victim, TRUE, TRUE))
+	// The harness owns this passenger's pose and movement, not the riding component.
+	ADD_TRAIT(victim, TRAIT_CANT_RIDE, REF(src))
+	if(!wearer.buckle_mob(victim, force = TRUE, check_loc = FALSE))
 		restore_old_state(victim)
 		return
 
@@ -169,6 +171,8 @@
 		old_victim_transform = victim.transform ? matrix(victim.transform) : null
 
 /datum/component/bellyriding/proc/restore_old_state(mob/living/carbon/human/victim)
+	if(victim)
+		REMOVE_TRAIT(victim, TRAIT_CANT_RIDE, REF(src))
 	var/mob/living/carbon/human/wearer = parent
 	wearer.can_buckle = old_can_buckle
 	wearer.buckle_requires_restraints = old_buckle_requires_restraints

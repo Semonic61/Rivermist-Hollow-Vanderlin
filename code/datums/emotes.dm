@@ -170,10 +170,10 @@
 				M.show_message(msg)
 		var/runechat_msg_to_use = null
 		var/obfuscated_runechat_msg_to_use = null
-		if(show_runechat && emote_type != EMOTE_AUDIBLE)
+		if(show_runechat && !(emote_type & EMOTE_AUDIBLE))
 			runechat_msg_to_use = runechat_msg ? runechat_msg : raw_msg
 			obfuscated_runechat_msg_to_use = stars(runechat_msg_to_use)
-		if(emote_type == EMOTE_AUDIBLE)
+		if((emote_type & EMOTE_AUDIBLE))
 			user.audible_message(msg, runechat_message = runechat_msg_to_use)
 		else
 			send_visible_emote_message(user, user, msg, runechat_message = runechat_msg_to_use, intentional = intentional, obfuscated_message = obfuscated_msg, obfuscated_runechat_message = obfuscated_runechat_msg_to_use)
@@ -303,12 +303,12 @@
 		var/mob/living/carbon/C = user
 		if(!C.can_speak_vocal())
 			. = message_muffled
-		if(!muzzle_ignore && C.mouth?.muteinmouth && emote_type == EMOTE_AUDIBLE)
+		if(!muzzle_ignore && C.mouth?.muteinmouth && (emote_type & EMOTE_AUDIBLE))
 			. = message_muffled
-		if(!muzzle_ignore && emote_type == EMOTE_AUDIBLE && HAS_TRAIT(C, TRAIT_BAGGED))
+		if(!muzzle_ignore && (emote_type & EMOTE_AUDIBLE) && HAS_TRAIT(C, TRAIT_BAGGED))
 			. = message_muffled
 
-	if(!muzzle_ignore && HAS_TRAIT(user, TRAIT_MUTE) && emote_type == EMOTE_AUDIBLE)
+	if(!muzzle_ignore && HAS_TRAIT(user, TRAIT_MUTE) && (emote_type & EMOTE_AUDIBLE))
 		return "makes a [pick("strong ", "weak ", "")]noise."
 	if(user.mind && user.mind.miming && message_mime)
 		. = message_mime

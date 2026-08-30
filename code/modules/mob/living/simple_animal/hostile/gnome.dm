@@ -140,16 +140,16 @@
 /mob/living/simple_animal/hostile/gnome_homunculus/proc/on_death(datum/source)
 	SEND_SIGNAL(src, COMSIG_EMOTION_STORE, null, EMOTION_SCARED, "is dying!", 0)
 
-	// Collect friends before dying - PROPERLY using befriended_refs
+	// Keep death messages tied to the gnome's current friendships.
 	var/list/my_friends = list()
 	var/datum/component/friendship_container/friendships = GetComponent(/datum/component/friendship_container)
 	if(friendships)
-		// Get friends from the befriended_refs list
-		for(var/datum/weakref/friend_ref in friendships.befriended_refs)
+		// The friendship component stores weakrefs; allies record who is befriended.
+		for(var/datum/weakref/friend_ref in friendships.weakrefed_friends)
 			if(QDELETED(friend_ref))
 				continue
 			var/mob/living/friend_mob = friend_ref.resolve()
-			if(friend_mob && !QDELETED(friend_mob))
+			if(friend_mob && !QDELETED(friend_mob) && has_ally(friend_mob))
 				my_friends += friend_mob
 
 	// Create death message for nearby gnomes to remember

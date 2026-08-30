@@ -952,7 +952,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 
 	if(inherent_factions)
 		for(var/i in inherent_factions)
-			C.faction += i //Using +=/-= for this in case you also gain the faction from a different source.
+			C.set_faction(C.get_faction() + i) //Using +=/-= for this in case you also gain the faction from a different source.
 
 	soundpack_m = new soundpack_m()
 	soundpack_f = new soundpack_f()
@@ -1026,7 +1026,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 
 	if(inherent_factions)
 		for(var/i in inherent_factions)
-			C.faction -= i
+			C.set_faction(C.get_faction() - i)
 
 	SEND_SIGNAL(C, COMSIG_SPECIES_LOSS, src)
 

@@ -1489,7 +1489,7 @@
 	rescuer_one.forceMove(get_turf(captor))
 	rescuer_two.forceMove(get_turf(captor))
 
-	captor.faction = list("kidnap_unit_test_captor")
+	captor.set_faction(list("kidnap_unit_test_captor"))
 	captor.kidnap_lair_tag = "unit_test_kidnap_lair"
 	victim.apply_status_effect(/datum/status_effect/defeat_knockout)
 	victim.recent_damage_source_attacker_weakref = WEAKREF(captor)
@@ -1536,7 +1536,7 @@
 	var/mob/living/carbon/human/captor = allocate(/mob/living/carbon/human)
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human)
 	defeat_unit_place_adjacent(victim, captor, run_loc_floor_bottom_left)
-	captor.faction = list("greenskin_unit_test")
+	captor.set_faction(list("greenskin_unit_test"))
 	captor.kidnap_lair_tag = "unit_test_kidnap_lair"
 	victim.apply_status_effect(/datum/status_effect/defeat_knockout)
 	victim.recent_damage_source_attacker_weakref = WEAKREF(captor)

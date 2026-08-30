@@ -88,7 +88,7 @@
 	if(findonerotten)
 		var/turf/open/T = C.loc
 		var/is_matthios = FALSE
-		if(FACTION_MATTHIOS in C.faction)
+		if(C.has_faction(FACTION_MATTHIOS))
 			is_matthios = TRUE
 		if(istype(T) && amount < 16 MINUTES && !is_matthios)
 			T.pollute_turf(/datum/pollutant/rot, 9)
@@ -124,7 +124,7 @@
 			soundloop.start()
 		var/turf/open/T = get_turf(L)
 		var/is_matthios = FALSE
-		if(FACTION_MATTHIOS in L.faction)
+		if(L.has_faction(FACTION_MATTHIOS))
 			is_matthios = TRUE
 		if(istype(T)  && amount < 16 MINUTES && !is_matthios)
 			T.pollute_turf(/datum/pollutant/rot, 9)

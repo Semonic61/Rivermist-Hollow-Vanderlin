@@ -1,11 +1,3 @@
-/datum/component/riding/direbear/Initialize()
-	. = ..()
-	set_riding_offsets(RIDING_OFFSET_ALL, list(TEXT_NORTH = list(16, 14), TEXT_SOUTH = list(12, 8), TEXT_EAST = list(7, 12), TEXT_WEST = list(14, 12)))
-	set_vehicle_dir_layer(SOUTH, OBJ_LAYER)
-	set_vehicle_dir_layer(NORTH, OBJ_LAYER)
-	set_vehicle_dir_layer(EAST, OBJ_LAYER)
-	set_vehicle_dir_layer(WEST, OBJ_LAYER)
-
 /datum/status_effect/debuff/staggered
 	id = "staggered"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/staggered
@@ -135,8 +127,10 @@
 
 /mob/living/simple_animal/hostile/retaliate/direbear/tamed(mob/user)
 	. = ..()
+	if(.)
+		return
 	if(can_buckle)
-		AddComponent(/datum/component/riding/direbear)
+		AddElement(/datum/element/ridable, /datum/component/riding/creature/direbear)
 
 /mob/living/simple_animal/hostile/retaliate/direbear/get_sound(input)
 	switch(input)

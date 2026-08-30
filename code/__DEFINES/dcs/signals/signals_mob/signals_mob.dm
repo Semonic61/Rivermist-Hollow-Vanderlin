@@ -32,3 +32,5 @@
 	#define COMPONENT_BLOCK_MOB_CHANGE (1<<0)
 /// from /mob/proc/change_mob_type_unchecked() : ()
 #define COMSIG_MOB_CHANGED_TYPE "mob_changed_type"
+/// After a mob successfully performs an emote: (datum/emote/emote)
+#define COMSIG_MOB_EMOTE "mob_emote"

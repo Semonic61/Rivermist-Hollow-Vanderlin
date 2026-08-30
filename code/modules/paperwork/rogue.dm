@@ -586,14 +586,14 @@
 	icon_state = "contractsigned"
 	var/list/sell_prices
 	var/writers_name
-	var/faction
+	var/merchant_faction
 
 /obj/item/paper/scroll/sell_price_changes/Initialize(mapload, list/prices, faction_name)
 	. = ..()
 
-	faction = faction_name
-	if(!faction)
-		faction = pick("Baldur's Gate", "Luskan", "Waterdeep", "Neverwinter")
+	merchant_faction = faction_name
+	if(!merchant_faction)
+		merchant_faction = pick("Baldur's Gate", "Luskan", "Waterdeep", "Neverwinter")
 
 	sell_prices = prices
 	if(!length(sell_prices))
@@ -632,7 +632,7 @@
 
 	info += "<br/></font>"
 
-	info += "<font size=\"2\" face=\"[FOUNTAIN_PEN_FONT]\" color=#27293f>[writers_name] Shipwright of [faction]</font>"
+	info += "<font size=\"2\" face=\"[FOUNTAIN_PEN_FONT]\" color=#27293f>[writers_name] Shipwright of [merchant_faction]</font>"
 	info += "<br/>"
 	info += "<font size=\"2\" face=\"[FOUNTAIN_PEN_FONT]\" color=#27293f>Time: [gameTimestamp("hh:mm:ss", world.time - SSticker.round_start_time)]</font>"
 	info += "</div>"

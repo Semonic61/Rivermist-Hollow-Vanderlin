@@ -29,7 +29,7 @@
 			continue
 		if(!L.can_hear())
 			continue
-		if(!cast_on.faction_check_mob(L) && L != cast_on)
+		if(!cast_on.faction_check_atom(L) && L != cast_on)
 			continue
 		if(L.has_status_effect(/datum/status_effect/buff/battle_song))
 			continue

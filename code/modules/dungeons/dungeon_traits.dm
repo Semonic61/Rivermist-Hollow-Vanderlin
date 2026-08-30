@@ -133,7 +133,7 @@
 
 /mob/living/carbon/human/npc_in_distress/dungeon/Initialize(mapload)
 	. = ..()
-	faction = list(FACTION_DUNGEON)
+	set_faction(list(FACTION_DUNGEON))
 
 /// Distress captive found inside a dungeon: the stock coin reward plus a mote
 /// bonus paid to the run that freed them.

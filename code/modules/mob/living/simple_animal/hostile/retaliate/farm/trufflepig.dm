@@ -101,6 +101,7 @@
 
 //	........   Truffle Pig   ................
 /mob/living/simple_animal/hostile/retaliate/trufflepig
+	living_flags = MOVES_ON_ITS_OWN|CAN_BE_FIREMANNED
 	icon = 'icons/roguetown/mob/monster/piggie.dmi'
 	name = "truffle pig"
 	desc = "A hairy pig, bred for finding truffles in the bog."
@@ -215,10 +216,12 @@
 	icon = 'icons/roguetown/mob/monster/cow.dmi'
 
 /mob/living/simple_animal/hostile/retaliate/trufflepig/tamed(mob/user)
-	..()
+	. = ..()
+	if(.)
+		return
 	deaggroprob = 20
 	if(can_buckle)
-		AddComponent(/datum/component/riding/pig)
+		AddElement(/datum/element/ridable, /datum/component/riding/creature/pig)
 
 
 /mob/living/simple_animal/hostile/retaliate/trufflepig/attack_hand(mob/living/carbon/human/M)

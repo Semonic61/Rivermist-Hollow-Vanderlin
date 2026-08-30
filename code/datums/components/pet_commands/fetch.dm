@@ -40,7 +40,7 @@
 	return isnull(target) ? null : "signals [living_pet] to fetch [target]!"
 
 /// A friend has thrown something, if we're listening or at least not busy then go get it
-/datum/pet_command/fetch/proc/listened_throw(mob/living/carbon/thrower)
+/datum/pet_command/fetch/proc/listened_throw(mob/living/carbon/thrower, atom/movable/thrown_thing)
 	SIGNAL_HANDLER
 
 	var/mob/living/parent = weak_parent.resolve()
@@ -57,26 +57,35 @@
 	if (!can_see(parent, thrower, length = sense_radius))
 		return // Can't see it
 
-	var/obj/item/thrown_thing = thrower.get_active_held_item()
 	if (!isitem(thrown_thing))
 		return
-	if (blackboard[BB_FETCH_IGNORE_LIST]?[thrown_thing])
+	var/obj/item/thrown_item = thrown_thing
+	if (blackboard[BB_FETCH_IGNORE_LIST]?[thrown_item])
 		return // We're ignoring it already
 
-	RegisterSignal(thrown_thing, COMSIG_MOVABLE_THROW_LANDED, PROC_REF(listen_throw_land))
+	if(!thrown_item.throwing)
+		INVOKE_ASYNC(src, PROC_REF(begin_fetch), parent, thrown_item, thrower)
+		return
+	RegisterSignal(thrown_item, COMSIG_MOVABLE_THROW_LANDED, PROC_REF(listen_throw_land))
 
 /// A throw we were listening to has finished, see if it's in range for us to try grabbing it
 /datum/pet_command/fetch/proc/listen_throw_land(obj/item/thrown_thing, datum/thrownthing/throwingdatum)
+	SIGNAL_HANDLER
 	UnregisterSignal(thrown_thing, COMSIG_MOVABLE_THROW_LANDED)
 	var/mob/living/parent = weak_parent.resolve()
 	if (!parent)
+		return
+	INVOKE_ASYNC(src, PROC_REF(begin_fetch), parent, thrown_thing, throwingdatum?.get_thrower())
+
+/// Start fetching an item that has finished its throw.
+/datum/pet_command/fetch/proc/begin_fetch(mob/living/parent, obj/item/thrown_thing, mob/thrower)
+	if(QDELETED(parent) || QDELETED(thrown_thing) || QDELETED(thrower))
 		return
 	if (!isturf(thrown_thing.loc))
 		return
 	if (!can_see(parent, thrown_thing, length = sense_radius))
 		return
 
-	var/mob/thrower = throwingdatum?.get_thrower()
 	if(thrower)
 		try_activate_command(thrower)
 		set_command_target(parent, thrown_thing)

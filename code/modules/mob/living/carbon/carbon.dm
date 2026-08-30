@@ -181,7 +181,7 @@
 		hud_used.throw_icon?.update_appearance(UPDATE_ICON_STATE)
 
 /mob/proc/throw_item(atom/target, offhand = FALSE)
-	SEND_SIGNAL(src, COMSIG_MOB_THROW, target)
+	return
 
 /mob/living/carbon/throw_item(atom/target, offhand = FALSE)
 	. = ..()
@@ -207,34 +207,41 @@
 			if(pulling && pulling != src)
 				if(isliving(pulling))
 					var/mob/living/throwable_mob = pulling
-					if(!throwable_mob.buckled)
-						var/obj/item/grabbing/other_grab = offhand ? get_active_held_item() : get_inactive_held_item()
-						if(grab_state < GRAB_AGGRESSIVE)
-							stop_pulling(pulling_broke_free = TRUE)
-							return
+					if(QDELETED(throwable_mob))
+						return
+					var/is_fireman_carried = (throwable_mob.buckled == src) && buckle_lying
+					if(throwable_mob.buckled && !is_fireman_carried)
+						return
+					var/obj/item/grabbing/other_grab = offhand ? get_active_held_item() : get_inactive_held_item()
+					if(!is_fireman_carried && grab_state < GRAB_AGGRESSIVE)
 						stop_pulling(pulling_broke_free = TRUE)
-						if(HAS_TRAIT(src, TRAIT_PACIFISM))
-							to_chat(src, span_notice("I gently let go of [throwable_mob]."))
+						return
+					if(is_fireman_carried)
+						if(!unbuckle_mob(throwable_mob, force = TRUE) || QDELETED(throwable_mob))
 							return
-						thrown_thing = throwable_mob
-						thrown_speed = 1
-						thrown_range = round((GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH)/GET_MOB_ATTRIBUTE_VALUE(throwable_mob, STAT_CONSTITUTION))*2)
-						if(body_position == LYING_DOWN || (!HAS_TRAIT(thrown_thing, TRAIT_TINY) && throwable_mob.cmode && (throwable_mob.body_position != LYING_DOWN || GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH) < 15)))
-							while(end_T.z > start_T.z)
-								end_T = GET_TURF_BELOW(end_T)
-						if((end_T.z > start_T.z) && throwable_mob.cmode)
-							thrown_range -= 1
-						if(!istype(other_grab) || other_grab.grabbed != throwable_mob)
-							thrown_range -= 1
-						if(thrown_range <= 0)
-							return
-						if(start_T && end_T)
-							log_combat(src, throwable_mob, "thrown", addition="grab from tile in [AREACOORD(start_T)] towards tile at [AREACOORD(end_T)]")
+					stop_pulling(pulling_broke_free = TRUE)
+					if(HAS_TRAIT(src, TRAIT_PACIFISM) || HAS_TRAIT(src, TRAIT_NO_THROWING))
+						to_chat(src, span_notice("I gently let go of [throwable_mob]."))
+						return
+					thrown_thing = throwable_mob
+					thrown_speed = 1
+					thrown_range = round((GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH)/GET_MOB_ATTRIBUTE_VALUE(throwable_mob, STAT_CONSTITUTION))*2)
+					if(body_position == LYING_DOWN || (!HAS_TRAIT(thrown_thing, TRAIT_TINY) && throwable_mob.cmode && (throwable_mob.body_position != LYING_DOWN || GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH) < 15)))
+						while(end_T.z > start_T.z)
+							end_T = GET_TURF_BELOW(end_T)
+					if((end_T.z > start_T.z) && throwable_mob.cmode)
+						thrown_range -= 1
+					if(!istype(other_grab) || other_grab.grabbed != throwable_mob)
+						thrown_range -= 1
+					if(thrown_range <= 0)
+						return
+					if(start_T && end_T)
+						log_combat(src, throwable_mob, "thrown", addition="grab from tile in [AREACOORD(start_T)] towards tile at [AREACOORD(end_T)]")
 				else
 					thrown_thing = pulling
 					dropItemToGround(I, silent = TRUE)
 
-		else if(!CHECK_BITFIELD(I.item_flags, ABSTRACT) && !HAS_TRAIT(I, TRAIT_NODROP))
+		else if(ismobholder(I) && !(I.item_flags & ABSTRACT) && !HAS_TRAIT(I, TRAIT_NODROP))
 			thrown_thing = I
 			if(ismobholder(thrown_thing))
 				var/obj/item/mob_holder/old = thrown_thing
@@ -248,12 +255,14 @@
 			else
 				dropItemToGround(I, silent = TRUE)
 
-			if(HAS_TRAIT(src, TRAIT_PACIFISM) && I.throwforce)
+			if((HAS_TRAIT(src, TRAIT_PACIFISM) && I.throwforce) || HAS_TRAIT(src, TRAIT_NO_THROWING))
 				to_chat(src, "<span class='notice'>I set [I] down gently on the ground.</span>")
 				return
 
+		else
+			thrown_thing = I.on_thrown(src, target)
 
-	if(thrown_thing)
+	if(thrown_thing && !HAS_TRAIT(src, TRAIT_NO_THROWING))
 		if(!thrown_speed)
 			thrown_speed = thrown_thing.throw_speed
 		if(!thrown_range)
@@ -261,7 +270,10 @@
 		visible_message("<span class='danger'>[src] throws [thrown_thing].</span>", \
 						"<span class='danger'>I toss [thrown_thing].</span>")
 		log_message("has thrown [thrown_thing]", LOG_ATTACK)
-		thrown_thing.safe_throw_at(end_T, thrown_range, thrown_speed, src, null, null, null, move_force)
+		var/atom/throw_start_loc = thrown_thing.loc
+		var/throw_started = thrown_thing.safe_throw_at(end_T, thrown_range, thrown_speed, src, null, null, null, move_force)
+		if(!QDELETED(thrown_thing) && (throw_started || thrown_thing.throwing || thrown_thing.loc != throw_start_loc))
+			SEND_SIGNAL(src, COMSIG_MOB_THROW, thrown_thing)
 		if(!used_sound)
 			used_sound = pick(PUNCHWOOSH)
 		playsound(src, used_sound, 60, FALSE)
