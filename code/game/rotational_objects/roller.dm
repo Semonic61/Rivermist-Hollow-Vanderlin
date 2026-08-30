@@ -99,7 +99,7 @@
 
 /obj/structure/roller/can_connect(obj/structure/connector)
 	. = ..()
-	if(!.)
+	if(. == FALSE)
 		return FALSE
 
 	var/connect_dir = get_dir(src, connector)
@@ -107,10 +107,10 @@
 	// If connecting from front/back, only allow other aligned rollers
 	if(connect_dir == movedir || connect_dir == REVERSE_DIR(movedir))
 		if(!istype(connector, /obj/structure/roller))
-			return FALSE
+			return null
 		var/obj/structure/roller/other_roller = connector
 		if(other_roller.movedir != movedir && other_roller.movedir != REVERSE_DIR(movedir))
-			return FALSE
+			return null
 
 	return TRUE
 
@@ -139,13 +139,7 @@
 			stop_conveying(movable)
 
 	update_appearance()
-	propagate_rotation()
 	return TRUE
-
-/obj/structure/roller/proc/propagate_rotation()
-	for(var/obj/structure/roller/connected in connected_rollers)
-		if(connected.rotations_per_minute != rotations_per_minute)
-			connected.set_rotations_per_minute(rotations_per_minute)
 
 /obj/structure/roller/proc/build_roller_chain()
 	var/turf/forward_turf = get_step(src, movedir)

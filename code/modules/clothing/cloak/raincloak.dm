@@ -20,18 +20,7 @@
 	color = CLOTHING_BARK_BROWN
 	wetable = FALSE
 	is_rain_protective = TRUE
-
-/obj/item/clothing/cloak/raincloak/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
-
-/obj/item/clothing/cloak/raincloak/dropped(mob/living/carbon/human/user)
-	..()
-	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
-	if(STR)
-		var/list/things = STR.contents()
-		for(var/obj/item/I in things)
-			STR.remove_from_storage(I, get_turf(src))
+	has_storage = TRUE
 
 /obj/item/clothing/cloak/raincloak/colored
 	misc_flags = CRAFTING_TEST_EXCLUDE
