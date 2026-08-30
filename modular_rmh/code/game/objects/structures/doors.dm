@@ -4,7 +4,7 @@
 	name = "pyramid door"
 	icon_state = "sarcdoor"
 	icon = 'modular_rmh/icons/misc/doors.dmi'
-	armor = list("blunt" = 15, "slash" = 30, "stab" = 30,  "piercing" = 0, "fire" = 50, "acid" = 50)
+	armor_type = /datum/armor/rmh/structure/desert_door
 	open_sound = 'sound/foley/doors/stoneopen.ogg'
 	close_sound = 'sound/foley/doors/stoneclose.ogg'
 	repair_thresholds = list(/obj/item/natural/stone = 1)
@@ -33,7 +33,7 @@
 	name = "pyramid door"
 	icon_state = "sarcdoor"
 	icon = 'modular_rmh/icons/misc/doors.dmi'
-	armor = list("blunt" = 15, "slash" = 30, "stab" = 30,  "piercing" = 0, "fire" = 50, "acid" = 50)
+	armor_type = /datum/armor/rmh/structure/desert_door
 	open_sound = 'sound/foley/doors/stoneopen.ogg'
 	close_sound = 'sound/foley/doors/stoneclose.ogg'
 	repair_thresholds = list(/obj/item/natural/stone = 1)

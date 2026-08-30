@@ -100,7 +100,7 @@
 	desc = "A ragged hood of thick jute fibres. The itchiness is unbearable."
 	sewrepair = /datum/attribute/skill/misc/sewing/mending
 	color = "#999999"
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/leather
 
 /obj/item/clothing/face/facemask/steel/mad_touched
 	name = "eerie ancient mask"

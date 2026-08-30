@@ -32,7 +32,7 @@
 	icon_state = "hat"
 	item_state = "hat"
 	sewrepair = TRUE
-	armor = ARMOR_HEAD_LEATHER
+	armor_type = /datum/armor/rmh/head/foreign_jester
 	salvage_result = /obj/item/natural/hide/cured
 	misc_flags = CRAFTING_TEST_EXCLUDE
 

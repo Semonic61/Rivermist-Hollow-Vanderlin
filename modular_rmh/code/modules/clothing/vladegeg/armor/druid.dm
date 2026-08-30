@@ -18,14 +18,7 @@
 	body_parts_covered = CHEST|GROIN|VITALS|LEGS|ARMS
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST)
 
-	armor = list(
-		"blunt" = 80,
-		"slash" = 55,
-		"stab" = 35,
-		"piercing" = 15,
-		"fire" = -10,
-		"acid" = 10
-	)
+	armor_type = /datum/armor/rmh/druid
 
 	salvage_result = /obj/item/natural/hide/cured
 	misc_flags = CRAFTING_TEST_EXCLUDE

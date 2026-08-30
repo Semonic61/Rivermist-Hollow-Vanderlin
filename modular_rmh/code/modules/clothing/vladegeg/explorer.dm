@@ -2,7 +2,7 @@
 	name = "explorer's vest"
 	slot_flags = ITEM_SLOT_SHIRT | ITEM_SLOT_ARMOR
 	desc = "A dashing outfit for an experienced tomb raider."
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/rmh/explorer/vest
 	icon_state = "vest"
 	item_state = "vest"
 	icon = 'modular_rmh/icons/clothing/vladegeg/explorer.dmi'
@@ -22,7 +22,7 @@
 	sleevetype = "leg"
 	name = "explorer's trousers"
 	desc = "Hardy yet comfortable leather pants, suited even for hardest field work."
-	armor = ARMOR_PANTS_LEATHER
+	armor_type = /datum/armor/rmh/explorer/trousers
 	icon_state = "pants"
 	item_state = "pants"
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST)
@@ -40,7 +40,7 @@
 	icon_state = "hat"
 	item_state = "hat"
 	sewrepair = /datum/attribute/skill/misc/sewing/mending
-	armor = ARMOR_HEAD_LEATHER
+	armor_type = /datum/armor/rmh/explorer/hat
 	color = COLOR_DARK_BROWN
 	salvage_result = /obj/item/natural/hide/cured
 	misc_flags = CRAFTING_TEST_EXCLUDE

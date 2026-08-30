@@ -13,7 +13,7 @@
 	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	melt_amount = 75
 	melting_material = /datum/material/steel
-	armor = list("blunt" = DR_ULTRA, "slash" = DBLOCK_BSTEEL, "stab" = DBLOCK_BSTEEL, "piercing" = DBLOCK_BSTEEL, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/boots/plate/elf
 	clothing_flags = CANT_SLEEP_IN
 	sellprice = 30
 	max_integrity = ARMOR_INT_SIDE_STEEL

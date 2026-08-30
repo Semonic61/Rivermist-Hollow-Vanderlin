@@ -13,7 +13,7 @@
 	sellprice = VALUE_STEEL_ARMOR
 
 	armor_class = AC_MEDIUM
-	armor = ARMOR_MAILLE
+	armor_type = /datum/armor/maille
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS
 	prevent_crits = ALL_EXCEPT_BLUNT
 	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL
@@ -30,7 +30,7 @@
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_ARMOR
 
-	armor = ARMOR_MAILLE_IRON
+	armor_type = /datum/armor/maille/iron
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS
 	max_integrity = ARMOR_INT_CHEST_MEDIUM_IRON
 	item_weight = 13 KILOGRAMS
@@ -63,7 +63,7 @@
 	item_state = "ihauberk"
 	sellprice = VALUE_IRON_ARMOR_UNUSUAL
 
-	armor = ARMOR_MAILLE_IRON
+	armor_type = /datum/armor/maille/iron
 	max_integrity = ARMOR_INT_CHEST_MEDIUM_IRON
 	item_weight = 11 KILOGRAMS
 

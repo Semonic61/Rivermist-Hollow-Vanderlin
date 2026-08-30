@@ -23,7 +23,7 @@
 	clothing_flags = CANT_SLEEP_IN
 
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/pants/plate
 	max_integrity = INTEGRITY_STRONGEST
 	prevent_crits = ALL_EXCEPT_BLUNT
 	item_weight = 3.95 KILOGRAMS
@@ -42,7 +42,7 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/pants/plate/bad
 	max_integrity = INTEGRITY_STRONG
 	item_weight = 3.95 KILOGRAMS
 
@@ -65,7 +65,7 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/pants/plate/bad
 	max_integrity = INTEGRITY_STANDARD
 
 /obj/item/clothing/pants/platelegs/blk
@@ -79,7 +79,7 @@
 	smeltresult = /obj/item/ingot/blacksteel
 	melting_material = /datum/material/blacksteel
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PLATE_GOOD
+	armor_type = /datum/armor/pants/plate/good
 	item_weight = 4.95 KILOGRAMS
 	sellprice = VALUE_SILVER_ITEM * 2
 
@@ -119,7 +119,7 @@
 	desc = "A finely forged pair of silver plate leggings, offering additional protection against blunt force."
 	icon_state = "silverlegs"
 	allowed_ages = ALL_AGES_LIST //placeholder until younglings have onmob sprites for this item
-	armor = ARMOR_PLATE_SILVER
+	armor_type = /datum/armor/pants/plate/silver
 	smeltresult = /obj/item/ingot/silver
 	melting_material = /datum/material/silver
 	item_weight = 5.42 KILOGRAMS

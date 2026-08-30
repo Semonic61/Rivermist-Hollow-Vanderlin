@@ -127,7 +127,7 @@ GLOBAL_LIST_INIT(reverse_slave_phrases_translations, list(
 	desc = "A brutal-looking iron gorget inscribed with cruel arcane patterns. There's no mistaking its purpose."
 	icon_state = "m_collar"
 	item_state = "gorget"
-	armor = ARMOR_NECK_BAD
+	armor_type = /datum/armor/rmh/neck/slave_collar
 
 /obj/item/clothing/neck/slave_collar/female
 	name = "Elegant slave collar"

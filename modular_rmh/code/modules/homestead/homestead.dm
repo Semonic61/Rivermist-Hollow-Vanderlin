@@ -10,7 +10,7 @@
 	var/house_id
 	max_integrity = 4000
 	integrity_failure = 0.5
-	armor = list("blunt" = 25, "slash" = 25, "stab" = 25,  "piercing" = 25, "fire" = 150, "acid" = 0)
+	armor_type = /datum/armor/rmh/structure/town_door
 	damage_deflection = 20
 
 /obj/item/key/town

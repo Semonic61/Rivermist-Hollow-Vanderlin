@@ -779,7 +779,7 @@
 			armorval += natural
 
 	if(bbarding && !bbarding.obj_broken)
-		armorval = bbarding.armor.getRating(type)
+		armorval = bbarding.get_armor_rating(type)
 		var/intdamage = damage
 		if(type != "blunt")
 			if((damage + armor_penetration) > armorval)

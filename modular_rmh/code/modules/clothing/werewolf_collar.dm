@@ -12,7 +12,7 @@
 	melt_amount = 100
 	anvilrepair = /datum/attribute/skill/craft/blacksmithing
 	clothing_flags = CANT_SLEEP_IN
-	armor = ARMOR_NECK_BAD
+	armor_type = /datum/armor/rmh/neck/moonshackle
 	max_integrity = INTEGRITY_STRONG
 	prevent_crits = CUT_AND_MINOR_CRITS
 	sellprice = 180

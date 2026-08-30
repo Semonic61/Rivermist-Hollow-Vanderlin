@@ -7,7 +7,7 @@
 	item_state = "bellyriding_harness"
 	slot_flags = ITEM_SLOT_ARMOR
 	body_parts_covered = CHEST|VITALS
-	armor = ARMOR_MINIMAL
+	armor_type = /datum/armor/minimal
 	strip_delay = 7 SECONDS
 
 /obj/item/clothing/armor/bellyriding_harness/equipped(mob/user, slot, initial)

@@ -27,4 +27,4 @@
 	var/do_after_speed = 1 //Speed mod for do_after. Lower is better. If temporarily adjusting, please only modify using *= and /=, so you don't interrupt other calculations.
 
 /datum/physiology/New()
-	armor = new
+	armor = get_armor_by_type(/datum/armor/none)

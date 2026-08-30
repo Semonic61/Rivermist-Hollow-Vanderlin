@@ -3,7 +3,7 @@
 	desc = "A thick, well-crafted winter coat designed to retain heat and protect against harsh cold while remaining comfortable for daily wear."
 	icon_state = "wintercoat"
 	item_state = "wintercoat"
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/rmh/winter_coat
 	icon = 'modular_rmh/icons/clothing/vladegeg/wintercoat.dmi'
 	mob_overlay_icon = 'modular_rmh/icons/clothing/vladegeg/onmob/wintercoat.dmi'
 	sleeved = 'modular_rmh/icons/clothing/vladegeg/onmob/helpers/wintercoat_sleeves.dmi'

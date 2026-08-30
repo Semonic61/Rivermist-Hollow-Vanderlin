@@ -64,14 +64,14 @@
 /datum/unit_test/weapon_pen_greataxe_chop_is_medium/Run()
 	TEST_ASSERT_EQUAL(normalize_penetration(AP_GREATAXE_CHOP), ARMOR_TIER_MEDIUM, "Greataxe chop should normalize to medium pen tier")
 
-/datum/unit_test/armor_define_cuirass_not_bsteel/Run()
-	var/list/cuirass = ARMOR_CUIRASS
-	TEST_ASSERT_EQUAL(normalize_armor_rating("slash", cuirass["slash"]), ARMOR_TIER_HEAVY, "Cuirass slash protection should be heavy tier, not blacksteel")
+/datum/unit_test/armor_datum_plate_not_bsteel/Run()
+	var/datum/armor/plate = get_armor_by_type(/datum/armor/plate)
+	TEST_ASSERT_EQUAL(normalize_armor_rating(SLASH, plate.get_rating(SLASH)), ARMOR_TIER_HEAVY, "Plate slash protection should be heavy tier, not blacksteel")
 
-/datum/unit_test/armor_define_studded_blunt_capped/Run()
-	var/list/studded = ARMOR_LEATHER_STUDDED
-	TEST_ASSERT_EQUAL(normalize_armor_rating("blunt", studded["blunt"]), ARMOR_TIER_ULTRA, "Studded leather blunt DR should normalize to ultra tier")
-	TEST_ASSERT_EQUAL(normalize_armor_rating("slash", studded["slash"]), ARMOR_TIER_MEDIUM, "Studded leather is player light armor: DBLOCK_MEDIUM vs slash")
+/datum/unit_test/armor_datum_studded_blunt_capped/Run()
+	var/datum/armor/studded = get_armor_by_type(/datum/armor/leather/studded)
+	TEST_ASSERT_EQUAL(normalize_armor_rating(BLUNT, studded.get_rating(BLUNT)), ARMOR_TIER_ULTRA, "Studded leather blunt DR should normalize to ultra tier")
+	TEST_ASSERT_EQUAL(normalize_armor_rating(SLASH, studded.get_rating(SLASH)), ARMOR_TIER_MEDIUM, "Studded leather is player light armor: DBLOCK_MEDIUM vs slash")
 
 /datum/unit_test/armor_pen_overmatch_increases_passthrough/Run()
 	var/mob/living/armor_damage_test_dummy/dummy = allocate(/mob/living/armor_damage_test_dummy)
@@ -83,7 +83,7 @@
 	TEST_ASSERT(blocked_bsteel_pen < blocked_light_pen, "Heavy pen overmatch vs light armor should pass more damage through than equal-tier pen (got blocked [blocked_bsteel_pen] vs [blocked_light_pen])")
 
 /datum/unit_test/armor_blunt_integrity_multiplier/Run()
-	// Steel plate chest has ARMOR_PLATE which gives blunt = DR_LIGHT = tier 1.
+	// Steel plate chest uses /datum/armor/plate, which gives blunt = DR_LIGHT = tier 1.
 	// Without the 1.6x multiplier: intdamage = 20 / (1 + 0.2*1) = 16.67
 	// With    the 1.6x multiplier: intdamage = 20 * 1.6 / 1.2 = 26.67
 	// Threshold > 20 discriminates the two cases reliably.

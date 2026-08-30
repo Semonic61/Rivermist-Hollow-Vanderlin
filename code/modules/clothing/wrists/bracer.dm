@@ -7,7 +7,7 @@
 	icon_state = "bracers"
 	item_state = "bracers"
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/wrist/plate
 	prevent_crits = list(BCLASS_LASHING, BCLASS_BITE, BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_TWIST)
 	blocksound = PLATEHIT
 	resistance_flags = FIRE_PROOF
@@ -27,7 +27,7 @@
 	icon_state = "nocwrappings"
 	item_state = "nocwrappings"
 	armor_class = AC_LIGHT
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/wrist/padded/good
 	blade_dulling = DULLING_BASHCHOP
 	color = "#48443B"
 	max_integrity = ARMOR_INT_SIDE_STEEL //Heavy leather-tier protection and critical resistances, steel-tier integrity. Integrity boost encourages hand-to-hand parrying. Weaker than the Psydonic Thorns.
@@ -40,7 +40,7 @@
 	desc = "Plate forearm guards that offer good protection while allowing mobility."
 	icon_state = "ibracers"
 	item_state = "ibracers"
-	armor = ARMOR_MAILLE
+	armor_type = /datum/armor/wrist/maille
 	max_integrity = ARMOR_INT_SIDE_IRON
 
 
@@ -50,7 +50,7 @@
 	icon_state = "jackchain"
 	item_state = "jackchain"
 
-	armor = ARMOR_MAILLE
+	armor_type = /datum/armor/wrist/maille
 	max_integrity = ARMOR_INT_SIDE_STEEL
 	prevent_crits = CUT_AND_MINOR_CRITS
 	smeltresult = /obj/item/fertilizer/ash
@@ -64,7 +64,7 @@
 	item_state = "ijackchain"
 
 	armor_class = AC_MEDIUM
-	armor = ARMOR_MAILLE
+	armor_type = /datum/armor/wrist/maille
 	max_integrity = ARMOR_INT_SIDE_IRON
 	prevent_crits = CUT_AND_MINOR_CRITS
 	smeltresult = /obj/item/fertilizer/ash //we avoid melting one piece for one bar
@@ -78,7 +78,7 @@
 	icon_state = "lbracers"
 	item_state = "lbracers"
 	armor_class = AC_LIGHT
-	armor = list("blunt" = DR_MEDIUM, "slash" = DBLOCK_MEDIUM, "stab" = DBLOCK_MEDIUM, "piercing" = DBLOCK_LIGHT, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/wrist/leather
 	prevent_crits = list(BCLASS_LASHING, BCLASS_BITE, BCLASS_CUT)
 	resistance_flags = null
 	blocksound = SOFTHIT
@@ -98,14 +98,14 @@
 /obj/item/clothing/wrists/bracers/leather/advanced
 	name = "hardened leather bracers"
 	desc = "Hardened leather braces that will keep your wrists safe from bludgeoning."
-	armor = list("blunt" = DR_HEAVY, "slash" = DBLOCK_MEDIUM, "stab" = DBLOCK_LIGHT, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/wrist/leather/advanced
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST) //We're losing stab here
 	max_integrity = ARMOR_INT_SIDE_HARDLEATHER
 
 /obj/item/clothing/wrists/bracers/leather/masterwork
 	name = "masterwork leather bracers"
 	desc = "These bracers are a craftsmanship marvel. Made with the finest leather. Strong, nimble, reliable."
-	armor = list("blunt" = DR_ULTRA, "slash" = DBLOCK_HEAVY, "stab" = DBLOCK_MEDIUM, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/wrist/leather/master
 	prevent_crits = list(BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_TWIST) //We're getting chop here
 	max_integrity = ARMOR_INT_SIDE_STEEL // masterwork leather = steel-grade integrity, intended
 
@@ -134,7 +134,7 @@
 	icon_state = "psybarbs"
 	item_state = "psybarbs"
 	armor_class = AC_MEDIUM
-	armor = list("blunt" = DR_ULTRA, "slash" = DBLOCK_BSTEEL, "stab" = DBLOCK_BSTEEL, "piercing" = DBLOCK_BSTEEL, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/wrist/plate/psydon_thorns
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_SMASH, BCLASS_TWIST, BCLASS_PICK)
 	blocksound = PLATEHIT
 	resistance_flags = FIRE_PROOF

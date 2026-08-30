@@ -6,7 +6,7 @@
 	gender = PLURAL
 	icon_state = "blackboots"
 	item_state = "blackboots"
-	armor = list("blunt" = 15, "slash" = 15, "stab" = 15,  "piercing" = 5, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/boots
 	sellprice = 10
 	salvage_result = /obj/item/natural/hide/cured
 	salvage_amount = 1
@@ -25,7 +25,7 @@
 	prevent_crits = list(BCLASS_LASHING, BCLASS_BITE, BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_TWIST)
 	color = null
 	blocksound = PLATEHIT
-	armor = list("blunt" = DR_ULTRA, "slash" = DBLOCK_BSTEEL, "stab" = DBLOCK_BSTEEL, "piercing" = DBLOCK_BSTEEL, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/boots/plate
 	max_integrity = ARMOR_INT_SIDE_STEEL
 	armor_class = AC_HEAVY
 	clothing_flags = CANT_SLEEP_IN
@@ -45,7 +45,7 @@
 	icon_state = "soldierboots"
 	item_state = "soldierboots"
 	desc = "Lightly armored boots made from iron offering protection against both melee and ranged attacks."
-	armor = ARMOR_BRIGANDINE
+	armor_type = /datum/armor/boots/brigandine
 	max_integrity = ARMOR_INT_SIDE_IRON
 	armor_class = AC_MEDIUM
 	sellprice = 20
@@ -56,7 +56,7 @@
 	icon_state = "mailleboots"
 	item_state = "mailleboots"
 	desc = "Chainmail boots made from iron and cured leather, they offer a good protection for their cheap cost."
-	armor = ARMOR_MAILLE_IRON
+	armor_type = /datum/armor/boots/maille/iron
 	max_integrity = ARMOR_INT_SIDE_DECREPIT //meant to be weaker than iron plated boots, better options are out there waiting at the smith
 	armor_class = AC_LIGHT
 	sellprice = VALUE_IRON_ARMOR
@@ -76,7 +76,7 @@
 	melting_material = /datum/material/iron
 	melt_amount = 100
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/boots/plate/bad
 	max_integrity = ARMOR_INT_SIDE_DECREPIT
 
 /obj/item/clothing/shoes/boots/armor/blkknight
@@ -91,7 +91,7 @@
 	melting_material = /datum/material/blacksteel
 	melt_amount = 100
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PLATE_GOOD
+	armor_type = /datum/armor/boots/plate/blacksteel
 	item_weight = 2.1 KILOGRAMS
 	sellprice = VALUE_SILVER_ITEM * 2
 
@@ -103,7 +103,7 @@
 	gender = PLURAL
 	icon_state = "leatherboots"
 	item_state = "leatherboots"
-	armor = list("blunt" = 20, "slash" = 20, "stab" = 20,  "piercing" = 10, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/boots/leather
 	resistance_flags = FLAMMABLE
 	sellprice = 10
 	salvage_result = /obj/item/natural/hide/cured
@@ -120,7 +120,7 @@
 	desc = "Sturdy, durable, flexible. A marvel of the dark ages that exists solely to protect your toes."
 	max_integrity = ARMOR_INT_SIDE_HARDLEATHER
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST)
-	armor = list("blunt" = DR_HEAVY, "slash" = DBLOCK_MEDIUM, "stab" = DBLOCK_LIGHT, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/boots/leather/advanced
 
 /obj/item/clothing/shoes/boots/leather/advanced/watch
 	name = "watch boots"
@@ -138,7 +138,7 @@
 	desc = "These boots are a craftsmanship marvel. Made with the finest leather. Strong, nimble, reliable."
 	max_integrity = ARMOR_INT_SIDE_STEEL // masterwork leather = steel-grade integrity, intended
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST, BCLASS_CHOP) //we're adding chop here!
-	armor = list("blunt" = DR_ULTRA, "slash" = DBLOCK_HEAVY, "stab" = DBLOCK_MEDIUM, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/boots/leather/master
 
 /obj/item/clothing/shoes/boots/leather/masterwork/Initialize()
 	. = ..()
@@ -151,7 +151,7 @@
 	icon_state = "furlinedboots"
 	item_state = "furlinedboots"
 	sewrepair = /datum/attribute/skill/craft/tanning/patching
-	armor = list("blunt" = DR_MEDIUM, "slash" = DBLOCK_LIGHT, "stab" = DBLOCK_LIGHT, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/boots/leather/fur
 	salvage_result = /obj/item/natural/fur
 	salvage_amount = 1
 	item_weight = 0.9 KILOGRAMS
@@ -165,7 +165,7 @@
 	icon_state = "furlinedanklets"
 	item_state = "furlinedanklets"
 	sewrepair = /datum/attribute/skill/craft/tanning/patching
-	armor = list("blunt" = DR_MEDIUM, "slash" = DBLOCK_LIGHT, "stab" = DBLOCK_LIGHT, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/boots/leather/fur
 	is_barefoot = TRUE
 	salvage_amount = 1
 	salvage_result = /obj/item/natural/fur
@@ -179,7 +179,7 @@
 	item_state = "furlinedanklets"
 	is_barefoot = TRUE
 	sewrepair = /datum/attribute/skill/misc/sewing/mending
-	armor = list("blunt" = 5, "slash" = 5, "stab" = 5,  "piercing" = 0, "fire" = 0, "acid" = 0) //Thinks its fair for a piece of cloth and fiber.
+	armor_type = /datum/armor/boots/anklet/cloth //Thinks its fair for a piece of cloth and fiber.
 	salvage_result = /obj/item/natural/cloth
 	salvage_amount = 1
 	item_weight = 125 GRAMS
@@ -188,7 +188,7 @@
 	name = "silver boots"
 	desc = "Finely forged boots made out of silver."
 	icon_state = "silverboots"
-	armor = ARMOR_PLATE_SILVER
+	armor_type = /datum/armor/boots/plate/silver
 	smeltresult = /obj/item/ingot/silver
 	melting_material = /datum/material/silver
 	melt_amount = 100

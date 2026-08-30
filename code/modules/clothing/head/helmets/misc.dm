@@ -149,7 +149,7 @@
 	icon_state = "ikettle"
 	item_state = "ikettle"
 	sellprice = VALUE_CHEAP_IRON_HELMET
-	armor = ARMOR_SCALE
+	armor_type = /datum/armor/head/scale
 	max_integrity = ARMOR_INT_HELMET_IRON
 	item_weight = 2.2 KILOGRAMS
 	melting_material = /datum/material/iron
@@ -169,7 +169,7 @@
 	icon_state = "islitkettle"
 	item_state = "islitkettle"
 	sellprice = VALUE_CHEAP_IRON_HELMET
-	armor = ARMOR_SCALE
+	armor_type = /datum/armor/head/scale
 	max_integrity = ARMOR_INT_HELMET_IRON
 	item_weight = 2.2 KILOGRAMS
 
@@ -191,7 +191,7 @@
 	item_state = "lakkaricap"
 	sellprice = 50
 	flags_inv = null
-	armor = ARMOR_SCALE
+	armor_type = /datum/armor/head/scale
 	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	body_parts_covered = COVERAGE_HEAD
 	max_integrity = ARMOR_INT_HELMET_IRON
@@ -208,7 +208,7 @@
 	melt_amount = 100
 	sellprice = VALUE_LEATHER_HELMET // until copper/new mats properly finished and integrated this is a stopgap
 
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/head/padded/good
 	body_parts_covered = COVERAGE_HEAD
 	prevent_crits = ONLY_VITAL_ORGANS
 	max_integrity = INTEGRITY_POOR
@@ -227,7 +227,7 @@
 	blocksound = CHAINHIT
 	resistance_flags = FIRE_PROOF
 
-	armor = ARMOR_MAILLE_IRON
+	armor_type = /datum/armor/head/maille/iron
 	body_parts_covered = NECK|HAIR|EARS|HEAD
 	prevent_crits = ALL_EXCEPT_BLUNT
 	item_weight = 1.56 KILOGRAMS
@@ -244,7 +244,7 @@
 	blocksound = CHAINHIT
 	resistance_flags = FIRE_PROOF
 
-	armor = ARMOR_MAILLE
+	armor_type = /datum/armor/head/maille
 	body_parts_covered = NECK|HAIR|EARS|HEAD
 	prevent_crits = ALL_EXCEPT_BLUNT
 	item_weight = 1.56 KILOGRAMS
@@ -260,7 +260,7 @@
 	melting_material = /datum/material/steel
 	sellprice = VALUE_STEEL_HELMET
 
-	armor =  ARMOR_PLATE
+	armor_type = /datum/armor/head/plate
 	body_parts_covered = COVERAGE_HEAD
 	max_integrity = ARMOR_INT_HELMET_STEEL
 	item_weight = 3.1 KILOGRAMS
@@ -274,7 +274,7 @@
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_HELMET
 
-	armor =  ARMOR_PLATE_BAD
+	armor_type = /datum/armor/head/plate/bad
 	max_integrity = ARMOR_INT_HELMET_IRON
 	item_weight = 3.1 KILOGRAMS
 
@@ -340,7 +340,7 @@
 	melting_material = /datum/material/steel // Most visored helmets are made of steel
 	sellprice = VALUE_STEEL_HELMET+BONUS_VALUE_TINY
 
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/head/plate
 	body_parts_covered = FULL_HEAD
 	max_integrity = INTEGRITY_STRONG
 	prevent_crits = ALL_CRITICAL_HITS
@@ -387,7 +387,7 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_HELMET+BONUS_VALUE_TINY
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/head/plate/bad
 	max_integrity = ARMOR_INT_HELMET_IRON
 
 //............... Hounskull ............... //
@@ -399,7 +399,7 @@
 	icon_state = "hounskull"
 	emote_environment = 3
 
-	armor = ARMOR_PLATE_GOOD
+	armor_type = /datum/armor/head/plate/good
 	item_weight = 4.45 KILOGRAMS
 
 //............... Knights Helmet ............... //
@@ -429,7 +429,7 @@
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_HELMET+BONUS_VALUE_TINY
 
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/head/plate/bad
 	max_integrity = ARMOR_INT_HELMET_IRON
 
 //................. Royal Knight's helmet .............. //
@@ -554,7 +554,7 @@
 	smeltresult = /obj/item/ingot/silver
 	melting_material = /datum/material/silver
 	allowed_ages = ALL_AGES_LIST //placeholder until younglings have onmob sprites for this item
-	armor = ARMOR_PLATE_SILVER
+	armor_type = /datum/armor/head/plate/silver
 	sellprice = VALUE_SILVER_ARMOR
 	item_weight = 6 KILOGRAMS
 	worn_x_dimension = 64
@@ -601,7 +601,7 @@
 	item_state = "bkhelm"
 	flags_inv = HIDEEARS|HIDEFACE
 	flags_cover = HEADCOVERSEYES | HEADCOVERSMOUTH
-	armor = list("blunt" = DR_ULTRA, "slash" = DBLOCK_BSTEEL, "stab" = DBLOCK_HEAVY, "piercing" = DBLOCK_BSTEEL, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/head/plate/blacksteel
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_SMASH, BCLASS_TWIST, BCLASS_PICK)
 	block2add = FOV_RIGHT|FOV_LEFT
 	max_integrity = 425 // bespoke integrity: intentional (special item)
