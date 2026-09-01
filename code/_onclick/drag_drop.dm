@@ -64,8 +64,6 @@
 	var/doneset
 	var/aghost_toggle
 	var/last_charge_process
-	//var/datum/patreon_data/patreon
-	//var/datum/twitch_data/twitch
 	var/toggled_leylines = FALSE
 	/// The DPI scale of the client. 1 is equivalent to 100% window scaling, 2 will be 200% window scaling
 	var/window_scaling

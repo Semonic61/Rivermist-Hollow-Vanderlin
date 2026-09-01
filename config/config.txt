@@ -330,7 +330,7 @@ SOFT_POPCAP_MESSAGE Be warned that the server is currently serving a high number
 HARD_POPCAP 100
 
 ## Message for hard cap
-HARD_POPCAP_MESSAGE Too many people are alive. Wait for those living to die or donate to our patreon for a reserved slot.
+HARD_POPCAP_MESSAGE Too many people are alive. Wait for those living to die or observe until a slot opens.
 
 ## Uncomment for 'extreme' population caps, players will not be allowed to join the server if living crew exceeds the listed number.
 #EXTREME_POPCAP 200

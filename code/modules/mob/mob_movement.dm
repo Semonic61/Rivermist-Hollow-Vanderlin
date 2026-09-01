@@ -597,9 +597,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTEARS
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTEARS)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTEARS)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTEARS))
 		to_chat(src, span_info("I will hear all now."))
 	else
 		to_chat(src, span_info("I will hear like a mortal."))
@@ -611,9 +611,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTWHISPER
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTWHISPER)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTWHISPER)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTWHISPER))
 		to_chat(src, span_info("I will hear all whispers now."))
 	else
 		to_chat(src, span_info("I will hear like a mortal."))
@@ -625,9 +625,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTSIGHT
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTSIGHT)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTSIGHT)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTSIGHT))
 		to_chat(src, span_info("I will see all whispers now."))
 	else
 		to_chat(src, span_info("I will see like a mortal."))

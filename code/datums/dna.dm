@@ -160,7 +160,7 @@
 
 /mob/living/carbon/human/set_species(datum/species/mrace, icon_update = TRUE, datum/preferences/pref_load = null, initial_set = FALSE)
 	if(pref_load)
-		skin_tone = pref_load.skin_tone
+		skin_tone = pref_load.read_preference(/datum/preference/choiced/skin_tone)
 	..()
 	if(icon_update)
 		update_body()

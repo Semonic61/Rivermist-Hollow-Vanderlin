@@ -25,8 +25,6 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 	var/sexes = TRUE
 	/// Percentage split of male female members of this species. Skews for males.
 	var/gender_ratio = 50
-	/// Whether this species a requires donator subscription to access, we removed all donator restrictions for species, but it's here if we ever want to reenable them or smth.
-	var/donator_req = FALSE
 	/// Used for sorting the species in the species_list, check out species_order_list for the order itself
 	var/order_num = 99 // so that if there's nothing in the species_order_list, we still don't break
 	var/default_mob_weight = HUMAN_WEIGHT
@@ -447,7 +445,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 				ACCENT_KOBOLD
 			)
 
-			///This will only trigger for donators
+			/// A player-selected accent outside the species default uses its own accent rules.
 			if(human.accent in accents_list)
 				/// If the human is using a specie with multiple accents
 				if(length(human.dna.species.multiple_accents))

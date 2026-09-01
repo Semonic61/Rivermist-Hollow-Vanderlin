@@ -179,7 +179,7 @@
 	return get_named_body_size_choices(BELLY_SIZES_BY_NAME, get_max_belly_size())
 
 /datum/preferences/proc/get_body_type_genital_set()
-	if(gender == FEMALE)
+	if(read_preference(/datum/preference/choiced/gender) == FEMALE)
 		return "feminine"
 	return "masculine"
 
@@ -762,13 +762,18 @@
 	apply_genital_quirk_overrides()
 
 /datum/preferences/proc/clear_flavor()
-	flavortext = null
-	nsfwflavortext = null
-	erpprefs_flavor = null
-	ooc_notes = null
-	ooc_extra = null
-	song_title = null
-	song_artist = null
-	headshot_link = null
-	img_gallery = null
-	nsfw_img_gallery = null
+	write_preference(/datum/preference/text/flavortext, null)
+	write_preference(/datum/preference/text/flavortext_display, null)
+	write_preference(/datum/preference/text/nsfwflavortext, null)
+	write_preference(/datum/preference/text/erpprefs_flavor, null)
+	write_preference(/datum/preference/text/ooc_notes, null)
+	write_preference(/datum/preference/text/ooc_notes_display, null)
+	write_preference(/datum/preference/text/ooc_extra, null)
+	write_preference(/datum/preference/text/ooc_extra_link, null)
+	write_preference(/datum/preference/text/song_title, null)
+	write_preference(/datum/preference/text/song_artist, null)
+	write_preference(/datum/preference/text/song_link, null)
+	write_preference(/datum/preference/text/headshot_link, null)
+	write_preference(/datum/preference/text/nsfw_headshot_link, null)
+	write_preference(/datum/preference/list_type/profile_gallery/images, list())
+	write_preference(/datum/preference/list_type/profile_gallery/nsfw_images, list())

@@ -2,14 +2,14 @@
 	var/dummy_key = "unit_test_preview_construct_cleanup"
 	var/datum/preferences/prefs = allocate(/datum/preferences)
 
-	prefs.gender = FEMALE
-	prefs.age = AGE_ADULT
-	prefs.selected_patron = GLOB.patron_list[prefs.default_patron]
+	prefs.write_preference(/datum/preference/choiced/gender, FEMALE)
+	prefs.write_preference(/datum/preference/choiced/age, AGE_ADULT)
+	prefs.write_preference(/datum/preference/choiced/patron, /datum/patron/divine/astrata)
 
-	prefs.pref_species = new /datum/species/automaton/construct
+	prefs.set_species_preference(/datum/species/automaton/construct)
 	prefs.features = prefs.pref_species.get_random_features()
 	prefs.body_markings = prefs.pref_species.get_random_body_markings(prefs.features)
-	prefs.real_name = prefs.pref_species.random_name(prefs.gender, TRUE)
+	prefs.write_preference(/datum/preference/text/real_name, prefs.pref_species.random_name(prefs.read_preference(/datum/preference/choiced/gender), TRUE))
 
 	get_flat_human_icon(null, null, prefs, dummy_key, list(SOUTH))
 
@@ -23,10 +23,10 @@
 			break
 	TEST_ASSERT(has_robotic_bodypart, "Expected construct previews to roboticize the pooled dummy's bodyparts.")
 
-	prefs.pref_species = new /datum/species/human/northern
+	prefs.set_species_preference(/datum/species/human/northern)
 	prefs.features = prefs.pref_species.get_random_features()
 	prefs.body_markings = prefs.pref_species.get_random_body_markings(prefs.features)
-	prefs.real_name = prefs.pref_species.random_name(prefs.gender, TRUE)
+	prefs.write_preference(/datum/preference/text/real_name, prefs.pref_species.random_name(prefs.read_preference(/datum/preference/choiced/gender), TRUE))
 
 	get_flat_human_icon(null, null, prefs, dummy_key, list(SOUTH))
 

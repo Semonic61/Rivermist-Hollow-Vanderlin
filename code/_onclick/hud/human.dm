@@ -48,7 +48,7 @@
 
 	scannies = new /atom/movable/screen/scannies(null, src)
 	static_inventory += scannies
-	if(owner.client?.prefs?.crt == TRUE)
+	if(owner.client?.prefs?.read_preference(/datum/preference/toggle/crt))
 		scannies.alpha = 70
 
 	action_intent = new /atom/movable/screen/act_intent/rogintent(null, src)

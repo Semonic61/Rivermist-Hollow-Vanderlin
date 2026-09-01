@@ -15,18 +15,6 @@ GLOBAL_PROTECT(whitelist)
 		if(findtextEx(line,"#",1,2))
 			continue
 		GLOB.whitelist += ckey(line)
-/*
-/proc/check_whitelist(ckey)
-	if(!GLOB.whitelist || !GLOB.whitelist.len)
-		load_whitelist()
-#ifdef TESTSERVER
-	var/plevel = check_patreon_lvl(ckey)
-	var/tlevel = check_twitch_lvl(ckey)
-	if(plevel >= 3 || tlevel >= 1)
-		return TRUE
-#endif
-	return (ckey in GLOB.whitelist)*/
-
 // HSECTOR EDIT START
 /proc/check_whitelist(key)
 	if(!SSdbcore.Connect())

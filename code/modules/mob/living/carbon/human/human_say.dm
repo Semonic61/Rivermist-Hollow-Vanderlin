@@ -40,7 +40,7 @@
 	if(face_name != voice_name)
 		// This isn't accurate purposely
 		var/appendage = "Figure"
-		switch(client?.prefs.voice_type)
+		switch(client?.prefs?.read_preference(/datum/preference/choiced/voice_type))
 			if(VOICE_TYPE_FEM)
 				appendage = "Woman"
 			if(VOICE_TYPE_MASC)

@@ -180,6 +180,7 @@ GLOBAL_LIST_EMPTY(character_setup_smallclothes_thumbs)
 
 /// Live selections + colors for the underwear tab.
 /datum/preferences/proc/character_setup_smallclothes_data()
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	var/list/entries = list()
 	for(var/list/category as anything in character_setup_smallclothes_categories())
 		var/obj/item/clothing/current_type = smallclothes_preferences[category["pref"]]

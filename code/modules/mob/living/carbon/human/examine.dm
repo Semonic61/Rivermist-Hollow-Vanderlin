@@ -112,7 +112,7 @@
 				. += span_tinynotice("[P[THEY]] hate [hated_drink.name].")
 
 	if(!HAS_TRAIT(src, TRAIT_FACELESS))
-		if(client?.is_donator() && headshot_link)
+		if(headshot_link)
 			var/safe_headshot_link = html_encode(headshot_link)
 			LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, chat_headshot(safe_headshot_link))
 		if(flavortext || headshot_link || ooc_extra_link)

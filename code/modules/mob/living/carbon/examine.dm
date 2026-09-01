@@ -103,8 +103,9 @@
 	. = list()
 
 	// Ooc lang
-	if(client?.prefs?.player_language) //should be tied to known persons but can't do that until there is a way to recognise new people
-		. += span_tiny("OOC: This player speaks [client.prefs.player_language].")
+	var/player_language = client?.prefs?.read_preference(/datum/preference/text/player_language)
+	if(player_language) //should be tied to known persons but can't do that until there is a way to recognise new people
+		. += span_tiny("OOC: This player speaks [player_language].")
 
 	// Lord's title
 	if(GLOB.lord_titles[real_name]) //should be tied to known persons but can't do that until there is a way to recognise new people

@@ -6,9 +6,9 @@
 	fdel(savefile_path)
 
 	var/datum/preferences/prefs = allocate(/datum/preferences)
-	prefs.gender = FEMALE
-	prefs.age = AGE_ADULT
-	prefs.pref_species = new /datum/species/human/northern
+	prefs.write_preference(/datum/preference/choiced/gender, FEMALE)
+	prefs.write_preference(/datum/preference/choiced/age, AGE_ADULT)
+	prefs.set_species_preference(/datum/species/human/northern)
 	prefs.quirks = list(/datum/quirk/peculiarity/extra_genitals)
 	prefs.validate_customizer_entries()
 
@@ -43,9 +43,9 @@
 	fdel(savefile_path)
 
 	var/datum/preferences/prefs = allocate(/datum/preferences)
-	prefs.gender = FEMALE
-	prefs.age = AGE_ADULT
-	prefs.pref_species = new /datum/species/human/northern
+	prefs.write_preference(/datum/preference/choiced/gender, FEMALE)
+	prefs.write_preference(/datum/preference/choiced/age, AGE_ADULT)
+	prefs.set_species_preference(/datum/species/human/northern)
 	prefs.quirks = list(/datum/quirk/peculiarity/extra_genitals)
 	prefs.validate_customizer_entries()
 
@@ -78,10 +78,10 @@
 	var/datum/preferences/prefs = allocate(/datum/preferences)
 	prefs.path = savefile_path
 	prefs.default_slot = 1
-	prefs.gender = FEMALE
-	prefs.real_name = "Round Trip"
-	prefs.age = AGE_ADULT
-	prefs.pref_species = new /datum/species/human/northern
+	prefs.write_preference(/datum/preference/choiced/gender, FEMALE)
+	prefs.write_preference(/datum/preference/text/real_name, "Round Trip")
+	prefs.write_preference(/datum/preference/choiced/age, AGE_ADULT)
+	prefs.set_species_preference(/datum/species/human/northern)
 	prefs.validate_customizer_entries()
 
 	prefs.quirks = list(/datum/quirk/peculiarity/extra_genitals)
@@ -106,9 +106,9 @@
 /// state rather than throwing away half of a selection the player deliberately built.
 /datum/unit_test/preferences_extra_genitals_toggle_cycle/Run()
 	var/datum/preferences/prefs = allocate(/datum/preferences)
-	prefs.gender = FEMALE
-	prefs.age = AGE_ADULT
-	prefs.pref_species = new /datum/species/human/northern
+	prefs.write_preference(/datum/preference/choiced/gender, FEMALE)
+	prefs.write_preference(/datum/preference/choiced/age, AGE_ADULT)
+	prefs.set_species_preference(/datum/species/human/northern)
 	prefs.quirks = list(/datum/quirk/peculiarity/extra_genitals)
 	prefs.validate_customizer_entries()
 	prefs.set_mixed_genital_set()
@@ -129,9 +129,9 @@
 /// Without the quirk the toggle keeps its plain two-state behaviour.
 /datum/unit_test/preferences_extra_genitals_toggle_without_quirk/Run()
 	var/datum/preferences/prefs = allocate(/datum/preferences)
-	prefs.gender = FEMALE
-	prefs.age = AGE_ADULT
-	prefs.pref_species = new /datum/species/human/northern
+	prefs.write_preference(/datum/preference/choiced/gender, FEMALE)
+	prefs.write_preference(/datum/preference/choiced/age, AGE_ADULT)
+	prefs.set_species_preference(/datum/species/human/northern)
 	prefs.quirks = list()
 	prefs.validate_customizer_entries()
 	prefs.set_genital_set("feminine")
@@ -153,10 +153,10 @@
 	var/datum/preferences/prefs = allocate(/datum/preferences)
 	prefs.path = savefile_path
 	prefs.default_slot = 1
-	prefs.gender = FEMALE
-	prefs.real_name = "Menu Flow"
-	prefs.age = AGE_ADULT
-	prefs.pref_species = new /datum/species/human/northern
+	prefs.write_preference(/datum/preference/choiced/gender, FEMALE)
+	prefs.write_preference(/datum/preference/text/real_name, "Menu Flow")
+	prefs.write_preference(/datum/preference/choiced/age, AGE_ADULT)
+	prefs.set_species_preference(/datum/species/human/northern)
 	prefs.quirks = list()
 	prefs.validate_customizer_entries()
 	prefs.set_genital_set("feminine")

@@ -115,7 +115,7 @@ SUBSYSTEM_DEF(tgui)
 	window.status = TGUI_WINDOW_LOADING
 	window.initialize(
 		strict_mode = TRUE,
-		fancy = user.client.prefs.tgui_fancy,
+		fancy = user.client.prefs.read_preference(/datum/preference/toggle/tgui_fancy),
 		assets = list(
 			get_asset_datum(/datum/asset/simple/tgui),
 		))

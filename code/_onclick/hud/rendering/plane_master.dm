@@ -80,7 +80,7 @@
 /atom/movable/screen/plane_master/game_world/backdrop(mob/mymob)
 	. = ..()
 	clear_filters()
-	if(istype(mymob) && mymob.client && mymob.client.prefs && mymob.client.prefs.ambientocclusion)
+	if(istype(mymob) && mymob.client?.prefs?.read_preference(/datum/preference/toggle/ambientocclusion))
 		add_filter("ambient_occlusion_filter", 1, drop_shadow_filter(x=0, y=-2, size=3, offset=1, color="#04080f96"))
 
 /atom/movable/screen/plane_master/massive_obj
@@ -93,7 +93,7 @@
 /atom/movable/screen/plane_master/massive_obj/backdrop(mob/mymob)
 	. = ..()
 	clear_filters()
-	if(istype(mymob) && mymob.client && mymob.client.prefs && mymob.client.prefs.ambientocclusion)
+	if(istype(mymob) && mymob.client?.prefs?.read_preference(/datum/preference/toggle/ambientocclusion))
 		add_filter("ambient_occlusion_filter", 1, drop_shadow_filter(x=0, y=-2, size=3, offset=1, color="#04080f96"))
 
 /atom/movable/screen/plane_master/ghost
@@ -209,7 +209,7 @@
 	. = ..()
 	clear_filters()
 	add_filter("vision_cone", 1, alpha_mask_filter(render_source = FIELD_OF_VISION_MASK_RENDER_TARGET, flags = MASK_INVERSE))
-	if(istype(mymob) && mymob.client && mymob.client.prefs && mymob.client.prefs.ambientocclusion)
+	if(istype(mymob) && mymob.client?.prefs?.read_preference(/datum/preference/toggle/ambientocclusion))
 		add_filter("ambient_occlusion_filter", 2, drop_shadow_filter(x=0, y=-2, size=3, offset=1, color="#04080f96"))
 
 /atom/movable/screen/plane_master/game_world_above
@@ -222,7 +222,7 @@
 /atom/movable/screen/plane_master/game_world_above/backdrop(mob/mymob)
 	. = ..()
 	clear_filters()
-	if(istype(mymob) && mymob.client && mymob.client.prefs && mymob.client.prefs.ambientocclusion)
+	if(istype(mymob) && mymob.client?.prefs?.read_preference(/datum/preference/toggle/ambientocclusion))
 		add_filter("ambient_occlusion_filter", 1, drop_shadow_filter(x=0, y=-2, size=3, offset=1, color="#04080f96"))
 
 /atom/movable/screen/plane_master/o_light_visual
@@ -356,7 +356,7 @@
 /atom/movable/screen/plane_master/game_world_below/backdrop(mob/mymob)
 	. = ..()
 	clear_filters()
-	if(istype(mymob) && mymob.client && mymob.client.prefs && mymob.client.prefs.ambientocclusion)
+	if(istype(mymob) && mymob.client?.prefs?.read_preference(/datum/preference/toggle/ambientocclusion))
 		add_filter("ambient_occlusion_filter", 1, drop_shadow_filter(x=0, y=-2, size=3, offset=1.5, color="#04080f96"))
 
 /atom/movable/screen/plane_master/game_world_walls
@@ -369,7 +369,7 @@
 /atom/movable/screen/plane_master/game_world_walls/backdrop(mob/mymob)
 	. = ..()
 	clear_filters()
-	if(istype(mymob) && mymob.client && mymob.client.prefs && mymob.client.prefs.ambientocclusion)
+	if(istype(mymob) && mymob.client?.prefs?.read_preference(/datum/preference/toggle/ambientocclusion))
 		add_filter("ambient_occlusion_filter", 1, drop_shadow_filter(x=0, y=-2, size=8, offset=4, color="#000000ff"))
 
 /atom/movable/screen/plane_master/area

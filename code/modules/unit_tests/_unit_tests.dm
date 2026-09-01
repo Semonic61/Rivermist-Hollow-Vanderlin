@@ -113,6 +113,7 @@
 #include "pocket_dimensions.dm"
 #include "preferences_erp.dm"
 #include "preferences_extra_genitals.dm"
+#include "preferences_migration.dm"
 #include "preferences_preview_construct_cleanup.dm"
 #include "preferences_preview_taur_cleanup.dm"
 #include "projectiles.dm"

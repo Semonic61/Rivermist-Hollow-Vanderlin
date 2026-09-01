@@ -170,7 +170,7 @@
 
 /// Fully randomizes everything in the character.
 // Reflect changes in [datum/preferences/proc/randomise_appearance_prefs]
-/mob/living/carbon/human/proc/randomize_human_appearance(randomise_flags = ALL, include_donator = TRUE)
+/mob/living/carbon/human/proc/randomize_human_appearance(randomise_flags = ALL)
 	if(!dna)
 		return
 

@@ -58,42 +58,18 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 	multi_ready_characters = list()
 	multi_ready_index = 1
 
-	if(!client?.prefs?.multi_char_ready || !length(client.prefs.multi_ready_slots))
+	if(!client?.prefs?.read_preference(/datum/preference/toggle/multi_char_ready) || !length(client.prefs.multi_ready_slots))
 		return
 
 	var/original_slot = client.prefs.default_slot
 
 	for(var/slot in client.prefs.multi_ready_slots)
-		client.prefs.load_character(slot)
-		var/list/quirk_extra_customizations = list()
-		for(var/quirk_type in client.prefs.quirk_extra_customizations)
-			var/list/extra_values = client.prefs.quirk_extra_customizations[quirk_type]
-			if(islist(extra_values))
-				quirk_extra_customizations[quirk_type] = extra_values.Copy()
+		if(!client.prefs.load_character(slot))
+			continue
 		var/list/char_data = list(
 			"slot" = slot,
-			"real_name" = client.prefs.real_name,
-			"gender" = client.prefs.gender,
-			"age" = client.prefs.age,
-			"pref_species" = client.prefs.pref_species,
-			"selected_patron" = client.prefs.selected_patron,
+			"real_name" = client.prefs.read_preference(/datum/preference/text/real_name),
 			"job_preferences" = client.prefs.job_preferences?.Copy(),
-			"features" = client.prefs.features?.Copy(),
-			"quirks" = client.prefs.quirks?.Copy(),
-			"quirk_customizations" = client.prefs.quirk_customizations?.Copy(),
-			"quirk_extra_customizations" = quirk_extra_customizations,
-			"skin_tone" = client.prefs.skin_tone,
-			"eye_color" = client.prefs.eye_color,
-			//"underwear" = client.prefs.underwear,
-			//"undershirt" = client.prefs.undershirt,
-			"socks" = client.prefs.socks,
-			"pronouns" = client.prefs.pronouns,
-			"voice_type" = client.prefs.voice_type,
-			"voice_pack" = client.prefs.voice_pack,
-			"voice_color" = client.prefs.voice_color,
-			"domhand" = client.prefs.domhand,
-			"flavortext" = client.prefs.flavortext,
-			"headshot_link" = client.prefs.headshot_link,
 		)
 		multi_ready_characters += list(char_data)
 
@@ -108,42 +84,11 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 	if(!char_data)
 		return FALSE
 
-	var/datum/preferences/P = client.prefs
-	// 0 Validation on any of this
-	P.real_name = char_data["real_name"]
-	P.gender = char_data["gender"]
-	P.age = char_data["age"]
-	P.pref_species = char_data["pref_species"]
-	P.selected_patron = char_data["selected_patron"]
-	P.job_preferences = char_data["job_preferences"]
-	P.features = char_data["features"]
-	P.quirks = char_data["quirks"]
-	P.quirk_customizations = char_data["quirk_customizations"]
-	P.quirk_extra_customizations = char_data["quirk_extra_customizations"]
-	P.skin_tone = char_data["skin_tone"]
-	P.eye_color = char_data["eye_color"]
-	//P.underwear = char_data["underwear"]
-	//P.undershirt = char_data["undershirt"]
-	P.socks = char_data["socks"]
-	P.pronouns = char_data["pronouns"]
-	P.voice_type = char_data["voice_type"]
-	P.voice_pack = char_data["voice_pack"]
-	P.voice_color = char_data["voice_color"]
-	P.domhand = char_data["domhand"]
-	P.flavortext = char_data["flavortext"]
-	P.headshot_link = char_data["headshot_link"]
-
-	P.default_slot = char_data["slot"]
+	// Load the complete slot through the canonical preference path. This keeps
+	// datum preferences and RMH's complex character data in sync during job checks.
+	if(!client.prefs.load_character(char_data["slot"]))
+		return FALSE
 	multi_ready_index = index
-
-	if(!P.job_preferences)
-		P.job_preferences = list()
-	if(!islist(P.quirks))
-		P.quirks = list()
-	if(!islist(P.quirk_customizations))
-		P.quirk_customizations = list()
-	if(!islist(P.quirk_extra_customizations))
-		P.quirk_extra_customizations = list()
 
 	return TRUE
 
@@ -305,7 +250,7 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 	observer.set_ghost_appearance()
 	observer.mind = mind
 	if(observer.client && observer.client.prefs)
-		observer.real_name = observer.client.prefs.real_name
+		observer.real_name = observer.client.prefs.read_preference(/datum/preference/text/real_name)
 		observer.name = observer.real_name
 	observer.stop_sound_channel(CHANNEL_LOBBYMUSIC)
 	QDEL_NULL(mind)
@@ -336,8 +281,6 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 			return "[jobtitle] is for the folllowers of other gods."
 		if(JOB_UNAVAILABLE_QUALITY)
 			return "[jobtitle] requires higher player quality."
-		if(JOB_UNAVAILABLE_DONATOR)
-			return "You need to be a donator to have play as [jobtitle]."
 		if(JOB_UNAVAILABLE_ACCOUNTAGE)
 			return "Your account is not old enough for [jobtitle]."
 		if(JOB_UNAVAILABLE_LASTCLASS)
@@ -426,15 +369,16 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 	if(!client.has_triumph_buy(TRIUMPH_BUY_RACE_ALL) && !job.prefs_species_check(player_prefs))
 		return JOB_UNAVAILABLE_RACE
 
-	if(length(job.allowed_sexes) && !(player_prefs.gender in job.allowed_sexes))
+	if(length(job.allowed_sexes) && !(player_prefs.read_preference(/datum/preference/choiced/gender) in job.allowed_sexes))
 		return JOB_UNAVAILABLE_SEX
 
-	if(length(job.allowed_ages) && !(player_prefs.age in job.allowed_ages))
+	if(length(job.allowed_ages) && !(player_prefs.read_preference(/datum/preference/choiced/age) in job.allowed_ages))
 		return JOB_UNAVAILABLE_AGE
 
 	if((player_prefs.lastclass == job.title) && !job.bypass_lastclass)
 		return JOB_UNAVAILABLE_LASTCLASS
-	if(length(job.allowed_patrons) && !(client.prefs.selected_patron.type in job.allowed_patrons))
+	var/patron_type = client.prefs.read_preference(/datum/preference/choiced/patron)
+	if(length(job.allowed_patrons) && !(patron_type in job.allowed_patrons))
 		return JOB_UNAVAILABLE_DEITY
 	return JOB_AVAILABLE
 
@@ -607,7 +551,11 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 					var/command_bold = ""
 					if(job in GLOB.lords_positions)
 						command_bold = " command"
-					var/used_name = job_datum.get_gendered_title(client.prefs.gender, client.prefs.pronouns, ignore_pronouns = TRUE)
+					var/used_name = job_datum.get_gendered_title(
+						client.prefs.read_preference(/datum/preference/choiced/gender),
+						client.prefs.read_preference(/datum/preference/choiced/pronouns),
+						ignore_pronouns = TRUE,
+					)
 					var/current_positions = job_datum.get_position_count()
 					if(job_datum in SSjob.prioritized_jobs)
 						dat += "<a class='job[command_bold]' href='byond://?src=[REF(src)];SelectedJob=[job_datum.title]'><span class='priority'>[used_name] ([current_positions])</span></a>"
@@ -662,7 +610,7 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 /mob/dead/new_player/proc/check_preferences()
 	if(!client)
 		return FALSE //Not sure how this would get run without the mob having a client, but let's just be safe.
-	if(client.prefs.joblessrole != RETURNTOLOBBY)
+	if(client.prefs.read_preference(/datum/preference/choiced/joblessrole) != RETURNTOLOBBY)
 		return TRUE
 	// If they have antags enabled, they're potentially doing this on purpose instead of by accident. Notify admins if so.
 	var/has_antags = FALSE

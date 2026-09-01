@@ -102,7 +102,7 @@ SUBSYSTEM_DEF(job)
 		return FALSE
 	var/position_limit = job.get_position_limit(latejoin)
 	JobDebug("Player: [player] is now Rank: [job.get_informed_title(player)], JCP:[job.current_positions], JPL:[position_limit]")
-	if(istype(player) && player?.client?.prefs.multi_char_ready)
+	if(istype(player) && player?.client?.prefs.read_preference(/datum/preference/toggle/multi_char_ready))
 		player.finalize_multi_ready_character()
 	player.mind.set_assigned_role(job)
 	unassigned -= player
@@ -163,15 +163,16 @@ SUBSYSTEM_DEF(job)
 			JobDebug("GRJ incompatible with species, Player: [player], Job: [job.title], Species: [player_prefs.pref_species.name]")
 			continue
 
-		if(length(job.allowed_patrons) && !(player_prefs.selected_patron.type in job.allowed_patrons))
+		var/datum/patron/selected_patron = player_prefs.read_preference(/datum/preference/choiced/patron)
+		if(length(job.allowed_patrons) && !(selected_patron.type in job.allowed_patrons))
 			JobDebug("GRJ incompatible with patron, Player: [player], Job: [job.title], Species: [player_prefs.pref_species.name]")
 			continue
 
-		if(length(job.allowed_ages) && !(player_prefs.age in job.allowed_ages))
+		if(length(job.allowed_ages) && !(player_prefs.read_preference(/datum/preference/choiced/age) in job.allowed_ages))
 			JobDebug("GRJ incompatible with age, Player: [player], Job: [job.title], Species: [player_prefs.pref_species.name]")
 			continue
 
-		if(length(job.allowed_sexes) && !(player_prefs.gender in job.allowed_sexes))
+		if(length(job.allowed_sexes) && !(player_prefs.read_preference(/datum/preference/choiced/gender) in job.allowed_sexes))
 			JobDebug("GRJ incompatible with sex, Player: [player], Job: [job.title]")
 			continue
 
@@ -241,7 +242,8 @@ SUBSYSTEM_DEF(job)
 		JobDebug("Eligibility failed: species blacklisted, Player: [player], Job: [job.title]")
 		return FALSE
 
-	if(length(job.allowed_patrons) && !(player_prefs.selected_patron.type in job.allowed_patrons))
+	var/datum/patron/selected_patron = player_prefs.read_preference(/datum/preference/choiced/patron)
+	if(length(job.allowed_patrons) && !(selected_patron.type in job.allowed_patrons))
 		JobDebug("Eligibility failed: patron, Player: [player], Job: [job.title]")
 		return FALSE
 
@@ -261,11 +263,11 @@ SUBSYSTEM_DEF(job)
 		JobDebug("Eligibility failed: whitelist, Player: [player], Job: [job.title]")
 		return FALSE
 
-	if(length(job.allowed_ages) && !(player_prefs.age in job.allowed_ages))
+	if(length(job.allowed_ages) && !(player_prefs.read_preference(/datum/preference/choiced/age) in job.allowed_ages))
 		JobDebug("Eligibility failed: age, Player: [player], Job: [job.title]")
 		return FALSE
 
-	if(length(job.allowed_sexes) && !(player_prefs.gender in job.allowed_sexes))
+	if(length(job.allowed_sexes) && !(player_prefs.read_preference(/datum/preference/choiced/gender) in job.allowed_sexes))
 		JobDebug("Eligibility failed: sex, Player: [player], Job: [job.title]")
 		return FALSE
 
@@ -673,7 +675,7 @@ SUBSYSTEM_DEF(job)
 		RejectPlayer(player)
 		return
 
-	switch(player.client.prefs.joblessrole)
+	switch(player.client.prefs.read_preference(/datum/preference/choiced/joblessrole))
 		if(BERANDOMJOB)
 			if(!GiveRandomJob(player))
 				RejectPlayer(player)
@@ -703,7 +705,7 @@ SUBSYSTEM_DEF(job)
 	addtimer(CALLBACK(job, TYPE_PROC_REF(/datum/job, greet), equipping), 5 SECONDS) //TODO: REFACTOR OUT
 
 	if(player_client?.holder)
-		if(CONFIG_GET(flag/auto_deadmin_players) || (player_client.prefs?.toggles & DEADMIN_ALWAYS))
+		if(CONFIG_GET(flag/auto_deadmin_players) || (player_client.prefs?.read_preference(/datum/preference/bitwise/toggles) & DEADMIN_ALWAYS))
 			player_client.holder.auto_deadmin()
 		else
 			handle_auto_deadmin_roles(player_client, job.title)
@@ -758,11 +760,11 @@ SUBSYSTEM_DEF(job)
 	var/datum/job/job = GetJob(rank)
 	if(!job)
 		return
-	if((job.auto_deadmin_role_flags & DEADMIN_POSITION_HEAD) && (CONFIG_GET(flag/auto_deadmin_heads) || (C.prefs?.toggles & DEADMIN_POSITION_HEAD)))
+	if((job.auto_deadmin_role_flags & DEADMIN_POSITION_HEAD) && (CONFIG_GET(flag/auto_deadmin_heads) || (C.prefs?.read_preference(/datum/preference/bitwise/toggles) & DEADMIN_POSITION_HEAD)))
 		return C.holder.auto_deadmin()
-	else if((job.auto_deadmin_role_flags & DEADMIN_POSITION_SECURITY) && (CONFIG_GET(flag/auto_deadmin_security) || (C.prefs?.toggles & DEADMIN_POSITION_SECURITY)))
+	else if((job.auto_deadmin_role_flags & DEADMIN_POSITION_SECURITY) && (CONFIG_GET(flag/auto_deadmin_security) || (C.prefs?.read_preference(/datum/preference/bitwise/toggles) & DEADMIN_POSITION_SECURITY)))
 		return C.holder.auto_deadmin()
-	else if((job.auto_deadmin_role_flags & DEADMIN_POSITION_SILICON) && (CONFIG_GET(flag/auto_deadmin_silicons) || (C.prefs?.toggles & DEADMIN_POSITION_SILICON))) //in the event there's ever psuedo-silicon roles added, ie synths.
+	else if((job.auto_deadmin_role_flags & DEADMIN_POSITION_SILICON) && (CONFIG_GET(flag/auto_deadmin_silicons) || (C.prefs?.read_preference(/datum/preference/bitwise/toggles) & DEADMIN_POSITION_SILICON))) //in the event there's ever psuedo-silicon roles added, ie synths.
 		return C.holder.auto_deadmin()
 
 /datum/controller/subsystem/job/proc/HandleFeedbackGathering()
@@ -917,10 +919,10 @@ SUBSYSTEM_DEF(job)
 	if(!job.player_has_required_whitelists(player.client))
 		return
 
-	if(length(job.allowed_ages) && !(player_prefs.age in job.allowed_ages))
+	if(length(job.allowed_ages) && !(player_prefs.read_preference(/datum/preference/choiced/age) in job.allowed_ages))
 		return
 
-	if(length(job.allowed_sexes) && !(player_prefs.gender in job.allowed_sexes))
+	if(length(job.allowed_sexes) && !(player_prefs.read_preference(/datum/preference/choiced/gender) in job.allowed_sexes))
 		return
 
 	if(!job.special_job_check(player))

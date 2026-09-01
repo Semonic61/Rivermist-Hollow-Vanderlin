@@ -127,7 +127,7 @@ GLOBAL_LIST_EMPTY(antagonists)
 			was_pacifist = TRUE
 		if(is_banned(owner.current) && replace_banned)
 			replace_banned_player()
-		else if(owner.current.client?.holder && (CONFIG_GET(flag/auto_deadmin_antagonists) || owner.current.client.prefs?.toggles & DEADMIN_ANTAGONIST))
+		else if(owner.current.client?.holder && (CONFIG_GET(flag/auto_deadmin_antagonists) || owner.current.client.prefs?.read_preference(/datum/preference/bitwise/toggles) & DEADMIN_ANTAGONIST))
 			owner.current.client.holder.auto_deadmin()
 		setup_contracts()
 

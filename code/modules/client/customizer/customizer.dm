@@ -39,8 +39,15 @@
 	var/datum/customizer_entry/created_entry = chosen_custom.make_default_customizer_entry(prefs, type, changed_entry)
 	if(!changed_entry)
 		created_entry.disabled = default_disabled
-		if(gender_enabled == prefs.gender) // Makes parts that are auto-enabled for that gender automatically enabled.
-			created_entry.disabled = FALSE
+		if(!isnull(gender_enabled))
+			var/source_gender
+			if(istype(prefs))
+				source_gender = prefs.read_preference(/datum/preference/choiced/gender)
+			else
+				var/mob/living/carbon/carbon = prefs
+				source_gender = carbon?.gender
+			if(gender_enabled == source_gender) // Makes parts that are auto-enabled for that gender automatically enabled.
+				created_entry.disabled = FALSE
 	return created_entry
 
 /datum/customizer/proc/validate_entry(datum/preferences/prefs, datum/customizer_entry/entry)
@@ -49,7 +56,7 @@
 	var/datum/customizer_choice/choice = CUSTOMIZER_CHOICE(entry.customizer_choice_type)
 	choice.validate_entry(prefs, entry)
 
-/datum/customizer/proc/is_allowed(datum/preferences/prefs)
+/datum/customizer/proc/is_allowed(mob/living/carbon/human/human)
 	return TRUE
 
 /datum/customizer/organ

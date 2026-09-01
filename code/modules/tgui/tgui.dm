@@ -57,7 +57,7 @@
  */
 /datum/tgui/New(mob/user, datum/src_object, interface, title, ui_x, ui_y)
 	log_tgui(user,
-		"new [interface] fancy [user?.client?.prefs.tgui_fancy]",
+		"new [interface] fancy [user?.client?.prefs.read_preference(/datum/preference/toggle/tgui_fancy)]",
 		src_object = src_object)
 	src.user = user
 	src.src_object = src_object
@@ -98,7 +98,7 @@
 	if(!window.is_ready())
 		window.initialize(
 			strict_mode = TRUE,
-			fancy = user.client.prefs.tgui_fancy,
+			fancy = user.client.prefs.read_preference(/datum/preference/toggle/tgui_fancy),
 			assets = list(
 				get_asset_datum(/datum/asset/simple/tgui),
 			))
@@ -256,8 +256,8 @@
 		"window" = list(
 			"key" = window_key,
 			"size" = window_size,
-			"fancy" = prefs ? prefs.tgui_fancy : FALSE,
-			"locked" = prefs ? prefs.tgui_lock : FALSE,
+			"fancy" = prefs ? prefs.read_preference(/datum/preference/toggle/tgui_fancy) : FALSE,
+			"locked" = prefs ? prefs.read_preference(/datum/preference/toggle/tgui_lock) : FALSE,
 			"theme" = "grim",
 			"scale" = TRUE,
 		),
