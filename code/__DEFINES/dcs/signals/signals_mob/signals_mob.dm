@@ -4,6 +4,8 @@
 ///from base of /mob/Logout(): ()
 #define COMSIG_MOB_LOGOUT "mob_logout"
 #define COMSIG_MOB_STATCHANGE "mob_statchange"
+/// From /mob/proc/ranged_attack_secondary(): (atom/target, list/modifiers)
+#define COMSIG_MOB_ATTACK_RANGED_SECONDARY "mob_attack_ranged_secondary"
 
 /// Sent from /proc/do_after if someone starts a do_after action bar.
 #define COMSIG_DO_AFTER_BEGAN "mob_do_after_began"

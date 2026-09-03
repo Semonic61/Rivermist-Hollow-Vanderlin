@@ -36,67 +36,32 @@
 	M.forceMove(get_turf(src))
 	return ..()
 
-/obj/machinery/artificer_table/attackby(obj/item/I, mob/living/user, list/modifiers)
-	var/mob/living/carbon/human/buckled = locate() in buckled_mobs
-
-	if(buckled && istype(I, /obj/item/augment_kit))
-		var/obj/item/augment_kit/kit = I
-		if(!kit.contained_augment)
-			to_chat(user, span_warning("This kit appears to be empty!"))
-			return
-
-		if(!SEND_SIGNAL(buckled, COMSIG_AUGMENT_GET_STABILITY))
-			to_chat(user, span_warning("[buckled] cannot be augmented!"))
-			return
-
-		var/skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/engineering)
-		if(skill < kit.contained_augment.engineering_difficulty)
-			to_chat(user, span_warning("You lack the engineering skill to install this augment!"))
-			return
-
-		to_chat(user, span_notice("You begin installing [kit.contained_augment.name]..."))
-
-		if(!do_after(user, kit.contained_augment.installation_time, target = buckled))
-			return
-
-		var/result = SEND_SIGNAL(buckled, COMSIG_AUGMENT_INSTALL, kit.contained_augment, user)
-		if(result & COMPONENT_AUGMENT_SUCCESS)
-			qdel(kit)
-			user.mind?.add_sleep_experience(/datum/attribute/skill/craft/engineering, GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) * 2)
-			playsound(src, 'sound/effects/sparks1.ogg', 75, TRUE)
-		return
-
-	if(buckled && (istype(I, /obj/item/weapon/hammer)))
-		if(!SEND_SIGNAL(buckled, COMSIG_AUGMENT_GET_STABILITY))
-			. = ..()
-			return
-
-		var/skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/engineering)
-		var/repair_amount = 5 + (skill * 3)
-
-		to_chat(user, span_notice("You begin repairing [buckled]..."))
-
-		if(do_after(user, 5 SECONDS, target = buckled))
-			SEND_SIGNAL(buckled, COMSIG_AUGMENT_REPAIR, repair_amount, user)
-			user.mind?.add_sleep_experience(/datum/attribute/skill/craft/engineering, GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE))
-		return
-
-/obj/machinery/artificer_table/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(istype(I, /obj/item/natural/wood/plank) || istype(I, /obj/item/ingot))
+/obj/machinery/artificer_table/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, /obj/item/natural/wood/plank) || istype(tool, /obj/item/ingot))
 		if(!material)
-			I.forceMove(src)
-			material = I
+			tool.forceMove(src)
+			material = tool
 			update_appearance(UPDATE_OVERLAYS)
-			return
+			return ITEM_INTERACT_SUCCESS
 
-	if(istype(I, /obj/item/weapon/hammer))
-		var/obj/item/weapon/hammer/H = I
+	if(istype(tool, /obj/item/weapon/hammer))
+		var/mob/living/carbon/human/buckled = locate() in buckled_mobs
+		if(buckled && SEND_SIGNAL(buckled, COMSIG_AUGMENT_GET_STABILITY))
+			var/skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/engineering)
+			var/repair_amount = 5 + (skill * 3)
+			to_chat(user, span_notice("You begin repairing [buckled]..."))
+			if(do_after(user, 5 SECONDS, target = buckled))
+				SEND_SIGNAL(buckled, COMSIG_AUGMENT_REPAIR, repair_amount, user)
+				user.mind?.add_sleep_experience(/datum/attribute/skill/craft/engineering, GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE))
+			return ITEM_INTERACT_SUCCESS
+
+		var/obj/item/weapon/hammer/H = tool
 		user.changeNext_move(CLICK_CD_RAPID)
 		if(!material)
-			return
+			return NONE
 		if(!material.artrecipe)
 			if(!choose_recipe(user))
-				return
+				return ITEM_INTERACT_BLOCKING
 		if(material.artrecipe.hammered || material.artrecipe.progress == 100)
 			playsound(src,'sound/combat/hits/onmetal/sheet (2).ogg', 100, TRUE)
 			shake_camera(user, 1, 1)
@@ -116,7 +81,7 @@
 			qdel(material)
 			material = null
 			update_appearance(UPDATE_OVERLAYS)
-			return
+			return ITEM_INTERACT_SUCCESS
 		if(skill < material.artrecipe.craftdiff)
 			if(prob(max(0, 25 - user.goodluck(2) - (skill * 2))))
 				to_chat(user, span_warning("Ah yes, my incompetence bears fruit."))
@@ -124,17 +89,18 @@
 				user.mind.add_sleep_experience(material.artrecipe.appro_skill, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) * material.artrecipe.craftdiff * 0.25))
 				qdel(material)
 				material = null
-				return
+				return ITEM_INTERACT_SUCCESS
 		if(!material.artrecipe.hammered)
 			playsound(src, pick('sound/combat/hits/onwood/fence_hit1.ogg', 'sound/combat/hits/onwood/fence_hit2.ogg', 'sound/combat/hits/onwood/fence_hit3.ogg'), 100, FALSE)
-			material.artrecipe.advance(I, user)
+			material.artrecipe.advance(tool, user)
+			return ITEM_INTERACT_SUCCESS
 
-	if(material && material.artrecipe && material.artrecipe.hammered && istype(I, material.artrecipe.needed_item))
+	if(material && material.artrecipe && material.artrecipe.hammered && istype(tool, material.artrecipe.needed_item))
 		material.artrecipe.item_added(user)
-		qdel(I)
-		return
+		qdel(tool)
+		return ITEM_INTERACT_SUCCESS
 
-	..()
+	return NONE
 
 /obj/machinery/artificer_table/proc/choose_recipe(user)
 	if(!material)

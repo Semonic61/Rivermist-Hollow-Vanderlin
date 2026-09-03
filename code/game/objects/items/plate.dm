@@ -80,16 +80,17 @@
 	else
 		return ..()
 
-/obj/item/plate/pre_attack(atom/A, mob/living/user, list/modifiers)
-	if(!iscarbon(A))
-		return
-	if(!contents.len)
-		return
-	if(user.used_intent.type != /datum/intent/food)
-		return
-	var/obj/item/object_to_eat = contents[1]
-	A.attackby(object_to_eat, user)
-	return TRUE //No normal attack
+/obj/item/plate/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(user.cmode || !istype(user.used_intent, INTENT_FEED))
+		return NONE
+	if(!iscarbon(interacting_with) || !length(contents))
+		return NONE
+
+	var/obj/item/reagent_containers/food/snacks/food = contents[1]
+	if(!istype(food))
+		return NONE
+
+	return food.interact_with_atom(interacting_with, user, modifiers)
 
 ///This proc adds the food to viscontents and makes sure it can deregister if this changes.
 /obj/item/plate/proc/AddToPlate(obj/item/item_to_plate)

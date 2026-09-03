@@ -58,11 +58,7 @@
 /datum/action/cooldown/spell/heat_metal/proc/handle_tongs(obj/item/weapon/tongs/T) //Stole the code from smithing.
 	if(!T.held_item)
 		return
-	var/tyme = world.time + 20 SECONDS
-	T.hott = tyme
-	addtimer(CALLBACK(T, TYPE_PROC_REF(/obj/item/weapon/tongs, make_unhot), tyme), 30 SECONDS)
-	T.proxy_heat(150)
-	T.update_appearance(UPDATE_ICON_STATE)
+	T.heat_held_item(source = "heat_metal", duration = 30 SECONDS, incoming = 150, max_heat = 2000)
 	T.visible_message("<font color='yellow'>After [owner]'s incantation, [T.held_item] inside [T] starts glowing from divine heat.</font>")
 
 /datum/action/cooldown/spell/heat_metal/proc/handle_anvil(obj/machinery/anvil/A) //Stole the code from smithing.
@@ -119,7 +115,7 @@
 /datum/action/cooldown/spell/heat_metal/proc/handle_heating_equipped(mob/living/carbon/target, obj/item/clothing/targeteditem)
 	var/damage_to_apply = 30 // How much damage should your armor burning you should do.
 	var/part_bitflags = targeteditem.body_parts_covered
-	var/list/body_zones = body_parts_covered2organ_names(part_bitflags) //list of precise and main body zones
+	var/list/body_zones = cover_flags2body_zones(part_bitflags) //list of precise and main body zones
 	if(!length(body_zones))
 		return
 	var/list/filtered_zones = list()

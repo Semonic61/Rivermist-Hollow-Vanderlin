@@ -72,36 +72,36 @@
 /obj/item/paint_brush/proc/try_special_paint(atom/target, mob/living/user)
 	return FALSE
 
-/obj/item/paint_brush/afterattack(atom/target, mob/living/user, proximity_flag, list/modifiers)
-	. = ..()
-	if(!proximity_flag)
-		return
-
-	if(istype(target, /obj/item/paint_palette))
-		var/obj/item/paint_palette/palette = target
+/obj/item/paint_brush/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(istype(interacting_with, /obj/item/paint_palette))
+		var/obj/item/paint_palette/palette = interacting_with
 		if(!length(palette.colors))
 			to_chat(user, span_warning("[palette] is bare."))
-			return
-		var/merge_color = input(user, "Choose a color to blend") as anything in palette.colors
+			return ITEM_INTERACT_BLOCKING
+		var/merge_color = browser_input_list(user, "Choose a color to blend", items = palette.colors)
 		if(!merge_color)
-			return
+			return ITEM_INTERACT_BLOCKING
 		merge_color = palette.colors[merge_color]
 		if(!current_color)
 			current_color = merge_color
 		else
 			current_color = BlendRGB(current_color, merge_color, 0.5)
 		update_appearance(UPDATE_OVERLAYS)
-		return
+		return ITEM_INTERACT_SUCCESS
 
-	if(try_special_paint(target, user))
-		return
+	if(try_special_paint(interacting_with, user))
+		return ITEM_INTERACT_SUCCESS
 
-	if(!(target?.reagents?.flags & DRAINABLE))
-		return
+	if(!(interacting_with.reagents?.flags & DRAINABLE))
+		return NONE
 
-	if(target.reagents.has_reagent(/datum/reagent/water))
-		to_chat(user, span_notice("I start to wash [src] in [target]..."))
-		if(!do_after(user, 1 SECONDS, target))
-			return
-		current_color = null
-		update_appearance(UPDATE_OVERLAYS)
+	if(!interacting_with.reagents.has_reagent(/datum/reagent/water))
+		return NONE
+
+	to_chat(user, span_notice("I start to wash [src] in [interacting_with]..."))
+	if(!do_after(user, 1 SECONDS, interacting_with))
+		return ITEM_INTERACT_BLOCKING
+
+	current_color = null
+	update_appearance(UPDATE_OVERLAYS)
+	return ITEM_INTERACT_SUCCESS

@@ -46,7 +46,7 @@
 	health = 1
 	maxHealth = 1
 
-/mob/living/simple_animal/hostile/retaliate/unit_test_shockwave_deleted_victim/adjustBruteLoss(amount, updating_health = TRUE, forced = FALSE, damage_type, true_heal = FALSE)
+/mob/living/simple_animal/hostile/retaliate/unit_test_shockwave_deleted_victim/adjustBruteLoss(amount, updating_health = TRUE, forced = FALSE, damage_type, can_crit = FALSE, true_heal = FALSE)
 	. = ..()
 	qdel(src)
 

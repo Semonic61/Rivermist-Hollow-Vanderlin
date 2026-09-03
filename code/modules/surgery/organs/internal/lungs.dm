@@ -60,3 +60,7 @@
 /obj/item/organ/lungs/slime
 	name = "vacuole"
 	desc = ""
+
+/obj/item/organ/lungs/regenerate_organ()
+	. = ..()
+	failed = FALSE

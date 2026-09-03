@@ -26,15 +26,22 @@
 	. = ..()
 	mob_overlay_icon_base = mob_overlay_icon
 
-/obj/item/undies/attack(mob/M, mob/user, list/modifiers)
-	if(ishuman(M))
-		var/mob/living/carbon/human/H = M
-		if(!H.underwear)
-			if(!get_location_accessible(H, BODY_ZONE_PRECISE_GROIN))
-				return
-			user.visible_message(span_notice("[user] tries to put [src] on [H]..."))
-			if(do_after(user, 50, target = H))
-				H.equip_to_slot_if_possible(src, ITEM_SLOT_UNDER_BOTTOM, disable_warning = TRUE)
+/obj/item/clothing/undies/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!ishuman(interacting_with))
+		return NONE
+
+	var/mob/living/carbon/human/target = interacting_with
+	if(target.underwear || !get_location_accessible(target, BODY_ZONE_PRECISE_GROIN))
+		return ITEM_INTERACT_BLOCKING
+
+	user.visible_message(span_notice("[user] tries to put [src] on [target]..."))
+	if(!do_after(user, 5 SECONDS, target = target))
+		return ITEM_INTERACT_BLOCKING
+
+	if(!target.equip_to_slot_if_possible(src, ITEM_SLOT_UNDER_BOTTOM, disable_warning = TRUE))
+		return ITEM_INTERACT_BLOCKING
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/clothing/undies/equipped(mob/living/carbon/user, slot)
 	. = ..()

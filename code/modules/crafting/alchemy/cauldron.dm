@@ -152,17 +152,18 @@
 
 	return rgb(r, g, b)
 
-/obj/machinery/light/fueled/cauldron/attackby(obj/item/I, mob/user, list/modifiers)
-	if(!istype(I, /obj/item/essence_vial))
-		return ..()
-	var/obj/item/essence_vial/vial = I
+/obj/machinery/light/fueled/cauldron/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(user.cmode || !istype(tool, /obj/item/essence_vial))
+		return NONE
+
+	var/obj/item/essence_vial/vial = tool
 	if(!vial.contained_essence || vial.essence_amount <= 0)
 		to_chat(user, span_warning("The vial is empty."))
-		return
+		return ITEM_INTERACT_BLOCKING
 
 	if(essence_contents.len >= max_essence_types)
 		to_chat(user, span_warning("The cauldron cannot hold any more essence types."))
-		return
+		return ITEM_INTERACT_BLOCKING
 
 	var/essence_type = vial.contained_essence.type
 	if(essence_contents[essence_type])
@@ -179,6 +180,7 @@
 	lastuser = WEAKREF(user)
 	update_appearance(UPDATE_OVERLAYS)
 	playsound(src, "bubbles", 100, TRUE)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/machinery/light/fueled/cauldron/process()
 	..()

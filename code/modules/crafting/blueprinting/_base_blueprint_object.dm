@@ -9,6 +9,7 @@
 	anchored = TRUE
 	density = FALSE
 	UUID_saving = TRUE
+	hammer_repair = FALSE
 
 	var/datum/blueprint_recipe/recipe
 	/// ckey of whoever placed this, stored as text so ownership survives a relog
@@ -44,11 +45,12 @@
 	// Deferred so neighbouring turfs exist before we smooth against them.
 	addtimer(CALLBACK(src, PROC_REF(setup_blueprint)), 1 SECONDS)
 
-/obj/structure/blueprint/attackby(obj/item/I, mob/user, list/modifiers)
+/obj/structure/blueprint/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
 	// A recipe-less blueprint is junk squatting on the turf; try_construct clears it out.
-	if(recipe && !istype(I, recipe.construct_tool))
-		return
-	try_construct(user, I)
+	if(recipe && !istype(tool, recipe.construct_tool))
+		return NONE
+	try_construct(user, tool)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/structure/blueprint/attack_hand(mob/user)
 	if(recipe?.construct_tool)

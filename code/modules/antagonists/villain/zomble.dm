@@ -148,6 +148,7 @@
 	for(var/trait in traits_zombie)
 		REMOVE_TRAIT(zombie, trait, "[type]")
 	zombie.remove_client_colour(/datum/client_colour/monochrome)
+	QDEL_NULL(zombie.ai_controller)
 	if(has_turned && become_rotman)
 		zombie.set_stat_modifier(TRAIT_ROTMAN, STAT_CONSTITUTION, -5)
 		zombie.set_stat_modifier(TRAIT_ROTMAN, STAT_SPEED, -5)

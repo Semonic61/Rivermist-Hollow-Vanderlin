@@ -47,6 +47,8 @@
 	var/damage_type = WOUND_SLASH
 	/// The maximum amount of damage that this injury can have and still autoheal
 	var/autoheal_cutoff = 15
+	/// Base damage naturally healed per processing tick.
+	var/base_autoheal_amount = 0
 	/// How much having this injury will add to all future check_wounding() rolls on this limb
 	var/threshold_penalty = 0
 
@@ -181,16 +183,28 @@
 		return TRUE
 	return include_divine && (damage_type == WOUND_DIVINE)
 
+/datum/injury/proc/can_heal()
+	return damage_type != WOUND_DIVINE
+
 /datum/injury/proc/can_autoheal()
+	if(!parent_mob)
+		return FALSE
 	if(parent_mob.stat == DEAD)
 		return FALSE
 	if(required_status != BODYPART_ORGANIC)
 		return FALSE
-	if(parent_bodypart.is_retracted())
+	if(parent_bodypart.return_surgical_state() & SURGERY_VESSELS_CLAMPED)
+		return FALSE
+	if(LAZYLEN(embedded_objects))
 		return FALSE
 	if(germ_level > INFECTION_LEVEL_ONE)
 		return FALSE
-	return ((damage_per_injury() <= autoheal_cutoff) ? TRUE : (is_treated() || parent_bodypart?.limb_flags & BODYPART_GOOD_HEALER))
+	if(!can_heal())
+		return FALSE
+
+	if((is_treated() || parent_bodypart?.limb_flags & BODYPART_GOOD_HEALER))
+		return TRUE
+	return damage_per_injury() <= autoheal_cutoff * (parent_mob.IsSleeping() ? 2 : 1)
 
 // checks whether the injury has been appropriately treated
 /datum/injury/proc/is_treated()

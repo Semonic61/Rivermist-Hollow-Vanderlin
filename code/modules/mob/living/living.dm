@@ -54,7 +54,6 @@
 		SSisland_mobs.remove_mob(src)
 	update_z(null)
 
-	surgeries = null
 	if(LAZYLEN(status_effects))
 		for(var/datum/status_effect/S as anything in status_effects)
 			if(S.on_remove_on_mob_delete) //the status effect calls on_remove when its mob is deleted
@@ -65,6 +64,8 @@
 		buckled.unbuckle_mob(src,force=1)
 
 	stop_offering_item()
+
+	QDEL_LIST(surgeries)
 
 	GLOB.mob_living_list -= src
 	for(var/datum/soullink/S as anything in ownedSoullinks)
@@ -3291,7 +3292,7 @@
 /mob/living/proc/offer_item(mob/living/offered_to, obj/offered_item)
 	if(isnull(offered_to) || isnull(offered_item))
 		stack_trace("no offered_to or offered_item in offer_item()")
-		return
+		return FALSE
 
 	var/time_left = COOLDOWN_TIMELEFT(src, offer_cooldown)
 
@@ -3317,11 +3318,14 @@
 
 	new /obj/effect/temp_visual/offered_item_effect(get_turf(src), offered_item, src, offered_to, stealthy)
 
+	return TRUE
+
 /mob/living/proc/cancel_offering_item(stealthy)
 	var/obj/offered_item = offered_item_ref?.resolve()
 	if(isnull(offered_item))
 		stop_offering_item()
 		return
+
 	if(stealthy)
 		to_chat(src, "I stop offering [offered_item ? offered_item : "the item"].")
 	else
@@ -3389,3 +3393,17 @@
 /mob/living/proc/undense_changed(datum/source)
 	SIGNAL_HANDLER
 	update_density()
+
+/**
+ * Check if the passed body zone is covered by some clothes
+ *
+ * * location: body zone to check
+ * ([BODY_ZONE_CHEST], [BODY_ZONE_HEAD], etc)
+ * * exluded_equipment_slots: equipment slots to ignore when checking coverage
+ * (for example, if you want to ignore helmets, pass [ITEM_SLOT_HEAD])
+ *
+ * Returns TRUE if the location is accessible (not covered)
+ * Returns FALSE if the location is covered by something
+ */
+/mob/living/proc/is_location_accessible(location, exluded_equipment_slots = NONE)
+	return TRUE

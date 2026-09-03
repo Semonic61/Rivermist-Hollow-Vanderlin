@@ -124,32 +124,44 @@
 		else
 			. += "<span class='notice'>[p_theyre(TRUE)] [pick("vomiting", "gorfing", "exhaling")].</span>"
 
-/obj/item/natural/worms/leech/attack(mob/living/M, mob/user, list/modifiers)
-	if(!ishuman(M))
+/obj/item/natural/worms/leech/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!ishuman(interacting_with))
 		return ..()
-	var/mob/living/carbon/human/H = M
+
+	var/mob/living/carbon/human/H = interacting_with
+
 	var/obj/item/bodypart/affecting = H.get_bodypart(check_zone(user.zone_selected))
 	if(!affecting)
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	if(!get_location_accessible(H, check_zone(user.zone_selected)))
-		to_chat(user, "<span class='warning'>Something in the way.</span>")
-		return
-	var/used_time = completely_silent ? 0 : (7 SECONDS - (GET_MOB_SKILL_VALUE_OLD(H, /datum/attribute/skill/misc/medicine) * 1 SECONDS)) / 2
+		to_chat(user, "<span class='warning'>Something in the way.</span>") //ooooooooooooooo
+		return ITEM_INTERACT_BLOCKING
+
+	var/used_time
+	if(completely_silent)
+		used_time = 0
+	else
+		used_time = (7 SECONDS - (GET_MOB_SKILL_VALUE_OLD(H, /datum/attribute/skill/misc/medicine) * 1 SECONDS)) / 2
+
 	if(!do_after(user, used_time, H))
-		return
-	if(!H)
-		return
+		return ITEM_INTERACT_BLOCKING
+	if(QDELETED(H) || QDELETED(affecting))
+		return ITEM_INTERACT_BLOCKING
 
 	user.dropItemToGround(src)
-	src.forceMove(H)
+
+	forceMove(H)
+
 	affecting.add_embedded_object(src, silent = TRUE, crit_message = FALSE)
-	if(completely_silent)
-		return
-	if(M == user)
-		user.visible_message("<span class='notice'>[user] places [src] on [user.p_their()] [affecting].</span>", "<span class='notice'>I place [src] on my [affecting].</span>")
-	else
-		user.visible_message("<span class='notice'>[user] places [src] on [M]'s [affecting].</span>", "<span class='notice'>I place [src] on [M]'s [affecting].</span>")
-	return
+
+	if(!completely_silent)
+		if(H == user)
+			user.visible_message("<span class='notice'>[user] places [src] on [user.p_their()] [affecting].</span>", "<span class='notice'>I place a leech on my [affecting].</span>")
+		else
+			user.visible_message("<span class='notice'>[user] places [src] on [H]'s [affecting].</span>", "<span class='notice'>I place a leech on [H]'s [affecting].</span>")
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/natural/worms/leech/on_embed_life(mob/living/user, obj/item/bodypart/bodypart)
 	if(!user)

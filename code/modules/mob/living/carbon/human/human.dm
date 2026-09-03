@@ -557,7 +557,7 @@
 				var/they_beat = !HAS_TRAIT(target, TRAIT_STABLEHEART)
 				var/obj/item/organ/heart/they_heart = target.getorganslot(ORGAN_SLOT_HEART)
 				var/heart_exposed_mod = 0
-				if(CHECK_MULTIPLE_BITFIELDS(chest.get_surgery_flags(), SURGERY_INCISED|SURGERY_RETRACTED|SURGERY_BROKEN) && istype(they_heart))
+				if(istype(they_heart) && CHECK_MULTIPLE_BITFIELDS(chest.return_surgical_state(), SURGERY_SKIN_OPEN|SURGERY_BONE_SAWED))
 					heart_exposed_mod += 5
 					visible_message(span_notice("<b>[src]</b> massages <b>[target]</b>'s [they_heart]!"), \
 								span_notice("I massage <b>[target]</b>'s [they_heart]."), \
@@ -663,7 +663,7 @@
 
 			var/toxloss = getToxLoss()
 			var/oxyloss = getOxyLoss()
-			var/painpercent = (getPainLoss() / max((GET_MOB_ATTRIBUTE_VALUE(src, STAT_ENDURANCE) * 12), 1)) * 100
+			var/painpercent = can_feel_pain() ? (getShockStage() / SHOCK_STAGE_MAX) * 100 : 0 //what percent out of 100 to max pain
 
 
 			var/usedloss = 0

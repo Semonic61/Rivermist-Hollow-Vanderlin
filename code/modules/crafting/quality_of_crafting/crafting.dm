@@ -264,6 +264,7 @@
 		/obj/item/natural/stone = 1,
 	)
 
+	allow_inverse_start = FALSE // interactions
 	starting_atom = /obj/item/weapon/knife
 	attacked_atom = /obj/item/natural/stone
 	output = /obj/item/reagent_containers/glass/mortar
@@ -275,6 +276,7 @@
 		/obj/item/natural/stone = 1,
 	)
 
+	allow_inverse_start = FALSE // interactions
 	starting_atom = /obj/item/weapon/knife
 	attacked_atom = /obj/item/natural/stone
 	output = /obj/item/pestle

@@ -129,8 +129,7 @@
 	if(herbal_catalyst)
 		. += span_info("[herbal_catalyst.name] is bound into the mixture as a catalyst.")
 
-/obj/item/reagent_containers/glass/mortar/proc/grind_herb(mob/living/carbon/human/user)
-	var/obj/item/alch/herb/herb = to_grind
+/obj/item/reagent_containers/glass/mortar/proc/grind_herb(mob/living/carbon/human/user, obj/item/alch/herb/herb, skip_delay = FALSE)
 	if(!herb?.herbal_extract)
 		to_chat(user, span_warning("I do not know a reliable preparation for [herb]."))
 		return FALSE
@@ -138,9 +137,12 @@
 	if(reagents.maximum_volume - reagents.total_volume < extract_amount)
 		to_chat(user, span_warning("[src] does not have enough room for this extraction."))
 		return FALSE
-	to_chat(user, span_notice("I begin expressing the active compounds from [herb]..."))
-	playsound(src, 'sound/foley/mortarpestle.ogg', 100, FALSE)
-	if(!do_after(user, 2.5 SECONDS, src) || to_grind != herb)
+	if(!skip_delay)
+		to_chat(user, span_notice("I begin expressing the active compounds from [herb]..."))
+		playsound(src, 'sound/foley/mortarpestle.ogg', 100, FALSE)
+		if(!do_after(user, 2.5 SECONDS, src))
+			return FALSE
+	if(!(herb in to_grind))
 		return FALSE
 
 	var/alchemy_skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/alchemy)
@@ -163,7 +165,8 @@
 		herbal_reagent_tags[herb.herbal_extract] = herb.herbal_tags.Copy()
 	herbal_batch_count++
 	to_chat(user, span_notice("I express [extract_amount] units of [herb.herbal_extract_name] from [herb]."))
-	QDEL_NULL(to_grind)
+	to_grind -= herb
+	qdel(herb)
 	user.adjust_experience(/datum/attribute/skill/craft/alchemy, GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) * user.get_learning_boon(/datum/attribute/skill/craft/alchemy), FALSE)
 	return TRUE
 

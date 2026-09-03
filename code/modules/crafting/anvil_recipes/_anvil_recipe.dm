@@ -142,8 +142,7 @@
 	quality_calc.minigame_success = minigame_success
 
 	quality_calc.apply_quality_to_item(I, TRUE)
-	I.add_quench_requirement()
-	addtimer(CALLBACK(I, TYPE_PROC_REF(/obj/item, remove_quench)), 60 SECONDS)
+	I.add_quench_requirement("anvil", 60 SECONDS)
 	qdel(quality_calc)
 
 /datum/anvil_recipe/proc/get_display_name()

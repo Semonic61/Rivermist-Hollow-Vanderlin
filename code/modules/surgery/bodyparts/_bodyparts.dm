@@ -135,6 +135,11 @@
 	/// General bodypart flags, such as - is it necrotic, does it leave stumps behind, etc
 	var/limb_flags = BODYPART_HAS_ARTERY
 
+	var/biological_state = BIO_STANDARD_JOINTED
+
+	/// What state is the bodypart in for determining surgery availability
+	VAR_FINAL/surgery_state = NONE
+
 	/// Multiplier of the limb's pain damage that gets applied to the mob
 	var/pain_damage_coeff = 1
 	/// How much pain this limb is feeling
@@ -148,7 +153,7 @@
 	/// How much we multiply pain_heal_tick by if the owner is lying down
 	var/pain_heal_rest_multiplier = 3
 	/// Point at which the limb is disabled due to pain
-	var/pain_disability_threshold
+	var/pain_disability_threshold = 0
 	/// Maximum amount of pain this limb can feel at once
 	var/max_pain_damage
 
@@ -160,13 +165,15 @@
 	/// How many injuries we have in this bodypart - NOT always equal to the length of injuries list!
 	var/number_injuries = 0
 	/// The (Bay-style) wound datums currently afflicting this bodypart
-	var/list/datum/injury/injuries
+	var/list/datum/injury/injuries = list()
 	/// The last injury to have afflicted this bodypart
 	var/datum/injury/last_injury
 
-/obj/item/bodypart/Initialize()
+/obj/item/bodypart/Initialize(mapload)
 	. = ..()
+
 	create_base_organs()
+
 	if(isnull(max_pain_damage))
 		max_pain_damage = max_damage * 1.5
 	if(isnull(organ_damage_requirement))
@@ -178,23 +185,42 @@
 		RegisterSignal(src, SIGNAL_ADDTRAIT(TRAIT_PARALYSIS), PROC_REF(on_paralysis_trait_gain))
 		RegisterSignal(src, SIGNAL_REMOVETRAIT(TRAIT_PARALYSIS), PROC_REF(on_paralysis_trait_loss))
 
+	var/innate_state = NONE
+	if(!LIMB_HAS_SKIN(src))
+		innate_state |= SKINLESS_SURGERY_STATES
+	if(!LIMB_HAS_BONES(src))
+		innate_state |= BONELESS_SURGERY_STATES
+	if(!LIMB_HAS_VESSELS(src))
+		innate_state |= VESSELLESS_SURGERY_STATES
+
+	if(innate_state)
+		add_surgical_state(innate_state)
+
 	RegisterSignal(src, SIGNAL_ADDTRAIT(TRAIT_ROTTEN), PROC_REF(on_rotten_trait_gain))
 	RegisterSignal(src, SIGNAL_REMOVETRAIT(TRAIT_ROTTEN), PROC_REF(on_rotten_trait_loss))
+
 	update_HP()
 
 /obj/item/bodypart/Destroy()
 	if(owner)
 		owner.remove_bodypart(src)
 		set_owner(null)
+
 	for(var/obj/item/I as anything in embedded_objects)
 		remove_embedded_object(I)
+
 	for(var/datum/wound/wound as anything in wounds)
 		qdel(wound)
+
 	for(var/injury in injuries)
 		qdel(injury) // injuries is a lazylist, and each injury removes itself from it on deletion.
+
+	last_injury = null
+
 	if(LAZYLEN(injuries))
 		stack_trace("[type] qdeleted with [LAZYLEN(injuries)] uncleared injuries!")
 		injuries.Cut()
+
 	if(bandage)
 		QDEL_NULL(bandage)
 
@@ -355,22 +381,27 @@
 /obj/item/bodypart/proc/kill_limb()
 	if(!can_decay())
 		return
-	var/already_rot = HAS_TRAIT_FROM(src, TRAIT_ROTTEN, GERM_LEVEL_TRAIT)
-	if(!already_rot)
-		ADD_TRAIT(src, TRAIT_ROTTEN, GERM_LEVEL_TRAIT)
-	if(owner && !already_rot)
-		owner.update_body()
-	else
-		update_icon_dropped()
 
-/obj/item/bodypart/proc/revive_limb()
-	var/already_rot = HAS_TRAIT_FROM(src, TRAIT_ROTTEN, GERM_LEVEL_TRAIT)
-	if(already_rot)
-		REMOVE_TRAIT(src, TRAIT_ROTTEN, GERM_LEVEL_TRAIT)
-	if(owner && already_rot)
+	var/was_rotten = HAS_TRAIT(src, TRAIT_ROTTEN)
+	ADD_TRAIT(src, TRAIT_ROTTEN, GERM_LEVEL_TRAIT)
+
+	// If we were already rotten, no need to update
+	if(was_rotten)
+		return
+
+	owner?.update_body()
+	update_icon_dropped()
+
+/obj/item/bodypart/proc/revive_limb(update_icon = FALSE)
+	REMOVE_TRAIT(src, TRAIT_ROTTEN, GERM_LEVEL_TRAIT)
+
+	// If it still is rotten, no need to update
+	if(HAS_TRAIT(src, TRAIT_ROTTEN))
+		return
+
+	if(owner && update_icon)
 		owner.update_body()
-	else
-		update_icon_dropped()
+	update_icon_dropped()
 
 /obj/item/bodypart/proc/can_necrose_from_infection()
 	if(!owner?.is_player_character())
@@ -558,8 +589,7 @@
 		// Piercing injuries cannot "open" into one
 		// Small ass damage should create a new wound entirely
 		var/list/compatible_injuries = list()
-		for(var/thing in injuries)
-			var/datum/injury/candidate_for_widening = thing
+		for(var/datum/injury/candidate_for_widening as anything in injuries)
 			if(candidate_for_widening.can_worsen(injury_type, damage))
 				compatible_injuries |= candidate_for_widening
 		if(length(compatible_injuries))
@@ -567,6 +597,7 @@
 			compatible_injury.open_injury(damage)
 			last_injury = compatible_injury
 			. = compatible_injury
+
 
 	// Creating NEW injury
 	if(!.)
@@ -603,26 +634,22 @@
 			qdel(injury)
 			continue
 
-		// Slow healing
-		var/heal_amt = 0
-
-		if(!toxins && injury.can_autoheal())
-			heal_amt += (GET_MOB_ATTRIBUTE_VALUE(owner, STAT_ENDURANCE) * 0.01)
-			if(owner?.IsSleeping())
-				heal_amt *= 4
-
-		if(heal_amt)
-			injury.heal_damage(heal_amt * (0.5 * delta_time))
-
 		// Bleeding
 		if(owner)
-			injury.bleed_timer = max(0, injury.bleed_timer - (0.5 * delta_time))
+			injury.bleed_timer = max(0, injury.bleed_timer - delta_time)
 
-	// Sync the limb's damage with its injuries
-	update_damages()
-	// Also update efficiency
-	update_limb_efficiency()
-	owner.update_damage_overlays()
+		// Slow healing
+		var/heal_amt = injury.base_autoheal_amount
+		if(!toxins && injury.can_autoheal())
+			heal_amt += max(GET_MOB_ATTRIBUTE_VALUE(owner, STAT_CONSTITUTION), 1) * 0.005
+			if(owner?.IsSleeping())
+				heal_amt *= 4
+		if(heal_amt)
+			heal_amt *= injury.amount
+			injury.heal_damage(heal_amt * delta_time)
+
+	if(post_damage_change(FALSE) && owner)
+		owner.update_damage_overlays()
 
 /// Updates brute_damn and burn_damn from injuries
 /obj/item/bodypart/proc/update_damages()
@@ -760,20 +787,27 @@
 		create_artery()
 
 /obj/item/bodypart/attack(mob/living/carbon/C, mob/user, list/modifiers)
-	if(ishuman(C))
-		var/mob/living/carbon/human/H = C
-		if(HAS_TRAIT(C, TRAIT_LIMBATTACHMENT))
-			if(!H.get_bodypart(body_zone) && !animal_origin)
-				if(H == user)
-					H.visible_message("<span class='warning'>[H] jams [src] into [H.p_their()] empty socket!</span>",\
-					"<span class='notice'>I force [src] into my empty socket, and it locks into place!</span>")
-				else
-					H.visible_message("<span class='warning'>[user] jams [src] into [H]'s empty socket!</span>",\
-					"<span class='notice'>[user] forces [src] into my empty socket, and it locks into place!</span>")
-				user.temporarilyRemoveItemFromInventory(src, TRUE)
-				attach_limb(C)
-				return
-	return ..()
+	if(!ishuman(C))
+		return ..()
+
+	var/mob/living/carbon/human/H = C
+	if(!HAS_TRAIT(C, TRAIT_LIMBATTACHMENT))
+		return
+
+	if(animal_origin || H.get_bodypart(body_zone))
+		return
+
+	if(H == user)
+		H.visible_message("<span class='warning'>[H] jams [src] into [H.p_their()] empty socket!</span>",\
+		"<span class='notice'>I force [src] into my empty socket, and it locks into place!</span>")
+	else
+		H.visible_message("<span class='warning'>[user] jams [src] into [H]'s empty socket!</span>",\
+		"<span class='notice'>[user] forces [src] into my empty socket, and it locks into place!</span>")
+
+	if(!user.temporarilyRemoveItemFromInventory(src, TRUE))
+		return
+
+	attach_limb(C)
 
 /obj/item/bodypart/throw_impact(atom/hit_atom, datum/thrownthing/throwingdatum)
 	. = ..()
@@ -961,20 +995,7 @@
 			owner.update_shock_penalty(shock_penalty)
 
 
-	if(owner)
-		if(can_be_disabled)
-			update_disabled()
-		update_limb_efficiency()
-		if(updating_health)
-			owner.updatehealth()
-
-			if(get_shock(FALSE, TRUE) >= DAMAGE_PRECISION)
-				owner.update_shock()
-				. = TRUE
-
-	update_damages()
-	consider_processing()
-	return update_bodypart_damage_state() || .
+	return post_damage_change(updating_health, TRUE)
 
 //Heals brute and burn damage for the organ. Returns 1 if the damage-icon states changed at all.
 //Damage cannot go below zero.
@@ -1001,15 +1022,22 @@
 	if(burn)
 		set_burn_dam(round(max(burn_dam - burn, 0), DAMAGE_PRECISION))
 
+	return post_damage_change(updating_health)
+
+/// Update damage totals and dependent limb state after injuries change.
+/obj/item/bodypart/proc/post_damage_change(updating_health = TRUE, updating_shock = FALSE)
 	update_damages()
 
-	if(owner)
+	if(owner && !(owner.status_flags & BUILDING_ORGANS))
 		update_limb_efficiency()
 		if(can_be_disabled)
 			update_disabled()
 		if(updating_health)
 			owner.updatehealth()
+		if(updating_shock && get_shock(FALSE, TRUE) >= DAMAGE_PRECISION)
+			owner.update_shock()
 	consider_processing()
+
 	return update_bodypart_damage_state()
 
 ///Proc to hook behavior associated to the change of the brute_dam variable's value.
@@ -1048,8 +1076,8 @@
 		return set_disabled(BODYPART_DISABLED_WOUND)
 	if(HAS_TRAIT(owner, TRAIT_PARALYSIS) || HAS_TRAIT(src, TRAIT_PARALYSIS))
 		return set_disabled(BODYPART_DISABLED_PARALYSIS)
-	var/surgery_flags = get_surgery_flags()
-	if(surgery_flags & SURGERY_CLAMPED)
+	var/our_state = return_surgical_state()
+	if(our_state & SURGERY_VESSELS_CLAMPED)
 		return set_disabled(BODYPART_DISABLED_CLAMPED)
 	var/total_dam = get_damage()
 	if((total_dam >= max_damage) || (HAS_TRAIT(owner, TRAIT_EASYLIMBDISABLE) && (total_dam >= (max_damage * 0.6))))
@@ -1477,7 +1505,7 @@
 /obj/item/bodypart/proc/get_organs()
 	if(!owner)
 		. = list()
-		for(var/thing in contents)
+		for(var/atom/thing as anything in contents)
 			if(isorgan(thing))
 				. |= thing
 		return
@@ -1487,7 +1515,6 @@
 /obj/item/bodypart/deconstruct(disassembled = TRUE)
 	drop_organs()
 	return ..()
-
 
 /**
  * Get a random organ object from the bodypart matching the passed in typepath
@@ -1502,7 +1529,7 @@
 				return thing
 	else
 		var/list/organs = list()
-		for(var/thing in src)
+		for(var/atom/thing as anything in get_organs())
 			if(istype(thing, typepath))
 				organs |= thing
 		if(length(organs))
@@ -1521,7 +1548,7 @@
 			if(istype(thing, typepath))
 				organs |= thing
 	else
-		for(var/thing in src)
+		for(var/atom/thing as anything in get_organs())
 			if(istype(thing, typepath))
 				organs |= thing
 	return organs
@@ -1540,7 +1567,7 @@
 				return organ
 	else
 		var/list/organs = list()
-		for(var/obj/item/organ/organ in src)
+		for(var/obj/item/organ/organ in get_organs())
 			if(slot in organ.organ_efficiency)
 				organs |= organ
 		if(length(organs))
@@ -1561,7 +1588,7 @@
 			if(check_zone(organ.current_zone) == body_zone)
 				organs |= organ
 	else
-		for(var/obj/item/organ/organ in src)
+		for(var/obj/item/organ/organ in get_organs())
 			if(slot in organ.organ_efficiency)
 				organs |= organ
 	return organs
@@ -1576,7 +1603,7 @@
 		return owner.getorganslotefficiencyzone(slot, body_zone)
 	else
 		. = null
-		for(var/obj/item/organ/organ in src)
+		for(var/obj/item/organ/organ in get_organs())
 			. += organ.get_slot_efficiency(slot)
 
 /// Returns the volume of organs and cavity items for the organ storage component to use
@@ -1586,7 +1613,6 @@
 		. += organ.organ_volume
 	for(var/obj/item/item as anything in cavity_items)
 		. += item.w_class
-
 
 /obj/item/bodypart/proc/artery_needed()
 	return CHECK_BITFIELD(limb_flags, BODYPART_HAS_ARTERY)
@@ -1609,8 +1635,8 @@
 		if(artery.is_broken())
 			return TRUE
 
-/obj/item/bodypart/proc/get_incision(strict = FALSE, ignore_gauze = FALSE)
-	if(ignore_gauze && (bandage))
+/obj/item/bodypart/proc/get_incision(surgical_only = FALSE, ignore_gauze = FALSE)
+	if(!ignore_gauze && bandage)
 		return
 	var/datum/wound/incision
 	for(var/datum/wound/slash/slash in wounds)
@@ -1624,7 +1650,7 @@
 		for(var/datum/injury/slash/slash in injuries)
 			if(slash.is_bandaged() || slash.current_stage > slash.max_bleeding_stage) // Shit's unusable
 				continue
-			if(strict && !slash.is_surgical()) //We don't need dirty ones
+			if(surgical_only && !slash.is_surgical()) //We don't need dirty ones
 				continue
 			if(!internal_incision)
 				internal_incision = slash
@@ -1639,6 +1665,123 @@
 		return internal_incision
 	return incision
 
+/// Add one or multiple surgical states to the bodypart
+/obj/item/bodypart/proc/add_surgical_state(new_states)
+	if(!new_states)
+		CRASH("add_surgical_state called with no new states to add")
+
+	if((surgery_state & new_states) == new_states)
+		return
+
+	var/old_states = surgery_state
+	surgery_state |= new_states
+	update_surgical_state(old_states, new_states)
+
+/// Remove one or multiple surgical states from the bodypart
+/obj/item/bodypart/proc/remove_surgical_state(removing_states)
+	if(!removing_states)
+		CRASH("remove_surgical_state called with no states to remove")
+
+	if(!(surgery_state & removing_states))
+		return
+
+	// inherent to the biostate, don't remove them
+	if(!LIMB_HAS_SKIN(src))
+		removing_states &= ~SKINLESS_SURGERY_STATES
+	if(!LIMB_HAS_BONES(src))
+		removing_states &= ~BONELESS_SURGERY_STATES
+	if(!LIMB_HAS_VESSELS(src))
+		removing_states &= ~VESSELLESS_SURGERY_STATES
+
+	if(!removing_states)
+		return
+
+	var/old_states = surgery_state
+	surgery_state &= ~removing_states
+	update_surgical_state(old_states, removing_states)
+
+/obj/item/bodypart/proc/return_surgical_state()
+	var/base_state = surgery_state
+
+	if(!(base_state & SURGERY_SKIN_CUT))
+		if(get_incision())
+			base_state |= (SURGERY_SKIN_CUT|SURGERY_VESSELS_UNCLAMPED)
+
+	if(!(base_state & SURGERY_SKIN_OPEN) || !(base_state & SURGERY_VESSELS_CLAMPED))
+		var/static/list/retracting_behaviors = list(
+			TOOL_RETRACTOR,
+			TOOL_CROWBAR,
+			TOOL_IMPROVISED_RETRACTOR,
+		)
+		var/static/list/clamping_behaviors = list(
+			TOOL_HEMOSTAT,
+			TOOL_WIRECUTTER,
+			TOOL_IMPROVISED_HEMOSTAT,
+		)
+		for(var/obj/item/embedded as anything in embedded_objects)
+			if((embedded.tool_behaviour in retracting_behaviors) || embedded.embedding?.retract_limbs)
+				base_state |= SURGERY_SKIN_OPEN
+				base_state &= ~SURGERY_SKIN_CUT
+			if((embedded.tool_behaviour in clamping_behaviors) || embedded.embedding?.clamp_limbs)
+				base_state |= SURGERY_VESSELS_CLAMPED
+				base_state &= ~SURGERY_VESSELS_UNCLAMPED
+
+	if(!(base_state & SURGERY_BONE_SAWED))
+		for(var/datum/wound/fracture/bone in wounds)
+			if(bone.bone_set)
+				continue
+			base_state |= SURGERY_BONE_SAWED
+			break
+
+	if(skeletonized)
+		base_state |= SKINLESS_SURGERY_STATES
+
+	return base_state
+
+/// Called when surgical state changes so we can react to it
+/obj/item/bodypart/proc/update_surgical_state(old_state, changed_states)
+	if(isnull(owner))
+		return
+
+	SEND_SIGNAL(owner, COMSIG_LIVING_UPDATING_SURGERY_STATE, old_state, surgery_state, changed_states)
+
+/obj/item/bodypart/vv_edit_var(vname, vval)
+	if(vname != NAMEOF(src, surgery_state))
+		return ..()
+
+	var/old_state = surgery_state
+	. = ..()
+	update_surgical_state(old_state, surgery_state ^ old_state)
+
+/obj/item/bodypart/proc/get_cut(surgical_only = FALSE, ignore_gauze = FALSE)
+	if(!ignore_gauze && bandage)
+		return
+
+	for(var/datum/wound/slash/slash in wounds)
+		if(slash.is_sewn())
+			continue
+		return slash
+
+	var/static/list/cut_damage_types = list(WOUND_SLASH, WOUND_PIERCE, WOUND_BITE)
+	var/datum/injury/internal_incision
+	for(var/datum/injury/slash in injuries)
+		if(!(slash.damage_type in cut_damage_types))
+			continue
+		if(slash.is_sutured() || slash.damage_per_injury() <= slash.bleed_threshold) // Shit's unusable
+			continue
+		if(surgical_only && !slash.is_surgical()) //We don't need dirty ones
+			continue
+		if(!internal_incision)
+			internal_incision = slash
+			continue
+		if(slash.is_surgical() && internal_incision.is_surgical()) //If they're both dirty or both are surgical, just get bigger one
+			if(slash.damage_per_injury() > internal_incision.damage_per_injury())
+				internal_incision = slash
+				break
+		else if(slash.is_surgical()) //otherwise surgical one takes priority
+			internal_incision = slash
+			break
+	return internal_incision
 
 /obj/item/bodypart/proc/is_bandaged()
 	. = TRUE

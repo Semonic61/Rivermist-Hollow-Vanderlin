@@ -141,3 +141,5 @@
 /// From /mob/living/simple_animal/proc/tamed(), sent to the animal being tamed: (mob/tamer)
 /// COMSIG_ANIMAL_TAMED is the objective-side counterpart and fires on the tamer instead.
 #define COMSIG_LIVING_TAMED "living_tamed"
+/// Sent to a mob when one of their bodypart's surgery state changes, OR sent from the basic_surgery_state holder when its surgery state changes (old_state, new_state, changed_states)
+#define COMSIG_LIVING_UPDATING_SURGERY_STATE "carbon_updating_surgery_state"

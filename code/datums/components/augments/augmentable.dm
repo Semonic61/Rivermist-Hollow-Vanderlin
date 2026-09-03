@@ -16,6 +16,7 @@
 	RegisterSignal(parent, COMSIG_AUGMENT_REMOVE, PROC_REF(remove_augment))
 	RegisterSignal(parent, COMSIG_AUGMENT_REPAIR, PROC_REF(repair))
 	RegisterSignal(parent, COMSIG_AUGMENT_GET_STABILITY, PROC_REF(get_stability))
+	RegisterSignal(parent, COMSIG_AUGMENT_GET_INSTALLED, PROC_REF(get_installed_augments))
 
 	START_PROCESSING(SSobj, src)
 	ADD_TRAIT(parent, TRAIT_NO_EXPERIENCE, "[type]")
@@ -111,6 +112,9 @@
 /datum/component/augmentable/proc/get_stability()
 	return current_stability
 
+/datum/component/augmentable/proc/get_installed_augments(datum/source, list/augments)
+	augments |= installed_augments
+
 /datum/component/augmentable/proc/install_augment(datum/source, datum/augment/A, mob/user)
 	if(current_stability + A.stability_cost < min_stability)
 		to_chat(user, span_warning("Installing this augment would destabilize the core beyond safe limits!"))
@@ -141,6 +145,7 @@
 
 	installed_augments -= A
 	A.on_remove(H)
+	A.parent = null
 
 	to_chat(user, span_notice("Removed [A.name]."))
 	return COMPONENT_AUGMENT_SUCCESS

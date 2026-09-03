@@ -42,7 +42,6 @@
 				desc = "A small ration pack containing a [food.name]."
 				icon_state = "ration_small"
 				dropshrink = 1
-			update_icon()
 
 /obj/item/ration/attack_self(mob/user)
 	. = ..()

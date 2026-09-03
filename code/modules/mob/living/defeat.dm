@@ -587,7 +587,7 @@
 	defeat_attempt_adjacent_treatment(helper, DEFEAT_TREATMENT_SPIRITUAL)
 
 /mob/living/proc/defeat_can_do_medical_treatment()
-	return HAS_TRAIT(src, TRAIT_SURGEON) || (get_skill_level(/datum/skill/misc/medicine) >= SKILL_RANK_APPRENTICE)
+	return get_skill_level(/datum/skill/misc/medicine) >= SKILL_RANK_APPRENTICE
 
 /mob/living/proc/defeat_can_do_spiritual_treatment()
 	return HAS_TRAIT(src, TRAIT_HOLY) || (get_skill_level(/datum/skill/magic/holy) >= SKILL_RANK_NOVICE)

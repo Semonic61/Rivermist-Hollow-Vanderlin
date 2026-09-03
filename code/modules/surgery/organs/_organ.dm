@@ -139,15 +139,25 @@
 	. = ..()
 	consider_processing()
 
-/obj/item/organ/attack(mob/living/carbon/M, mob/user, list/modifiers)
-	if(M == user && ishuman(user))
-		var/mob/living/carbon/human/H = user
-		if(status == ORGAN_ORGANIC)
-			var/obj/item/reagent_containers/food/snacks/S = prepare_eat(H)
-			if(S && H.put_in_active_hand(S))
-				S.attack(H, H)
-	else
-		..()
+/obj/item/organ/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isliving(interacting_with))
+		return NONE
+
+	if(interacting_with != user)
+		return NONE
+
+	if(status != ORGAN_ORGANIC)
+		return NONE
+
+	var/obj/item/reagent_containers/food/snacks/S = prepare_eat(user)
+	if(!S)
+		return ITEM_INTERACT_BLOCKING
+
+	user.put_in_active_hand(S)
+
+	S.interact_with_atom(user, user, modifiers)
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/organ/item_action_slot_check(slot,mob/user)
 	return //so we don't grant the organ's action to mobs who pick up the organ.
@@ -805,6 +815,11 @@
 	if(!recursive_loc_check(src, /obj/item/storage/backpack/backpack/artibackpack))
 		organ_flags &= ~ORGAN_FROZEN
 
+/obj/item/organ/proc/regenerate_organ()
+	setOrganDamage(0)
+	current_blood = max_blood_storage
+	set_germ_level(0)
+
 //Looking for brains?
 //Try code/modules/mob/living/carbon/brain/brain_item.dm
 
@@ -817,7 +832,7 @@
 
 		// Species regenerate organs doesn't ALWAYS handle healing the organs because it's dumb
 		for(var/obj/item/organ/organ as anything in internal_organs)
-			organ.setOrganDamage(0)
+			organ.regenerate_organ()
 		set_heartattack(FALSE)
 
 		// heal ears after healing traits, since ears check TRAIT_DEAF trait

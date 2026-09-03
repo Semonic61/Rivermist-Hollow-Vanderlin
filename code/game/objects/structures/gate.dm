@@ -214,4 +214,3 @@ GLOBAL_LIST_EMPTY(biggates)
 		playsound(src, 'sound/foley/winch.ogg', 100, extrarange = 3)
 		if(do_after(user, used_time))
 			attached_gate.toggle()
-

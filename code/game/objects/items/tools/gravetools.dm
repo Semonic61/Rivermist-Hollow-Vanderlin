@@ -33,32 +33,6 @@
 	grid_height = 96
 	var/time_multiplier = 1 //multipler to do_after times
 
-/obj/item/weapon/shovel/pre_attack(atom/A, mob/living/user, list/modifiers)
-	. = ..()
-	if(user.used_intent.type != /datum/intent/shovelscoop)
-		return
-	if(!istype(A, /obj/structure/snow))
-		var/obj/item/storage/sack/S = A
-		if(!istype(S))
-			return
-		if(!heldclod)
-			return
-		if(!SEND_SIGNAL(S, COMSIG_TRY_STORAGE_INSERT, src.heldclod, user, FALSE, FALSE))
-			return
-		heldclod = null
-		playsound(S,'sound/items/empty_shovel.ogg', 100, TRUE)
-		update_appearance(UPDATE_ICON_STATE)
-		return TRUE
-	var/turf/target_turf = get_turf(A)
-	playsound(A,'sound/items/dig_shovel.ogg', 100, TRUE)
-	qdel(A)
-	for(var/dir in GLOB.cardinals)
-		var/turf/card = get_step(target_turf, dir)
-		if(card.snow)
-			card.snow.update_corners()
-	user.changeNext_move(CLICK_CD_MELEE)
-	return TRUE
-
 /obj/item/weapon/shovel/Destroy()
 	if(heldclod)
 		QDEL_NULL(heldclod)
@@ -103,73 +77,96 @@
 		heldclod = null
 		update_appearance(UPDATE_ICON_STATE)
 
-/obj/item/weapon/shovel/attack_atom(atom/attacked_atom, mob/living/user)
-	if(!isturf(attacked_atom))
-		return ..()
-	var/turf/T = attacked_atom
+/obj/item/weapon/shovel/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(user.cmode)
+		return NONE
+
+	if(istype(interacting_with, /obj/item/storage/sack))
+		if(!istype(user.used_intent, /datum/intent/shovelscoop) || !heldclod)
+			return NONE
+		if(!SEND_SIGNAL(interacting_with, COMSIG_TRY_STORAGE_INSERT, heldclod, user, FALSE, FALSE))
+			return ITEM_INTERACT_BLOCKING
+		heldclod = null
+		playsound(interacting_with, 'sound/items/empty_shovel.ogg', 100, TRUE)
+		update_appearance(UPDATE_ICON_STATE)
+		return ITEM_INTERACT_SUCCESS
+
+	if(istype(interacting_with, /obj/structure/snow))
+		var/turf/target_turf = get_turf(interacting_with)
+		playsound(interacting_with, 'sound/items/dig_shovel.ogg', 100, TRUE)
+		qdel(interacting_with)
+		target_turf.snow = null
+		for(var/turf/card as anything in get_adjacent_open_turfs(target_turf))
+			card.snow?.update_corners()
+		user.changeNext_move(CLICK_CD_MELEE)
+		return ITEM_INTERACT_SUCCESS
+
+	if(!isturf(interacting_with))
+		return NONE
+	if(!isturf(user.loc))
+		return ITEM_INTERACT_ANY_BLOCKER
+
+	var/turf/target_turf = interacting_with
 	user.changeNext_move(user.used_intent.clickcd)
-	if(user.used_intent.type == /datum/intent/irrigate)
-		. = TRUE
-		var/obj/structure/soil/located = locate(/obj/structure/soil) in T
+	if(istype(user.used_intent, /datum/intent/irrigate))
+		var/obj/structure/soil/located = locate(/obj/structure/soil) in target_turf
 		if(located)
 			to_chat(user, span_notice("[located] is in the way!"))
-			return
-		if(istype(T, /turf/open/floor/dirt))
-			var/turf/open/floor/dirt/D = T
-			user.visible_message("[user] starts digging an irrigation channel.", "You start digging an irrigation channel.")
-			if(!do_after(user, 5 SECONDS * time_multiplier, D))
-				return
-			new /obj/structure/irrigation_channel(D)
-			return TRUE
+			return ITEM_INTERACT_BLOCKING
+		if(!istype(target_turf, /turf/open/floor/dirt))
+			return NONE
+		user.visible_message("[user] starts digging an irrigation channel.", "You start digging an irrigation channel.")
+		if(!do_after(user, 5 SECONDS * time_multiplier, target_turf))
+			return ITEM_INTERACT_BLOCKING
+		new /obj/structure/irrigation_channel(target_turf)
+		return ITEM_INTERACT_SUCCESS
 
-	else if(user.used_intent.type == /datum/intent/shovelscoop)
-		. = TRUE
-		if(istype(T, /turf/open/floor/dirt) || istype(T, /turf/open/floor/sand))
-			var/obj/structure/closet/dirthole/holie = locate() in T
-			if(heldclod && heldclod.clod_type == "dirt")
-				if(holie && holie.stage < 4)
-					holie.attackby(src, user)
-				else
-					if(istype(T, /turf/open/floor/dirt/road))
-						qdel(heldclod)
-						T.ChangeTurf(/turf/open/floor/dirt, flags = CHANGETURF_INHERIT_AIR)
-					else
-						heldclod.forceMove(T)
-					heldclod = null
-					playsound(T,'sound/items/empty_shovel.ogg', 100, TRUE)
-					update_appearance(UPDATE_ICON_STATE)
-					return
+	if(!istype(user.used_intent, /datum/intent/shovelscoop))
+		return NONE
+
+	var/obj/structure/closet/dirthole/holie = locate() in target_turf
+	if(istype(target_turf, /turf/open/floor/dirt) || istype(target_turf, /turf/open/floor/sand))
+		if(heldclod && heldclod.clod_type == "dirt")
+			if(holie && holie.stage < 4)
+				holie.item_interaction(user, src, modifiers)
+			else if(istype(target_turf, /turf/open/floor/dirt/road))
+				QDEL_NULL(heldclod)
+				target_turf.ChangeTurf(/turf/open/floor/dirt, flags = CHANGETURF_INHERIT_AIR)
 			else
-				if(istype(T, /turf/open/floor/dirt/road) || istype(T, /turf/open/floor/dirt))
-					if(holie)
-						holie.attackby(src, user)
-					else
-						if(istype(T, /turf/open/floor/dirt/road))
-							new /obj/structure/closet/dirthole(T)
-						else
-							T.ChangeTurf(/turf/open/floor/dirt/road, flags = CHANGETURF_INHERIT_AIR)
-						heldclod = new /obj/item/natural/clod/dirt(src)
-						playsound(T,'sound/items/dig_shovel.ogg', 100, TRUE)
-						update_appearance(UPDATE_ICON_STATE)
-				else
-					heldclod = new /obj/item/natural/clod/sand(src)
-					playsound(T,'sound/items/dig_shovel.ogg', 100, TRUE)
-					update_appearance(UPDATE_ICON_STATE)
-			return
-		if(heldclod)
-			if(istype(T, /turf/open/water))
-				qdel(heldclod)
-			else
-				heldclod.forceMove(T)
-			heldclod = null
-			playsound(T,'sound/items/empty_shovel.ogg', 100, TRUE)
+				heldclod.forceMove(target_turf)
+				heldclod = null
+			playsound(target_turf, 'sound/items/empty_shovel.ogg', 100, TRUE)
 			update_appearance(UPDATE_ICON_STATE)
-			return
-		if(istype(T, /turf/open/floor/grass))
-			to_chat(user, "<span class='warning'>There is grass in the way.</span>")
-			return
-		return
-	return ..()
+			return ITEM_INTERACT_SUCCESS
+
+		if(!heldclod)
+			if(holie)
+				holie.item_interaction(user, src, modifiers)
+			else if(istype(target_turf, /turf/open/floor/dirt/road))
+				new /obj/structure/closet/dirthole(target_turf)
+				heldclod = new /obj/item/natural/clod/dirt(src)
+			else if(istype(target_turf, /turf/open/floor/dirt))
+				target_turf.ChangeTurf(/turf/open/floor/dirt/road, flags = CHANGETURF_INHERIT_AIR)
+				heldclod = new /obj/item/natural/clod/dirt(src)
+			else
+				heldclod = new /obj/item/natural/clod/sand(src)
+			playsound(target_turf, 'sound/items/dig_shovel.ogg', 100, TRUE)
+			update_appearance(UPDATE_ICON_STATE)
+			return ITEM_INTERACT_SUCCESS
+
+	if(heldclod)
+		if(istype(target_turf, /turf/open/water))
+			QDEL_NULL(heldclod)
+		else
+			heldclod.forceMove(target_turf)
+			heldclod = null
+		playsound(target_turf, 'sound/items/empty_shovel.ogg', 100, TRUE)
+		update_appearance(UPDATE_ICON_STATE)
+		return ITEM_INTERACT_SUCCESS
+	if(istype(target_turf, /turf/open/floor/grass))
+		to_chat(user, span_warning("There is grass in the way."))
+		return ITEM_INTERACT_BLOCKING
+	return NONE
 
 /obj/item/weapon/shovel/getonmobprop(tag)
 	. = ..()
@@ -269,14 +266,14 @@
 /obj/item/burial_shroud/attack_self(mob/user, list/modifiers)
 	deploy_bodybag(user, user.loc)
 
-/obj/item/burial_shroud/afterattack(atom/target, mob/user, proximity, list/modifiers)
-	. = ..()
-	if(proximity)
-		if(isopenturf(target))
-			deploy_bodybag(user, target)
+/obj/item/burial_shroud/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isopenturf(interacting_with))
+		return NONE
+	deploy_bodybag(user, interacting_with)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/burial_shroud/proc/deploy_bodybag(mob/user, atom/location)
-	var/obj/structure/closet/body_bag/R = new unfoldedbag_path(location)
+	var/obj/structure/closet/burial_shroud/R = new unfoldedbag_path(location)
 	R.open(user)
 	R.add_fingerprint(user)
 	R.foldedbag_instance = src
@@ -302,7 +299,7 @@
 	drag_slowdown = 0
 	horizontal = TRUE
 	var/foldedbag_path = /obj/item/burial_shroud
-	var/obj/item/bodybag/foldedbag_instance = null
+	var/obj/item/burial_shroud/foldedbag_instance = null
 
 
 
@@ -332,7 +329,7 @@
 			to_chat(usr, "<span class='warning'>There are too many things inside of [src] to fold it up!</span>")
 			return
 		visible_message("<span class='notice'>[usr] folds up [src].</span>")
-		var/obj/item/bodybag/B = foldedbag_instance || new foldedbag_path
+		var/obj/item/burial_shroud/B = foldedbag_instance || new foldedbag_path
 		usr.put_in_hands(B)
 		qdel(src)
 
@@ -348,11 +345,11 @@
 /obj/item/bodybag/attack_self(mob/user, list/modifiers)
 	deploy_bodybag(user, user.loc)
 
-/obj/item/bodybag/afterattack(atom/target, mob/user, proximity, list/modifiers)
-	. = ..()
-	if(proximity)
-		if(isopenturf(target))
-			deploy_bodybag(user, target)
+/obj/item/bodybag/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isopenturf(interacting_with))
+		return NONE
+	deploy_bodybag(user, interacting_with)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/bodybag/proc/deploy_bodybag(mob/user, atom/location)
 	var/obj/structure/closet/body_bag/R = new unfoldedbag_path(location)

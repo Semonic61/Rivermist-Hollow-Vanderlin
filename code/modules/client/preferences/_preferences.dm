@@ -1367,7 +1367,8 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 	var/toggle_link_type = toggle_link_types[action]
 	if(toggle_link_type)
 		if(action == "hotkeys")
-			GLOB.preference_entries[toggle_link_type].handle_link(src, user)
+			var/datum/preference/preference = GLOB.preference_entries[toggle_link_type]
+			preference.handle_link(src, user)
 		else
 			toggle_preference(toggle_link_type)
 		switch(action)

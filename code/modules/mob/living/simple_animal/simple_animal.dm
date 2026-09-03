@@ -299,17 +299,19 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		. += barding_base_overlay
 		. += barding_above_overlay
 
-/mob/living/simple_animal/attackby(obj/item/O, mob/user, list/modifiers)
-	if(is_type_in_list(O, drink_type) && try_drink(O, user))
-		SEND_SIGNAL(src, COMSIG_ATOM_ATTACKBY, O, user, modifiers)
-		return TRUE
-	if(!is_type_in_list(O, food_type))
-		return ..()
-	else
-		if(attempt_feed(O, user))
-			SEND_SIGNAL(src, COMSIG_ATOM_ATTACKBY, O, user, modifiers) // for udder functionality
-			return TRUE
-	. = ..()
+/mob/living/simple_animal/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(is_type_in_list(tool, drink_type))
+		if(!try_drink(tool, user))
+			return ITEM_INTERACT_BLOCKING
+		return ITEM_INTERACT_SUCCESS
+
+	if(!is_type_in_list(tool, food_type))
+		return NONE
+
+	if(!attempt_feed(tool, user))
+		return ITEM_INTERACT_BLOCKING
+
+	return ITEM_INTERACT_SUCCESS
 
 /// Waters the animal from a held container. Unlike feeding this leaves the container intact and
 /// doesn't roll for taming, so a bucket survives the trip to the trough.
@@ -953,7 +955,7 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 /mob/living/simple_animal/hostile
 	var/do_footstep = FALSE
 
-/mob/living/simple_animal/hostile/RangedAttack(atom/A, list/modifiers) //Player firing
+/mob/living/simple_animal/hostile/ranged_attack(atom/A, list/modifiers) //Player firing
 	if(!ai_controller && ranged && ranged_cooldown <= world.time)
 		target = A
 		OpenFire(A)

@@ -90,13 +90,12 @@
 	. = ..()
 	desc += "It has [amount] uses left."
 
-/obj/item/chalk/attackby(obj/item/M, mob/user, list/modifiers)
-	if(istype(M,/obj/item/ore/cinnabar))
+/obj/item/chalk/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, /obj/item/ore/cinnabar))
 		if(amount < 8)
 			amount = 8
-			to_chat(user, span_notice("I press arcyne magic into \the [M] and the red crystals within melt into quicksilver, quickly sinking into the [src]."))
-	else
-		return ..()
+			to_chat(user, span_notice("I press arcyne magic into \the [tool/name] and the red crystals within melt into quicksilver, quickly sinking into \the [name]."))
+			return ITEM_INTERACT_SUCCESS
 
 /obj/item/chalk/attack_self(mob/living/carbon/human/user, list/modifiers)
 	if(!isarcyne(user))//We'll set up other items for other types of rune rituals
@@ -154,18 +153,21 @@
 	. = ..()
 	filter(type="drop_shadow", x=0, y=0, size=2, offset=1, color=rgb(128, 0, 128, 1))
 
-/obj/item/weapon/knife/dagger/silver/attackby(obj/item/M, mob/user, list/modifiers)
-	if(istype(M,/obj/item/ore/cinnabar))
-		var/crafttime = (60 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-		if(do_after(user, crafttime, target = src))
-			playsound(src, 'sound/magic/scrapeblade.ogg', 100, TRUE)
-			to_chat(user, span_notice("I press arcyne magic into the blade and it throbs in a deep purple..."))
-			var/obj/arcyne_knife = new /obj/item/weapon/knife/dagger/silver/arcyne
-			qdel(M)
-			qdel(src)
-			user.put_in_active_hand(arcyne_knife)
-	else
-		return ..()
+/obj/item/weapon/knife/dagger/silver/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/ore/cinnabar))
+		return NONE
+
+	var/crafttime = (60 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane)) * 5))
+	if(!do_after(user, crafttime, target = src))
+		return ITEM_INTERACT_BLOCKING
+
+	playsound(src, 'sound/magic/scrapeblade.ogg', 100, TRUE)
+	to_chat(user, span_notice("I press arcyne magic into the blade and it throbs in a deep purple..."))
+	var/obj/arcyne_knife = new /obj/item/weapon/knife/dagger/silver/arcyne
+	qdel(tool)
+	qdel(src)
+	user.put_in_active_hand(arcyne_knife)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/weapon/knife/dagger/silver/arcyne/attack_self(mob/living/carbon/human/user, list/modifiers)
 	if(!isarcyne(user))
@@ -259,24 +261,28 @@
 		deltimer(timing_id)
 		timing_id = null
 
-/obj/item/mimictrinket/attack_atom(atom/attacked_atom, mob/living/user)
-	if(!isobj(attacked_atom))
-		return ..()
+/obj/item/mimictrinket/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isobj(interacting_with))
+		return NONE
 
-	var/obj/target = attacked_atom
-	. = TRUE
-	if(ready)
-		to_chat(user,span_notice("[src] takes the form of [target]!"))
-		oldicon = icon
-		oldicon_state = icon_state
-		olddesc = desc
-		oldname = name
-		icon = target.icon
-		icon_state = target.icon_state
-		name = target.name
-		desc = target.desc
-		ready = FALSE
-		timing_id = addtimer(CALLBACK(src, PROC_REF(revert), user), duration,TIMER_STOPPABLE) // Minus two so we play the sound and decap faster
+	if(!ready)
+		return ITEM_INTERACT_BLOCKING
+
+	var/obj/target = interacting_with
+
+	to_chat(user, span_notice("[src] takes the form of [target]!"))
+	oldicon = icon
+	oldicon_state = icon_state
+	olddesc = desc
+	oldname = name
+	icon = target.icon
+	icon_state = target.icon_state
+	name = target.name
+	desc = target.desc
+	ready = FALSE
+	timing_id = addtimer(CALLBACK(src, PROC_REF(revert)), duration, TIMER_STOPPABLE) // Minus two so we play the sound and decap faster
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/hourglass/temporal
 	item_weight = 300 GRAMS
@@ -519,8 +525,11 @@
 	name = "aberrant planar binding shackles"
 	tier = 5
 
-/obj/item/rope/chain/bindingshackles/attack(mob/living/simple_animal/hostile/retaliate/captive, mob/living/user, list/modifiers)
-	var/list/summon_types = list(
+/obj/item/rope/chain/bindingshackles/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!istype(interacting_with, /mob/living/simple_animal/hostile/retaliate))
+		return NONE
+
+	var/static/list/summon_types = list(
 		/mob/living/simple_animal/hostile/retaliate/infernal/imp,
 		/mob/living/simple_animal/hostile/retaliate/infernal/hellhound,
 		/mob/living/simple_animal/hostile/retaliate/infernal/watcher,
@@ -534,20 +543,23 @@
 		/mob/living/simple_animal/hostile/retaliate/fae/dryad,
 		/mob/living/simple_animal/hostile/retaliate/fae/sylph,
 		/mob/living/simple_animal/hostile/retaliate/voidstoneobelisk,
-		/mob/living/simple_animal/hostile/retaliate/voiddragon)
+		/mob/living/simple_animal/hostile/retaliate/voiddragon,
+	)
 
-	if(!(captive.type in summon_types))
+	var/mob/living/simple_animal/hostile/retaliate/captive = interacting_with
+
+	if(!is_type_in_list(interacting_with, summon_types))
 		to_chat(user, span_warning("[captive] cannot be bound by these shackles!"))
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	if(captive.tier > tier)
 		to_chat(user, span_warning("[src] is not strong enough to bind [captive]!"))
-		return
+		return ITEM_INTERACT_BLOCKING
 
 	var/mob/living/simple_animal/hostile/retaliate/target = captive
 	target.visible_message(span_warning("[target.real_name]'s body is entangled by glowing chains..."), runechat_message = TRUE)
 
 	if(!target.ckey) //player is not inside body or has refused, poll for candidates
-
 		var/list/candidates = pollCandidatesForMob("Do you want to play as a Mage's summon?", null, null, null, 100, target, POLL_IGNORE_MAGE_SUMMON, new_players = TRUE)
 
 		// theres at least one candidate
@@ -555,18 +567,16 @@
 			var/mob/C = pick(candidates)
 			target.awaken_summon(user, C.ckey)
 			target.visible_message(span_warning("[target.real_name]'s eyes light up with an intelligence as it awakens fully on this plane."), runechat_message = TRUE)
-			custom_name(user,target)
-
-		//no candidates, raise as npc
+			custom_name(user, target)
 		else
 			to_chat(user, span_notice("The [captive] stares at you with mindless hate. The binding attempt failed to draw out its intelligence!"))
 
-		return FALSE
-	return FALSE
+	return ITEM_INTERACT_SUCCESS
 
 /mob/living/simple_animal/hostile/retaliate/proc/awaken_summon(mob/living/carbon/human/master, ckey)
 	if(!master)
 		return FALSE
+
 	if(ckey) //player
 		src.ckey = ckey
 
@@ -644,6 +654,10 @@
 	resistance_flags = FLAMMABLE
 	w_class = WEIGHT_CLASS_SMALL
 	sellprice = 20
+	/// Spellbook produced when this meld is used as a catalyst.
+	var/obj/item/book/granter/spellbook/melded_quality = /obj/item/book/granter/spellbook/adept
+	/// Shock dealt to an untrained user when the catalyst rejects them.
+	var/shock_damage = 20
 
 /obj/item/natural/melded/t1
 	name = "arcanic meld"
@@ -659,6 +673,8 @@
 	desc = "A melding of hellhound fang, iridescent scales and elemental shard."
 	item_flags = OBTAINED_DATA
 	obtained_from = list(list("Killing a Sylph", /mob/living/simple_animal/hostile/retaliate/fae/sylph))
+	melded_quality = /obj/item/book/granter/spellbook/expert
+	shock_damage = 40
 
 /obj/item/natural/melded/t3
 	item_weight = 60 GRAMS
@@ -666,6 +682,8 @@
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "wessence"
 	desc = "A melding of molten core, heartwood core and elemental fragment."
+	melded_quality = /obj/item/book/granter/spellbook/master
+	shock_damage = 60
 
 /obj/item/natural/melded/t4
 	item_weight = 70 GRAMS
@@ -673,12 +691,16 @@
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "wessence"
 	desc = "A melding of abyssal flame, sylvan essence and elemental relic."
+	melded_quality = /obj/item/book/granter/spellbook/legendary
+	shock_damage = 80
 
 /obj/item/natural/melded/t5
 	item_weight = 80 GRAMS
 	name = "arcanic aberation"
 	icon_state = "wessence"
 	desc = "A melding of arcyne fusion and voidstone. It pulses erratically, power coiled tightly within and dangerous. Many would be afraid of going near this, let alone holding it."
+	melded_quality = /obj/item/book/granter/spellbook/legendary
+	shock_damage = 40
 
 
 /obj/structure/soul
