@@ -10,6 +10,7 @@
 	side = RIGHT_SIDE
 
 	healing_factor = STANDARD_ORGAN_HEALING
+	pain_multiplier = 0.35 / 2
 
 	organ_volume = 0.25
 	max_blood_storage = 2.5
@@ -24,82 +25,85 @@
 	now_fixed = "<span class='info'>Noise slowly begins filling my ears once more.</span>"
 	low_threshold_cleared = "<span class='info'>The ringing in my ears has died down.</span>"
 
-	// `deaf` measures "ticks" of deafness. While > 0, the person is unable
-	// to hear anything.
-	var/deaf = 0
+	/// Temporary deafness, measured in seconds. While above zero, the owner cannot hear.
+	var/temporary_deafness = 0
 
 	// `damage` in this case measures long term damage to the ears, if too high,
 	// the person will not have either `deaf` or `ear_damage` decrease
 	// without external aid (earmuffs, drugs)
 
 	//Resistance against loud noises
-	var/bang_protect = 0
+	var/bang_protect = EAR_PROTECTION_NONE
 	// Multiplier for both long term and short term ear damage
-	var/ear_damage_multiplier = 1
+	var/damage_multiplier = 1
 	/// Currently mid ear-flick animation. Swaps the accessory to its `_flick` state while TRUE.
 	var/is_flicking = FALSE
+	var/static/sound/ringing = sound('sound/flash_ring.ogg', FALSE, 0, CHANNEL_EAR_RING, 75)
 
 /obj/item/organ/ears/Insert(mob/living/carbon/M, special, drop_if_replaced, new_zone = null)
 	. = ..()
 	for(var/datum/wound/facial/ears/ear_wound in M.get_wounds())
 		qdel(ear_wound)
+	if(temporary_deafness)
+		on_deafened()
+
+/obj/item/organ/ears/Remove(mob/living/carbon/M, special = FALSE, drop_if_replaced = TRUE)
+	. = ..()
+	if(temporary_deafness)
+		on_undeafened(M)
 
 /obj/item/organ/ears/on_life(delta_time, times_fired)
 	. = ..()
-	if(!is_failing())
-		applyDeaf(-0.5 * delta_time)
-
-/obj/item/organ/ears/get_slot_efficiency(slot)
-	if((slot == ORGAN_SLOT_EARS) && deaf)
-		return 0
-	return ..()
-
-/obj/item/organ/ears/proc/adjustEarDamage(damage, deafness)
-	applyOrganDamage(damage * ear_damage_multiplier)
-	applyDeaf(deafness * ear_damage_multiplier)
-
-/obj/item/organ/ears/proc/applyDeaf(damage, maximum = maxHealth)
-	if(!damage) //Micro-optimization
+	// Non-damage deafness is owned by its own source and should not make this timer tick down.
+	if(HAS_TRAIT_NOT_FROM(owner, TRAIT_DEAF, EAR_DAMAGE) || is_failing())
 		return
-	deaf = clamp(deaf + damage, 0, maximum)
+	if(temporary_deafness)
+		adjust_temporary_deafness(-delta_time SECONDS)
 
-/obj/item/organ/ears/proc/restoreEars()
-	deaf = 0
-	damage = 0
-	organ_flags &= ~ORGAN_FAILING
+/// Adjusts temporary deafness without interfering with deafness from other sources.
+/obj/item/organ/ears/proc/adjust_temporary_deafness(amount)
+	if(amount > 0 && owner && (owner.status_flags & GODMODE))
+		return
+	temporary_deafness = max(temporary_deafness + (amount * damage_multiplier), 0)
+	if(!owner)
+		return
+	if(temporary_deafness && !HAS_TRAIT_FROM(owner, TRAIT_DEAF, EAR_DAMAGE))
+		on_deafened()
+	else if(!temporary_deafness && HAS_TRAIT_FROM(owner, TRAIT_DEAF, EAR_DAMAGE))
+		on_undeafened()
 
-	var/mob/living/carbon/C = owner
+/obj/item/organ/ears/proc/on_deafened()
+	RegisterSignal(owner, COMSIG_MOB_SAY, PROC_REF(adjust_speech))
+	ADD_TRAIT(owner, TRAIT_DEAF, EAR_DAMAGE)
+	SEND_SOUND(owner, ringing)
 
-	if(iscarbon(owner) && HAS_TRAIT(C, TRAIT_DEAF))
-		deaf = 1
+/obj/item/organ/ears/proc/on_undeafened(mob/living/organ_owner = owner)
+	REMOVE_TRAIT(organ_owner, TRAIT_DEAF, EAR_DAMAGE)
+	UnregisterSignal(organ_owner, COMSIG_MOB_SAY)
 
-/obj/item/organ/ears/proc/minimumDeafTicks(value)
-	deaf = max(deaf, value)
+/// Loud-noise deafness makes the owner involuntarily shout.
+/obj/item/organ/ears/proc/adjust_speech(datum/source, list/speech_args)
+	SIGNAL_HANDLER
+	if(HAS_TRAIT_NOT_FROM(owner, TRAIT_DEAF, EAR_DAMAGE))
+		return
+	var/message = speech_args[SPEECH_MESSAGE]
+	message = replacetext(message, ". ", "! ")
+	message = replacetext(message, "? ", "?! ")
+	switch(copytext_char(message, -1))
+		if(".")
+			if(copytext_char(message, -2) != "..")
+				message = copytext_char(message, 1, -1) + "!"
+		if("?")
+			message = copytext_char(message, 1, -1) + "?!"
+		if("!")
+			pass()
+		else
+			message += "!"
+	speech_args[SPEECH_MESSAGE] = message
+	return COMPONENT_UPPERCASE_SPEECH
 
 /obj/item/organ/ears/invincible
-	ear_damage_multiplier = 0
-
-
-/mob/proc/restoreEars()
-
-/mob/living/carbon/restoreEars()
-	var/obj/item/organ/ears/ears = getorgan(/obj/item/organ/ears)
-	if(ears)
-		ears.restoreEars()
-
-/mob/proc/adjustEarDamage()
-
-/mob/living/carbon/adjustEarDamage(ddmg, ddeaf)
-	var/obj/item/organ/ears/ears = getorgan(/obj/item/organ/ears)
-	if(ears)
-		ears.adjustEarDamage(ddmg, ddeaf)
-
-/mob/proc/minimumDeafTicks()
-
-/mob/living/carbon/minimumDeafTicks(value)
-	var/obj/item/organ/ears/ears = getorgan(/obj/item/organ/ears)
-	if(ears)
-		ears.minimumDeafTicks(value)
+	damage_multiplier = 0
 
 /// Plays an ear flick if this mob has flickable ears and isn't already mid-flick. Safe no-op otherwise.
 /mob/living/proc/try_ear_flick()
@@ -113,7 +117,7 @@
 	name = "cat ears"
 	icon = 'icons/obj/clothing/hats.dmi'
 	icon_state = "kitty"
-	ear_damage_multiplier = 2
+	damage_multiplier = 2
 
 /obj/item/organ/ears/elf
 	name = "elf ears"

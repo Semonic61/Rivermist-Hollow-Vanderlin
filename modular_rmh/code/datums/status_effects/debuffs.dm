@@ -157,7 +157,7 @@
 	. = ..()
 	if(ishuman(owner))
 		var/mob/living/carbon/human/human = owner
-		human.add_quirk(/datum/quirk/vice/lovefiend)
+		human.add_quirk(/datum/quirk/vice/addiction/lovefiend)
 	owner.add_stress(/datum/stress_event/nympho_addiction)
 
 /datum/status_effect/debuff/nympho_addiction/on_remove()

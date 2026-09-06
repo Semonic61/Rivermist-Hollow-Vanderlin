@@ -146,8 +146,8 @@
 	if(M.has_dna() && ishuman(M))
 		M.dna.species.handle_body(M)
 
-/obj/item/organ/eyes/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE)
-	. = ..()
+/obj/item/organ/eyes/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE, required_organ_flag = NONE)
+	. = ..(amount, maximum, required_organ_flag)
 	if(iscarbon(owner))
 		var/mob/living/carbon/carbon_owner = owner
 		carbon_owner.update_eyes()

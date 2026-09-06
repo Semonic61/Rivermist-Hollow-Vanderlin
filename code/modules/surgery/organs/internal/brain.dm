@@ -17,7 +17,7 @@
 	slot = ORGAN_SLOT_BRAIN
 	unique_slot = ORGAN_SLOT_BRAIN
 	organ_efficiency = list(ORGAN_SLOT_BRAIN = 100)
-	organ_flags = ORGAN_VITAL
+	organ_flags = ORGAN_ORGANIC|ORGAN_VITAL
 	attack_verb = list("attacked", "slapped", "whacked")
 
 	maxHealth = BRAIN_DAMAGE_DEATH
@@ -410,16 +410,22 @@
 /obj/item/organ/brain/proc/get_current_damage_threshold()
 	return FLOOR(damage / damage_threshold_value, 1)
 
-/obj/item/organ/brain/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE)
+/obj/item/organ/brain/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE, required_organ_flag = NONE)
 	if(!amount) //Micro-optimization.
-		return
+		return FALSE
+	if(required_organ_flag && !(organ_flags & required_organ_flag))
+		return FALSE
+	maximum = clamp(maximum, 0, maxHealth)
 	if(maximum < damage)
 		damage = maximum
-	if(damage < 0 && owner?.get_chem_effect(CE_BRAIN_REGEN))
-		damage *= 2
+	if(amount < 0 && owner?.get_chem_effect(CE_BRAIN_REGEN))
+		amount *= 2
+	var/old_damage = damage
 	prev_damage = damage
 	damage = clamp(damage + amount, 0, maximum)
+	. = damage - old_damage
 	var/mess = check_damage_thresholds(owner)
+	prev_damage = damage
 	if(owner)
 		if(mess && !silent)
 			to_chat(owner, mess)

@@ -232,10 +232,10 @@
 	action_target = controller.target
 	if(ishuman(action_user))
 		var/mob/living/carbon/human/human_user = action_user
-		action_user_was_virgin = human_user.virginity
+		action_user_was_virgin = HAS_TRAIT(human_user, TRAIT_VIRGIN)
 	if(ishuman(action_target))
 		var/mob/living/carbon/human/human_target = action_target
-		action_target_was_virgin = human_target.virginity
+		action_target_was_virgin = HAS_TRAIT(human_target, TRAIT_VIRGIN)
 	speed = controller.speed
 	force = controller.force
 	stop_on_climax = controller.do_until_finished

@@ -147,7 +147,7 @@ SUBSYSTEM_DEF(familytree)
 			AssignNewlyWed(H)
 
 		if(FAMILY_FULL)
-			if(H.virginity)
+			if(HAS_TRAIT(H, TRAIT_VIRGIN))
 				return
 			AssignToFamily(H)
 

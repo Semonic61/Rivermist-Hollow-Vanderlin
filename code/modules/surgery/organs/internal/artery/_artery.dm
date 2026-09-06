@@ -5,7 +5,7 @@
 	base_icon_state = "artery"
 	sellprice = 1
 
-	organ_flags = ORGAN_LIMB_SUPPORTER|ORGAN_INDESTRUCTIBLE|ORGAN_NO_VIOLENT_DAMAGE
+	organ_flags = ORGAN_ORGANIC|ORGAN_LIMB_SUPPORTER|ORGAN_INDESTRUCTIBLE|ORGAN_NO_VIOLENT_DAMAGE
 	organ_efficiency = list(ORGAN_SLOT_ARTERY = 100)
 	needs_processing = TRUE
 
@@ -116,8 +116,8 @@
 	COOLDOWN_START(src, next_squirt, cd_time)
 	COOLDOWN_START(src, self_heal, ARTERY_SELF_HEAL_TIME)
 
-/obj/item/organ/artery/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE)
-	. = ..()
+/obj/item/organ/artery/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE, required_organ_flag = NONE)
+	. = ..(amount, maximum, required_organ_flag)
 	if(damage <= 0)
 		mend()
 

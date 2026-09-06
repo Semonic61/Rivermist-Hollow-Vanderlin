@@ -797,7 +797,7 @@
 	return
 
 /mob/living/carbon/human/lose_virginity()
-	virginity = FALSE
+	REMOVE_TRAIT(src, TRAIT_VIRGIN, null)
 
 /mob/living/proc/adjacent_or_closet(atom/neighbor)
 	if(!neighbor)

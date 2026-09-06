@@ -131,6 +131,10 @@
 /// From organ insertion/removal after a living mob's organ slot changes. (obj/item/organ/organ, organ_slot, inserted)
 #define COMSIG_LIVING_ORGAN_CHANGED "living_organ_changed"
 
+/// Sent from /mob/living/get_ear_protection(): (list/protection)
+#define COMSIG_LIVING_GET_EAR_PROTECTION "living_get_ear_protection"
+#define EAR_PROTECTION_ARG 1
+
 #define COMSIG_LIVING_ADJUSTED "living_damage_adjusted"
 
 #define COMSIG_LIVING_PREBITE_SELF  "living_prebite"

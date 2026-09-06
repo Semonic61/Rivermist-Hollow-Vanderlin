@@ -54,7 +54,7 @@
 
 /proc/send_prayer(mob/living/follower, prayer, patron_name, bigger = FALSE)
 	var/ident_string = "[follower.key]/([follower.real_name]) (follower of [patron_name])"
-	if(follower.has_quirk(/datum/quirk/vice/godfearing))
+	if(follower.has_quirk(/datum/quirk/vice/addiction/godfearing))
 		ident_string += "[SPAN_GOD_GENERIC("(GODFEARING)")]"
 	/// Usually I hate not using spans properly, but in this case it's going to make my life easier.
 	var/lowercase_god = "generic"
@@ -140,22 +140,22 @@
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/scream/painscream/run_emote(mob/user, params, type_override, intentional)
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/scream/firescream/run_emote(mob/user, params, type_override, intentional)
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/aggro
 	key = "aggro"

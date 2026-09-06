@@ -35,12 +35,15 @@
 	if(!blood_regen)
 		return
 	owner.adjust_nutrition(-combined_nutrition_requirement * nutrition_ratio * 0.5 * delta_time)
-	owner.adjust_bloodvolume(CEILING(blood_regen * nutrition_ratio * 0.5 * delta_time, 0.1))
+	owner.adjust_bloodvolume(CEILING(blood_regen * nutrition_ratio * 0.5 * delta_time, 0.1), BLOOD_VOLUME_NORMAL)
 	return TRUE
 
 /// Blood volume adjust proc
 /mob/living/proc/adjust_bloodvolume(amount, cap)
-	if(cap && (blood_volume >= cap))
+	if(cap && amount > 0 && blood_volume >= cap)
 		return TRUE
-	blood_volume = max(blood_volume + amount, 0)
+	var/adjusted_volume = max(blood_volume + amount, 0)
+	if(cap && amount > 0)
+		adjusted_volume = min(adjusted_volume, cap)
+	blood_volume = adjusted_volume
 	return TRUE

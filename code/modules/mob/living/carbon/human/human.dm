@@ -530,7 +530,7 @@
 					var/epinephrine_mod = 0
 					if(target.reagents?.get_reagent_amount(/datum/reagent/adrenaline) >= 1)
 						epinephrine_mod += 5
-					target.adjustOxyLoss(-((medical_skill * 0.2) + epinephrine_mod))
+					target.adjustOxyLoss(-((medical_skill * 0.3) + epinephrine_mod))
 					target.updatehealth()
 					to_chat(target, span_unconscious("I feel a breath of fresh air enter my lungs... It feels good..."))
 				else if(they_breathe && !they_lung)
@@ -583,14 +583,12 @@
 				var/diceroll = diceroll(medical_skill+heart_exposed_mod+epinephrine_mod, dice_num = 8, context = DICE_CONTEXT_PHYSICAL)
 				if((diceroll >= DICE_SUCCESS) || !attributes)
 					if(prob(35) || (diceroll >= DICE_SUCCESS))
-						target?.pump_heart(src)
-						target.set_heartattack(FALSE)
-						if(GETBRAINLOSS(target) >= 100)
-							SETBRAINLOSS(target, 99)
+						target.pump_heart(src)
 						if(HAS_TRAIT(target, TRAIT_NECRA_CURSE))
 							to_chat(target, span_warning("Necra holds tight to this one."))
 							return FALSE
-						if(diceroll >= DICE_CRIT_SUCCESS)
+						// Compressions can preserve circulation, but cannot restart a stopped or failing heart.
+						if(diceroll >= DICE_CRIT_SUCCESS && (!target.needs_heart() || they_heart?.is_working()))
 							if(target.revive())
 								target.grab_ghost(TRUE)
 								target.visible_message(span_warning("<b>[target]</b> limply spasms their muscles."), \

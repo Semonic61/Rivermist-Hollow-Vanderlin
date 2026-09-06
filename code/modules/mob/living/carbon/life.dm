@@ -332,8 +332,8 @@ All effects don't start immediately, but rather get worse over time; the rate is
 				remove_status_effect(/datum/status_effect/buff/drunk_master)
 		if(drunkenness >= 1)
 			SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
-			if(has_quirk(/datum/quirk/vice/alcoholic))
-				sate_addiction(/datum/quirk/vice/alcoholic)
+			if(has_quirk(/datum/quirk/vice/addiction/alcoholic))
+				sate_addiction(/datum/quirk/vice/addiction/alcoholic)
 		if(drunkenness >= 3)
 			if(prob(3))
 				slurring += 2
@@ -507,7 +507,7 @@ All effects don't start immediately, but rather get worse over time; the rate is
 	if(!needs_heart())
 		return FALSE
 	var/obj/item/organ/heart/heart = getorganslot(ORGAN_SLOT_HEART)
-	if(!heart || (heart.organ_flags & ORGAN_SYNTHETIC))
+	if(!heart || IS_ROBOTIC_ORGAN(heart))
 		return FALSE
 	return TRUE
 

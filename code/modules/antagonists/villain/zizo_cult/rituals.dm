@@ -702,7 +702,7 @@ GLOBAL_LIST_INIT(ritualslist, build_zizo_rituals())
 	if(RULER != SSticker.rulermob && RULER.stat != DEAD)
 		return
 	var/mob/living/carbon/human/VIRGIN = locate() in get_step(center, SOUTH)
-	if(!VIRGIN.virginity && VIRGIN.stat != DEAD)
+	if(!HAS_TRAIT(VIRGIN, TRAIT_VIRGIN) || VIRGIN.stat != DEAD)
 		return
 	VIRGIN.gib()
 	RULER.gib()

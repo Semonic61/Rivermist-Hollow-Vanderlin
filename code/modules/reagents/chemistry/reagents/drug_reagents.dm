@@ -17,8 +17,8 @@
 			M.emote(pick("twitch_s","giggle"))
 		else
 			M.emote(pick("twitch_s","chuckle"))
-	if(M.has_quirk(/datum/quirk/vice/smoker))
-		M.sate_addiction(/datum/quirk/vice/smoker)
+	if(M.has_quirk(/datum/quirk/vice/addiction/smoker))
+		M.sate_addiction(/datum/quirk/vice/addiction/smoker)
 	..()
 
 /datum/reagent/drug/space_drugs/on_mob_metabolize(mob/living/M)
@@ -76,8 +76,8 @@
 	..()
 
 /datum/reagent/drug/nicotine/on_mob_life(mob/living/carbon/M, efficiency)
-	if(M.has_quirk(/datum/quirk/vice/smoker))
-		M.sate_addiction(/datum/quirk/vice/smoker)
+	if(M.has_quirk(/datum/quirk/vice/addiction/smoker))
+		M.sate_addiction(/datum/quirk/vice/addiction/smoker)
 	..()
 	. = 1
 
@@ -98,8 +98,8 @@
 
 /datum/reagent/drug/skum/on_mob_life(mob/living/carbon/M, efficiency)
 	SEND_SIGNAL(M, COMSIG_DRUG_INDULGE)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	M.set_drugginess(90 SECONDS * efficiency)
 	if(prob(5))
 		if(M.gender == FEMALE)
@@ -138,8 +138,8 @@
 
 /datum/reagent/drug/bimb/on_mob_life(mob/living/carbon/M, efficiency)
 	SEND_SIGNAL(M, COMSIG_DRUG_INDULGE)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	if(prob(10 * efficiency))
 		M.adjust_confusion(2 SECONDS * efficiency)
 	if(prob(5 * efficiency))
@@ -177,8 +177,8 @@
 
 /datum/reagent/drug/madness/on_mob_life(mob/living/carbon/M, efficiency)
 	SEND_SIGNAL(M, COMSIG_DRUG_INDULGE)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	M.set_drugginess(60 SECONDS * efficiency)
 	M.set_dizzy(8 SECONDS * efficiency)
 	if(world.time >= next_hallucination && prob(hallucination_prob * efficiency))

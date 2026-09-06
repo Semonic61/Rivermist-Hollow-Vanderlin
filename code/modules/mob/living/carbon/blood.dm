@@ -1,7 +1,7 @@
 
 // bleedout checks
 /mob/living/carbon/proc/in_bleedout()
-	return (CHECK_BITFIELD(status_flags, BLEEDOUT))
+	return CHECK_BITFIELD(status_flags, BLEEDOUT) || undergoing_cardiac_arrest()
 
 /// Blood volume, affected by the heart
 /mob/living/carbon/proc/get_blood_circulation()
@@ -14,13 +14,19 @@
 	var/apparent_blood_volume = blood_volume
 
 	var/pulse_mod = 1
+	var/has_recent_heart_pump = FALSE
+	if(recent_heart_pump)
+		var/pump_time = text2num(recent_heart_pump[1])
+		has_recent_heart_pump = world.time <= pump_time + heart_pump_duration
+		if(!has_recent_heart_pump)
+			recent_heart_pump = null
 	if(HAS_TRAIT(src, TRAIT_FAKEDEATH))
 		pulse_mod = 1
 	else
 		switch(pulse)
 			if(-INFINITY to PULSE_NONE)
 				//Did someone at least perform CPR?
-				if(recent_heart_pump && (world.time <= text2num(recent_heart_pump[1]) + heart_pump_duration))
+				if(has_recent_heart_pump)
 					pulse_mod *= recent_heart_pump[recent_heart_pump[1]]
 				else
 					if(stat < DEAD)
@@ -36,7 +42,7 @@
 			if(PULSE_FASTER, PULSE_THREADY)
 				pulse_mod *= 1.25
 
-	var/min_efficiency = recent_heart_pump ? 0.5 : 0.25
+	var/min_efficiency = has_recent_heart_pump ? 0.5 : 0.25
 	apparent_blood_volume *= clamp(1 - (100 - heart_efficiency)/100, min_efficiency, 5)
 	apparent_blood_volume *= pulse_mod
 

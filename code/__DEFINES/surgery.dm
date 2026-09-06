@@ -1,5 +1,7 @@
-#define ORGAN_ORGANIC 1
-#define ORGAN_ROBOTIC 2
+/// Helper to determine whether an organ uses organic treatments and behavior.
+#define IS_ORGANIC_ORGAN(organ) (organ.organ_flags & ORGAN_ORGANIC)
+/// Helper to determine whether an organ uses robotic treatments and behavior.
+#define IS_ROBOTIC_ORGAN(organ) (organ.organ_flags & ORGAN_ROBOTIC)
 
 #define BODYPART_ORGANIC 1
 #define BODYPART_ROBOTIC 2

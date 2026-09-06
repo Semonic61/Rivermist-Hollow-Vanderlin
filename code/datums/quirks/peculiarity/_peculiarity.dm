@@ -96,18 +96,7 @@
 /datum/quirk/peculiarity/virgin
 	name = "Virgin"
 	desc = "I am a virgin, whether truly, by magic or plot holes. Vampires and cultists are likely to lust for my blood."
-
-/datum/quirk/peculiarity/virgin/on_spawn()
-	if(!ishuman(owner))
-		return
-	var/mob/living/carbon/human/H = owner
-	H.virginity = TRUE
-
-/datum/quirk/peculiarity/virgin/after_job_spawn()
-	if(!ishuman(owner))
-		return
-	var/mob/living/carbon/human/H = owner
-	H.virginity = TRUE
+	traits_to_add = list(TRAIT_VIRGIN)
 
 
 /*/datum/quirk/peculiarity/mystery_box

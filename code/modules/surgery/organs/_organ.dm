@@ -3,7 +3,6 @@
 	name = "organ"
 	icon = 'icons/obj/surgery.dmi'
 	var/mob/living/owner = null
-	var/status = ORGAN_ORGANIC
 	w_class = WEIGHT_CLASS_SMALL
 	throwforce = 0
 	sellprice = DEFAULT_ORGAN_VALUE
@@ -23,7 +22,7 @@
 	var/list/possible_zones = ALL_BODYPARTS
 	var/slot
 	// DO NOT add slots with matching names to different zones - it will break internal_organs_slot list!
-	var/organ_flags = 0
+	var/organ_flags = ORGAN_ORGANIC
 
 	/// Damage healed per second
 	var/healing_factor = STANDARD_ORGAN_HEALING
@@ -146,7 +145,7 @@
 	if(interacting_with != user)
 		return NONE
 
-	if(status != ORGAN_ORGANIC)
+	if(!IS_ORGANIC_ORGAN(src))
 		return NONE
 
 	var/obj/item/reagent_containers/food/snacks/S = prepare_eat(user)
@@ -181,19 +180,19 @@
 	return
 
 /obj/item/organ/proc/is_working()
-	return (!CHECK_BITFIELD(organ_flags, ORGAN_FAILING|ORGAN_DESTROYED|ORGAN_DEAD|ORGAN_CUT_AWAY) && (damage < high_threshold) && (current_blood || !max_blood_storage))
+	return (!CHECK_BITFIELD(organ_flags, ORGAN_FAILING|ORGAN_DESTROYED|ORGAN_NECROTIC|ORGAN_CUT_AWAY) && (damage < high_threshold) && (current_blood || !max_blood_storage))
 
 /obj/item/organ/proc/is_working_without_bleedout()
-	return (!CHECK_BITFIELD(organ_flags, ORGAN_FAILING|ORGAN_DESTROYED|ORGAN_DEAD|ORGAN_CUT_AWAY) && (damage < high_threshold))
+	return (!CHECK_BITFIELD(organ_flags, ORGAN_FAILING|ORGAN_DESTROYED|ORGAN_NECROTIC|ORGAN_CUT_AWAY) && (damage < high_threshold))
 
 /obj/item/organ/proc/is_failing()
-	return (CHECK_BITFIELD(organ_flags, ORGAN_FAILING|ORGAN_DESTROYED|ORGAN_DEAD|ORGAN_CUT_AWAY) || (damage >= high_threshold) || (!current_blood && max_blood_storage))
+	return (CHECK_BITFIELD(organ_flags, ORGAN_FAILING|ORGAN_DESTROYED|ORGAN_NECROTIC|ORGAN_CUT_AWAY) || (damage >= high_threshold) || (!current_blood && max_blood_storage))
 
 /obj/item/organ/proc/is_failing_without_bleedout()
-	return (CHECK_BITFIELD(organ_flags, ORGAN_FAILING|ORGAN_DESTROYED|ORGAN_DEAD|ORGAN_CUT_AWAY) || (damage >= high_threshold))
+	return (CHECK_BITFIELD(organ_flags, ORGAN_FAILING|ORGAN_DESTROYED|ORGAN_NECROTIC|ORGAN_CUT_AWAY) || (damage >= high_threshold))
 
 /obj/item/organ/proc/is_dead()
-	return (CHECK_BITFIELD(organ_flags, ORGAN_DESTROYED|ORGAN_DEAD) || (damage >= maxHealth))
+	return (CHECK_BITFIELD(organ_flags, ORGAN_DESTROYED|ORGAN_NECROTIC) || (damage >= maxHealth))
 
 /obj/item/organ/proc/can_be_surgically_manipulated()
 	return TRUE
@@ -208,7 +207,7 @@
 	return (CHECK_BITFIELD(organ_flags, ORGAN_DESTROYED))
 
 /obj/item/organ/proc/is_necrotic()
-	return (CHECK_BITFIELD(organ_flags, ORGAN_DEAD) || (germ_level >= INFECTION_LEVEL_THREE))
+	return (CHECK_BITFIELD(organ_flags, ORGAN_NECROTIC) || (germ_level >= INFECTION_LEVEL_THREE))
 
 /obj/item/organ/proc/scar_organ(amount, cap)
 	for(var/slot in organ_efficiency)
@@ -224,15 +223,15 @@
 
 /obj/item/organ/proc/necrose_organ()
 	. = FALSE
-	if(!CHECK_BITFIELD(organ_flags, ORGAN_DEAD))
+	if(!CHECK_BITFIELD(organ_flags, ORGAN_NECROTIC))
 		set_germ_level(INFECTION_LEVEL_THREE)
 		return TRUE
 
 /obj/item/organ/proc/unnecrose_organ()
 	. = FALSE
-	if(CHECK_BITFIELD(organ_flags, ORGAN_DEAD))
+	if(CHECK_BITFIELD(organ_flags, ORGAN_NECROTIC))
 		set_germ_level(GERM_LEVEL_STERILE)
-		organ_flags &= ~ORGAN_DEAD
+		organ_flags &= ~ORGAN_NECROTIC
 		return TRUE
 
 /obj/item/organ/proc/handle_blood(delta_time, times_fired, in_bleedout)
@@ -427,7 +426,7 @@
 		// as an opt-in dungeon/environment mechanic before allowing new germs.
 		return
 	. = ..()
-	if((germ_level >= INFECTION_LEVEL_THREE) && !CHECK_BITFIELD(organ_flags, ORGAN_DEAD))
+	if((germ_level >= INFECTION_LEVEL_THREE) && !CHECK_BITFIELD(organ_flags, ORGAN_NECROTIC))
 		if(can_necrose_from_infection())
 			kill_organ()
 		else if(owner?.is_player_character())
@@ -469,7 +468,7 @@
 	if(isreagentcontainer(loc))
 		return FALSE /// preserving ah.
 	check_cold(passed_temp)
-	if(CHECK_BITFIELD(organ_flags, ORGAN_FROZEN|ORGAN_DEAD|ORGAN_SYNTHETIC|ORGAN_INDESTRUCTIBLE))//I'll let arteries not rot to make life easier
+	if(IS_ROBOTIC_ORGAN(src) || CHECK_BITFIELD(organ_flags, ORGAN_FROZEN|ORGAN_NECROTIC|ORGAN_INDESTRUCTIBLE))//I'll let arteries not rot to make life easier
 		return FALSE
 	return TRUE
 
@@ -646,7 +645,7 @@
 	. += span_notice("It should be inserted in the [parse_zone(zone)].")
 
 	if(organ_flags & ORGAN_FAILING)
-		if(status == ORGAN_ROBOTIC)
+		if(IS_ROBOTIC_ORGAN(src))
 			. += span_warning("[src] seems to be broken.")
 			return
 		. += span_warning("[src] has decayed for too long, and has turned a sickly color. Only a skilled physican could restore this.")
@@ -734,17 +733,22 @@
 	effective_efficiency = max(0, CEILING(effective_efficiency - (effective_efficiency * (damage/maxHealth)), 1))
 	return effective_efficiency
 
-///Adjusts an organ's damage by the amount "d", up to a maximum amount, which is by default max damage
-/obj/item/organ/proc/applyOrganDamage(d, maximum = maxHealth)	//use for damaging effects
-	if(!d) //Micro-optimization.
-		return
+/// Adjusts organ damage and returns the net change.
+/obj/item/organ/proc/applyOrganDamage(damage_amount, maximum = maxHealth, required_organ_flag = NONE)
+	if(!damage_amount)
+		return FALSE
+	maximum = clamp(maximum, 0, maxHealth)
 	if(maximum < damage)
-		return
-	damage = CLAMP(damage + d, 0, maximum)
-	var/mess = check_damage_thresholds(owner)
+		return FALSE
+	if(required_organ_flag && !(organ_flags & required_organ_flag))
+		return FALSE
+	var/old_damage = damage
+	damage = clamp(damage + damage_amount, 0, maximum)
+	. = damage - old_damage
+	var/message = check_damage_thresholds(owner)
 	prev_damage = damage
-	if(mess && owner)
-		to_chat(owner, mess)
+	if(message && owner)
+		to_chat(owner, message)
 	consider_processing()
 
 ///SETS an organ's damage to the amount "d", and in doing so clears or sets the failing flag, good for when you have an effect that should fix an organ if broken
@@ -835,9 +839,8 @@
 			organ.regenerate_organ()
 		set_heartattack(FALSE)
 
-		// heal ears after healing traits, since ears check TRAIT_DEAF trait
-		// when healing.
-		restoreEars()
+		var/obj/item/organ/ears/species_ears = getorganslot(ORGAN_SLOT_EARS)
+		species_ears?.adjust_temporary_deafness(-species_ears.temporary_deafness)
 
 		return
 
@@ -873,11 +876,8 @@
 	if(!ears)
 		ears = new()
 		ears.Insert(src)
-	// ears.adjustEarDamage(-INFINITY, -INFINITY) // actually do: set_organ_damage(0) and deaf = 0
-
-	// heal ears after healing traits, since ears check TRAIT_DEAF trait
-	// when healing.
-	restoreEars()
+	ears.regenerate_organ()
+	ears.adjust_temporary_deafness(-ears.temporary_deafness)
 
 /**
  * Robotic organs do not feel pain, simply for balancing reasons
@@ -888,7 +888,7 @@
 	. = FALSE
 	if(pain_multiplier <= 0)
 		return FALSE
-	if(CHECK_BITFIELD(organ_flags, ORGAN_CUT_AWAY | ORGAN_DEAD))
+	if(CHECK_BITFIELD(organ_flags, ORGAN_CUT_AWAY | ORGAN_NECROTIC))
 		return FALSE
 	if(HAS_TRAIT(src, TRAIT_NOPAIN))
 		return FALSE

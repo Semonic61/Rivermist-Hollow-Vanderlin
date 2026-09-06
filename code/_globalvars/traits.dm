@@ -208,6 +208,7 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"Rune Severed" = TRAIT_RUNE_SEVERED,
 		"Inflexible" = TRAIT_UNDODGING,
 		"Freeze Hunger" = TRAIT_FREEZEHUNGER,
+		"Virgin" = TRAIT_VIRGIN,
 	),
 	/obj/item/bodypart = list(
 		"TRAIT_PARALYSIS" = TRAIT_PARALYSIS

@@ -134,9 +134,17 @@
 /mob/living/proc/get_eye_protection()
 	return 0
 
-//this returns the mob's protection against ear damage (0:no protection; 1: some ear protection; 2: has no ears)
-/mob/living/proc/get_ear_protection()
-	return 0
+/// Applies both lasting ear damage and temporary deafness where supported.
+/mob/living/proc/sound_damage(damage, deafen)
+	return
+
+/// Returns additive protection against sound trauma.
+/mob/living/proc/get_ear_protection(ignore_deafness = FALSE)
+	if(!ignore_deafness && HAS_TRAIT(src, TRAIT_DEAF))
+		return EAR_PROTECTION_FULL
+	var/list/signal_protection = list(EAR_PROTECTION_NONE)
+	SEND_SIGNAL(src, COMSIG_LIVING_GET_EAR_PROTECTION, signal_protection)
+	return signal_protection[EAR_PROTECTION_ARG]
 
 /**
  * Checks if our mob has their mouth covered.
@@ -542,9 +550,27 @@
 		return TRUE
 	return FALSE
 
-//called when the mob receives a loud bang
-/mob/living/proc/soundbang_act()
-	return 0
+/// Applies the physical effects of a loud noise after accounting for ear protection.
+/mob/living/proc/soundbang_act(intensity = SOUNDBANG_NORMAL, stun_pwr = 2 SECONDS, damage_pwr = 5, deafen_pwr = 1.5 SECONDS, ignore_deafness = FALSE, send_sound = TRUE)
+	var/protection = get_ear_protection(ignore_deafness)
+	if(protection >= intensity)
+		return FALSE
+	var/effect_amount = protection > 0 ? 1 - (protection / intensity) : 1 - protection
+	if(stun_pwr)
+		Paralyze(stun_pwr * effect_amount * 0.1)
+		Knockdown(stun_pwr * effect_amount)
+	var/obj/item/organ/ears/ears = getorganslot(ORGAN_SLOT_EARS)
+	. = effect_amount
+	if(!ears || !(deafen_pwr || damage_pwr))
+		return
+	sound_damage(damage_pwr * effect_amount, deafen_pwr * effect_amount)
+	if(send_sound)
+		SEND_SOUND(src, sound('sound/flash_ring.ogg', FALSE, TRUE, FALSE, 250))
+	if(ears.damage >= 15 && prob(ears.damage - 5))
+		to_chat(src, span_userdanger("You can't hear anything!"))
+		ears.setOrganDamage(ears.maxHealth)
+	else if(ears.damage >= 5)
+		to_chat(src, span_warning("Your ears start to ring[ears.damage >= 15 ? " badly!" : "!"]"))
 
 //to damage the clothes worn by a mob
 /mob/living/proc/damage_clothes(damage_amount, damage_type = BRUTE, damage_flag = 0, def_zone)

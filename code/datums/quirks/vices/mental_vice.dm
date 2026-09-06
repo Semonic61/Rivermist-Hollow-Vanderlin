@@ -38,9 +38,9 @@
 	id = "addiction_godfearing"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/addiction/godfearing
 
-/datum/status_effect/debuff/addiction/maniac
-	id = "addiction_maniac"
-	alert_type = /atom/movable/screen/alert/status_effect/debuff/addiction/maniac
+/datum/status_effect/debuff/addiction/sadist
+	id = "addiction_sadist"
+	alert_type = /atom/movable/screen/alert/status_effect/debuff/addiction/sadist
 
 /datum/status_effect/debuff/addiction/greedy
 	id = "addiction_greedy"
@@ -79,7 +79,7 @@
 	name = "Prayer Craving"
 	desc = "I need to pray."
 
-/atom/movable/screen/alert/status_effect/debuff/addiction/maniac
+/atom/movable/screen/alert/status_effect/debuff/addiction/sadist
 	name = "Blood Craving"
 	desc = "I need bloodshed."
 
@@ -348,21 +348,22 @@
 		return
 	narco.drugged_up = TRUE
 
-/datum/quirk/vice/masochist
+/datum/quirk/vice/addiction/masochist
 	name = "Masochist"
 	desc = "I love the feeling of pain, so much I can't get enough of it."
 	point_value = 4
 	var/next_paincrave = 0
 	var/last_pain_threshold = NONE
 
-/datum/quirk/vice/masochist/on_examined(mob/user, list/P, list/examine_contents)
+/datum/quirk/vice/addiction/masochist/on_examined(mob/user, list/P, list/examine_contents)
 	if(HAS_TRAIT(user, TRAIT_RECOGNIZE_ADDICTS))
 		LAZYADDASSOCLIST(examine_contents, EXAMINE_SECT_PREGEAR, span_info("Masochist!"))
 
-/datum/quirk/vice/masochist/on_spawn()
+/datum/quirk/vice/addiction/masochist/on_spawn()
+	. = ..()
 	next_paincrave = world.time + rand(15 MINUTES, 25 MINUTES)
 
-/datum/quirk/vice/masochist/on_life(mob/living/user)
+/datum/quirk/vice/addiction/masochist/on_life(mob/living/user)
 	if(!ishuman(user))
 		return
 	var/mob/living/carbon/human/H = user
@@ -395,12 +396,17 @@
 
 	last_pain_threshold = new_pain_threshold
 	if(new_pain_threshold == MASO_THRESHOLD_FOUR)
-		to_chat(H, span_blue("<b>That's more like it...</b>"))
-		next_paincrave = world.time + rand(35 MINUTES, 45 MINUTES)
-		H.remove_stress(/datum/stress_event/vice)
-		H.remove_status_effect(/datum/status_effect/debuff/addiction/masochist)
+		sate(H)
 
-/datum/quirk/vice/masochist/proc/get_pain_threshold(pain_amt)
+/datum/quirk/vice/addiction/masochist/sate(mob/living/carbon/human/user)
+	if(next_paincrave <= world.time)
+		to_chat(user, span_blue("<b>[sated_text]</b>"))
+	next_paincrave = world.time + rand(35 MINUTES, 45 MINUTES)
+	last_pain_threshold = NONE
+	user.remove_stress(/datum/stress_event/vice)
+	user.remove_status_effect(/datum/status_effect/debuff/addiction/masochist)
+
+/datum/quirk/vice/addiction/masochist/proc/get_pain_threshold(pain_amt)
 	switch(pain_amt)
 		if(-INFINITY to 25)
 			return MASO_THRESHOLD_ONE
@@ -410,6 +416,11 @@
 			return MASO_THRESHOLD_THREE
 		if(95 to INFINITY)
 			return MASO_THRESHOLD_FOUR
+
+// Hidden alias for characters saved before Masochist joined the addiction hierarchy.
+/datum/quirk/vice/masochist
+	parent_type = /datum/quirk/vice/addiction/masochist
+	abstract_type = /datum/quirk/vice/masochist
 
 // Chronic Pain Vices
 /datum/quirk/vice/chronic_arthritis

@@ -1079,7 +1079,7 @@
 
 /datum/sex_action/portal_base/portal_object_fuck/handle_climax_message(mob/living/carbon/human/user, mob/living/carbon/human/target, must_flip)
 	user.visible_message(span_love("your target cream themselves!"))
-	user.virginity = FALSE
+	user.lose_virginity()
 	return ORGASM_LOCATION_SELF
 
 /datum/sex_action/portal_base/portal_object_fuck/on_finish(mob/living/user, mob/living/target)
