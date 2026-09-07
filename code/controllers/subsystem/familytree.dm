@@ -29,6 +29,10 @@ SUBSYSTEM_DEF(familytree)
 	* Bachalors and Bachalorettes
 	*/
 	var/list/viable_spouses = list()
+	/// Characters whose named family preference could not be satisfied yet.
+	var/list/pending_family_members = list()
+	var/resolving_pending = FALSE
+	var/const/MAX_HOUSE_MEMBERS = 6
 	//These jobs are excluded from AddLocal()
 	var/excluded_jobs = null
 	//This creates 2 families for each race roundstart so that siblings dont fail to be added to a family.
@@ -89,7 +93,6 @@ SUBSYSTEM_DEF(familytree)
 
 /datum/controller/subsystem/familytree/proc/CanBeParentOf(parent_age, child_age)
 	// Parent must be at least one age category higher than child
-
 	if(parent_age == AGE_MIDDLEAGED && child_age == AGE_ADULT)
 		return TRUE
 	if(parent_age == AGE_OLD && child_age != AGE_OLD && child_age != AGE_IMMORTAL)
@@ -114,6 +117,14 @@ SUBSYSTEM_DEF(familytree)
 	return FALSE
 
 /datum/controller/subsystem/familytree/proc/DetermineAppropriateRole(datum/heritage/house, mob/living/carbon/human/person, adopted = FALSE)
+	if(person.setparent)
+		for(var/datum/family_member/member in house.members)
+			if(member.person?.real_name == person.setparent)
+				return FAMILY_MEMBER_CHILD
+	if(person.setchild)
+		for(var/datum/family_member/member in house.members)
+			if(member.person?.real_name == person.setchild)
+				return FAMILY_MEMBER_PARENT
 
 	// Look for potential parents (older members who could be parents)
 	var/list/potential_parents = list()
@@ -123,33 +134,66 @@ SUBSYSTEM_DEF(familytree)
 
 	// If we have potential parents, make this person a child
 	if(potential_parents.len)
-		return "child"
+		return FAMILY_MEMBER_CHILD
 
 	// Look for potential siblings (similar age)
 	for(var/datum/family_member/member in house.members)
 		if(member.person && CanBeSiblings(member.person.age, person.age))
-			return "sibling"
+			return FAMILY_MEMBER_SIBLING
 
 	// Default to founder/parent role
-	return "parent"
+	return FAMILY_MEMBER_PARENT
 
 /datum/controller/subsystem/familytree/proc/AddLocal(mob/living/carbon/human/H, status)
-	if(!H || !status || istype(H, /mob/living/carbon/human/dummy))
+	if(!H?.mind || istype(H, /mob/living/carbon/human/dummy))
 		return
 	//Exclude princes and princesses from having their parentage calculated.
 	if(H.mind?.assigned_role && is_type_in_list(H.mind.assigned_role, excluded_jobs))
 		return
-	switch(status)
+	var/mode = H.familytree_pref
+	if(!mode)
+		mode = status
+	if(!mode || mode == FAMILY_NONE)
+		_MaybeMakeDivorcedStub(H)
+		return
+
+	var/assigned = TryAssignLocal(H, mode)
+	if(assigned)
+		pending_family_members -= H
+	else
+		pending_family_members |= H
+	_MaybeMakeDivorcedStub(H)
+	ResolvePendingFamilies()
+	return assigned
+
+/datum/controller/subsystem/familytree/proc/TryAssignLocal(mob/living/carbon/human/H, mode)
+	if(H.family_datum || H.spouse_mob)
+		return TRUE
+	switch(mode)
 		if(FAMILY_PARTIAL)
-			AssignToHouse(H)
+			return AssignToHouse(H, H.family_adoption_pref)
 
 		if(FAMILY_NEWLYWED)
-			AssignNewlyWed(H)
+			return AssignNewlyWed(H)
 
 		if(FAMILY_FULL)
 			if(HAS_TRAIT(H, TRAIT_VIRGIN))
-				return
-			AssignToFamily(H)
+				return AssignToHouse(H, H.family_adoption_pref)
+			return AssignToFamily(H)
+	return FALSE
+
+/datum/controller/subsystem/familytree/proc/ResolvePendingFamilies()
+	if(resolving_pending || !length(pending_family_members))
+		return
+	resolving_pending = TRUE
+	var/list/pending_copy = pending_family_members.Copy()
+	for(var/mob/living/carbon/human/pending in pending_copy)
+		if(!pending?.mind || QDELETED(pending))
+			pending_family_members -= pending
+			continue
+		if(TryAssignLocal(pending, pending.familytree_pref))
+			pending_family_members -= pending
+	resolving_pending = FALSE
 
 /datum/controller/subsystem/familytree/proc/AddRoyal(mob/living/carbon/human/H, status)
 	if(!ruling_family.housename)
@@ -303,81 +347,163 @@ SUBSYSTEM_DEF(familytree)
 	var/list/roman_numerals = list("I", "II", "III", "IV", "V")
 	return "[title] [pick(names)] [pick(roman_numerals)]"
 
-/datum/controller/subsystem/familytree/proc/AssignToHouse(mob/living/carbon/human/H)
+/datum/controller/subsystem/familytree/proc/AssignToHouse(mob/living/carbon/human/H, force_adopted = FALSE)
 	if(!H)
-		return
+		return FALSE
 
-	var/species = H.dna.species.type
-	var/adopted = FALSE
+	var/species = H.dna?.species?.type
+	var/adopted = force_adopted
 	var/datum/heritage/chosen_house
-	var/list/low_priority_houses = list()
-	var/list/high_priority_houses = list()
 
-	// Prioritize houses with existing members but not too many
+	// Resolve named parent/child pairs directly so two mutually designated
+	// characters do not wait forever for one of them to seed a house first.
+	if(H.setparent || H.setchild)
+		for(var/datum/mind/candidate_mind in SSticker.minds)
+			var/mob/living/carbon/human/candidate = candidate_mind.current
+			if(!ishuman(candidate) || candidate == H)
+				continue
+
+			if(H.setparent && candidate.real_name == H.setparent)
+				if(candidate.familytree_pref == FAMILY_NONE && candidate.setchild != H.real_name)
+					continue
+				if(!_ChildCompatible(candidate, H))
+					continue
+				var/datum/heritage/parent_house = candidate.family_datum
+				if(!parent_house)
+					parent_house = new(candidate)
+					families |= parent_house
+				if(length(parent_house.members) >= MAX_HOUSE_MEMBERS)
+					return FALSE
+				return !!parent_house.AddToFamily(H, candidate.family_member_datum, null, adopted)
+
+			if(H.setchild && candidate.real_name == H.setchild)
+				if(candidate.familytree_pref == FAMILY_NONE && candidate.setparent != H.real_name)
+					continue
+				if(!_ChildCompatible(H, candidate))
+					continue
+				var/datum/heritage/child_house = candidate.family_datum
+				if(!child_house)
+					child_house = new(H)
+					families |= child_house
+					return !!child_house.AddToFamily(candidate, H.family_member_datum, null, candidate.family_adoption_pref)
+				if(length(child_house.members) >= MAX_HOUSE_MEMBERS || length(candidate.family_member_datum?.parents) >= 2)
+					return FALSE
+				var/datum/family_member/new_parent = child_house.CreateFamilyMember(H)
+				return !!candidate.family_member_datum?.AddParent(new_parent)
+
+	var/list/active_houses = list()
+	var/list/seed_houses = list()
 	for(var/datum/heritage/house in families)
-		if(house.housename && house.members.len >= 1 && house.members.len < 6)
-			high_priority_houses += house
-		else
-			low_priority_houses += house
+		if(house.housename && length(house.members) && length(house.members) < MAX_HOUSE_MEMBERS)
+			active_houses += house
+		else if(!house.housename || !length(house.members))
+			seed_houses += house
 
-	// Try high priority houses first
-	for(var/datum/heritage/house in high_priority_houses)
-		if(house.dominant_species == species && house.members.len < 4)
-			if(!WouldCreateAgeConflict(house, H))
+	var/designated_relative = H.setparent
+	if(!designated_relative)
+		designated_relative = H.setchild
+	if(designated_relative)
+		for(var/datum/heritage/house in active_houses + seed_houses)
+			if(!HousePassesFilters(H, house))
+				continue
+			for(var/datum/family_member/member in house.members)
+				if(member.person?.real_name == designated_relative)
+					chosen_house = house
+					break
+			if(chosen_house)
+				break
+		if(!chosen_house)
+			return FALSE
+
+	if(!chosen_house)
+		for(var/datum/heritage/house in active_houses)
+			if(house.dominant_species != species || length(house.members) >= 4)
+				continue
+			if(HousePassesFilters(H, house) && !WouldCreateAgeConflict(house, H))
 				chosen_house = house
 				break
-		// Small chance for adoption into different species family
-		if(prob(20) && house.members.len <= 8)
-			if(!WouldCreateAgeConflict(house, H))
+
+	if(!chosen_house && force_adopted)
+		for(var/datum/heritage/house in active_houses)
+			if(house.dominant_species == species || !HousePassesFilters(H, house) || WouldCreateAgeConflict(house, H))
+				continue
+			chosen_house = house
+			adopted = TRUE
+			break
+
+	if(!chosen_house)
+		for(var/datum/heritage/house in seed_houses)
+			if(house.dominant_species == species && HousePassesFilters(H, house) && !WouldCreateAgeConflict(house, H))
+				chosen_house = house
+				break
+
+	if(!chosen_house && force_adopted)
+		for(var/datum/heritage/house in seed_houses)
+			if(HousePassesFilters(H, house) && !WouldCreateAgeConflict(house, H))
 				chosen_house = house
 				adopted = TRUE
 				break
 
-	// Try low priority houses if no high priority match
 	if(!chosen_house)
-		for(var/datum/heritage/house in low_priority_houses)
-			if(house.dominant_species == species)
-				if(!WouldCreateAgeConflict(house, H))
-					chosen_house = house
-					break
-
-	if(chosen_house)
-		AddPersonToHouse(chosen_house, H, adopted)
+		return FALSE
+	return AddPersonToHouse(chosen_house, H, adopted)
 
 /datum/controller/subsystem/familytree/proc/AddPersonToHouse(datum/heritage/house, mob/living/carbon/human/person, adopted = FALSE)
 	var/role = DetermineAppropriateRole(house, person, adopted)
 
 	switch(role)
-		if("child")
+		if(FAMILY_MEMBER_CHILD)
 			// Find suitable parents
 			var/list/potential_parents = list()
 			for(var/datum/family_member/member in house.members)
-				if(member.person && CanBeParentOf(member.person.age, person.age))
+				if(!member.person || !_ChildCompatible(member.person, person))
+					continue
+				if(member.person.setchild == person.real_name)
+					potential_parents.Insert(1, member)
+				else
 					potential_parents += member
 
-			// Add as child with up to 2 parents
+			// Add a second parent only when they are actually married to the first.
 			var/datum/family_member/parent1 = potential_parents.len > 0 ? potential_parents[1] : null
-			var/datum/family_member/parent2 = potential_parents.len > 1 ? potential_parents[2] : null
+			var/datum/family_member/parent2
+			if(parent1 && potential_parents.len > 1)
+				for(var/datum/family_member/possible_parent in potential_parents)
+					if(possible_parent != parent1 && possible_parent in parent1.spouses)
+						parent2 = possible_parent
+						break
 
-			house.AddToFamily(person, parent1, parent2, adopted)
+			return !!house.AddToFamily(person, parent1, parent2, adopted)
 
-		if("sibling")
+		if(FAMILY_MEMBER_SIBLING)
 			// Find a sibling and share their parents
 			for(var/datum/family_member/member in house.members)
 				if(member.person && CanBeSiblings(member.person.age, person.age))
 					var/datum/family_member/parent1 = member.parents.len > 0 ? member.parents[1] : null
 					var/datum/family_member/parent2 = member.parents.len > 1 ? member.parents[2] : null
-					house.AddToFamily(person, parent1, parent2, adopted)
-					break
+					return !!house.AddToFamily(person, parent1, parent2, adopted)
 
-		if("parent")
+		if(FAMILY_MEMBER_PARENT)
 			// Add as founder/parent
+			var/datum/family_member/designated_child
+			if(person.setchild)
+				for(var/datum/family_member/member in house.members)
+					if(member.person?.real_name == person.setchild)
+						designated_child = member
+						break
+				if(designated_child && length(designated_child.parents) >= 2)
+					return FALSE
 			var/datum/family_member/new_member = house.CreateFamilyMember(person)
+			if(!new_member)
+				return FALSE
+			if(designated_child && !designated_child.AddParent(new_member))
+				return FALSE
 			if(!house.founder)
 				house.founder = new_member
 				new_member.generation = 0
 			if(!house.housename)
 				house.housename = house.SurnameFormatting(person)
+			return !!new_member
+	return FALSE
 
 
 /// Human Helper proc to check gender choice based on pronouns
@@ -409,80 +535,61 @@ SUBSYSTEM_DEF(familytree)
 
 /datum/controller/subsystem/familytree/proc/AssignToFamily(mob/living/carbon/human/H)
 	if(!H)
-		return
+		return FALSE
 	var/our_species = H.dna.species.type
-	var/list/eligible_houses = list()
 
-	// Find houses that need a spouse
+	// Named partners may both be waiting for a family. Match those characters
+	// directly instead of deadlocking until one has already founded a house.
+	if(H.setspouse)
+		for(var/datum/mind/candidate_mind in SSticker.minds)
+			var/mob/living/carbon/human/candidate = candidate_mind.current
+			if(!ishuman(candidate) || candidate == H || candidate.spouse_mob)
+				continue
+			if(candidate.familytree_pref == FAMILY_NONE && candidate.setspouse != H.real_name)
+				continue
+			if(candidate.real_name != H.setspouse || !_SpouseCompatible(H, candidate))
+				continue
+			H.MarryTo(candidate)
+			pending_family_members -= candidate
+			return TRUE
+
 	for(var/datum/heritage/house in families)
 		if(house.dominant_species != our_species)
 			continue
-
-		// Check if there's a potential spouse
-		var/has_single_adult = FALSE
 		for(var/datum/family_member/member in house.members)
-			if(member.person && !member.spouses.len)
-				// Check setspouse compatibility
-				if(H.setspouse && member.person.real_name == H.setspouse)
-					eligible_houses.Insert(1, house) // High priority
-					has_single_adult = TRUE
-					break
-				else if(!H.setspouse)
+			if(!member.person || length(member.spouses))
+				continue
+			if(!_SpouseCompatible(H, member.person))
+				continue
+			var/datum/family_member/new_member = house.CreateFamilyMember(H)
+			if(!new_member)
+				return FALSE
+			house.MarryMembers(new_member, member)
+			return TRUE
 
-					if(!member.person.setspouse || member.person.setspouse == H.real_name)
-						// Pronouns matching according to Gender Preference
-						var/ok_gender_H = H.pronouns_match(H, member.person)
-						var/ok_gender_M = member.person.pronouns_match(member.person, H)
-
-						if(ok_gender_H && ok_gender_M)
-							eligible_houses += house
-							has_single_adult = TRUE
-							break
-
-
-		if(!has_single_adult && !house.housename)
-			eligible_houses += house // Empty house for founding
-
-	// Try to assign to a house
-	for(var/datum/heritage/house in eligible_houses)
-		// Find a spouse
-		for(var/datum/family_member/member in house.members)
-			if(member.person && !member.spouses.len)
-				// Check compatibility
-				var/compatible = FALSE
-				if(H.setspouse && member.person.real_name == H.setspouse)
-					compatible = TRUE
-				else if(!H.setspouse)
-					if(!member.person.setspouse || member.person.setspouse == H.real_name)
-						// Pronouns matching according to Gender Preference
-						var/ok_gender_H = H.pronouns_match(H, member.person)
-						var/ok_gender_M = member.person.pronouns_match(member.person, H)
-
-						if(ok_gender_H && ok_gender_M)
-							compatible = TRUE
-
-				if(compatible)
-					var/datum/family_member/new_member = house.CreateFamilyMember(H)
-					if(new_member)
-						house.MarryMembers(new_member, member)
-						return
-
-		// Or found a new house
+		// #6972: a named spouse must never silently degrade into founding a
+		// different family while that requested character is absent.
+		if(H.setspouse)
+			continue
 		if(!house.housename)
 			var/datum/family_member/new_member = house.CreateFamilyMember(H)
-			if(new_member)
-				house.founder = new_member
-				new_member.generation = 0
-				house.housename = house.SurnameFormatting(H)
-				return
+			if(!new_member)
+				return FALSE
+			house.founder = new_member
+			new_member.generation = 0
+			house.housename = house.SurnameFormatting(H)
+			return TRUE
 
-	// Create entirely new house if no match found
+	if(H.setspouse)
+		return FALSE
 	if(our_species != /datum/species/aasimar)
-		var/datum/heritage/new_house = new /datum/heritage(H, null, our_species)
+		var/datum/heritage/new_house = new(H, null, our_species)
 		families += new_house
+		return TRUE
+	return FALSE
 
 /datum/controller/subsystem/familytree/proc/AssignNewlyWed(mob/living/carbon/human/H)
-	viable_spouses += H
+	viable_spouses |= H
 	var/list/potential_matches = list()
 
 	for(var/mob/living/carbon/human/potential_spouse in viable_spouses)
@@ -490,9 +597,8 @@ SUBSYSTEM_DEF(familytree)
 			continue
 		// Check if they are mutually setspouse
 		var/mutual_setspouse = (H.setspouse == potential_spouse.real_name) && (potential_spouse.setspouse == H.real_name)
-		if(!mutual_setspouse)
-			if(!H.pronouns_match(H, potential_spouse) || !potential_spouse.pronouns_match(potential_spouse, H))
-				continue // skip if gender preferences incompatible
+		if(!mutual_setspouse && !_SpouseCompatible(H, potential_spouse))
+			continue
 		// Check setspouse compatibility
 		var/priority = 0
 		if(mutual_setspouse)
@@ -526,6 +632,97 @@ SUBSYSTEM_DEF(familytree)
 			viable_spouses -= chosen_spouse
 			viable_spouses -= H
 			H.MarryTo(chosen_spouse)
+			return TRUE
+	return FALSE
+
+/datum/controller/subsystem/familytree/proc/_SpouseCompatible(mob/living/carbon/human/person, mob/living/carbon/human/other)
+	if(!person || !other)
+		return FALSE
+	if(person.setspouse == other.real_name && other.setspouse == person.real_name)
+		return TRUE
+	if(person.setspouse && person.setspouse != other.real_name)
+		return FALSE
+	if(other.setspouse && other.setspouse != person.real_name)
+		return FALSE
+	return PassesFamilyFilters(person, other) && PassesFamilyFilters(other, person) \
+		&& person.pronouns_match(person, other) && other.pronouns_match(other, person)
+
+/datum/controller/subsystem/familytree/proc/PassesFamilyFilters(mob/living/carbon/human/person, mob/living/carbon/human/other)
+	if(!person || !other)
+		return FALSE
+	if(person.same_species_family && person.dna?.species?.type != other.dna?.species?.type)
+		return FALSE
+	if(!person.same_species_family && length(person.accepted_family_species))
+		if(!("[other.dna?.species?.type]" in person.accepted_family_species))
+			return FALSE
+
+	if(length(person.accepted_patron_faiths))
+		var/other_faith = other.patron?.associated_faith
+		if(!other_faith || !("[other_faith]" in person.accepted_patron_faiths))
+			return FALSE
+
+	if(length(person.family_job_filter))
+		var/job_matches = FALSE
+		for(var/group_key in person.family_job_filter)
+			if(other.job && (other.job in job_group_list(group_key)))
+				job_matches = TRUE
+				break
+		if(!job_matches)
+			return FALSE
+	return TRUE
+
+/datum/controller/subsystem/familytree/proc/PassesChildFilters(mob/living/carbon/human/parent, mob/living/carbon/human/child)
+	if(!parent || !child)
+		return FALSE
+	if(parent.setchild && parent.setchild != child.real_name)
+		return FALSE
+	if(child.setparent && child.setparent != parent.real_name)
+		return FALSE
+	return PassesFamilyFilters(parent, child) && PassesFamilyFilters(child, parent)
+
+/datum/controller/subsystem/familytree/proc/_ChildCompatible(mob/living/carbon/human/parent, mob/living/carbon/human/child)
+	if(!parent || !child)
+		return FALSE
+	if(parent.setchild && parent.setchild != child.real_name)
+		return FALSE
+	if(child.setparent && child.setparent != parent.real_name)
+		return FALSE
+	if(parent.setchild == child.real_name && child.setparent == parent.real_name)
+		return TRUE
+	if(!PassesChildFilters(parent, child))
+		return FALSE
+	if(parent.setchild == child.real_name || child.setparent == parent.real_name)
+		return TRUE
+	return CanBeParentOf(parent.age, child.age)
+
+/datum/controller/subsystem/familytree/proc/HousePassesFilters(mob/living/carbon/human/person, datum/heritage/house)
+	if(!length(house.members))
+		return TRUE
+	for(var/datum/family_member/member in house.members)
+		if(member.person && (!PassesFamilyFilters(person, member.person) || !PassesFamilyFilters(member.person, person)))
+			return FALSE
+	return TRUE
+
+/datum/controller/subsystem/familytree/proc/_MaybeMakeDivorcedStub(mob/living/carbon/human/H)
+	if(!H.was_divorced || !H.mind)
+		return
+	for(var/datum/relation/divorced/existing in H.mind.relations)
+		return
+	var/datum/relation/divorced/stub = new()
+	stub.holder = H.mind
+	stub.snapshot = list(
+		"name" = "Former Spouse",
+		"vcolor" = "ffffff",
+		"job" = "Unknown",
+		"job_key" = "Unknown",
+		"job_category" = "Unknown",
+		"honorary" = null,
+		"honorary_suffix" = null,
+		"species" = "Unknown",
+		"gender" = PLURAL,
+		"age" = AGE_ADULT,
+	)
+	H.mind.relations += stub
 
 /datum/controller/subsystem/familytree/proc/AssignAuntUncle(mob/living/carbon/human/H)
 	var/species = H.dna.species.type

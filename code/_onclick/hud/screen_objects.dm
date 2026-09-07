@@ -1303,8 +1303,8 @@
 		if(LAZYACCESS(modifiers, RIGHT_CLICK))
 			if(!user_mob.mind)
 				return
-			if(length(user_mob.mind.known_people))
-				user_mob.mind.display_known_people(user_mob)
+			if(length(user_mob.mind.relations))
+				user_mob.mind.display_relations(user_mob)
 			else
 				to_chat(user_mob, "<span class='warning'>I don't know anyone.</span>")
 		if(LAZYACCESS(modifiers, MIDDLE_CLICK))

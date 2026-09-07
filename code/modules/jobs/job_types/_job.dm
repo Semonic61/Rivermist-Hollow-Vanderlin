@@ -449,6 +449,8 @@
 		spawned.dna?.species.soundpack_f = new voicepack_f()
 
 	assign_honorary_titles(spawned)
+	if(spawned.familytree_pref != FAMILY_NONE && !spawned.family_datum)
+		SSfamilytree.AddLocal(spawned, spawned.familytree_pref)
 
 	var/list/owned_triumph_buys = LAZYACCESS(SStriumphs.triumph_buy_owners, player_client?.ckey)
 	for(var/datum/triumph_buy/T in owned_triumph_buys)

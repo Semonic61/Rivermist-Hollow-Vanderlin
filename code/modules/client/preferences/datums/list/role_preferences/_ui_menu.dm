@@ -5,6 +5,13 @@
 /datum/role_settings_menu/New(datum/preferences/prefs)
 	preferences = prefs
 
+/datum/role_settings_menu/Destroy()
+	preferences = null
+	return ..()
+
+/datum/role_settings_menu/ui_close(mob/user)
+	qdel(src)
+
 /datum/role_settings_menu/ui_host(mob/user)
 	return user
 
@@ -24,6 +31,8 @@
 	for(var/pref_type in GLOB.preference_entries)
 		var/datum/preference/list_type/role_setting/entry = GLOB.preference_entries[pref_type]
 		if(!istype(entry, /datum/preference/list_type/role_setting))
+			continue
+		if(!entry.is_role)
 			continue
 
 		var/list/current = preferences.read_preference(pref_type)

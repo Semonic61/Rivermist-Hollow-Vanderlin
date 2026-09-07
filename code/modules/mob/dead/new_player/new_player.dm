@@ -417,6 +417,7 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 
 	SSjob.EquipRank(character, job, character.client)
 	SSticker.minds += character.mind
+	SSfamilytree.ResolvePendingFamilies()
 	var/mob/living/carbon/human/humanc
 	if(ishuman(character))
 		humanc = character	//Let's retypecast the var to be human,
@@ -432,6 +433,8 @@ GLOBAL_LIST_INIT(roleplay_readme, world.file2list("strings/rt/Lore_Primer.txt"))
 
 	if(humanc)
 		try_apply_character_post_equipment(humanc)
+	if(humanc?.mind)
+		SSrelations.try_late_join_rival(humanc.mind)
 
 	log_manifest(character.mind.key,character.mind,character,latejoin = TRUE)
 

@@ -116,6 +116,7 @@
 #define VV_HK_MARTIAL_ART "give_martial_art"
 #define VV_HK_GIVE_TRAUMA "give_trauma"
 #define VV_HK_CURE_TRAUMA "cure_trauma"
+#define VV_HK_SHOW_RELATIONS "show_relations"
 #define VV_HK_UNLINK_RUNES "unlink_runes"
 
 // /mob/living/carbon/human

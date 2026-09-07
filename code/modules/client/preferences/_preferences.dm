@@ -578,6 +578,8 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 			HTML += "<br>"
 		HTML += "<center><a href='?_src_=prefs;preference=job;task=reset'>Reset</a></center>"
 		HTML += "<br><center><a href='?_src_=prefs;preference=role_settings'>Role Specific Preferences</a></center>"
+		HTML += "<br><center><a href='?_src_=prefs;preference=family'>Family & Bonds</a></center>"
+		HTML += "<br><center><a href='?_src_=prefs;preference=relations_gossip'>Rivals, Gossip & Rumors</a></center>"
 
 	HTML += "</center>"
 
@@ -925,6 +927,15 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 	else if(href_list["preference"] == "role_settings")
 		var/datum/role_settings_menu/menu = new(src)
 		menu.ui_interact(user)
+		return TRUE
+
+	else if(href_list["preference"] == "family")
+		var/datum/family_middleware/family_menu = new(src, user)
+		family_menu.ui_interact(user)
+		return TRUE
+
+	else if(href_list["preference"] == "relations_gossip")
+		open_gossip(user)
 		return TRUE
 
 	else if(href_list["preference"] == "playerquality")
@@ -1555,18 +1566,16 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 				if(!length(new_nsfw_headshot) || is_valid_nsfw_headshot_link(user, new_nsfw_headshot, FALSE))
 					write_preference(/datum/preference/text/nsfw_headshot_link, new_nsfw_headshot)
 			return TRUE
-		if("ooc_extra", "nsfwflavortext", "rumour", "gossip", "change_title", "change_artist", "player_language")
+		if("ooc_extra", "nsfwflavortext", "change_title", "change_artist", "player_language")
 			var/static/list/text_link_types = list(
 				"ooc_extra" = /datum/preference/text/erpprefs_flavor,
 				"nsfwflavortext" = /datum/preference/text/nsfwflavortext,
-				"rumour" = /datum/preference/text/rumour,
-				"gossip" = /datum/preference/text/noble_gossip,
 				"change_title" = /datum/preference/text/song_title,
 				"change_artist" = /datum/preference/text/song_artist,
 				"player_language" = /datum/preference/text/player_language,
 			)
 			var/text_link_type = text_link_types[action]
-			var/new_text = tgui_input_text(user, "Enter a new value. Leave blank to clear.", "Character Preference", read_preference(text_link_type), multiline = (action in list("ooc_extra", "nsfwflavortext", "rumour", "gossip")), encode = FALSE)
+			var/new_text = tgui_input_text(user, "Enter a new value. Leave blank to clear.", "Character Preference", read_preference(text_link_type), multiline = (action in list("ooc_extra", "nsfwflavortext")), encode = FALSE)
 			if(!isnull(new_text))
 				write_preference(text_link_type, new_text)
 			return TRUE
@@ -1577,18 +1586,6 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 				var/static/list/mp3_extension = list("mp3")
 				if(!length(new_song_link) || is_valid_media_link(user, new_song_link, FALSE, mp3_extension))
 					write_preference(/datum/preference/text/song_link, new_song_link)
-			return TRUE
-		if("rumour_preview")
-			var/rumour = read_preference(/datum/preference/text/rumour)
-			var/gossip = read_preference(/datum/preference/text/noble_gossip)
-			var/real_name = read_preference(/datum/preference/text/real_name)
-			var/list/message = list()
-			if(length(rumour))
-				message += "<b>You recall what you heard around town about [real_name]...</b><br>[parsemarkdown_basic(html_encode(rumour), hyperlink = TRUE)]"
-			if(length(gossip))
-				message += "<b>You recall what the other blue-bloods hushed about [real_name]...</b><br>[parsemarkdown_basic(html_encode(gossip), hyperlink = TRUE)]"
-			if(length(message))
-				to_chat(user, span_info(message.Join("<br><br>")))
 			return TRUE
 		if("ooc_preview")
 			var/datum/examine_panel/preview_examine_panel = new(user)
@@ -2188,9 +2185,7 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 	dat += "<a class='option-row' href='?_src_=prefs;preference=defeat_threshold;task=input'>Defeat Damage Threshold<small>[get_defeat_damage_threshold()] pooled brute, burn, toxin and clone damage</small></a>"
 
 	dat += "<div class='section-title'>Expression</div>"
-	dat += "<a class='option-row' href='?_src_=prefs;preference=rumour;task=input'>Rumours<small>Set what others may hear about this character.</small></a>"
-	dat += "<a class='option-row' href='?_src_=prefs;preference=gossip;task=input'>Noble Gossip<small>Set noble gossip tied to this character.</small></a>"
-	dat += "<a class='option-row' href='?_src_=prefs;preference=rumour_preview;task=input'>Preview Rumours<small>Check how rumours and gossip will render.</small></a>"
+	dat += "<a class='option-row' href='?_src_=prefs;preference=relations_gossip'>Rivals, Rumours & Gossip<small>Author stories and configure roundstart rivals.</small></a>"
 
 	dat += "<div class='section-title'>NSFW</div>"
 	dat += "<a class='option-row' href='?_src_=prefs;preference=nsfwflavortext;task=input'>NSFW Flavortext<small>Edit the private flavortext field.</small></a>"

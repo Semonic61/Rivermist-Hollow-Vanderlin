@@ -68,25 +68,3 @@
 
 /datum/preference/text/song_title/apply_to_human(mob/living/carbon/human/human, value, datum/preferences/prefs)
 	human.song_title = value
-
-/datum/preference/text/rumour
-	savefile_key = "rumour"
-	savefile_identifier = PREF_CHARACTER
-	category = "character_ooc"
-	maximum_value_length = 1024
-	can_randomize = FALSE
-	should_update_preview = FALSE
-
-/datum/preference/text/rumour/apply_to_human(mob/living/carbon/human/human, value, datum/preferences/prefs)
-	human.rumour = value
-
-/datum/preference/text/noble_gossip
-	savefile_key = "noble_gossip"
-	savefile_identifier = PREF_CHARACTER
-	category = "character_ooc"
-	maximum_value_length = 1024
-	can_randomize = FALSE
-	should_update_preview = FALSE
-
-/datum/preference/text/noble_gossip/apply_to_human(mob/living/carbon/human/human, value, datum/preferences/prefs)
-	human.noble_gossip = value

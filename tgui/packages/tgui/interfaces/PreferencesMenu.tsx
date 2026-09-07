@@ -1500,6 +1500,7 @@ export const PreferencesMenu = () => {
           <Panel title="Standing" icon="sun">
             <PrefRow icon="hand-paper" label="Dominant Hand" value={data.domhand} onClick={() => doPref('domhand')} />
             <PrefRow icon="theater-masks" label="Quirks" value="Select" onClick={() => doPref('select_quirks')} />
+            <PrefRow icon="users" label="Family & Bonds" value="Configure" onClick={() => doPref('family')} />
           </Panel>
         </Stack.Item>
       </Stack>
@@ -2583,9 +2584,7 @@ export const PreferencesMenu = () => {
       </Panel>
 
       <Panel title="Rumours & Song" icon="feather">
-        <PrefRow icon="comment-dots" label="Rumours" value="Edit" onClick={() => doPref('rumour', 'input')} />
-        <PrefRow icon="crown" label="Noble Gossip" value="Edit" onClick={() => doPref('gossip', 'input')} />
-        <PrefRow icon="eye" label="Preview Rumours" value="View" onClick={() => doPref('rumour_preview', 'input')} />
+        <ActionButton icon="users" label="Rivals, Rumours & Gossip" onClick={() => doPref('relations_gossip')} />
         <PrefRow icon="music" label="Examine Song URL" value={asBool(data.song_set) ? 'URL set' : 'No URL set'} onClick={() => doPref('song_link', 'input')} />
         <PrefRow icon="heading" label="Song Title" value={data.song_title} onClick={() => doPref('change_title', 'input')} />
         <PrefRow icon="user" label="Song Artist" value={data.song_artist} onClick={() => doPref('change_artist', 'input')} />

@@ -78,7 +78,10 @@
 
 		if(!is_family && !O)
 			if(do_i_know)
-				. += span_tinynotice("I know [P[THEM]].")
+				if(user.mind?.knows_as(mind, /datum/relation/rival))
+					. += "<span class='tinynotice'>I know [P[THEM]]...</span> <span class='tinywarning'>[P[THEYRE]] my rival!</span>"
+				else
+					. += span_tinynotice("I know [P[THEM]].")
 			else
 				. += span_tinywarning("I do not know [P[THEM]].")
 
@@ -123,7 +126,11 @@
 			LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, chat_headshot(safe_headshot_link))
 		if(flavortext || headshot_link || ooc_extra_link)
 			LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, "<a href='?src=[REF(src)];task=view_flavor_text;'>Examine Closer</a>")
-		if((do_i_know || O) && (length(rumour) || length(noble_gossip)))
+		var/has_known_gossip = length(user.mind?.get_gossip_about(mind))
+		if(O && client?.prefs)
+			has_known_gossip ||= length(client.prefs.read_preference(/datum/preference/list_type/rumors))
+			has_known_gossip ||= length(client.prefs.read_preference(/datum/preference/list_type/noble_gossip))
+		if(has_known_gossip)
 			LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, "<a href='?src=[REF(src)];task=view_rumours_gossip;'>Recall Rumours & Gossip</a>")
 		LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, "<a href='byond://?src=[REF(src)];view_descriptors=1'>Look at Features</a>")
 

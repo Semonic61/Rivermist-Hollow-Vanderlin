@@ -75,7 +75,7 @@
 	TRY_MIGRATE_PREF(/datum/preference/choiced/age, "age")
 	TRY_MIGRATE_PREF(/datum/preference/choiced/domhand, "domhand")
 	TRY_MIGRATE_PREF(/datum/preference/choiced/selected_accent,"selected_accent")
-	TRY_MIGRATE_PREF(/datum/preference/text/family, "family")
+	TRY_MIGRATE_PREF(/datum/preference/choiced/family_mode, "family")
 	TRY_MIGRATE_PREF(/datum/preference/text/setspouse, "setspouse")
 	TRY_MIGRATE_PREF(/datum/preference/choiced/gender_choice, "gender_choice")
 
@@ -106,8 +106,6 @@
 	TRY_MIGRATE_PREF(/datum/preference/text/song_link, "song_link")
 	TRY_MIGRATE_PREF(/datum/preference/text/song_artist, "song_artist")
 	TRY_MIGRATE_PREF(/datum/preference/text/song_title, "song_title")
-	TRY_MIGRATE_PREF(/datum/preference/text/rumour, "rumour")
-	TRY_MIGRATE_PREF(/datum/preference/text/noble_gossip, "noble_gossip")
 	TRY_MIGRATE_PREF(/datum/preference/text/selected_title, "selected_title")
 
 	TRY_MIGRATE_PREF(/datum/preference/choiced/joblessrole, "joblessrole")

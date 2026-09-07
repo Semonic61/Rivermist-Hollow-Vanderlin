@@ -15,6 +15,8 @@
 	var/setting_display_name = "Setting"
 	/// Example text appended to the prompt
 	var/example_text = null
+	/// Whether this setting belongs in the role-settings menu.
+	var/is_role = TRUE
 
 /datum/preference/list_type/role_setting/is_valid(value, datum/preferences/prefs)
 	if (!islist(value))

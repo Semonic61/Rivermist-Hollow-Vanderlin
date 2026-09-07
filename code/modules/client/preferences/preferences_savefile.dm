@@ -5,7 +5,7 @@
 //	You do not need to raise this if you are adding new values that have sane defaults.
 //	Only raise this value when changing the meaning/format/name/layout of an existing value
 //	where you would want the updater procs below to run
-#define SAVEFILE_VERSION_MAX 35
+#define SAVEFILE_VERSION_MAX 36
 
 /*
 SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Carn
@@ -130,12 +130,28 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 			"family", "setspouse", "gender_choice", "species", "selected_patron", "culture", "skin_tone", "voice_color", "detail_color",
 			"accessory", "detail", "flavortext", "flavortext_display", "ooc_notes", "ooc_notes_display", "ooc_extra", "ooc_extra_link",
 			"headshot_link", "nsfw_headshot_link", "nsfwflavortext", "erpprefs_flavor", "song_link", "song_artist", "song_title",
-			"rumour", "noble_gossip", "img_gallery", "nsfw_img_gallery", "joblessrole", "defeat_mode", "defeat_damage_threshold",
+			"img_gallery", "nsfw_img_gallery", "joblessrole", "defeat_mode", "defeat_damage_threshold",
 			"combat_music", "taur_type", "taur_color", "taur_markings", "taur_tertiary", "selected_title", "erp_preferences",
 			"smallclothes_preferences", "culinary_preferences"
 		))
 			S[savefile_key] >> flat_preferences[savefile_key]
 		migrate_character_flat_to_preference(flat_preferences)
+
+	if(current_version < 36)
+		var/old_family_mode
+		S["family"] >> old_family_mode
+		if(old_family_mode in list(FAMILY_NONE, FAMILY_PARTIAL, FAMILY_NEWLYWED, FAMILY_FULL))
+			write_preference(/datum/preference/choiced/family_mode, old_family_mode)
+
+		var/old_rumor
+		S["rumour"] >> old_rumor
+		if(istext(old_rumor) && length(trim(old_rumor)))
+			write_preference(/datum/preference/list_type/rumors, list(copytext(trim(old_rumor), 1, MAX_GOSSIP_LENGTH + 1)))
+
+		var/old_noble_gossip
+		S["noble_gossip"] >> old_noble_gossip
+		if(istext(old_noble_gossip) && length(trim(old_noble_gossip)))
+			write_preference(/datum/preference/list_type/noble_gossip, list(copytext(trim(old_noble_gossip), 1, MAX_GOSSIP_LENGTH + 1)))
 
 /datum/preferences/proc/load_path(ckey,filename="preferences.sav")
 	if(!ckey)

@@ -90,8 +90,18 @@
 	var/mob/living/carbon/spouse_mob
 	var/image/spouse_indicator
 	var/setspouse
+	var/setchild
+	var/setparent
 	var/gender_choice_pref = ANY_GENDER
 	var/familytree_pref = FAMILY_NONE
+	/// Permit an explicitly adoptive roundstart family bond.
+	var/family_adoption_pref = FALSE
+	var/was_divorced = FALSE
+	/// Empty lists mean that this character accepts any option.
+	var/list/accepted_patron_faiths = list()
+	var/list/accepted_family_species = list()
+	var/same_species_family = FALSE
+	var/list/family_job_filter = list()
 	var/datum/heritage/family_datum
 	var/list/temp_ui_list = list()
 
@@ -123,9 +133,6 @@
 
 	var/list/img_gallery = list()
 	var/list/nsfw_img_gallery = list()
-
-	var/noble_gossip
-	var/rumour
 
 	var/confession_points = 0 // Used to track how many confessions the Inquisitor has gotten signed. Used to buy items at mailboxes.
 	var/purchase_history = null // Used to track what the Inquisitor has bought from the mailbox.

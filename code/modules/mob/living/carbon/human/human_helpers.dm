@@ -214,18 +214,24 @@
 */
 /mob/living/carbon/human/proc/RomanticPartner(mob/living/carbon/human/H)
 	if(!ishuman(H))
-		return
-	if(spouse_mob == H)
+		return FALSE
+	if(family_member_datum && H.family_member_datum && H.family_member_datum in family_member_datum.spouses)
 		return TRUE
+	return spouse_mob == H
 
 /mob/living/carbon/human/proc/IsWedded(mob/living/carbon/human/wedder)
-	if(spouse_mob)
-		return TRUE
+	if(wedder)
+		return RomanticPartner(wedder)
+	return !!length(family_member_datum?.spouses)
 
 //Instead of putting the spouse variable everywhere its all funneled through this proc.
 /mob/living/carbon/human/proc/MarryTo(mob/living/carbon/human/spouse)
-	if(!ishuman(spouse))
+	if(!ishuman(spouse) || spouse == src)
 		return null
+	if(RomanticPartner(spouse))
+		if(family_datum)
+			return family_datum
+		return spouse.family_datum
 
 	// Set basic spouse relationship
 	spouse_mob = spouse
@@ -258,14 +264,8 @@
 
 	else
 		// Neither has family - create new one
-		var/new_family_name = null
-		// Use the male's surname traditionally, or first person's if no male
-		if(gender == MALE)
-			new_family_name = family_datum?.SurnameFormatting(src)
-		else if(spouse.gender == MALE)
-			new_family_name = family_datum?.SurnameFormatting(spouse)
-
-		primary_family = new /datum/heritage(src, new_family_name)
+		primary_family = new /datum/heritage(src)
+		SSfamilytree.families |= primary_family
 		primary_member = primary_family.founder
 		secondary_member = primary_family.CreateFamilyMember(spouse)
 
@@ -277,7 +277,7 @@
 
 //Perspective stranger looks at --> src
 /mob/living/carbon/human/proc/ReturnRelation(mob/living/carbon/human/stranger)
-	return family_datum.ReturnRelation(src, stranger)
+	return family_datum?.ReturnRelation(src, stranger)
 
 /mob/living/carbon/human/proc/GetParenthoodExamineText(mob/living/carbon/human/viewer)
 	if(!family_member_datum || !viewer?.family_member_datum)
