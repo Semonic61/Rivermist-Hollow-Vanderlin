@@ -219,9 +219,12 @@
 		// One complaint per rejected type, and a type we can't hold never
 		// aborts the rest of the gather.
 		var/list/rejections = list()
+		// Cache where the pile is: once the clicked item is stored, I.loc becomes
+		// the container and every remaining item would fail the check.
+		var/atom/gather_from = I.loc
 		for(var/obj/item/A in things.Copy())
 			things -= A
-			if(A.loc != I.loc)
+			if(A.loc != gather_from)
 				continue
 			if(A.type in rejections)
 				continue

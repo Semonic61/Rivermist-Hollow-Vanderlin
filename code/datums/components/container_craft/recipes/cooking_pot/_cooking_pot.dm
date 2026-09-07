@@ -200,7 +200,10 @@
 		var/skill_factor = min(GET_MOB_SKILL_VALUE_OLD(initiator, used_skill), 6) / 6
 		skill_mult = 1 - (skill_factor * 0.15)
 
-	reagent.metabolization_rate = initial(reagent.metabolization_rate) * quality_mult * skill_mult
+	// Store the multiplier in data so it survives being poured out, and apply it
+	// through the shared helper so pot / cup / stomach all agree.
+	LAZYSET(reagent.data, "metabolization_mult", quality_mult * skill_mult)
+	reagent.apply_stored_metabolization_mult()
 
 	// Update description to reflect quality
 	var/quality_desc = reagent.get_recipe_quality_desc()

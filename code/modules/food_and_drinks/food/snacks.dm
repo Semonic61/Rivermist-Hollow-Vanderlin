@@ -337,11 +337,12 @@ All foods are distributed among various categories. Use common sense.
 
 /obj/item/reagent_containers/food/snacks/add_initial_reagents()
 	if(nutrition)
+		var/yield = SOLID_FOOD_NUTRITION(nutrition)
 		if(vitamin)
-			reagents.add_reagent(/datum/reagent/consumable/nutriment, nutrition * (1-vitamin), length(tastes) ? list("tastes" = tastes) : null)
-			reagents.add_reagent(/datum/reagent/consumable/nutriment/vitamin, nutrition * vitamin, length(tastes) ? list("tastes" = tastes) : null)
+			reagents.add_reagent(/datum/reagent/consumable/nutriment, yield * (1-vitamin), length(tastes) ? list("tastes" = tastes) : null)
+			reagents.add_reagent(/datum/reagent/consumable/nutriment/vitamin, yield * vitamin, length(tastes) ? list("tastes" = tastes) : null)
 		else
-			reagents.add_reagent(/datum/reagent/consumable/nutriment, nutrition, length(tastes) ? list("tastes" = tastes) : null)
+			reagents.add_reagent(/datum/reagent/consumable/nutriment, yield, length(tastes) ? list("tastes" = tastes) : null)
 	..()
 
 /obj/item/reagent_containers/food/snacks/on_consume(mob/living/eater)
@@ -433,7 +434,7 @@ All foods are distributed among various categories. Use common sense.
 
 	if(eat_effect && apply_effect)
 		if(islist(eat_effect))
-			for(var/datum/status_effect/effect in eat_effect)
+			for(var/datum/status_effect/effect as anything in eat_effect)
 				var/base_duration = initial(effect.duration)
 				eater.apply_status_effect(effect, (base_duration > 0) ? round(base_duration * eat_effect_duration_mult) : base_duration)
 		else

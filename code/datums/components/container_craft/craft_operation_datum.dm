@@ -48,7 +48,10 @@
 	src.on_craft_start = on_craft_start
 	src.on_craft_failed = on_craft_failed
 
-	target_time = recipe.get_real_time(crafter, initiator, estimated_multiplier)
+	// Batch size deliberately does NOT stretch the timer: the food burner starts
+	// its 2 minute clock as soon as ingredients enter, so a x5 batch would burn
+	// before it finished. Skill scaling still applies.
+	target_time = recipe.get_real_time(crafter, initiator, 1)
 	if(recipe.user_craft)
 		src.requires_proximity = TRUE
 
@@ -145,6 +148,9 @@
 		return
 	if(stalled)
 		stalled = FALSE
+		// Restart the no-progress clock, otherwise the generic timeout below
+		// sees the whole pause as idle time and aborts a craft that just resumed.
+		last_progress_time = world.time
 		announce_resume()
 	if(sound_paused)
 		sound_paused = FALSE
