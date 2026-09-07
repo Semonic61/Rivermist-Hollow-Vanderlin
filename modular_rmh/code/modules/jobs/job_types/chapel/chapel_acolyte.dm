@@ -1,5 +1,8 @@
 /datum/job/acolyte
 	title = "Chapel Acolyte"
+	unique_alt_honorary = TRUE
+	alt_honorary = list("Brother")
+	alt_honorary_female = list("Sister")
 	tutorial = "You are a humble servant of the gods. \
 	This chapel welcomes many faiths, and your duty is simple service, learning, and aid. \
 	ALLOWED PATRONS: Garl Glittergold, Helm, Mystra, Oghma, Tempus, Tymora, Silvanus, Jergal, Bahamut, Corellon Larethian, \

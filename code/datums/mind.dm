@@ -786,6 +786,16 @@ GLOBAL_LIST_EMPTY(personal_objective_minds)
 		return assigned_role
 	. = assigned_role
 	assigned_role = new_role
+	if(isliving(current))
+		var/mob/living/living_mob = current
+		if(new_role)
+			new_role.apply_alt_title_preferences(living_mob, living_mob.client?.prefs)
+			if(iscarbon(living_mob))
+				var/mob/living/carbon/carbon_mob = living_mob
+				new_role.assign_honorary_titles(carbon_mob)
+		else
+			living_mob.job_title_override = null
+			living_mob.job_honorary_override = null
 
 /mob/proc/sync_mind()
 	mind_initialize()	//updates the mind (or creates and initializes one if one doesn't exist)

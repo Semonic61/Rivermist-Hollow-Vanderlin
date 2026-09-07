@@ -1,6 +1,11 @@
 /mob/living/carbon/human/get_examine_string(mob/user, thats = FALSE)
 	. = ..()
 	var/used_title = get_role_title()
+	var/original_title
+	if(job_title_override && used_title == job_title_override && job)
+		var/datum/job/job_datum = SSjob.GetJob(job)
+		if(!QDELETED(job_datum))
+			original_title = job_datum.get_gendered_title(gender, pronouns)
 	if(!used_title)
 		return
 	if(!IsAdminGhost(user))
@@ -15,7 +20,8 @@
 				return
 			if(!user.mind?.do_i_know(mind, real_name))
 				return
-	. += ", the [used_title]"
+	var/title_display = conditional_tooltip_alt(used_title, original_title, original_title && original_title != used_title)
+	. += ", the [title_display]"
 
 /mob/living/carbon/human/get_examine_list(mob/user, list/P)
 	. = ..()

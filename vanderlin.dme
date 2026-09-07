@@ -2721,6 +2721,7 @@
 #include "code\modules\client\preferences\datums\toggle\tgui_lock.dm"
 #include "code\modules\client\preferences\datums\toggle\widescreenpref.dm"
 #include "code\modules\client\preferences\datums\toggle\windowflashing.dm"
+#include "code\modules\client\preferences\preference_alt_title.dm"
 #include "code\modules\client\preferences\preference_migration.dm"
 #include "code\modules\client\preferences\preference_multi_ready.dm"
 #include "code\modules\client\preferences\preferences_body_markings.dm"

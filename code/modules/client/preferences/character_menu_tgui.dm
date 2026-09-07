@@ -194,6 +194,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	.["species_options"] = character_setup_species_options()
 	.["smallclothes_catalog"] = character_setup_smallclothes_static()
 	.["loadout_catalog"] = character_setup_loadout_static(user)
+	.["job_categories"] = character_setup_job_categories(user)
 	character_setup_log_op("ui_static_data", _t, "thumbs=[length(.["thumbs"])] species=[length(.["species_options"])]")
 
 /datum/preferences/proc/character_setup_handle_color_task(mob/user, list/href_list)
@@ -792,7 +793,8 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	for(var/job_type in job_preferences)
 		if(job_preferences[job_type] != JP_HIGH)
 			continue
-		high_job = "[job_type]"
+		var/datum/job/high_job_datum = SSjob?.GetJob(job_type)
+		high_job = high_job_datum ? get_selected_job_alt_value(high_job_datum, "title") : "[job_type]"
 		break
 
 	var/gender_name = "Other"
@@ -1016,6 +1018,9 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 		"pixel_size" = "[pixel_size]",
 		"scaling_method" = "[scaling_method]",
 	)
+	var/list/job_data = character_setup_job_data(user)
+	for(var/key in job_data)
+		data[key] = job_data[key]
 
 	return data
 
@@ -1091,6 +1096,60 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 				write_preference(/datum/preference/choiced/age, selected_age)
 				reset_jobs(user)
 				update_menu_data(user)
+			return TRUE
+
+		if("job_set_pref_level")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			var/datum/job/level_job = SSjob?.GetJob(params["job"])
+			if(!job_is_available(level_job, user))
+				return FALSE
+			var/new_level = params["level"]
+			if(isnull(new_level))
+				job_preferences -= level_job.title
+			else
+				if(!isnum(new_level))
+					new_level = text2num("[new_level]")
+				if(!(new_level in list(JP_LOW, JP_MEDIUM, JP_HIGH)))
+					return FALSE
+				set_job_preference_level(level_job, new_level)
+			update_menu_data(user)
+			return TRUE
+
+		if("job_set_alt")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			var/datum/job/alt_job = SSjob?.GetJob(params["job"])
+			if(!job_is_available(alt_job, user))
+				return FALSE
+			if(!set_job_alt_preference(alt_job, params["category"], params["value"]))
+				return FALSE
+			update_menu_data(user)
+			return TRUE
+
+		if("job_toggle_unavailable")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			switch(read_preference(/datum/preference/choiced/joblessrole))
+				if(RETURNTOLOBBY)
+					write_preference(/datum/preference/choiced/joblessrole, BERANDOMJOB)
+				if(BERANDOMJOB)
+					write_preference(/datum/preference/choiced/joblessrole, RETURNTOLOBBY)
+			update_menu_data(user)
+			return TRUE
+
+		if("job_reset_priorities")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			reset_jobs(user, TRUE)
+			update_menu_data(user)
+			return TRUE
+
+		if("job_play_last_class")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			reset_last_class(user)
+			update_menu_data(user)
 			return TRUE
 
 	return FALSE

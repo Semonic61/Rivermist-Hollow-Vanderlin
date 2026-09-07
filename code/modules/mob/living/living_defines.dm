@@ -5,6 +5,9 @@
 	hud_possible = list(ANTAG_HUD)
 
 	var/resize = 1 //Badminnery resize
+	/// Player-selected presentation for the mob's assigned job.
+	var/job_title_override
+	var/job_honorary_override
 	var/lastattacker = null
 	var/lastattackerckey = null
 	var/datum/weakref/lastattacker_weakref = null

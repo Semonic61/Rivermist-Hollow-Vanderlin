@@ -14,6 +14,7 @@
 
 /datum/job/innkeep
 	title = "Innkeep"
+	alt_titles = list("Taverner")
 	tutorial = "You run the Drunken Dwarf — tavern, inn, and the public face of the Blue Sage Guild. \
 	You serve drinks, rent rooms, keep guests comfortable, and act as the first point of contact \
 	for adventurers, townsfolk, and travelers alike. A steady hand and a sharp ear keep both the ale and rumors flowing."

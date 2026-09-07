@@ -14,14 +14,19 @@
 	H.accent = value
 
 /datum/preference/choiced/selected_accent/handle_link(datum/preferences/prefs, mob/user)
-	if(length(prefs.pref_species.multiple_accents))
-		prefs.change_accent = TRUE
-	else
-		prefs.change_accent = FALSE
-	if(!prefs.change_accent)
-		to_chat(user, "Sorry, this option is unavailable to your ancestry.")
-		prefs.write_preference(/datum/preference/choiced/selected_accent, ACCENT_DEFAULT)
-		return
-	var/accent = browser_input_list(user, "CHOOSE YOUR HERO'S ACCENT", "VOICE OF THE WORLD", prefs.pref_species.multiple_accents, prefs.read_preference(/datum/preference/choiced/selected_accent))
+	var/list/available = list(ACCENT_DEFAULT)
+
+	// Accent selection is free for everyone on RMH. Keep culture support generic so
+	// cultures can opt into it without importing upstream's English accent content.
+	for(var/accent_name in GLOB.accent_list)
+		available |= accent_name
+
+	var/culture_type = prefs.read_preference(/datum/preference/choiced/culture)
+	var/datum/culture/culture_datum = GLOB.culture_singletons[culture_type]
+	if(culture_datum?.accent)
+		available |= culture_datum.accent
+
+	prefs.change_accent = length(available) > 1
+	var/accent = browser_input_list(user, "CHOOSE YOUR HERO'S ACCENT", "VOICE OF THE WORLD", available, prefs.read_preference(/datum/preference/choiced/selected_accent))
 	if(accent)
-		prefs.write_preference(/datum/preference/choiced/selected_accent, prefs.pref_species.multiple_accents[accent])
+		prefs.write_preference(/datum/preference/choiced/selected_accent, accent)

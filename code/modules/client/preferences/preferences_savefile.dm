@@ -442,6 +442,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 
 	// Non-preference jobs/loadout
 	S["job_preferences"] >> job_preferences
+	S["alt_job_selections"] >> alt_job_selections
 
 	if(!features["mcolor"] || features["mcolor"] == "#000")
 		features["mcolor"] = pick("FFFFFF","7F7F7F", "7FFF7F", "7F7FFF", "FF7F7F", "7FFFFF", "FF7FFF", "FFFF7F")
@@ -501,6 +502,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 		for(var/j in job_preferences)
 			if(job_preferences[j] != JP_LOW && job_preferences[j] != JP_MEDIUM && job_preferences[j] != JP_HIGH)
 				job_preferences -= j
+	sanitize_alt_job_selections()
 
 	load_customizer_and_quirk_data(S)
 
@@ -594,6 +596,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	// Descriptor entries
 	WRITE_FILE(S["descriptor_entries"], descriptor_entries)
 	WRITE_FILE(S["custom_descriptors"], custom_descriptors)
+	WRITE_FILE(S["alt_job_selections"], alt_job_selections)
 
 	save_quirks(S)
 

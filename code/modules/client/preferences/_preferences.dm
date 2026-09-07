@@ -54,6 +54,8 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 
 	//Job preferences 2.0 - indexed by job title , no key or value implies never
 	var/list/job_preferences = list()
+	/// job.title -> list("title" = chosen title, "honorary" = chosen prefix)
+	var/list/alt_job_selections = list()
 
 	var/list/ignoring = list()
 
@@ -253,13 +255,13 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 	user.client.clear_character_previews()
 	user << browse(null, "window=preferences_browser")
 	validate_customizer_entries()
-	character_setup_static_sig = "[pref_species?.type]-[read_preference(/datum/preference/choiced/gender)]"
+	character_setup_static_sig = "[pref_species?.type]-[read_preference(/datum/preference/choiced/gender)]-[read_preference(/datum/preference/choiced/pronouns)]"
 	ui_interact(user)
 
 
 /datum/preferences/proc/update_menu_data(mob/user, list/fields_to_update)
 	character_setup_ui_heavy_sig = null
-	var/new_static_sig = "[pref_species?.type]-[read_preference(/datum/preference/choiced/gender)]"
+	var/new_static_sig = "[pref_species?.type]-[read_preference(/datum/preference/choiced/gender)]-[read_preference(/datum/preference/choiced/pronouns)]"
 	if(new_static_sig != character_setup_static_sig)
 		character_setup_static_sig = new_static_sig
 		update_static_data(user)

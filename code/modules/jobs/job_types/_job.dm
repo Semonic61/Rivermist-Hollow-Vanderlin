@@ -3,6 +3,11 @@
 	var/enabled = TRUE
 	/// The name of the job , used for preferences, bans and more. Make sure you know what you're doing before changing this.
 	var/title = "NOPE"
+	/// Player-selectable titles which do not change the underlying job.
+	var/list/alt_titles
+	/// Female-presenting alternatives used instead of alt_titles when unique_alt_titles is set.
+	var/list/alt_titles_female
+	var/unique_alt_titles = FALSE
 	/// Visual title override
 	var/title_override = null
 	/// The title of this job given to female mobs. Fluff, not as important as [var/title].
@@ -201,6 +206,11 @@
 	/// Honorary titles appended to names. Based off pronouns
 	var/honorary
 	var/honorary_f
+	/// Player-selectable honorary prefixes which do not change the underlying job.
+	var/list/alt_honorary
+	/// Female-presenting alternatives used instead of alt_honorary when unique_alt_honorary is set.
+	var/list/alt_honorary_female
+	var/unique_alt_honorary = FALSE
 	/// Same as above, but for suffixes. See Khan
 	var/honorary_suffix
 	var/honorary_suffix_f
@@ -340,6 +350,7 @@
 /datum/job/proc/after_spawn(mob/living/carbon/human/spawned, client/player_client, clear_job_stats = TRUE)
 	SHOULD_CALL_PARENT(TRUE)
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_JOB_AFTER_SPAWN, src, spawned, player_client)
+	apply_alt_title_preferences(spawned, player_client?.prefs)
 
 	var/used_attribute_sheet = FALSE
 	if(spawned.attributes)
@@ -773,6 +784,10 @@
 
 	if(title_override)
 		return title_override
+	if(isliving(mob))
+		var/mob/living/living_mob = mob
+		if(living_mob.job_title_override)
+			return living_mob.job_title_override
 	if(uses_parent_title && parent_job)
 		return parent_job.title
 
@@ -789,10 +804,12 @@
 	return title
 
 /datum/job/proc/assign_honorary_titles(mob/living/carbon/grantee)
-	if(honorary)
-		grantee.honorary = honorary
-	if(honorary_f && grantee.pronouns == SHE_HER)
+	if(grantee.job_honorary_override)
+		grantee.honorary = grantee.job_honorary_override
+	else if(honorary_f && grantee.pronouns == SHE_HER)
 		grantee.honorary = honorary_f
+	else if(honorary)
+		grantee.honorary = honorary
 	if(honorary_suffix)
 		grantee.honorary_suffix = honorary_suffix
 	if(honorary_suffix_f && grantee.pronouns == SHE_HER)
