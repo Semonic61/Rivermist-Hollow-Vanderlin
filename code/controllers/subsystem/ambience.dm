@@ -126,9 +126,9 @@ SUBSYSTEM_DEF(ambience)
 		cancel_looping_ambience()
 		return
 
-	var/music_enabled = client.prefs?.toggles & SOUND_SHIP_AMBIENCE
+	var/music_enabled = client.prefs?.read_preference(/datum/preference/bitwise/toggles) & SOUND_SHIP_AMBIENCE
 	var/area/my_area = get_area(src)
-	var/vol = client.prefs?.musicvol
+	var/vol = client.prefs?.read_preference(/datum/preference/numeric/musicvol)
 	var/used = buzz_to_use
 
 	if(!used && music_enabled)
@@ -209,7 +209,8 @@ SUBSYSTEM_DEF(ambience)
 	var/mob/living/L = dreamer.mob
 	//kill the previous droning sound
 	L.cancel_looping_ambience()
-	var/sound/combat_music = sound(pick(music), repeat = TRUE, wait = 0, channel = CHANNEL_BUZZ, volume = (dreamer?.prefs.musicvol)*1.2)
+	var/music_volume = dreamer?.prefs?.read_preference(/datum/preference/numeric/musicvol) || 0
+	var/sound/combat_music = sound(pick(music), repeat = TRUE, wait = 0, channel = CHANNEL_BUZZ, volume = music_volume * 1.2)
 	combat_music.frequency = frenq
 	if(!HAS_TRAIT(dreamer.mob, TRAIT_DRUQK))
 		combat_music.pitch = 1 / combat_music.frequency

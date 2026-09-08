@@ -120,36 +120,40 @@
 	return TRUE
 
 /// Returns the total bleed rate on this bodypart
-/obj/item/bodypart/proc/get_bleed_rate()
+/obj/item/bodypart/proc/get_bleed_rate(ignore_is_bleeding = FALSE)
 	if(!bleeds || !is_organic_limb())
 		return 0
 	if(NOBLOOD in owner?.dna?.species?.species_traits)
 		return 0
+
 	var/bleed_rate = 0
-	if(bandage && !GET_ATOM_BLOOD_DNA_LENGTH(bandage))
+	if(!ignore_is_bleeding && bandage && !GET_ATOM_BLOOD_DNA_LENGTH(bandage))
 		return 0
 	for(var/datum/wound/wound as anything in wounds)
 		bleed_rate += (wound.bleed_rate * owner.dna.species.bleed_mod)
 
 	for(var/datum/injury/injury as anything in injuries)
-		if(injury.is_bleeding())
-			bleed_rate += injury.get_bleed_rate()
+		bleed_rate += injury.get_bleed_rate(ignore_is_bleeding)
 
 	for(var/obj/item/embedded as anything in embedded_objects)
 		if(!embedded.embedding.embedded_bloodloss)
 			continue
 		bleed_rate += embedded.embedding.embedded_bloodloss
-	if(bandage)
+	if(!ignore_is_bleeding && bandage)
 		bleed_rate *= bandage?.bandage_effectiveness
+
 	for(var/obj/item/grabbing/grab in grabbedby)
 		bleed_rate *= grab.bleed_suppressing
+
+	// backup bleed rate if you max out on burn damage
+	if((burn_dam / max_damage) >= 0.75)
+		bleed_rate += BLEED_DAMAGE_RATIO / 10
+
+	var/our_state = return_surgical_state()
+	if(our_state & SURGERY_VESSELS_CLAMPED)
+		bleed_rate = min(bleed_rate / 2, 0.5)
+
 	bleed_rate = max(round(bleed_rate, 0.1), 0)
-	var/surgery_flags = get_surgery_flags()
-	if(surgery_flags & SURGERY_CLAMPED)
-		bleed_rate = min(bleed_rate, 0.5)
-	switch(burn_dam/max_damage)
-		if(0.75 to INFINITY)
-			bleed_rate += 5
 	return bleed_rate
 
 /// Called in two cases, as an override to an attack after IE apply_damage on a zone. Or After an attack to return a wound.
@@ -228,7 +232,19 @@
 		//stack_trace("spec_attacked_by failed to create injury with [dam] damage and [wounding_type] wounding type!")
 
 	if(incoming_germ && injury)
-		injury.adjust_germ_level(incoming_germ * 0.1)
+		//Divide it by 3 to be reasonable
+		incoming_germ = CEILING(incoming_germ/3, 1)
+
+		//If the patient has antibiotics, kill germs by an amount equal to 10x the antibiotic force
+		//e.g. nalixidic acid has 35 force, thus would decrease germs here by 350
+		var/antibiotics = owner?.get_antibiotics()
+		incoming_germ = max(0, incoming_germ - (antibiotics * 10))
+
+		//This amount is not meaningful enough to cause an infection
+		if(incoming_germ < incoming_germ/2)
+			return
+
+		injury.adjust_germ_level(incoming_germ * 0.5)
 
 	update_damages()
 	owner.updatehealth()
@@ -521,49 +537,3 @@
 	if(owner)
 		update_disabled()
 	return TRUE
-
-/// Returns surgery flags applicable to this bodypart
-/obj/item/bodypart/proc/get_surgery_flags()
-	var/returned_flags = NONE
-	if(can_bloody_wound())
-		returned_flags |= SURGERY_BLOODY
-
-	for(var/datum/injury/slash/slash in injuries)
-		if(slash.is_bandaged() || slash.current_stage > slash.max_bleeding_stage) // Shit's unusable
-			continue
-		returned_flags |= SURGERY_INCISED
-		break
-	var/static/list/retracting_behaviors = list(
-		TOOL_RETRACTOR,
-		TOOL_CROWBAR,
-		TOOL_IMPROVISED_RETRACTOR,
-	)
-	var/static/list/clamping_behaviors = list(
-		TOOL_HEMOSTAT,
-		TOOL_WIRECUTTER,
-		TOOL_IMPROVISED_HEMOSTAT,
-	)
-	for(var/obj/item/embedded as anything in embedded_objects)
-		if((embedded.tool_behaviour in retracting_behaviors) || embedded.embedding?.retract_limbs)
-			returned_flags |= SURGERY_RETRACTED
-		if((embedded.tool_behaviour in clamping_behaviors) || embedded.embedding?.clamp_limbs)
-			returned_flags |= SURGERY_CLAMPED
-	if(has_wound(/datum/wound/dislocation))
-		returned_flags |= SURGERY_DISLOCATED
-	if(has_wound(/datum/wound/fracture))
-		returned_flags |= SURGERY_BROKEN
-	if(skeletonized)
-		returned_flags |= SURGERY_INCISED | SURGERY_DRILLED //ehh... we have access to whatever organ is there
-	return returned_flags
-
-/obj/item/bodypart/proc/is_retracted()
-	var/static/list/retracting_behaviors = list(
-		TOOL_RETRACTOR,
-		TOOL_CROWBAR,
-		TOOL_IMPROVISED_RETRACTOR,
-	)
-
-	for(var/obj/item/embedded as anything in embedded_objects)
-		if((embedded.tool_behaviour in retracting_behaviors) || embedded.embedding?.retract_limbs)
-			return TRUE
-	return FALSE

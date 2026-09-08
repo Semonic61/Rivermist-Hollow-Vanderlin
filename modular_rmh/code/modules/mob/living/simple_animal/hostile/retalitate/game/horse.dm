@@ -20,9 +20,9 @@
 
 /mob/living/simple_animal/hostile/retaliate/saiga/horse/tamed(mob/user)
 	. = ..()
+	if(.)
+		return
 	deaggroprob = 30
-	if(can_buckle)
-		AddComponent(/datum/component/riding/saiga)
 	if(can_breed)
 		AddComponent(\
 			/datum/component/breed,\

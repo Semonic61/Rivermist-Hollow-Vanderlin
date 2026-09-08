@@ -11,6 +11,7 @@
 #define DRUNK_STUMBLE_MAX_KNOCKDOWN 1.6 SECONDS
 
 /datum/status_effect/buff/drunk
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "drunk"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/drunk
 	effectedstats = list(STAT_INTELLIGENCE = -1, STAT_SPEED = -1, STAT_CONSTITUTION = 1)
@@ -87,6 +88,7 @@
 #undef DRUNK_STUMBLE_MAX_KNOCKDOWN
 
 /datum/status_effect/buff/foodbuff
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "Food Buff"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/foodbuff
 	effectedstats = list(STAT_CONSTITUTION = 1, STAT_ENDURANCE = 1)
@@ -105,6 +107,7 @@
 
 //============= CLEAN PLUS ===============
 /datum/status_effect/buff/clean_plus
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "cleanplus"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/clean_plus
 	effectedstats = list(STAT_FORTUNE = 1)
@@ -123,6 +126,7 @@
 
 
 /datum/status_effect/buff/druqks
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "druqks"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/druqks
 	effectedstats = list(STAT_INTELLIGENCE = 4, STAT_SPEED = 2, STAT_FORTUNE = -5)
@@ -158,6 +162,7 @@
 	icon_state = "acid"
 
 /datum/status_effect/buff/ozium
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "ozium"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/druqks
 	effectedstats = list(STAT_SPEED = -4, STAT_PERCEPTION = 2)
@@ -178,6 +183,7 @@
 		C.remove_stress(/datum/stress_event/ozium)
 
 /datum/status_effect/buff/moondust
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "moondust"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/druqks
 	effectedstats = list(STAT_SPEED = 2, STAT_ENDURANCE = 2, STAT_INTELLIGENCE = -4)
@@ -199,6 +205,7 @@
 		C.remove_stress(/datum/stress_event/moondust)
 
 /datum/status_effect/buff/moondust_purest
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "purest moondust"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/druqks
 	effectedstats = list(STAT_SPEED = 4, STAT_ENDURANCE = 4, STAT_INTELLIGENCE = -2)
@@ -221,6 +228,7 @@
 
 
 /datum/status_effect/buff/weed
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "weed"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/weed
 	effectedstats = list(STAT_INTELLIGENCE = 2, STAT_SPEED = -2,STAT_FORTUNE = 2)
@@ -245,6 +253,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/featherfall
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "featherfall"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/featherfall
 	duration = 1 MINUTES
@@ -260,6 +269,7 @@
 	REMOVE_TRAIT(owner, TRAIT_NOFALLDAMAGE1, TRAIT_STATUS_EFFECT(id))
 
 /datum/status_effect/buff/darkvision
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "darkvision"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/darkvision
 	duration = 10 MINUTES
@@ -289,12 +299,14 @@
 	desc = "I am magically hastened."
 
 /datum/status_effect/buff/haste
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "haste"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/haste
 	effectedstats = list(STAT_SPEED = 3)
 	duration = 1 MINUTES
 
 /datum/status_effect/buff/calm
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "calm"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/calm
 	effectedstats = list(STAT_FORTUNE = 1)
@@ -318,12 +330,14 @@
 		C.remove_stress(/datum/stress_event/calm)
 
 /datum/status_effect/buff/barbrage
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "barbrage"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/barbrage
 	effectedstats = list(STAT_STRENGTH = 1, STAT_ENDURANCE = 2, STAT_PERCEPTION = -2, STAT_INTELLIGENCE = -2) //endurance to boost pain treshold, not powerful enough to warrant total painkilling
 	duration = 30 SECONDS
 
 /datum/status_effect/buff/adrenalinerush
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "adrenalinerush"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/adrenalinerush
 	effectedstats = list(STAT_SPEED = 4, STAT_ENDURANCE = 2, STAT_CONSTITUTION = 2) // Meant as a 'GET THE FUCK OUT' spell.
@@ -360,6 +374,7 @@
 
 // ---------------------- DIVINE KNOWLEDGE ( NOC ) ----------------------------
 /datum/status_effect/buff/noc
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "nocbuff"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/nocbuff
 	effectedstats = list(STAT_INTELLIGENCE = 3)
@@ -374,6 +389,7 @@
 
 // ---------------------- DIVINE POWER ( RAVOX ) ----------------------------
 /datum/status_effect/buff/ravox
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "ravoxbuff"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/ravoxbuff
 	effectedstats = list(STAT_CONSTITUTION = 1, STAT_ENDURANCE = 1, STAT_STRENGTH = 1)
@@ -391,6 +407,7 @@
 
 // ---------------------- EYES OF THE BEAST ( DENDOR ) ----------------------------
 /datum/status_effect/buff/beastsense
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "beastsense"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/beastsense
 	effectedstats = list(STAT_PERCEPTION = 2)
@@ -418,6 +435,7 @@
 
 // ---------------------- TROLL SHAPE ( DENDOR ) ----------------------------
 /datum/status_effect/buff/trollshape
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "trollshape"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/trollshape
 	effectedstats = list(STAT_STRENGTH = 4, STAT_ENDURANCE = 2, STAT_SPEED = -2, STAT_INTELLIGENCE = -4)
@@ -467,6 +485,7 @@
 \-----------------*/
 
 /datum/status_effect/buff/divine_beauty
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "divine_beauty"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/divine_beauty
 	duration = 5 MINUTES
@@ -493,6 +512,7 @@
 \-----------------*/
 
 /datum/status_effect/buff/call_to_arms
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "call_to_arms"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/call_to_arms
 	duration = 2.5 MINUTES
@@ -508,6 +528,7 @@
 \-----------------*/
 
 /datum/status_effect/buff/craft_buff
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "crafting_buff_malum"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/craft_buff
 	duration = 2.5 MINUTES
@@ -524,6 +545,7 @@
 \-----------------*/
 
 /datum/status_effect/buff/call_to_slaughter
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "call_to_slaughter"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/call_to_slaughter
 	duration = 2.5 MINUTES
@@ -543,6 +565,7 @@
 	icon_state = "bloodrage"
 
 /datum/status_effect/buff/bloodrage
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "bloodrage"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/graggar_bloodrage
 	var/outline_color = "#ad0202"
@@ -625,6 +648,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/churnerprotection
+	tick_interval = STATUS_EFFECT_NO_TICK
 	var/outline_colour = "#fad55a"
 	id = "soulchurnerprotection"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/churnerprotection
@@ -653,6 +677,7 @@
 
 
 /datum/status_effect/buff/churnernegative
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id ="soulchurnernegative"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/churnernegative
 	duration = 23 SECONDS
@@ -670,6 +695,7 @@
 	owner.visible_message("[owner]'s arcyne aura seems to return once more.")
 
 /datum/status_effect/buff/lux_drank/baothavitae
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "druqks"
 	duration = 1 MINUTES
 
@@ -782,6 +808,7 @@
 		H.adjust_stamina(-H.maximum_stamina * 0.02, internal_regen = FALSE)
 
 /datum/status_effect/buff/magicknowledge
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "intelligence"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/knowledge
 	effectedstats = list(STAT_INTELLIGENCE = 2)
@@ -793,6 +820,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/magicstrength
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "strength"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/strength
 	effectedstats = list(STAT_STRENGTH = 3)
@@ -804,6 +832,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/magicstrength/lesser
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "lesser strength"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/strength/lesser
 	effectedstats = list(STAT_STRENGTH = 1)
@@ -816,6 +845,7 @@
 
 
 /datum/status_effect/buff/magicspeed
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "speed"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/speed
 	effectedstats = list(STAT_SPEED = 3)
@@ -827,6 +857,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/magicspeed/lesser
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "lesser speed"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/speed/lesser
 	effectedstats = list(STAT_SPEED = 1)
@@ -838,6 +869,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/magicendurance
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "endurance"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/endurance
 	effectedstats = list(STAT_ENDURANCE = 3)
@@ -849,6 +881,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/magicendurance/lesser
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "lesser endurance"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/endurance/lesser
 	effectedstats = list(STAT_ENDURANCE = 1)
@@ -861,6 +894,7 @@
 
 
 /datum/status_effect/buff/magicconstitution
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "constitution"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/constitution
 	effectedstats = list(STAT_CONSTITUTION = 3)
@@ -872,6 +906,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/magicconstitution/lesser
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "lesser constitution"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/constitution/lesser
 	effectedstats = list(STAT_CONSTITUTION = 1)
@@ -883,6 +918,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/magicperception
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "perception"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/perception
 	effectedstats = list(STAT_PERCEPTION = 3)
@@ -894,6 +930,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/magicperception/lesser
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "lesser perception"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/perception/lesser
 	effectedstats = list(STAT_PERCEPTION = 1)
@@ -919,6 +956,7 @@
 		H.adjust_stamina(-0.5, internal_regen = FALSE)
 
 /datum/status_effect/debuff/cold
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "Frostveiled"
 	alert_type =  /atom/movable/screen/alert/status_effect/debuff/cold
 	effectedstats = list(STAT_SPEED = -2)
@@ -936,6 +974,7 @@
 	desc = "Something has chilled me to the bone! It's hard to move."
 
 /datum/status_effect/buff/nocblessing
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "nocblessing"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/nocblessing
 	effectedstats = list(STAT_INTELLIGENCE = 1)
@@ -947,6 +986,7 @@
 	icon_state = "buff"
 
 /datum/status_effect/buff/nocblessed
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "nocblessed"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/nocblessed
 	effectedstats = list(STAT_INTELLIGENCE = 3, STAT_PERCEPTION = 2)
@@ -959,6 +999,7 @@
 
 
 /datum/status_effect/buff/seelie_drugs
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "seelie drugs"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/druqks
 	effectedstats = list(STAT_INTELLIGENCE = 2, STAT_ENDURANCE = 4, STAT_SPEED = -3)
@@ -990,6 +1031,7 @@
 	owner.update_sight()
 
 /datum/status_effect/buff/lux_drank
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "lux_drank"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/lux_drank
 	effectedstats = list(STAT_FORTUNE = 2)
@@ -1020,6 +1062,7 @@
 
 // Small buff to halflings for having over 800 nutrition currently
 /datum/status_effect/buff/stuffed
+	tick_interval = STATUS_EFFECT_NO_TICK
 	id = "stuffed"
 	alert_type = /atom/movable/screen/alert/status_effect/buff/stuffed
 	effectedstats = list(STAT_CONSTITUTION = 1, STAT_ENDURANCE = 1)

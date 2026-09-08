@@ -186,7 +186,7 @@
 	scannies = new /atom/movable/screen/scannies
 	scannies.set_new_hud(src)
 	static_inventory += scannies
-	if(owner.client?.prefs?.crt == TRUE)
+	if(owner.client?.prefs?.read_preference(/datum/preference/toggle/crt))
 		scannies.alpha = 70
 
 	for(var/element as anything in PUTRID_ELEMENTS)

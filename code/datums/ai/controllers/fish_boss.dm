@@ -52,7 +52,7 @@
 			F.adjustHealth(-heal_amount)
 			if(prob(30))
 				new /obj/effect/temp_visual/heal(get_turf(F))
-		else if( !("deepone" in L.faction))
+		else if( !(L.has_faction("deepone")))
 			// Slow down players/non-deep ones
 			L.add_movespeed_modifier("deep_water", 2)
 

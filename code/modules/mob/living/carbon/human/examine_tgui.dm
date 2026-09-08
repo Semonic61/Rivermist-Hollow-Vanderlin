@@ -412,18 +412,20 @@ GLOBAL_LIST_INIT(examine_panel_slot_layout, list(
 	else if(pref)
 		is_naked = TRUE
 		obscured = FALSE
-		flavor_text = pref.flavortext || ""
-		flavor_text_nsfw = pref.nsfwflavortext || ""
-		ooc_notes = pref.ooc_notes || ""
-		ooc_notes_nsfw = pref.erpprefs_flavor || ""
-		headshot = pref.headshot_link || ""
-		nsfw_headshot = pref.nsfw_headshot_link || ""
-		has_headshot = !!pref.headshot_link
-		has_nsfw_headshot = !!pref.nsfw_headshot_link
-		img_gallery = pref.img_gallery ? pref.img_gallery.Copy() : list()
-		nsfw_img_gallery = pref.nsfw_img_gallery ? pref.nsfw_img_gallery.Copy() : list()
-		char_name = pref.real_name || ""
-		song_url = pref.song_link || ""
+		flavor_text = pref.read_preference(/datum/preference/text/flavortext) || ""
+		flavor_text_nsfw = pref.read_preference(/datum/preference/text/nsfwflavortext) || ""
+		ooc_notes = pref.read_preference(/datum/preference/text/ooc_notes) || ""
+		ooc_notes_nsfw = pref.read_preference(/datum/preference/text/erpprefs_flavor) || ""
+		headshot = pref.read_preference(/datum/preference/text/headshot_link) || ""
+		nsfw_headshot = pref.read_preference(/datum/preference/text/nsfw_headshot_link) || ""
+		has_headshot = !!headshot
+		has_nsfw_headshot = !!nsfw_headshot
+		var/list/regular_gallery = pref.read_preference(/datum/preference/list_type/profile_gallery/images)
+		var/list/adult_gallery = pref.read_preference(/datum/preference/list_type/profile_gallery/nsfw_images)
+		img_gallery = regular_gallery ? regular_gallery.Copy() : list()
+		nsfw_img_gallery = adult_gallery ? adult_gallery.Copy() : list()
+		char_name = pref.read_preference(/datum/preference/text/real_name) || ""
+		song_url = pref.read_preference(/datum/preference/text/song_link) || ""
 		if(!headshot)
 			headshot = "headshot_red.png"
 		if(!nsfw_headshot)
@@ -503,10 +505,11 @@ GLOBAL_LIST_INIT(examine_panel_slot_layout, list(
 		song_title = holder.song_title
 
 	else if(pref)
-		web_sound_url= pref.song_link
-		if(pref.song_artist)
-			artist_name = pref.song_artist
-		song_title = pref.song_title
+		web_sound_url = pref.read_preference(/datum/preference/text/song_link)
+		var/preferred_artist = pref.read_preference(/datum/preference/text/song_artist)
+		if(preferred_artist)
+			artist_name = preferred_artist
+		song_title = pref.read_preference(/datum/preference/text/song_title)
 
 	if(!C || !web_sound_url)
 		return

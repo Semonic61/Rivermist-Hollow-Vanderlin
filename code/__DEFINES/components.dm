@@ -47,11 +47,7 @@
 	#define COMPONENT_ATOM_BLOCK_EXIT 1
 #define COMSIG_ATOM_EXITED "atom_exited"						//from base of atom/Exited(): (atom/movable/exiting, atom/newloc)
 #define COMSIG_ATOM_BUMPED "atom_bumped"						//from base of atom/Bumped(): (/atom/movable)
-#define COMSIG_ATOM_EX_ACT "atom_ex_act"						//from base of atom/ex_act(): (severity, target)
-#define COMSIG_ATOM_FIRE_ACT "atom_fire_act"					//from base of atom/fire_act(): (added, maxstacks)
-#define COMSIG_ATOM_BULLET_ACT "atom_bullet_act"				//from base of atom/bullet_act(): (/obj/projectile, def_zone)
 #define COMSIG_ATOM_BLOB_ACT "atom_blob_act"					//from base of atom/blob_act(): (/obj/structure/blob)
-#define COMSIG_ATOM_ACID_ACT "atom_acid_act"					//from base of atom/acid_act(): (acidpwr, acid_volume)
 #define COMSIG_ATOM_EMAG_ACT "atom_emag_act"					//from base of atom/emag_act(): (/mob/user)
 #define COMSIG_ATOM_NARSIE_ACT "atom_narsie_act"				//from base of atom/narsie_act(): ()
 #define COMSIG_ATOM_BSA_BEAM "atom_bsa_beam_pass"				//from obj/machinery/bsa/full/proc/fire(): ()
@@ -122,7 +118,7 @@
 #define COMSIG_MOB_ITEM_ATTACK_QDELETED "mob_item_attack_qdeleted"	//from base of obj/item/attack_qdeleted(): (atom/target, mob/user, proxiumity_flag, click_parameters)
 #define COMSIG_MOB_ATTACK_RANGED "mob_attack_ranged"			//from base of mob/RangedAttack(): (atom/A, params)
 #define COMSIG_MOB_POSTATTACK_RANGED "mob_postattack_ranged"
-#define COMSIG_MOB_THROW "mob_throw"							//from base of /mob/throw_item(): (atom/target)
+#define COMSIG_MOB_THROW "mob_throw"							//from /mob/living/carbon/throw_item(): (atom/movable/thrown_thing)
 #define COMSIG_MOB_EXAMINATE "mob_examinate"					//from base of /mob/verb/examinate(): (atom/target)
 #define COMSIG_MOB_EXAMINATE_CARBON "mob_examinte_carbon"		//from base of mob/living/carbon/examine(): (mob/user, mob/target, list/pronouns, list/examine_strings)
 #define COMSIG_MOB_UPDATE_SIGHT "mob_update_sight"				//from base of /mob/update_sight(): ()
@@ -151,7 +147,6 @@
 
 // /mob/living/carbon signals
 #define COMSIG_CARBON_REAGENT_ADD "carbon_reagent_add"
-#define COMSIG_CARBON_SOUNDBANG "carbon_soundbang"					//from base of mob/living/carbon/soundbang_act(): (list(intensity))
 #define COMSIG_CARBON_ON_HANDLE_BLOOD "human_on_handle_blood"
 	#define HANDLE_BLOOD_HANDLED (1<<0)
 	#define HANDLE_BLOOD_NO_NUTRITION_DRAIN (1<<1)
@@ -368,6 +363,8 @@
 #define COMSIG_TIPS_REMOVE "comsig_tip_remove"
 ///used incase we care about a tracker dying
 #define COMSIG_LIVING_TRACKER_REMOVED "tracker_removed"
+/// Sent after a ghost vessel is successfully possessed: (datum/component/ghost_vessel)
+#define COMSIG_GHOST_VESSEL_POSSESSED "ghost_vessel_possessed"
 
 //Mood
 #define COMSIG_ADD_MOOD_EVENT "add_mood" //Called when you send a mood event from anywhere in the code.
@@ -380,6 +377,7 @@
 #define COMSIG_AUGMENT_REMOVE "augment_remove"
 #define COMSIG_AUGMENT_REPAIR "augment_repair"
 #define COMSIG_AUGMENT_GET_STABILITY "augment_get_stability"
+#define COMSIG_AUGMENT_GET_INSTALLED "augment_get_installed"
 
 #define COMPONENT_AUGMENT_SUCCESS (1<<0)
 #define COMPONENT_AUGMENT_FAILED (1<<1)

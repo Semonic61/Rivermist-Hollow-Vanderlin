@@ -156,6 +156,32 @@
 	. = ..()
 	icon_state = "[base_icon_state]_[open]"
 
+/obj/item/book/granter/spellbook/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isliving(interacting_with))
+		return NONE
+
+	var/mob/living/target = interacting_with
+	if(target.stat == DEAD)
+		target.visible_message(span_danger("[user] smacks [target]'s lifeless corpse with [src]."))
+		playsound(src, "punch", 25, TRUE, -1)
+		return ITEM_INTERACT_SUCCESS
+	if(user == target)
+		to_chat(user, span_warning("I'm already chained to this tome!"))
+		return ITEM_INTERACT_BLOCKING
+
+	target.visible_message(
+		span_danger("[user] beats [target] over the head with [src]!"),
+		span_danger("[user] beats [target] over the head with [src]!")
+	)
+	if(length(allowed_readers) > 2 || (target in allowed_readers))
+		to_chat(user, span_smallnotice("I can't chain [target.p_them()] to my tome..."))
+		return ITEM_INTERACT_BLOCKING
+
+	allowed_readers += target
+	playsound(src, "punch", 25, TRUE, -1)
+	log_combat(user, target, "attacked", src)
+	return ITEM_INTERACT_SUCCESS
+
 /obj/item/book/granter/spellbook/on_reading_start(mob/user)
 	to_chat(user, span_notice("Arcane mysteries abound in this enigmatic tome, gift of Mystra..."))
 
@@ -213,23 +239,29 @@
 	var/mob/living/gamer = user
 	gamer.electrocute_act(5, src)
 
-/obj/item/book/granter/spellbook/attack(mob/living/M, mob/living/carbon/human/user, list/modifiers)
-	if (M.stat != DEAD)
-		if(user == M)
-			to_chat(user, span_warning("I'm already chained to this tome!"))
-			return
-		if(ishuman(M))
-			M.visible_message(span_danger("[user] beats [M] over the head with [src]!"), \
-								span_danger("[user] beats [M] over the head with [src]!"))
-			if(src.allowed_readers.len <= 2 && !src.allowed_readers.Find(user))
-				src.allowed_readers += M
-			else
-				to_chat(user, span_smallnotice("I can't chain this pleboid to my tome..."))
-			playsound(src, "punch", 25, TRUE, -1)
-			log_combat(user, M, "attacked", src)
-	else
-		M.visible_message(span_danger("[user] smacks [M]'s lifeless corpse with [src]."))
-		playsound(src, "punch", 25, TRUE, -1)
+/obj/item/book/granter/spellbook/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/gem))
+		return NONE
+
+	if(stored_gem)
+		to_chat(user, span_notice("This tome is already coursing with arcyne energies..."))
+		return ITEM_INTERACT_BLOCKING
+
+	if(GET_MOB_SKILL_VALUE(user, /datum/attribute/skill/magic/arcane) <= SKILL_LEVEL_NONE)
+		to_chat(user, span_notice("Why am I jamming a gem into a book? I must look like a fool!"))
+		return ITEM_INTERACT_BLOCKING
+
+	var/obj/item/gem/gem = tool
+	var/crafttime = max(0, 60 - GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane) * 5)
+	if(!do_after(user, crafttime, target = src))
+		return ITEM_INTERACT_BLOCKING
+
+	playsound(src, 'sound/magic/glass.ogg', 100, TRUE)
+	to_chat(user, span_notice("Running my arcyne energy through this crystal, I imbue the tome with my natural essence, attuning it to my state of mind..."))
+	stored_gem = gem.arcyne_potency
+	stored_attunement = gem.attuned
+	qdel(tool)
+	return ITEM_INTERACT_SUCCESS
 
 /// Book Types:
 /obj/item/book/granter/spellbook/horrible	//makeable with magic stones (bad quality ones)
@@ -273,310 +305,3 @@
 	desc = "An incredible book that gives off glowing arcane motes. It is filled with runes and arcane theories that are hard for even masters of the Weave to understand. The script glows and practically whispers from the page."
 	bookquality = 12
 	sellprice = 400
-
-/// Book slapcrafting
-
-/obj/item/spellbook_unfinished
-	var/pages_left = 4
-	name = "bound scrollpaper"
-	dropshrink = 0.6
-	icon = 'icons/roguetown/items/books.dmi'
-	icon_state ="basic_book_0"
-	desc = "Thick scroll paper bound at the spine. It lacks pages."
-	throw_speed = 1
-	throw_range = 5
-	w_class = WEIGHT_CLASS_NORMAL		 //upped to three because books are, y'know, pretty big. (and you could hide them inside eachother recursively forever)
-	attack_verb = list("bashed", "whacked", "educated")
-	resistance_flags = FLAMMABLE
-	drop_sound = 'sound/foley/dropsound/book_drop.ogg'
-	pickup_sound =  'sound/blank.ogg'
-
-/obj/item/spellbook_unfinished/pre_arcyne
-	name = "tome in waiting"
-	icon_state = "spellbook_unfinished"
-	desc = "A fully bound tome of scroll paper. It's lacking a certain arcane energy."
-
-/obj/item/natural/hide/attackby(obj/item/P, mob/living/carbon/human/user, list/modifiers)
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(istype(P, /obj/item/paper/scroll))
-		if(isturf(loc)&& (found_table))
-			var/crafttime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-			if(do_after(user, crafttime, target = src))
-				playsound(src, 'sound/items/book_close.ogg', 100, TRUE)
-				to_chat(user, span_notice("I add the first few pages to the leather cover..."))
-				new /obj/item/spellbook_unfinished(loc)
-				qdel(P)
-				qdel(src)
-		else
-			to_chat(user, "<span class='warning'>You need to put the [src] on a table to work on it.</span>")
-	else
-		return ..()
-
-/obj/item/spellbook_unfinished/attackby(obj/item/P, mob/living/carbon/human/user, list/modifiers)
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(istype(P, /obj/item/paper/scroll))
-		if(isturf(loc)&& (found_table))
-			var/crafttime = (60 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-			if(do_after(user, crafttime, target = src))
-				if(pages_left > 0)
-					playsound(src, 'sound/items/book_page.ogg', 100, TRUE)
-					pages_left -= 1
-					to_chat(user, span_notice("[pages_left+1] left..."))
-					qdel(P)
-				else
-					playsound(src, 'sound/items/book_open.ogg', 100, TRUE)
-					if(isarcyne(user))
-						to_chat(user, span_notice("The book is bound. I must find a catalyst to channel arcane power into it now."))
-					else
-						to_chat(user, span_notice("I've made an empty book of thick, useless scroll paper. I can't even thumb through it!"))
-					new /obj/item/spellbook_unfinished/pre_arcyne(loc)
-					qdel(P)
-					qdel(src)
-		else
-			to_chat(user, "<span class='warning'>You need to put the [src] on a table to work on it.</span>")
-	else
-		return ..()
-
-/obj/item/spellbook_unfinished/pre_arcyne/attackby(obj/item/P, mob/living/carbon/human/user, list/modifiers)
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(istype(P, /obj/item/gem/amethyst))
-		user.visible_message(span_notice("I run my arcane energy into the crystal. Its artificial lattices pulse and then fall dormant. It must not be strong enough to make a spellbook with!"))
-		return
-	if(istype(P, /obj/item/gem/violet))
-		if(isturf(loc)&& (found_table))
-			var/crafttime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-			if(do_after(user, crafttime, target = src))
-				if(isarcyne(user))
-					playsound(src, 'sound/magic/crystal.ogg', 100, TRUE)
-					user.visible_message(span_warning("[user] crushes [user.p_their()] [P]! Its powder seeps into the [src]."), \
-			span_notice("I run my arcane energy into the crystal. It shatters and seeps into the cover of the tome! Runes and symbols of an unknowable language cover its pages now..."))
-					var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/expert(loc)
-					newbook.owner = user
-					qdel(P)
-					qdel(src)
-				else
-					to_chat(user, span_notice("I press the gem into the cover of the book. What a pretty design this would make!"))
-					return ..()
-		else
-			to_chat(user, "<span class='warning'>You need to put the [src] on a table to work on it.</span>")
-	if(istype(P, /obj/item/gem))
-		if(isturf(loc)&& (found_table))
-			var/crafttime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-			if(do_after(user, crafttime, target = src))
-				if(isarcyne(user))
-					playsound(src, 'sound/magic/crystal.ogg', 100, TRUE)
-					user.visible_message(span_warning("[user] crushes [user.p_their()] [P]! Its powder seeps into the [src]."), \
-			span_notice("I run my arcane energy into the crystal. It shatters and seeps into the cover of the tome! Runes and symbols of an unknowable language cover its pages now..."))
-					var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/adept(loc)
-					newbook.owner = user
-					qdel(P)
-					qdel(src)
-				else
-					to_chat(user, span_notice("I press the gem into the cover of the book. What a pretty design this would make!"))
-					return ..()
-		else
-			to_chat(user, "<span class='warning'>You need to put the [src] on a table to work on it.</span>")
-	else if (istype(P, /obj/item/natural/stone))
-		var/obj/item/natural/stone/the_rock = P
-		if (the_rock.magic_power)
-			if(isturf(loc) && (found_table))
-				var/crafttime = ((130 - the_rock.magic_power) - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-				if(do_after(user, crafttime, target = src))
-					if (isarcyne(user))
-						playsound(src, 'sound/magic/crystal.ogg', 100, TRUE)
-						user.visible_message(span_warning("[user] crushes [user.p_their()] [P]! Its powder seeps into the [src]."), \
-							span_notice("I join my arcane energy with that of the magical stone in my hands, which shudders briefly before dissolving into motes of ash. Runes and symbols of an unknowable language cover its pages now..."))
-						to_chat(user, span_notice("...yet even for an enigma of the arcane, these characters are unlike anything I've seen before. They're going to be much harder to understand..."))
-						if(the_rock.magic_power <=5)
-							var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/horrible(loc)
-							newbook.owner = user
-							newbook.born_of_rock = TRUE
-							newbook.desc += " Traces of multicolored stone limn its margins."
-							qdel(P)
-							qdel(src)
-						else if(the_rock.magic_power >5 && the_rock.magic_power <=9)
-							var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/mid(loc)
-							newbook.owner = user
-							newbook.born_of_rock = TRUE
-							newbook.desc += " Traces of multicolored stone limn its margins."
-							qdel(P)
-							qdel(src)
-						else if(the_rock.magic_power >=10)
-							var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/apprentice(loc)
-							newbook.owner = user
-							newbook.born_of_rock = TRUE
-							newbook.desc += " Traces of multicolored stone limn its margins."
-							qdel(P)
-							qdel(src)
-					else
-						if (prob(the_rock.magic_power * 5)) // for reference, this is never higher than 15 and usually significantly lower
-							playsound(src, 'sound/magic/crystal.ogg', 100, TRUE)
-							user.visible_message(span_warning("[user] carefully sets down [the_rock] upon [src]. Nothing happens for a moment or three, then suddenly, the glow surrounding the stone becomes as liquid, seeps down and soaks into the tome!"), \
-							span_notice("I knew this stone was special! Its colourful magick has soaked into my tome and given me gift of mystery!"))
-							to_chat(user, span_notice("...what in the world does any of this scribbling possibly mean?"))
-							if(the_rock.magic_power <=5)
-								var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/horrible(loc)
-								newbook.owner = user
-								newbook.born_of_rock = TRUE
-								newbook.desc += " Traces of multicolored stone limn its margins."
-								qdel(P)
-								qdel(src)
-							else if(the_rock.magic_power >5 && the_rock.magic_power <=9)
-								var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/mid(loc)
-								newbook.owner = user
-								newbook.born_of_rock = TRUE
-								newbook.desc += " Traces of multicolored stone limn its margins."
-								qdel(P)
-								qdel(src)
-							else if(the_rock.magic_power >=10)
-								var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/apprentice(loc)
-								newbook.owner = user
-								newbook.born_of_rock = TRUE
-								newbook.desc += " Traces of multicolored stone limn its margins."
-								qdel(P)
-								qdel(src)
-						else
-							user.visible_message(span_warning("[user] sets down [the_rock] upon the surface of [src] and watches expectantly. Without warning, the rock violently pops like a squashed gourd!"), \
-							span_notice("No! My precious stone! It mustn't have wanted to share its mysteries with me..."))
-							user.electrocute_act(5, src)
-							qdel(P)
-		else
-			to_chat(user, span_notice("This is a mere rock - it has no arcane potential. Bah!"))
-			return ..()
-	else if (istype(P, /obj/item/natural/melded/t1))
-		if(isturf(loc) && (found_table))
-			var/crafttime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-			if(do_after(user, crafttime, target = src))
-				if (isarcyne(user))
-					playsound(src, 'sound/magic/crystal.ogg', 100, TRUE)
-					user.visible_message(span_warning("[user] imbues [user.p_their()] [P]! It fuses into the [src]."), \
-						span_notice("I join my arcane energy with that of the [P] in my hands, which shudders briefly before dissolving into motes of energy. Runes and symbols of an unknowable language cover its pages now..."))
-					to_chat(user, span_notice("...yet even for an enigma of the arcane, these characters are unlike anything I've seen before. They're going to be much harder to understand..."))
-					var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/adept(loc)
-					newbook.owner = user
-					qdel(P)
-					qdel(src)
-				else
-					user.visible_message(span_warning("[user] sets down [P] upon the surface of [src] and watches expectantly. Without warning, the [P] lets out a burst of arcane energy!"), \
-						span_notice("I should have known messing with the arcane is dangerous!"))
-					user.electrocute_act(20, src)
-					qdel(P)
-		return ..()
-	else if (istype(P, /obj/item/natural/melded/t2))
-		if(isturf(loc) && (found_table))
-			var/crafttime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-			if(do_after(user, crafttime, target = src))
-				if (isarcyne(user))
-					playsound(src, 'sound/magic/crystal.ogg', 100, TRUE)
-					user.visible_message(span_warning("[user] crushes [user.p_their()] [P]! Its powder seeps into the [src]."), \
-						span_notice("I join my arcane energy with that of the [P] in my hands, which shudders briefly before dissolving into motes of energy. Runes and symbols of an unknowable language cover its pages now..."))
-					to_chat(user, span_notice("...yet even for an enigma of the arcane, these characters are unlike anything I've seen before. They're going to be much harder to understand..."))
-					var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/expert(loc)
-					newbook.owner = user
-					qdel(P)
-					qdel(src)
-				else
-					user.visible_message(span_warning("[user] sets down [P] upon the surface of [src] and watches expectantly. Without warning, the [P] violently explodes!"), \
-						span_notice("I should have known messing with the arcane is dangerous!"))
-					user.electrocute_act(40, src)
-					qdel(P)
-	else if (istype(P, /obj/item/natural/melded/t3))
-		if(isturf(loc) && (found_table))
-			var/crafttime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-			if(do_after(user, crafttime, target = src))
-				if (isarcyne(user))
-					playsound(src, 'sound/magic/crystal.ogg', 100, TRUE)
-					user.visible_message(span_warning("[user] crushes [user.p_their()] [P]! Its powder seeps into the [src]."), \
-						span_notice("I join my arcane energy with that of the [P] in my hands, which shudders briefly before dissolving into motes of energy. Runes and symbols of an unknowable language cover its pages now..."))
-					to_chat(user, span_notice("...yet even for an enigma of the arcane, these characters are unlike anything I've seen before. They're going to be much harder to understand..."))
-					var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/master(loc)
-					newbook.owner = user
-					qdel(P)
-					qdel(src)
-				else
-					user.visible_message(span_warning("[user] sets down [P] upon the surface of [src] and watches expectantly. Without warning, the [P] violently explodes!"), \
-						span_notice("I should have known messing with the arcane is dangerous!"))
-					user.electrocute_act(60, src)
-					qdel(P)
-	else if (istype(P, /obj/item/natural/melded/t4))
-		if(isturf(loc) && (found_table))
-			var/crafttime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-			if(do_after(user, crafttime, target = src))
-				if (isarcyne(user))
-					playsound(src, 'sound/magic/crystal.ogg', 100, TRUE)
-					user.visible_message(span_warning("[user] crushes [user.p_their()] [P]! Its powder seeps into the [src]."), \
-						span_notice("I join my arcane energy with that of the [P] in my hands, which shudders briefly before dissolving into motes of energy. Runes and symbols of an unknowable language cover its pages now..."))
-					to_chat(user, span_notice("...yet even for an enigma of the arcane, these characters are unlike anything I've seen before. They're going to be much harder to understand..."))
-					var/obj/item/book/granter/spellbook/newbook = new /obj/item/book/granter/spellbook/legendary(loc)
-					newbook.owner = user
-					qdel(P)
-					qdel(src)
-				else
-					user.visible_message(span_warning("[user] sets down [P] upon the surface of [src] and watches expectantly. Without warning, the [P] violently explodes!"), \
-						span_notice("I should have known messing with the arcane is dangerous!"))
-					user.electrocute_act(80, src)
-					qdel(P)
-	else
-		return ..()
-
-// qualityoflearn buff shit
-
-/obj/item/gem
-	item_weight = 15 GRAMS
-	var/arcyne_potency = 20
-	var/datum/attunement/attuned
-
-/obj/item/gem/yellow
-	item_weight = 21 GRAMS
-	arcyne_potency = 5
-	attuned = /datum/attunement/light
-
-/obj/item/gem/green
-	item_weight = 24 GRAMS
-	arcyne_potency = 7
-	attuned = /datum/attunement/earth
-
-/obj/item/gem/violet
-	item_weight = 21 GRAMS
-	arcyne_potency = 10
-	attuned = /datum/attunement/electric
-
-/obj/item/gem/blue
-	item_weight = 18 GRAMS
-	arcyne_potency = 25
-	attuned = /datum/attunement/blood
-
-/obj/item/gem/diamond
-	item_weight = 15 GRAMS
-	arcyne_potency = 15
-	attuned = /datum/attunement/aeromancy
-
-
-
-/obj/item/book/granter/spellbook/attackby(obj/item/P, mob/living/carbon/human/user, list/modifiers)
-	if(istype(P, /obj/item/gem))
-		if(!stored_gem)
-			if(isarcyne(user))
-				var/obj/item/gem/gem = P
-				var/crafttime = (60 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane))*5))
-				if(do_after(user, crafttime, target = src))
-					playsound(src, 'sound/magic/glass.ogg', 100, TRUE)
-					to_chat(user, span_notice("Running my arcane energy through this crystal, I imbue the tome with my natural essence, attuning it to my state of mind..."))
-					stored_gem = gem.arcyne_potency
-					stored_attunement = gem.attuned
-					qdel(P)
-			else
-				to_chat(user, span_notice("Why am I jamming a gem into a book? I must look like a fool!"))
-		else
-			to_chat(user, span_notice("This tome is already coursing with arcane energies..."))
-	else
-		return ..()
-
-
-// helper proc
-
-
-/obj/item/book/granter/spellbook/magician/Initialize()
-	. = ..()
-	var/mob/living/carbon/human/L = loc
-	owner = L

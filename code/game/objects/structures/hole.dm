@@ -98,51 +98,60 @@
 	return
 
 /obj/structure/closet/dirthole/proc/attemptwatermake(mob/living/user, obj/item/reagent_containers/bucket)
-	if(user.used_intent.type == /datum/intent/splash)
-		if(bucket.reagents)
-			var/datum/reagent/master_reagent = bucket.reagents.get_master_reagent()
-			var/reagent_volume = master_reagent.volume
-			if(do_after(user, 10 SECONDS, src))
-				if(bucket.reagents.remove_reagent(master_reagent.type, clamp(master_reagent.volume, 1, 100)))
-					var/turf/structure_turf = get_turf(src)
-					var/turf/open/water/W = structure_turf.PlaceOnTop(/turf/open/water/river/creatable)
-					if(!W) // how did this happen
-						return
-					W.water_reagent = master_reagent.type
-					W.water_volume = clamp(reagent_volume, 1, 100)
-					W.handle_water()
-					playsound(W, 'sound/foley/waterenter.ogg', 100, FALSE)
-					QDEL_NULL(src)
+	if(!istype(user.used_intent, /datum/intent/splash) || !bucket.reagents)
+		return FALSE
+	var/datum/reagent/master_reagent = bucket.reagents.get_master_reagent()
+	if(!master_reagent)
+		return TRUE
+	var/reagent_volume = master_reagent.volume
+	if(!do_after(user, 10 SECONDS, src))
+		return TRUE
+	if(!bucket.reagents.remove_reagent(master_reagent.type, clamp(master_reagent.volume, 1, 100)))
+		return TRUE
+	var/turf/structure_turf = get_turf(src)
+	var/turf/open/water/created_water = structure_turf.PlaceOnTop(/turf/open/water/river/creatable)
+	if(!created_water)
+		return TRUE
+	created_water.water_reagent = master_reagent.type
+	created_water.water_volume = clamp(reagent_volume, 1, 100)
+	created_water.handle_water()
+	playsound(created_water, 'sound/foley/waterenter.ogg', 100, FALSE)
+	qdel(src)
+	return TRUE
 
-/obj/structure/closet/dirthole/attackby(obj/item/attacking_item, mob/user, list/modifiers)
-	if(istype(attacking_item, /obj/item/grown/log/tree/stick))
+/obj/structure/closet/dirthole/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, /obj/item/grown/log/tree/stick))
 		if(locate(/obj/structure/gravemarker) in get_turf(src))
 			to_chat(user, "<span class='warning'>This grave is already hallowed.</span>")
+			return ITEM_INTERACT_BLOCKING
 		if(stage != 4)
 			to_chat(user, "<span class='warning'>I can't tie a grave marker on an open grave.</span>")
+			return ITEM_INTERACT_BLOCKING
 
 		if(!do_after(user, 10 SECONDS, src))
-			return
+			return ITEM_INTERACT_BLOCKING
 
 		var/obj/structure/gravemarker/marker = new /obj/structure/gravemarker(get_turf(src))
 		marker.OnCrafted(dir, user)
-		qdel(attacking_item)
-		return
+		qdel(tool)
+		return ITEM_INTERACT_SUCCESS
 
-	if(!istype(attacking_item, /obj/item/weapon/shovel))
-		if(istype(attacking_item, /obj/item/reagent_containers/glass/bucket))
-			attemptwatermake(user, attacking_item)
-			return
-		return ..()
-	var/obj/item/weapon/shovel/attacking_shovel = attacking_item
-	if(user.used_intent.type != /datum/intent/shovelscoop)
-		return
+	if(istype(tool, /obj/item/reagent_containers/glass/bucket))
+		if(attemptwatermake(user, tool))
+			return ITEM_INTERACT_SUCCESS
+		return NONE
+
+	if(!istype(tool, /obj/item/weapon/shovel))
+		return NONE
+	var/obj/item/weapon/shovel/attacking_shovel = tool
+	if(!istype(user.used_intent, /datum/intent/shovelscoop))
+		return NONE
 
 	if(attacking_shovel.heldclod)
 		playsound(src,'sound/items/empty_shovel.ogg', 100, TRUE)
 		if(stage == 3) //close grave
 			if(!do_after(user, 5 SECONDS * attacking_shovel.time_multiplier, src)) //can't have nice things can we
-				return
+				return ITEM_INTERACT_BLOCKING
 			stage = 4
 			climb_offset = 10
 			close()
@@ -163,7 +172,7 @@
 				qdel(src)
 		QDEL_NULL(attacking_shovel.heldclod)
 		attacking_shovel.update_appearance(UPDATE_ICON_STATE)
-		return
+		return ITEM_INTERACT_SUCCESS
 	else
 		if(stage == 3)
 			var/turf/our_turf = get_turf(src)
@@ -174,15 +183,15 @@
 					playsound(loc,'sound/items/dig_shovel.ogg', 100, TRUE)
 					user.visible_message("[user] starts digging out the bottom of [src]", "I start digging out the bottom of [src].")
 					if(!do_after(user, 10 SECONDS * attacking_shovel.time_multiplier, src))
-						return TRUE
+						return ITEM_INTERACT_BLOCKING
 					attacking_shovel.heldclod = new /obj/item/natural/clod/dirt(attacking_shovel)
 					attacking_shovel.update_appearance(UPDATE_ICON_STATE)
 					playsound(our_turf,'sound/items/dig_shovel.ogg', 100, TRUE)
 					our_turf.ScrapeAway(flags = CHANGETURF_INHERIT_AIR)
 					qdel(src)
-					return
+					return ITEM_INTERACT_SUCCESS
 			to_chat(user, "<span class='warning'>I think that's deep enough.</span>")
-			return
+			return ITEM_INTERACT_BLOCKING
 		playsound(src,'sound/items/dig_shovel.ogg', 100, TRUE)
 		var/used_str = 10
 		if(iscarbon(user))
@@ -200,7 +209,7 @@
 				stage++
 		if(stage == 4)
 			if(!do_after(user, 5 SECONDS * attacking_shovel.time_multiplier, src)) // WE CANT HAVE NICE THINGS CAN WE
-				return
+				return ITEM_INTERACT_BLOCKING
 			stage = 3
 			climb_offset = 0
 			open()
@@ -208,7 +217,6 @@
 				if(NOT_CONSECRATED) // not consecrated, proceed
 					for(var/obj/structure/gravemarker/G in loc) // remove gravemarkers
 						qdel(G)
-					return
 
 				if(CONSECRATED) // consecrated, if you're not necran clergy or a treasure hunter, you get cursed.
 					if(ishuman(user))
@@ -252,6 +260,7 @@
 		attacking_shovel.heldclod = new /obj/item/natural/clod/dirt(attacking_shovel)
 		attacking_shovel.update_appearance(UPDATE_ICON_STATE)
 		is_consecrated = NOT_CONSECRATED // remove consecration levels
+		return ITEM_INTERACT_SUCCESS
 
 
 

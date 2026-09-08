@@ -9,6 +9,7 @@
 	usable_legs = 0 //Populated on init through list/bodyparts
 	num_hands = 0 //Populated on init through list/bodyparts
 	usable_hands = 0 //Populated on init through list/bodyparts
+	mobility_flags = MOBILITY_FLAGS_CARBON_DEFAULT
 	var/silent = FALSE 		//Can't talk. Value goes down every life proc. //NOTE TO FUTURE CODERS: DO NOT INITIALIZE NUMERICAL VARS AS NULL OR I WILL MURDER YOU.
 	var/dreaming = 0 //How many dream images we have left to send
 
@@ -31,7 +32,8 @@
 	var/obj/item/tank/internal = null
 	var/obj/item/clothing/head = null
 
-
+	///a helper for NPCs so that they can avoid ALOT of work.
+	var/datum/species/race
 	var/obj/item/clothing/gloves = null //only used by humans
 	var/obj/item/clothing/shoes = null //only used by humans.
 

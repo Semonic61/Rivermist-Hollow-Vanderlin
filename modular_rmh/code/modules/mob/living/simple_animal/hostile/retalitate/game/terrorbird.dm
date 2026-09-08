@@ -50,7 +50,7 @@
 	can_saddle = TRUE
 	// terrorbird.dmi carries saiga's unisex saddle rather than the split male/female pair.
 	saddle_overlay_state = "saddle"
-	riding_component_type = /datum/component/riding/terrorbird
+	riding_component_type = /datum/component/riding/creature/terrorbird
 	aggressive = TRUE
 	remains_type = /obj/effect/decal/remains/terrorbird
 
@@ -106,6 +106,8 @@
 
 /mob/living/simple_animal/hostile/retaliate/saiga/terrorbird/tamed(mob/user)
 	. = ..()
+	if(.)
+		return
 	deaggroprob = 30
 	retreat_distance = 0
 	minimum_distance = 0

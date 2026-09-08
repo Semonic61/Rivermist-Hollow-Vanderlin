@@ -1,4 +1,5 @@
 /mob/living/simple_animal/hostile/retaliate/saiga
+	living_flags = MOVES_ON_ITS_OWN|CAN_BE_FIREMANNED
 	icon = 'icons/roguetown/mob/monster/saiga.dmi'
 	name = "saiga"
 	desc = "Proud beasts of burden, war mounts, and symbols of luxury alike. Especially sacred to the steppe people of the Northeast Regions."
@@ -70,7 +71,7 @@
 
 	var/can_breed = TRUE
 	/// Riding component attached on tame. Subtypes whose rider sits elsewhere point this at their own.
-	var/riding_component_type = /datum/component/riding/saiga
+	var/riding_component_type = /datum/component/riding/creature/saiga
 
 	var/static/list/pet_commands = list(
 		/datum/pet_command/idle,
@@ -133,9 +134,11 @@
 
 /mob/living/simple_animal/hostile/retaliate/saiga/tamed(mob/user)
 	. = ..()
+	if(.)
+		return
 	deaggroprob = 30
 	if(can_buckle)
-		AddComponent(riding_component_type)
+		AddElement(/datum/element/ridable, riding_component_type)
 	if(can_breed)
 		AddComponent(\
 			/datum/component/breed,\
@@ -165,6 +168,7 @@
 	return ..()
 
 /mob/living/simple_animal/hostile/retaliate/saigabuck
+	living_flags = MOVES_ON_ITS_OWN|CAN_BE_FIREMANNED
 	icon = 'icons/roguetown/mob/monster/saiga.dmi'
 	name = "saigabuck"
 	icon_state = "buck"
@@ -310,9 +314,11 @@
 
 /mob/living/simple_animal/hostile/retaliate/saigabuck/tamed(mob/user)
 	. = ..()
+	if(.)
+		return
 	deaggroprob = 20
 	if(can_buckle)
-		AddComponent(/datum/component/riding/saiga)
+		AddElement(/datum/element/ridable, /datum/component/riding/creature/saiga)
 
 /mob/living/simple_animal/hostile/retaliate/saigabuck/simple_limb_hit(zone)
 	switch(zone)

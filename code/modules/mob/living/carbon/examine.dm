@@ -103,8 +103,9 @@
 	. = list()
 
 	// Ooc lang
-	if(client?.prefs?.player_language) //should be tied to known persons but can't do that until there is a way to recognise new people
-		. += span_tiny("OOC: This player speaks [client.prefs.player_language].")
+	var/player_language = client?.prefs?.read_preference(/datum/preference/text/player_language)
+	if(player_language) //should be tied to known persons but can't do that until there is a way to recognise new people
+		. += span_tiny("OOC: This player speaks [player_language].")
 
 	// Lord's title
 	if(GLOB.lord_titles[real_name]) //should be tied to known persons but can't do that until there is a way to recognise new people
@@ -474,9 +475,9 @@
 	var/fire_str
 	if(on_fire)
 		fire_str = span_boldwarning("on fire!")
-		if(L?.has_quirk(/datum/quirk/vice/pyromaniac)) // living only
+		if(L?.has_quirk(/datum/quirk/vice/addiction/pyromaniac)) // living only
 			fire_str += span_boldred(" IT'S BEAUTIFUL!")
-			L.sate_addiction(/datum/quirk/vice/pyromaniac)
+			L.sate_addiction(/datum/quirk/vice/addiction/pyromaniac)
 	else if(fire_stacks + divine_fire_stacks > 0)
 		fire_str += "covered in something flammable."
 	else if(fire_stacks < 0 && !on_fire)
@@ -568,10 +569,10 @@
 	//The Nymphomaniac Underground
 	if(isliving(user))
 		var/mob/living/living_user = user
-		if((!appears_dead) && stat == CONSCIOUS && src.has_quirk(/datum/quirk/vice/lovefiend))
-			var/datum/quirk/vice/bonercheck = src.get_quirk(/datum/quirk/vice/lovefiend)
+		if((!appears_dead) && stat == CONSCIOUS && src.has_quirk(/datum/quirk/vice/addiction/lovefiend))
+			var/datum/quirk/vice/addiction/bonercheck = src.get_quirk(/datum/quirk/vice/addiction/lovefiend)
 			if((bonercheck) && (bonercheck.sated == 0))
-				if(living_user.has_quirk(/datum/quirk/vice/lovefiend)) //Takes one to know one
+				if(living_user.has_quirk(/datum/quirk/vice/addiction/lovefiend)) //Takes one to know one
 					switch(rand(1,5))
 						if(1)
 							. += span_love("I can sense [P[THEIR]] <B>need</B> for fun...")

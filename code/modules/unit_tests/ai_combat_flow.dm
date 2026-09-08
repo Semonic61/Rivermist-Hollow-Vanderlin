@@ -146,8 +146,8 @@
 	ally.forceMove(ally_turf)
 
 	var/list/test_faction = list("ai_combat_flow_allies")
-	calling_mob.faction = test_faction.Copy()
-	ally.faction = test_faction.Copy()
+	calling_mob.set_faction(test_faction.Copy())
+	ally.set_faction(test_faction.Copy())
 	caller_controller.set_blackboard_key(BB_BASIC_MOB_CURRENT_TARGET, target)
 	ally_controller.set_ai_status(AI_STATUS_IDLE)
 

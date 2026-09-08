@@ -8,41 +8,67 @@
 
 	var/effective_blood_oxygenation = GET_EFFECTIVE_BLOOD_VOL(owner.get_blood_oxygenation(), owner.total_blood_req)
 	var/is_stable = owner.get_chem_effect(CE_STABLE)
-	var/damprob = 0
+	// Stimulants soften the early symptoms, but cannot prevent critical blood-loss collapse.
+	var/determined_mod = owner.get_chem_effect(CE_STIMULANT) ? 0.5 : 1
+	var/word = pick("dizzy", "woozy", "faint")
 
 	switch(effective_blood_oxygenation)
+		// Noticeable, but not immediately dangerous.
 		if(BLOOD_VOLUME_OKAY to BLOOD_VOLUME_SAFE)
 			if(DT_PROB(2.5, delta_time))
-				to_chat(owner, span_warning("<i>I feel [pick("dizzy","woozy","faint")].</i>"))
-			owner.adjustOxyLoss(round(0.005 * (BLOOD_VOLUME_NORMAL - effective_blood_oxygenation) * delta_time * 0.3, 1))
-			damprob = is_stable ? 10 : 30
-			if((brain.current_blood <= 0) && !brain.past_damage_threshold(2) && DT_PROB(damprob, delta_time))
+				owner.set_eye_blur_if_lower(1 SECONDS * determined_mod)
+				if(prob(50))
+					to_chat(owner, span_danger("I feel [word]. It's getting a bit hard to breathe."))
+					owner.losebreath += 0.5 * determined_mod * delta_time
+				else if(owner.stamina < owner.maximum_stamina * 0.25 * determined_mod)
+					to_chat(owner, span_danger("I feel [word]. It's getting a bit hard to focus."))
+					owner.adjust_stamina(5 * determined_mod * delta_time)
+			if(brain.current_blood <= 0 && DT_PROB(is_stable ? 10 : 30, delta_time))
 				brain.applyOrganDamage(BRAIN_DAMAGE_LOW_OXYGENATION)
-		if(BLOOD_VOLUME_BAD to BLOOD_VOLUME_OKAY)
-			owner.adjust_eye_blur_up_to(4, 4)
+		// The narrow risky band warns the player before severe blood loss.
+		if(BLOOD_VOLUME_RISKY to BLOOD_VOLUME_OKAY)
 			if(DT_PROB(5, delta_time))
-				to_chat(owner, span_userdanger("<i>I feel very [pick("dizzy","woozy","faint")]...</i>"))
-			owner.adjustOxyLoss(FLOOR(0.01 * (BLOOD_VOLUME_NORMAL - effective_blood_oxygenation) * delta_time * 0.3, 1))
-			damprob = is_stable ? 15 : 50
-			if((brain.current_blood <= 0) && !brain.past_damage_threshold(4) && DT_PROB(damprob, delta_time))
+				owner.set_eye_blur_if_lower(2 SECONDS * determined_mod)
+				owner.set_dizzy_if_lower(2 SECONDS * determined_mod)
+				if(prob(50))
+					to_chat(owner, span_userdanger("I feel very [word]. It's getting hard to breathe!"))
+					owner.losebreath += determined_mod
+				else if(owner.stamina < owner.maximum_stamina * 0.4 * determined_mod)
+					to_chat(owner, span_userdanger("I feel very [word]. It's getting hard to stay awake!"))
+					owner.adjust_stamina(7.5 * determined_mod * delta_time)
+			if(brain.current_blood <= 0 && DT_PROB(is_stable ? 15 : 45, delta_time))
 				brain.applyOrganDamage(BRAIN_DAMAGE_LOW_OXYGENATION)
+		// Severe blood loss produces strong symptoms and faster neurological damage.
+		if(BLOOD_VOLUME_BAD to BLOOD_VOLUME_RISKY)
+			if(DT_PROB(5, delta_time))
+				owner.set_eye_blur_if_lower(4 SECONDS * determined_mod)
+				owner.set_dizzy_if_lower(4 SECONDS * determined_mod)
+				if(prob(50))
+					to_chat(owner, span_userdanger("I feel extremely [word]! It's getting very hard to breathe!"))
+					owner.losebreath += 1.5 * determined_mod
+				else if(owner.stamina < owner.maximum_stamina * 0.8 * determined_mod)
+					to_chat(owner, span_userdanger("I feel extremely [word]! It's getting very hard to stay awake!"))
+					owner.adjust_stamina(10 * determined_mod * delta_time)
+			if(brain.current_blood <= 0 && DT_PROB(is_stable ? 15 : 45, delta_time))
+				brain.applyOrganDamage(BRAIN_DAMAGE_LOWER_OXYGENATION)
+		// RMH's status-based unconsciousness remains the authority for blackouts.
 		if(BLOOD_VOLUME_SURVIVE to BLOOD_VOLUME_BAD)
-			owner.adjust_eye_blur_up_to(6, 6)
-			if(DT_PROB(5, delta_time))
-				to_chat(owner, span_userdanger("<i>I feel extremely [pick("dizzy","woozy","faint")]...</i>"))
-			owner.adjustOxyLoss(2.5 * delta_time)
-			damprob = is_stable ? 40 : 75
-			if((brain.current_blood <= 0) && !brain.past_damage_threshold(6) && DT_PROB(damprob, delta_time))
+			if(DT_PROB(7.5, delta_time))
+				if(owner.stat < UNCONSCIOUS)
+					owner.Unconscious(rand(0.5 SECONDS, 1 SECONDS))
+					to_chat(owner, span_userdanger("I black out for a moment!"))
+				if(prob(50))
+					owner.losebreath += 1.5
+				else if(owner.stamina < owner.maximum_stamina * 0.8)
+					owner.adjust_stamina(10 * delta_time)
+			if(brain.current_blood <= 0 && DT_PROB(is_stable ? 25 : 75, delta_time))
 				brain.applyOrganDamage(BRAIN_DAMAGE_LOWER_OXYGENATION)
 
 		if(-INFINITY to BLOOD_VOLUME_SURVIVE)
-			owner.adjust_eye_blur_up_to(6, 6)
-			if((brain.current_blood <= 0) && DT_PROB(7.5, delta_time))
-				to_chat(owner, span_userdanger("<i>I feel [pick("heavy", "dehydrated", "empty")] and [pick("faint", "weak", "lightheaded", "dizzy")]!</i>"))
-			owner.adjustOxyLoss(5 * delta_time)
 			owner.Unconscious(rand(6,12) SECONDS)
-			damprob = is_stable ? 65 : 100
-			if((brain.current_blood <= 0) && DT_PROB(damprob, delta_time))
+			if(DT_PROB(2.5, delta_time))
+				to_chat(owner, span_userdanger("<i>I feel [pick("heavy", "dehydrated", "empty")] and [word]!</i>"))
+			if(brain.current_blood <= 0 && DT_PROB(is_stable ? 33 : 100, delta_time))
 				brain.applyOrganDamage(BRAIN_DAMAGE_LOWEST_OXYGENATION)
 
 	owner.handle_brain_damage()

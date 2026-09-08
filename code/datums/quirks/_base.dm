@@ -105,6 +105,8 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 	var/gain_text
 	/// Text shown on quirk loss
 	var/lose_text
+	/// Traits granted for as long as this quirk remains attached.
+	var/list/traits_to_add = list()
 
 /datum/quirk/New(mob/living/new_owner, custom_value = null, list/extra_values = null)
 	. = ..()
@@ -145,10 +147,13 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 
 /// Called when the quirk is applied to a character
 /datum/quirk/proc/on_spawn()
+	owner?.add_traits(traits_to_add, "[type]")
 	return
 
 /// Called when the quirk is removed
 /datum/quirk/proc/on_remove()
+	if(!QDELETED(owner))
+		REMOVE_TRAITS_IN(owner, "[type]")
 	return
 
 /datum/quirk/proc/reapply()
@@ -197,9 +202,9 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 		return TRUE
 
 	// Check age restrictions
-	if(length(allowed_ages) && !(prefs.age in allowed_ages))
+	if(length(allowed_ages) && !(prefs.read_preference(/datum/preference/choiced/age) in allowed_ages))
 		return FALSE
-	if(prefs.age in blocked_ages)
+	if(prefs.read_preference(/datum/preference/choiced/age) in blocked_ages)
 		return FALSE
 
 	// Check species restrictions

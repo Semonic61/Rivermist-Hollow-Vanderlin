@@ -315,14 +315,14 @@
 /datum/preferences/succubus_disguise/process_link(mob/user, list/href_list)
 	switch(href_list["preference"])
 		if("name")
-			var/new_name = tgui_input_text(user, "Choose this disguise's name", "Create Disguise", real_name, MAX_NAME_LEN, encode = FALSE)
+			var/new_name = tgui_input_text(user, "Choose this disguise's name", "Create Disguise", read_preference(/datum/preference/text/real_name), MAX_NAME_LEN, encode = FALSE)
 			if(!get_editor_body(user) || isnull(new_name))
 				return FALSE
 			new_name = reject_bad_name(new_name)
 			if(!new_name)
 				to_chat(user, span_warning("That name is not valid."))
 				return FALSE
-			real_name = new_name
+			write_preference(/datum/preference/text/real_name, new_name)
 			update_menu_data(user)
 			return TRUE
 		if("character_setup_body_marking")
@@ -381,7 +381,7 @@
 	apply_prefs_to(temporary_body, TRUE, TRUE)
 	// apply_prefs_to() deliberately omits this profile field in character-setup
 	// mode, but identity snapshots retain it as part of a disguise's voice.
-	temporary_body.voice_color = voice_color
+	temporary_body.voice_color = read_preference(/datum/preference/color/voice_color)
 	var/datum/identity_snapshot/new_form = new
 	if(!new_form.capture(temporary_body))
 		qdel(new_form)

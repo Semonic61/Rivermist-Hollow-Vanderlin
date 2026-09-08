@@ -446,9 +446,12 @@
 	var/tmp/cached_erp_preferences_revision = -1
 
 /datum/mind/proc/cache_erp_preferences_from_prefs(datum/preferences/prefs)
-	if(!prefs?.erp_preferences)
+	if(!prefs)
 		return FALSE
-	set_cached_erp_preferences(prefs.erp_preferences, prefs.erp_preferences_revision)
+	var/list/erp_preferences = prefs.read_preference(/datum/preference/list_type/erp_preferences)
+	if(!length(erp_preferences))
+		return FALSE
+	set_cached_erp_preferences(erp_preferences, prefs.erp_preferences_revision)
 	return TRUE
 
 /datum/mind/proc/set_cached_erp_preferences(list/preferences, revision = -1)
@@ -667,16 +670,20 @@
 	rebuild_cached_erp_preference_shortcuts()
 
 /mob/living/proc/cache_erp_preferences_from_prefs(datum/preferences/prefs)
-	if(!prefs?.erp_preferences)
+	if(!prefs)
+		return FALSE
+	var/list/erp_preferences = prefs.read_preference(/datum/preference/list_type/erp_preferences)
+	if(!length(erp_preferences))
 		return FALSE
 	if(mind?.current == src)
 		return mind.cache_erp_preferences_from_prefs(prefs)
-	set_cached_erp_preferences(prefs.erp_preferences, prefs.erp_preferences_revision)
+	set_cached_erp_preferences(erp_preferences, prefs.erp_preferences_revision)
 	return TRUE
 
 /mob/living/proc/refresh_erp_preference_cache()
 	var/datum/preferences/prefs = client?.prefs
-	if(prefs?.erp_preferences)
+	var/list/erp_preferences = prefs?.read_preference(/datum/preference/list_type/erp_preferences)
+	if(length(erp_preferences))
 		var/current_revision = prefs.erp_preferences_revision
 		if(erp_preferences_revision_seen == current_revision && cached_erp_preferences)
 			return
@@ -790,7 +797,7 @@
 	return
 
 /mob/living/carbon/human/lose_virginity()
-	virginity = FALSE
+	REMOVE_TRAIT(src, TRAIT_VIRGIN, null)
 
 /mob/living/proc/adjacent_or_closet(atom/neighbor)
 	if(!neighbor)

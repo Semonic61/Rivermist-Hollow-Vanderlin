@@ -62,6 +62,18 @@ GLOBAL_VAR_INIT(total_runtimes_skipped, 0)
 	if(!error_last_seen) // A runtime is occurring too early in start-up initialization
 		return ..()
 
+	// Recover the call site encoded by stack_trace(), without masking malformed errors.
+	var/static/regex/stack_workaround = regex("[WORKAROUND_IDENTIFIER](.+?)[WORKAROUND_IDENTIFIER]$")
+	if(stack_workaround?.Find(E.name))
+		try
+			var/list/data = json_decode(stack_workaround.group[1])
+			if(islist(data) && length(data) == 2 && istext(data[1]) && isnum(data[2]))
+				E.file = data[1]
+				E.line = data[2]
+				E.name = stack_workaround.Replace(E.name, "")
+		catch
+			// Keep the original exception if its message only resembles our marker.
+
 	var/erroruid = "[E.file][E.line]"
 	var/last_seen = error_last_seen[erroruid]
 	var/cooldown = error_cooldown[erroruid] || 0

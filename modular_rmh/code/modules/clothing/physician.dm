@@ -110,7 +110,7 @@
 	sleeved = 'modular_rmh/icons/clothing/onmob/helpers/physician_sleeves.dmi'
 	detail_tag = "_detail"
 	detail_color = CLOTHING_RED
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/rmh/gloves/court_physician
 	resistance_flags = null
 	blocksound = SOFTHIT
 	blade_dulling = DULLING_BASHCHOP

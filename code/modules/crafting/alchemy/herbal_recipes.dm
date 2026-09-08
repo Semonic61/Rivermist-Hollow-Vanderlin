@@ -672,7 +672,6 @@
 	M.remove_chem_effect(CE_BRAIN_REGEN, "[type]")
 	M.remove_chem_effect(CE_OXYGENATED, "[type]")
 
-
 // Combat Enhancement
 
 /datum/reagent/buff/herbal/battle_stim

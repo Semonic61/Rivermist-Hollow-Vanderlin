@@ -143,8 +143,7 @@
 	if(required_area_type && !istype(get_area(patient), required_area_type))
 		return FALSE
 	if(use_trauma_skill && target.treatment_skill)
-		var/has_role_training = (provider_tag == DEFEAT_TRAUMA_PROVIDER_MEDICAL && HAS_TRAIT(helper, TRAIT_SURGEON)) \
-			|| (provider_tag == DEFEAT_TRAUMA_PROVIDER_SHRINE && HAS_TRAIT(helper, TRAIT_HOLY))
+		var/has_role_training = provider_tag == DEFEAT_TRAUMA_PROVIDER_SHRINE && HAS_TRAIT(helper, TRAIT_HOLY)
 		if(!has_role_training && GET_MOB_SKILL_VALUE_OLD(helper, target.treatment_skill) < target.treatment_skill_requirement)
 			return FALSE
 	if(reserved_resource && (QDELETED(reserved_resource) || helper.get_active_held_item() != reserved_resource))

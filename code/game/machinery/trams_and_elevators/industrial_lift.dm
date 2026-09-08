@@ -83,7 +83,7 @@ GLOBAL_LIST_INIT(all_radial_directions, list(
 	set_movement_registrations()
 	if(fake)
 		alpha = 0
-		obj_flags = CAN_BE_HIT
+		obj_flags &= ~BLOCK_Z_OUT_DOWN
 
 	//since lift_master datums find all connected platforms when an industrial lift first creates it and then
 	//sets those platforms' lift_master_datum to itself, this check will only evaluate to true once per tram platform

@@ -1538,7 +1538,8 @@ SUBSYSTEM_DEF(gamemode)
 		if(roundstart && istype(client?.mob, /mob/dead/new_player))
 			var/mob/dead/new_player/player = client.mob
 			if(player.ready == PLAYER_READY_TO_PLAY)
-				GLOB.patron_follower_counts[client.prefs.selected_patron.name]++
+				var/datum/patron/selected_patron = client.prefs.read_preference(/datum/preference/choiced/patron)
+				GLOB.patron_follower_counts[selected_patron.name]++
 
 		var/mob/living/living = client.mob
 		if(!istype(living))
@@ -1600,11 +1601,11 @@ SUBSYSTEM_DEF(gamemode)
 				record_round_statistic(STATS_FOREIGNERS)
 			if(human_mob.has_quirk(/datum/quirk/vice/clingy))
 				record_round_statistic(STATS_CLINGY_PEOPLE)
-			if(human_mob.has_quirk(/datum/quirk/vice/alcoholic))
+			if(human_mob.has_quirk(/datum/quirk/vice/addiction/alcoholic))
 				record_round_statistic(STATS_ALCOHOLICS)
-			if(human_mob.has_quirk(/datum/quirk/vice/junkie))
+			if(human_mob.has_quirk(/datum/quirk/vice/addiction/junkie))
 				record_round_statistic(STATS_JUNKIES)
-			if(human_mob.has_quirk(/datum/quirk/vice/kleptomaniac))
+			if(human_mob.has_quirk(/datum/quirk/vice/addiction/kleptomaniac))
 				record_round_statistic(STATS_KLEPTOMANIACS)
 			if(human_mob.has_quirk(/datum/quirk/vice/greedy))
 				record_round_statistic(STATS_GREEDY_PEOPLE)

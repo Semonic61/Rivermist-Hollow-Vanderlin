@@ -191,7 +191,7 @@
 
 /datum/species/human/halfelf/after_creation(mob/living/carbon/human/C)
 	..()
-	//If a donator picks the Elf Accent as a Half Elf, it will work the same as a non donator.
+	// The full Elf accent keeps the expected Elfish language behavior.
 	if(C.accent == ACCENT_ELF)
 		C.dna.species.native_language = "Elfish"
 		C.dna.species.accent_language = C.dna.species.get_accent(C.dna.species.native_language, 1)

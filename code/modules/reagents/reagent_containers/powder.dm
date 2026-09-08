@@ -55,29 +55,34 @@
 		if(canconsume(C, silent = TRUE))
 			if(reagents.total_volume)
 				playsound(C, 'sound/items/sniff.ogg', 100, FALSE)
-				reagents.trans_to(C, 1, transfered_by = thrownthing.thrower, method = "swallow")
+				reagents.trans_to(C, 1, transfered_by = thrownthing.get_thrower(), method = "swallow")
 				qdel(src)
 
-/obj/item/reagent_containers/powder/attack(mob/M, mob/user, list/modifiers)
+/obj/item/reagent_containers/powder/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isliving(interacting_with))
+		return NONE
+
+	var/mob/living/M = interacting_with
+
 	if(!canconsume(M, user))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
 	if(M == user)
 		M.visible_message(span_notice("[user] sniffs [src]."))
-	else
-		if(iscarbon(M))
-			var/mob/living/carbon/C = M
-			var/obj/item/bodypart/CH = C.get_bodypart(BODY_ZONE_HEAD)
-			if(!CH)
-				to_chat(user, span_warning("[C.p_theyre(TRUE)] missing their head."))
-				return FALSE
-			C.visible_message(span_danger("[user] attempts to force [C] to inhale [src]."), \
-							span_danger("[user] attempts to force me to inhale [src]!"))
-			if(C.cmode)
-				if(!CH.grabbedby)
-					to_chat(user, span_info("[C.p_they(TRUE)] steals [C.p_their()] face from it."))
-					return FALSE
-			if(!do_after(user, 1 SECONDS, M))
-				return FALSE
+	else if(iscarbon(M))
+		var/mob/living/carbon/C = M
+		var/obj/item/bodypart/CH = C.get_bodypart(BODY_ZONE_HEAD)
+		if(!CH)
+			to_chat(user, span_warning("[C.p_theyre(TRUE)] missing their head."))
+			return ITEM_INTERACT_BLOCKING
+		C.visible_message(span_danger("[user] attempts to force [C] to inhale [src]."), \
+						span_danger("[user] attempts to force me to inhale [src]!"))
+		if(C.cmode)
+			if(!CH.grabbedby)
+				to_chat(user, span_info("[C.p_they(TRUE)] steals [C.p_their()] face from it."))
+				return ITEM_INTERACT_BLOCKING
+		if(!do_after(user, 1 SECONDS, M))
+			return ITEM_INTERACT_BLOCKING
 
 	playsound(M, 'sound/items/sniff.ogg', 100, FALSE)
 
@@ -86,8 +91,11 @@
 		SEND_SIGNAL(M, COMSIG_DRUG_SNIFFED, user)
 		record_featured_stat(FEATURED_STATS_CRIMINALS, user)
 		record_round_statistic(STATS_DRUGS_SNORTED)
+
+	user.changeNext_move(CLICK_CD_MELEE)
 	qdel(src)
-	return TRUE
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/reagent_containers/powder/spice
 	name = "spice"
@@ -122,8 +130,8 @@
 			M.emote(pick("twitch_s","giggle"))
 		else
 			M.emote(pick("twitch_s","chuckle"))
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	..()
 
 /datum/reagent/druqks/on_mob_metabolize(mob/living/M)
@@ -177,8 +185,8 @@
 
 /datum/reagent/ozium/on_mob_life(mob/living/carbon/M, efficiency)
 	SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	if(prob(5))
 		M.flash_fullscreen("whiteflash")
 	M.apply_status_effect(/datum/status_effect/buff/ozium)
@@ -222,8 +230,8 @@
 	SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
 	if(M.has_reagent(/datum/reagent/moondust_purest))
 		M.Sleeping(40, 0)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	M.apply_status_effect(/datum/status_effect/buff/moondust)
 	if(prob(2))
 		M.flash_fullscreen("whiteflash")
@@ -270,8 +278,8 @@
 	SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
 	if(M.has_reagent(/datum/reagent/moondust))
 		M.Sleeping(40 * efficiency, 0)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	M.apply_status_effect(/datum/status_effect/buff/moondust_purest)
 	if(prob(20))
 		M.flash_fullscreen("whiteflash")

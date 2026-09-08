@@ -1,9 +1,16 @@
-/datum/component/riding/terrorbird/Initialize()
-	. = ..()
-	// Four pixels higher than a saiga's: the bird's head and neck sit far above its back, and at the
-	// saiga offset a south-facing rider disappears behind them entirely.
-	set_riding_offsets(RIDING_OFFSET_ALL, list(TEXT_NORTH = list(0, 12), TEXT_SOUTH = list(0, 12), TEXT_EAST = list(-2, 12), TEXT_WEST = list(2, 12)))
-	set_vehicle_dir_layer(SOUTH, ABOVE_MOB_LAYER)
-	set_vehicle_dir_layer(NORTH, OBJ_LAYER)
-	set_vehicle_dir_layer(EAST, OBJ_LAYER)
-	set_vehicle_dir_layer(WEST, OBJ_LAYER)
+/datum/component/riding/creature/terrorbird/get_rider_offsets_and_layers(pass_index, mob/offsetter)
+	// Four pixels above a saiga's saddle, clear of the bird's head and neck.
+	return list(
+		TEXT_NORTH = list(0, 12, MOB_LAYER),
+		TEXT_SOUTH = list(0, 12, MOB_LAYER),
+		TEXT_EAST = list(-2, 12, MOB_LAYER),
+		TEXT_WEST = list(2, 12, MOB_LAYER),
+	)
+
+/datum/component/riding/creature/terrorbird/get_parent_offsets_and_layers()
+	return list(
+		TEXT_NORTH = list(0, 0, OBJ_LAYER),
+		TEXT_SOUTH = list(0, 0, ABOVE_MOB_LAYER),
+		TEXT_EAST = list(0, 0, OBJ_LAYER),
+		TEXT_WEST = list(0, 0, OBJ_LAYER),
+	)

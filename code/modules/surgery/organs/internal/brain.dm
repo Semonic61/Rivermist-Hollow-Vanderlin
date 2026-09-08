@@ -17,7 +17,7 @@
 	slot = ORGAN_SLOT_BRAIN
 	unique_slot = ORGAN_SLOT_BRAIN
 	organ_efficiency = list(ORGAN_SLOT_BRAIN = 100)
-	organ_flags = ORGAN_VITAL
+	organ_flags = ORGAN_ORGANIC|ORGAN_VITAL
 	attack_verb = list("attacked", "slapped", "whacked")
 
 	maxHealth = BRAIN_DAMAGE_DEATH
@@ -76,13 +76,12 @@
 	C.update_body()
 
 
-/obj/item/organ/brain/handle_blood(delta_time, times_fired)
+/obj/item/organ/brain/handle_blood(delta_time, times_fired, in_bleedout)
 	if(!iscarbon(owner))
 		return
 	var/mob/living/carbon/carbon_owner = owner
 	var/effective_blood_oxygenation = GET_EFFECTIVE_BLOOD_VOL(carbon_owner.get_blood_oxygenation(), carbon_owner.total_blood_req)
 	var/arterial_efficiency = get_slot_efficiency(ORGAN_SLOT_ARTERY)
-	var/in_bleedout = carbon_owner.in_bleedout()
 	if(arterial_efficiency && !is_failing())
 		// Arteries get an extra flat 5 blood regen
 		current_blood = min(current_blood + 5 * (0.5 * delta_time) * (arterial_efficiency/ORGAN_OPTIMAL_EFFICIENCY), max_blood_storage)
@@ -108,8 +107,19 @@
 		if(artery?.current_blood)
 			var/prev_blood = artery.current_blood
 			artery.current_blood = max(artery.current_blood - (blood_req * 0.5 * delta_time), 0)
+			artery.consider_processing()
 			current_blood = max(prev_blood - artery.current_blood, 0)
 		//Don't apply damage, this is handled by the organ process datum, if necessary
+	consider_processing(in_bleedout)
+
+/obj/item/organ/brain/consider_processing(in_bleedout = FALSE)
+	if(..())
+		return TRUE
+	if(!iscarbon(owner))
+		return FALSE
+	var/mob/living/carbon/carbon_owner = owner
+	needs_processing = GET_EFFECTIVE_BLOOD_VOL(carbon_owner.get_blood_oxygenation(), carbon_owner.total_blood_req) < BLOOD_VOLUME_SAFE
+	return needs_processing
 
 /obj/item/organ/brain/get_mechanics_examine(mob/user)
 	. = ..()
@@ -265,40 +275,50 @@
 		else
 			. += "<span class='info'>This one is completely devoid of life.</span>"
 
-/obj/item/organ/brain/attack(mob/living/carbon/C, mob/user, list/modifiers)
-	if(!istype(C))
-		return ..()
+/obj/item/organ/brain/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isliving(interacting_with))
+		return NONE
+
+	if(!iscarbon(interacting_with))
+		return ..() // Can't eat
+
+	var/mob/living/carbon/C = interacting_with
 
 	add_fingerprint(user)
 
 	if(user.zone_selected != BODY_ZONE_HEAD)
-		return ..()
+		return ITEM_INTERACT_BLOCKING
 
 	var/target_has_brain = C.getorgan(/obj/item/organ/brain)
 
 	if(!target_has_brain && C.is_eyes_covered())
 		to_chat(user, "<span class='warning'>You're going to need to remove [C.p_their()] head cover first!</span>")
-		return
+		return ITEM_INTERACT_BLOCKING
 
-	if(!target_has_brain)
-		if(!C.get_bodypart(BODY_ZONE_HEAD) || !user.temporarilyRemoveItemFromInventory(src))
-			return
-		var/msg = "[C] has [src] inserted into [C.p_their()] head by [user]."
-		if(C == user)
-			msg = "[user] inserts [src] into [user.p_their()] head!"
+	if(target_has_brain)
+		return ITEM_INTERACT_BLOCKING
 
-		C.visible_message("<span class='danger'>[msg]</span>",
-						"<span class='danger'>[msg]</span>")
+	if(!C.get_bodypart(BODY_ZONE_HEAD) || !user.temporarilyRemoveItemFromInventory(src))
+		return ITEM_INTERACT_BLOCKING
 
-		if(C != user)
-			to_chat(C, "<span class='notice'>[user] inserts [src] into your head.</span>")
-			to_chat(user, "<span class='notice'>I insert [src] into [C]'s head.</span>")
-		else
-			to_chat(user, "<span class='notice'>I insert [src] into your head.</span>")
+	var/msg = "[C] has [src] inserted into [C.p_their()] head by [user]."
+	if(C == user)
+		msg = "[user] inserts [src] into [user.p_their()] head!"
 
-		Insert(C)
+	C.visible_message(
+		"<span class='danger'>[msg]</span>",
+		"<span class='danger'>[msg]</span>"
+	)
+
+	if(C != user)
+		to_chat(C, "<span class='notice'>[user] inserts [src] into your head.</span>")
+		to_chat(user, "<span class='notice'>I insert [src] into [C]'s head.</span>")
 	else
-		..()
+		to_chat(user, "<span class='notice'>I insert [src] into your head.</span>"	)
+
+	Insert(C)
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/organ/brain/Destroy()
 	if(brainmob)
@@ -306,7 +326,7 @@
 	QDEL_LIST(traumas)
 	return ..()
 
-/obj/item/organ/brain/on_life(delta_time, times_fired)
+/obj/item/organ/brain/on_life(delta_time, times_fired, in_bleedout, virus_immunity, antibiotics, immunity_weakness, passed_temp)
 	. = ..()
 	if(damage >= BRAIN_DAMAGE_DEATH) //rip
 		// Brain damage can finalize death synchronously, before the owner's next updatehealth(). Give
@@ -361,7 +381,7 @@
 		else if(brain_message)
 			return brain_message
 
-/obj/item/organ/brain/can_heal(delta_time, times_fired)
+/obj/item/organ/brain/can_heal(delta_time, times_fired, in_bleedout)
 	. = TRUE
 	if(!owner || !iscarbon(owner))
 		return FALSE
@@ -372,7 +392,7 @@
 		return FALSE
 	if(current_blood <= 0)
 		return FALSE
-	if(carbon_owner.undergoing_cardiac_arrest())
+	if(in_bleedout)
 		return FALSE
 	var/effective_blood_oxygenation = GET_EFFECTIVE_BLOOD_VOL(carbon_owner.get_blood_oxygenation(), carbon_owner.total_blood_req)
 	if(effective_blood_oxygenation < BLOOD_VOLUME_SAFE)
@@ -390,16 +410,22 @@
 /obj/item/organ/brain/proc/get_current_damage_threshold()
 	return FLOOR(damage / damage_threshold_value, 1)
 
-/obj/item/organ/brain/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE)
+/obj/item/organ/brain/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE, required_organ_flag = NONE)
 	if(!amount) //Micro-optimization.
-		return
+		return FALSE
+	if(required_organ_flag && !(organ_flags & required_organ_flag))
+		return FALSE
+	maximum = clamp(maximum, 0, maxHealth)
 	if(maximum < damage)
 		damage = maximum
-	if(damage < 0 && owner?.get_chem_effect(CE_BRAIN_REGEN))
-		damage *= 2
+	if(amount < 0 && owner?.get_chem_effect(CE_BRAIN_REGEN))
+		amount *= 2
+	var/old_damage = damage
 	prev_damage = damage
 	damage = clamp(damage + amount, 0, maximum)
+	. = damage - old_damage
 	var/mess = check_damage_thresholds(owner)
+	prev_damage = damage
 	if(owner)
 		if(mess && !silent)
 			to_chat(owner, mess)

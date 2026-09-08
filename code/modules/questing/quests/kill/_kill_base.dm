@@ -172,7 +172,7 @@
 			continue
 
 		var/mob/living/new_mob = new target_mob_type(spawn_turf)
-		new_mob.faction |= "quest"
+		new_mob.add_faction("quest")
 		new_mob.AddComponent(kill_component_type, src)
 		new_mob.setup_quest_spawn_lockdown()
 		ADD_TRAIT(new_mob, TRAIT_FRESHSPAWN, "[type]")

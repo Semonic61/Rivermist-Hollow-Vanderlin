@@ -56,15 +56,13 @@
 	return "This is the pooled total of brute, burn, toxin, and clone damage needed to trigger Defeat. Lower values make you fall sooner. Stabilization makes you safe from an immediate bleed/brain death loop, but it does not wake you or fully heal you. Horny Defeat uses a separate deterministic stat-based resistance; your exact progress and remaining climaxes are shown only to you during an active encounter."
 
 /datum/preferences/proc/get_defeat_mode()
-	defeat_mode = sanitize_defeat_mode(defeat_mode)
-	return defeat_mode
+	return sanitize_defeat_mode(read_preference(/datum/preference/choiced/defeat_mode))
 
 /datum/preferences/proc/set_defeat_mode(new_defeat_mode)
-	defeat_mode = sanitize_defeat_mode(new_defeat_mode)
+	write_preference(/datum/preference/choiced/defeat_mode, sanitize_defeat_mode(new_defeat_mode))
 
 /datum/preferences/proc/get_defeat_damage_threshold()
-	defeat_damage_threshold = sanitize_defeat_damage_threshold(defeat_damage_threshold)
-	return defeat_damage_threshold
+	return sanitize_defeat_damage_threshold(read_preference(/datum/preference/numeric/defeat_damage_threshold))
 
 /datum/preferences/proc/set_defeat_damage_threshold(new_threshold)
-	defeat_damage_threshold = sanitize_defeat_damage_threshold(new_threshold)
+	write_preference(/datum/preference/numeric/defeat_damage_threshold, sanitize_defeat_damage_threshold(new_threshold))

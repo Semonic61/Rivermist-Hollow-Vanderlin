@@ -6,7 +6,7 @@
 	melt_amount = 75
 	melting_material = /datum/material/steel
 	armor_class = AC_MEDIUM
-	armor = ARMOR_SCALE
+	armor_type = /datum/armor/scale
 	max_integrity = ARMOR_INT_CHEST_MEDIUM_SCALE
 	clothing_flags = CANT_SLEEP_IN
 	prevent_crits = ALL_EXCEPT_STAB
@@ -85,7 +85,7 @@
 	. = ..()
 	AddComponent(/datum/component/item_equipped_movement_rustle, custom_sounds = SFX_INQUIS_BOOT_STEP)
 
-/obj/item/clothing/armor/medium/scale/inqcoat/attackby(obj/item/W, mob/living/user, params)
+/obj/item/clothing/armor/medium/scale/inqcoat/attackby(obj/item/W, mob/living/user, list/modifiers)
 	..()
 	if(istype(W, /obj/item/clothing/armor/plate/fluted/ornate))
 		user.visible_message(span_warning("[user] starts to fit [W] inside the [src]."))
@@ -112,7 +112,7 @@
 	equip_delay_self = 4 SECONDS
 	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL
 	armor_class = AC_MEDIUM
-	armor = ARMOR_CUIRASS
+	armor_type = /datum/armor/scale/inqcoat/armored
 	melt_amount = 150
 	melting_material =  /datum/material/steel
 	blocksound = PLATEHIT

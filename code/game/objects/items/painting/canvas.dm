@@ -89,15 +89,18 @@
 	add_shower(user)
 	return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
-/obj/item/canvas/attackby(obj/item/I, mob/living/user, list/modifiers)
-	. = ..()
-	if(istype(I, /obj/item/natural/feather))
+/obj/item/canvas/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, /obj/item/natural/feather))
 		sign_painting(user)
-		return
+		return ITEM_INTERACT_SUCCESS
 
-	if(!istype(I, /obj/item/paint_brush))
-		return
+	if(!istype(tool, /obj/item/paint_brush))
+		return NONE
+	if(user in showers)
+		return ITEM_INTERACT_BLOCKING
+
 	add_shower(user)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/canvas/proc/sign_painting(mob/living/user)
 	var/new_author = browser_input_text(user, "Who's the author of this painting?", "NAME YOURSELF", max_length = MAX_NAME_LEN)
@@ -126,6 +129,7 @@
 	pixel_x = base_pixel_x
 	pixel_y = base_pixel_y
 	anchored = TRUE
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/canvas/proc/add_shower(mob/user)
 	if(!user?.client)

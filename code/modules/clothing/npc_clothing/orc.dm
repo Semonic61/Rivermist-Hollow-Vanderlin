@@ -10,7 +10,7 @@
 	misc_flags = CRAFTING_TEST_EXCLUDE
 
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/padded/good
 	body_parts_covered = CHEST|GROIN|ARMS|VITALS
 	max_integrity = INTEGRITY_POOR
 	misc_flags = CRAFTING_TEST_EXCLUDE
@@ -20,7 +20,7 @@
 	desc = "Fearsome armor which covers nearly the entire body."
 	icon_state = "warlord_armor"
 	item_state = "warlord_armor"
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/plate/bad
 	misc_flags = CRAFTING_TEST_EXCLUDE
 
 /obj/item/clothing/armor/chainmail/iron/orc
@@ -32,7 +32,7 @@
 	misc_flags = CRAFTING_TEST_EXCLUDE
 
 	armor_class = AC_MEDIUM
-	armor = list("blunt" = DR_MEDIUM, "slash" = DBLOCK_MEDIUM, "stab" = DBLOCK_MEDIUM, "piercing" = DBLOCK_MEDIUM, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/maille/orc
 	body_parts_covered = CHEST|GROIN|ARMS|LEGS|VITALS
 	prevent_crits = ALL_EXCEPT_BLUNT
 	max_integrity = INTEGRITY_POOR
@@ -46,7 +46,7 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 	melt_amount = 100
-	armor = list("blunt" = DR_HEAVY, "slash" = DBLOCK_HEAVY, "stab" = DBLOCK_HEAVY, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/head/metal/orc/bad
 	body_parts_covered = HEAD|EARS|HAIR|EYES|NECK
 	prevent_crits = list(BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT)
 	blocksound = PLATEHIT
@@ -57,7 +57,7 @@
 	name = "Orc Warlord Helmet"
 	icon_state = "warlord_helm"
 	item_state = "warlord_helm"
-	armor = list("blunt" = DR_SUPER, "slash" = DBLOCK_HEAVY, "stab" = DBLOCK_HEAVY, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/head/metal/orc
 	prevent_crits = list(BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_STAB)
 	max_integrity = 150
 	sellprice = 10
@@ -68,7 +68,7 @@
 	desc = ""
 	body_parts_covered = HEAD|HAIR|EARS|NOSE
 	icon_state = "leatherhelm"
-	armor = list("blunt" = DR_MEDIUM, "slash" = DBLOCK_MEDIUM, "stab" = DBLOCK_MEDIUM, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/leather/orc
 	prevent_crits = list(BCLASS_BLUNT, BCLASS_TWIST)
 	anvilrepair = null
 	sewrepair = /datum/attribute/skill/craft/tanning/patching
@@ -80,7 +80,7 @@
 	item_state = "orc_leather"
 	icon = 'icons/roguetown/clothing/armor.dmi'
 	allowed_race = list(SPEC_ID_ORC)
-	armor = list("blunt" = DR_MEDIUM, "slash" = DBLOCK_MEDIUM, "stab" = DBLOCK_MEDIUM, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/leather/orc/bad
 	body_parts_covered = CHEST|GROIN
 	sellprice = 0
 
@@ -95,7 +95,7 @@
 	misc_flags = CRAFTING_TEST_EXCLUDE
 
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/boots/orc
 	body_parts_covered = LEGS
 	max_integrity = INTEGRITY_POOR
 	misc_flags = CRAFTING_TEST_EXCLUDE
@@ -105,7 +105,7 @@
 	desc = "Gruelsome plated boots."
 	icon_state = "armorboots"
 	item_state = "armorboots"
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/boots/plate/bad
 	misc_flags = CRAFTING_TEST_EXCLUDE
 
 ///obj/item/clothing/armor/leather/hide/orc

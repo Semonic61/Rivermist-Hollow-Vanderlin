@@ -31,3 +31,6 @@
 #define RUNNING_BEFORE_MASTER ( Master.last_run != null && Master.last_run != world.time )
 /// Returns true if a verb ought to yield to the MC (IE: queue up to be processed by a subsystem)
 #define VERB_SHOULD_YIELD ( TICK_CHECK || RUNNING_BEFORE_MASTER )
+
+/// Native engine work performed during the previous tick.
+#define MAPTICK_LAST_INTERNAL_TICK_USAGE world.map_cpu

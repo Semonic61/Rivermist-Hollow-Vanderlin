@@ -60,28 +60,57 @@
 	foodtype = GRAIN | RAW
 	tastes = list("dough" = 1)
 
-/obj/item/reagent_containers/food/snacks/dough_slice/attackby(obj/item/I, mob/living/user, list/modifiers)
-	. = ..()
-	if(.)
-		return
-	if(user.mind)
-		short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
+/obj/item/reagent_containers/food/snacks/dough_slice/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/kitchen/rollingpin))
+		return NONE
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
 	var/found_table = locate(/obj/structure/table) in (loc)
-	if(istype(I, /obj/item/kitchen/rollingpin))
-		if(isturf(loc)&& (found_table))
-			playsound(user, 'sound/foley/rollingpin.ogg', 100, TRUE, -1)
-			to_chat(user, span_notice("Rolling [src] into cracker dough."))
-			if(do_after(user,long_cooktime, src))
-				new /obj/item/reagent_containers/food/snacks/foodbase/hardtack_raw(loc)
-				user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
-				user.nobles_seen_servant_work()
-				qdel(src)
-		else
-			to_chat(user, span_warning("Put [src] on a table before working it!"))
-		return TRUE
+	if(isturf(loc) && (found_table))
+		playsound(user, 'sound/foley/rollingpin.ogg', 100, TRUE, -1)
+		to_chat(user, span_notice("Rolling [src] into flatdough."))
+		if(do_after(user, short_cooktime, src))
+			new /obj/item/reagent_containers/food/snacks/dough_flat(loc)
+			user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+			user.nobles_seen_servant_work()
+			qdel(src)
 	else
 		to_chat(user, span_warning("Put [src] on a table before working it!"))
 
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/reagent_containers/food/snacks/dough_flat
+	name = "flatdough"
+	icon_state = "dough_flat"
+	w_class = WEIGHT_CLASS_NORMAL
+	slices_num = 0
+
+	eat_effect = /datum/status_effect/debuff/uncookedfood
+	nutrition = SMALLDOUGH_NUTRITION
+	faretype = FARE_IMPOVERISHED
+	rotprocess = SHELFLIFE_DECENT
+	foodtype = GRAIN | RAW
+	tastes = list("dough" = 1)
+	item_weight = 120 GRAMS
+
+/obj/item/reagent_containers/food/snacks/dough_flat/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!tool.get_sharpness())
+		return NONE
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8))
+	var/found_table = locate(/obj/structure/table) in (loc)
+	if(isturf(loc)&& (found_table))
+		playsound(user, 'sound/foley/rollingpin.ogg', 100, TRUE, -1)
+		to_chat(user, span_notice("Scoring lines into [src]..."))
+		if(do_after(user, short_cooktime, src))
+			new /obj/item/reagent_containers/food/snacks/foodbase/hardtack_raw(loc)
+			user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+			user.nobles_seen_servant_work()
+			qdel(src)
+	else
+		to_chat(user, span_warning("Put [src] on a table before working it!"))
+
+	return ITEM_INTERACT_SUCCESS
 
 /*------------\
 | Butterdough |
@@ -125,15 +154,11 @@
 	foodtype = GRAIN | RAW | DAIRY
 	tastes = list("buttery dough" = 1)
 
-/obj/item/reagent_containers/food/snacks/butterdough_slice/attackby(obj/item/I, mob/living/user, list/modifiers)
-	. = ..()
-	if(.)
-		return
-	if(user.mind)
-		short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
+/obj/item/reagent_containers/food/snacks/butterdough_slice/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8))
 	var/found_table = locate(/obj/structure/table) in (loc)
-	if(isturf(loc)&& (found_table))
-		if(istype(I, /obj/item/kitchen/rollingpin))
+	if(isturf(loc) && (found_table))
+		if(istype(tool, /obj/item/kitchen/rollingpin))
 			playsound(user, 'sound/foley/rollingpin.ogg', 100, TRUE, -1)
 			to_chat(user, span_notice("Flattening [src]..."))
 			if(do_after(user, short_cooktime, src))
@@ -141,7 +166,15 @@
 				user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
 				user.nobles_seen_servant_work()
 				qdel(src)
-		if(I.get_sharpness())
+		else if(istype(tool, /obj/item/kitchen/spoon))
+			playsound(user, 'sound/foley/dropsound/food_drop.ogg', 40, TRUE, -1)
+			to_chat(user, span_notice("Pressing a divot into [src]..."))
+			if(do_after(user, short_cooktime, src))
+				new /obj/item/reagent_containers/food/snacks/foodbase/dottart_base(loc)
+				user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+				user.nobles_seen_servant_work()
+				qdel(src)
+		else if(tool.get_sharpness())
 			playsound(user, 'sound/foley/dropsound/food_drop.ogg', 40, TRUE, -1)
 			to_chat(user, span_notice("Cutting the dough into strips and making a prezzel..."))
 			if(do_after(user, short_cooktime, src))
@@ -152,8 +185,13 @@
 				qdel(src)
 				user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
 				user.nobles_seen_servant_work()
+		else
+			return NONE
 	else
 		to_chat(user, span_warning("Put [src] on a table before working it!"))
+		return ITEM_INTERACT_BLOCKING
+
+	return ITEM_INTERACT_SUCCESS
 
 
 
@@ -260,8 +298,8 @@
 	foodtype = GRAIN
 	tastes = list("bread" = 1)
 
-/obj/item/reagent_containers/food/snacks/breadslice/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(modified || !is_type_in_list(I, list(
+/obj/item/reagent_containers/food/snacks/breadslice/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(modified || !is_type_in_list(tool, list(
 		/obj/item/reagent_containers/food/snacks/meat/salami/slice,
 		/obj/item/reagent_containers/food/snacks/cheddarslice,
 		/obj/item/reagent_containers/food/snacks/cooked/egg,
@@ -269,11 +307,13 @@
 		/obj/item/reagent_containers/food/snacks/butterslice,
 		/obj/item/reagent_containers/food/snacks/meat/mince/beef/mett)))
 		return ..()
-	var/obj/item/reagent_containers/food/snacks/S = I
+
+	var/obj/item/reagent_containers/food/snacks/S = tool
 	var/cooking = 5 SECONDS - (GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8
 	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 50, TRUE, -1)
 	if(!do_after(user, cooking, src, display_over_user=TRUE))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
 	modified = TRUE
 	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.2))
 	user.nobles_seen_servant_work()
@@ -284,28 +324,29 @@
 	foodtype |= S.foodtype
 	faretype++
 
-	if(istype(I, /obj/item/reagent_containers/food/snacks/meat/salami/slice))
+	if(istype(tool, /obj/item/reagent_containers/food/snacks/meat/salami/slice))
 		name = "[name] & salumoi"
 		desc = "[desc] A thick slice of salumoi has been added."
 		add_overlay("salumoid")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/cheddarslice))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/cheddarslice))
 		name = "[name] & cheese"
 		desc = "[desc] Fat cheese slices has been added."
 		add_overlay("cheesed")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/cooked/egg))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/cooked/egg))
 		name = "[name] & egg"
 		add_overlay("egged")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/fat/salo/slice))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/fat/salo/slice))
 		name = "[name] & salo"
 		add_overlay("salod")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/butterslice))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/butterslice))
 		name = "buttered [name]"
 		add_overlay("buttered")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/meat/mince/beef/mett))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/meat/mince/beef/mett))
 		name = "[name] & mett"
 		add_overlay("metted")
-	qdel(I)
-	return ..()
+
+	qdel(tool)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/reagent_containers/food/snacks/breadslice/toast
 	item_weight = 80 GRAMS
@@ -422,15 +463,17 @@
 	tastes = list("chewy butterdough" = 1)
 	item_weight = 90 GRAMS
 
-/obj/item/reagent_containers/food/snacks/bookbreadslice/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(modified || !is_type_in_list(I, list(
-		/obj/item/reagent_containers/food/snacks/butterslice)))
+/obj/item/reagent_containers/food/snacks/bookbreadslice/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(modified || !istype(tool, /obj/item/reagent_containers/food/snacks/butterslice))
 		return ..()
-	var/obj/item/reagent_containers/food/snacks/S = I
-	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8))
 	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 50, TRUE, -1)
 	if(!do_after(user, short_cooktime, src, display_over_user=TRUE))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
+	var/obj/item/reagent_containers/food/snacks/S = tool
+
 	modified = TRUE
 	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.2))
 	user.nobles_seen_servant_work()
@@ -441,8 +484,8 @@
 
 	name = "buttered [name]"
 	add_overlay("bookbread_buttered")
-	qdel(I)
-	return ..()
+	qdel(tool)
+	return ITEM_INTERACT_SUCCESS
 
 /*	.................   Raspberry Bookbread   ................... */
 /obj/item/reagent_containers/food/snacks/raspberrybutterdough
@@ -909,27 +952,25 @@
 	tastes = list("semi-sweet dough" = 1)
 	item_weight = 140 GRAMS
 
-/obj/item/reagent_containers/food/snacks/masa_slice/attackby(obj/item/I, mob/living/user, list/modifiers)
-	. = ..()
-	if(.)
-		return
-	if(user.mind)
-		short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking/baking))*8))
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(istype(I, /obj/item/kitchen/rollingpin))
-		if(isturf(loc)&& (found_table))
-			playsound(user, 'sound/foley/rollingpin.ogg', 100, TRUE, -1)
-			to_chat(user, span_notice("Flattening [src]..."))
-			if(do_after(user,long_cooktime, src))
-				new /obj/item/reagent_containers/food/snacks/masa_flat(loc)
-				user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
-				user.nobles_seen_servant_work()
-				qdel(src)
-		else
-			to_chat(user, span_warning("Put [src] on a table before working it!"))
-		return TRUE
-	else
+/obj/item/reagent_containers/food/snacks/masa_slice/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/kitchen/rollingpin))
 		to_chat(user, span_warning("Put [src] on a table before working it!"))
+		return ..()
+
+	if(!isturf(loc) || !(locate(/obj/structure/table) in loc))
+		return ITEM_INTERACT_BLOCKING
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking/baking)) * 8))
+
+	playsound(user, 'sound/foley/rollingpin.ogg', 100, TRUE, -1)
+	to_chat(user, span_notice("Flattening [src]..."))
+	if(do_after(user,long_cooktime, src))
+		new /obj/item/reagent_containers/food/snacks/masa_flat(loc)
+		user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+		user.nobles_seen_servant_work()
+		qdel(src)
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/reagent_containers/food/snacks/masa_flat
 	name = "sunreed flat-cake"
@@ -1036,16 +1077,18 @@
 	tastes = list("semi-sweet bread" = 1)
 	item_weight = 50 GRAMS
 
-/obj/item/reagent_containers/food/snacks/estrella/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(modified || !is_type_in_list(I, list(
+/obj/item/reagent_containers/food/snacks/estrella/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(modified || !is_type_in_list(tool, list(
 		/obj/item/reagent_containers/food/snacks/sugar,
 		/obj/item/reagent_containers/food/snacks/chocolate)))
 		return ..()
-	var/obj/item/reagent_containers/food/snacks/S = I
+
+	var/obj/item/reagent_containers/food/snacks/S = tool
 	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
 	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 50, TRUE, -1)
 	if(!do_after(user, short_cooktime, src, display_over_user=TRUE))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
 	modified = TRUE
 	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.2))
 	user.nobles_seen_servant_work()
@@ -1056,17 +1099,18 @@
 	foodtype |= S.foodtype
 	faretype++
 
-	if(istype(I, /obj/item/reagent_containers/food/snacks/sugar))
+	if(istype(tool, /obj/item/reagent_containers/food/snacks/sugar))
 		name = "sugar powdered [name]"
 		desc = "[desc] Its form holds the sugar excellently."
 		icon_state = "sugar_estrella"
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/chocolate))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/chocolate))
 		name = "chocolate dipped [name]"
 		desc = "[desc] It's form holds the chocolate drizzle excelently."
 		icon_state = "chocolate_estrella"
 		faretype++
-	qdel(I)
-	return ..()
+
+	qdel(tool)
+	return ITEM_INTERACT_SUCCESS
 
 /*	.................   Huskbuns   ................... */
 
@@ -1124,16 +1168,19 @@
 	faretype = FARE_NEUTRAL
 	item_weight = 150 GRAMS
 
-/obj/item/reagent_containers/food/snacks/huskbun/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(modified || !is_type_in_list(I, list(
+/obj/item/reagent_containers/food/snacks/huskbun/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(modified || !is_type_in_list(tool, list(
 		/obj/item/reagent_containers/food/snacks/cocaumole,
 		/obj/item/reagent_containers/food/snacks/drowsbanejam)))
 		return ..()
-	var/obj/item/reagent_containers/food/snacks/S = I
-	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8))
 	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 50, TRUE, -1)
 	if(!do_after(user, short_cooktime, src, display_over_user=TRUE))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
+	var/obj/item/reagent_containers/food/snacks/S = tool
+
 	modified = TRUE
 	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.2))
 	user.nobles_seen_servant_work()
@@ -1144,16 +1191,17 @@
 	foodtype |= S.foodtype
 	faretype++
 
-	if(istype(I, /obj/item/reagent_containers/food/snacks/cocaumole))
+	if(istype(tool, /obj/item/reagent_containers/food/snacks/cocaumole))
 		name = "cocaumole smothered [name]"
 		desc = "[desc] It has a generous serving of cocaumole on top."
 		icon_state = "cocaudo_huskbun"
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/drowsbanejam))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/drowsbanejam))
 		name = "drowsbane smothered [name]"
 		desc = "[desc] It's coated in spicy drowsbane."
 		icon_state = "drowsbane_huskbun"
-	qdel(I)
-	return ..()
+
+	qdel(tool)
+	return ITEM_INTERACT_SUCCESS
 
 /*	.................   Saigaitas   ................... */
 
@@ -1204,16 +1252,19 @@
 	faretype = FARE_NEUTRAL
 	item_weight = 120 GRAMS
 
-/obj/item/reagent_containers/food/snacks/saigaita_cooked/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(modified || !is_type_in_list(I, list(
+/obj/item/reagent_containers/food/snacks/saigaita_cooked/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(modified || !is_type_in_list(tool, list(
 		/obj/item/reagent_containers/food/snacks/cocaumole,
 		/obj/item/reagent_containers/food/snacks/drowsbanejam)))
 		return ..()
-	var/obj/item/reagent_containers/food/snacks/S = I
-	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8))
 	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 50, TRUE, -1)
 	if(!do_after(user, short_cooktime, src, display_over_user=TRUE))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
+	var/obj/item/reagent_containers/food/snacks/S = tool
+
 	modified = TRUE
 	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.2))
 	user.nobles_seen_servant_work()
@@ -1224,16 +1275,17 @@
 	foodtype |= S.foodtype
 	faretype++
 
-	if(istype(I, /obj/item/reagent_containers/food/snacks/cocaumole))
+	if(istype(tool, /obj/item/reagent_containers/food/snacks/cocaumole))
 		name = "cocaumole smothered [name]"
 		desc = "[desc] It even has a generous serving of cocaumole on top."
 		icon_state = "cocaudo_lilsaiga"
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/drowsbanejam))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/drowsbanejam))
 		name = "drowsbane smothered [name]"
 		desc = "[desc] It's even coated in spicy drowsbane."
 		icon_state = "drowsbane_lilsaiga"
-	qdel(I)
-	return ..()
+
+	qdel(tool)
+	return ITEM_INTERACT_SUCCESS
 
 /*	.................   Eighthscake   ................... */
 
@@ -1347,24 +1399,25 @@
 	faretype = FARE_POOR
 	item_weight = 100 GRAMS
 
-/obj/item/reagent_containers/food/snacks/tostada/attackby(obj/item/I, mob/living/user, list/modifiers)
-	. = ..()
-	if(.)
-		return
-	if(user.mind)
-		short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(isturf(loc)&& (found_table))
-		if(istype(I, /obj/item/kitchen/rollingpin))
-			playsound(user, 'sound/foley/dropsound/food_drop.ogg', 100, TRUE, -1)
-			to_chat(user, span_notice("Breaking up [src]..."))
-			if(do_after(user, short_cooktime, src))
-				new /obj/item/reagent_containers/food/snacks/chippile(loc)
-				user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
-				user.nobles_seen_servant_work()
-				qdel(src)
-	else
+/obj/item/reagent_containers/food/snacks/tostada/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/kitchen/rollingpin))
+		return ..()
+
+	if(!isturf(loc) || !(locate(/obj/structure/table) in loc))
 		to_chat(user, span_warning("Put [src] on a table before working it!"))
+		return ITEM_INTERACT_BLOCKING
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8))
+
+	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 100, TRUE, -1)
+	to_chat(user, span_notice("Breaking up [src]..."))
+	if(do_after(user, short_cooktime, src))
+		new /obj/item/reagent_containers/food/snacks/chippile(loc)
+		user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+		user.nobles_seen_servant_work()
+		qdel(src)
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/reagent_containers/food/snacks/tostada_meat
 	name = "steak plato"
@@ -1377,19 +1430,22 @@
 	faretype = FARE_NEUTRAL
 	item_weight = 100 GRAMS
 
-/obj/item/reagent_containers/food/snacks/tostada_meat/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(modified || !is_type_in_list(I, list(
+/obj/item/reagent_containers/food/snacks/tostada_meat/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(modified || !is_type_in_list(tool, list(
 		/obj/item/reagent_containers/food/snacks/cocaumole,
 		/obj/item/reagent_containers/food/snacks/drowsbanejam,
 		/obj/item/reagent_containers/food/snacks/cheddarslice)))
 		return ..()
-	var/obj/item/reagent_containers/food/snacks/S = I
-	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8))
 	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 50, TRUE, -1)
 	if(!do_after(user, short_cooktime, src, display_over_user=TRUE))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
+	var/obj/item/reagent_containers/food/snacks/S = tool
+
 	modified = TRUE
-	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.2))
+	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) * 0.2))
 	user.nobles_seen_servant_work()
 	S.reagents?.trans_to(src, S.reagents.total_volume)
 	LAZYADDASSOC(bonus_reagents, /datum/reagent/consumable/nutriment, S.nutrition * 0.75)
@@ -1398,20 +1454,21 @@
 	foodtype |= S.foodtype
 	faretype++
 
-	if(istype(I, /obj/item/reagent_containers/food/snacks/cocaumole))
+	if(istype(tool, /obj/item/reagent_containers/food/snacks/cocaumole))
 		name = "cocaumole smothered [name]"
 		desc = "[desc] It has cocaumole dripping over it."
 		add_overlay("tostada_cocaumole")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/drowsbanejam))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/drowsbanejam))
 		name = "drowsbane smothered [name]"
 		desc = "[desc] It's smothered in spicy drowsbane."
 		add_overlay("tostada_salsa")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/cheddarslice))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/cheddarslice))
 		name = "cheese covered [name]"
 		desc = "[desc] A thick slice of cheese has been put ontop."
 		add_overlay("tostada_cheese")
-	qdel(I)
-	return ..()
+
+	qdel(tool)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/reagent_containers/food/snacks/tostada_meat/chicken
 	name = "frybird plato"
@@ -2282,33 +2339,366 @@
 
 /*	.................   Griddlecake Condiments   ................... */
 
-/obj/item/reagent_containers/food/snacks/griddlecake/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(modified || !is_type_in_list(I, list(
+/obj/item/reagent_containers/food/snacks/griddlecake/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(modified || !is_type_in_list(tool, list(
 		/obj/item/reagent_containers/food/snacks/butterslice,
 		/obj/item/reagent_containers/food/snacks/spiderhoney,
 		/obj/item/reagent_containers/food/snacks/chocolate)))
 		return ..()
-	var/obj/item/reagent_containers/food/snacks/S = I
-	var/cooking = 5 SECONDS - (GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8
+
+	var/cooking = 5 SECONDS - (GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8
 	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 50, TRUE, -1)
 	if(!do_after(user, cooking, src, display_over_user=TRUE))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
+	var/obj/item/reagent_containers/food/snacks/S = tool
+
 	modified = TRUE
 	faretype++
-	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.2))
+	user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) * 0.2))
 	user.nobles_seen_servant_work()
 	S.reagents?.trans_to(src, S.reagents.total_volume)
 	LAZYADDASSOC(bonus_reagents, /datum/reagent/consumable/nutriment, S.nutrition * 0.75)
 	LAZYADDASSOC(bonus_reagents, /datum/reagent/consumable/nutriment/vitamin, S.nutrition * 0.25)
-	if(istype(I, /obj/item/reagent_containers/food/snacks/butterslice))
+	if(istype(tool, /obj/item/reagent_containers/food/snacks/butterslice))
 		name = "buttered [name]"
 		desc = "[desc] A melting pat of butter has been added."
 		add_overlay("griddlebutter")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/spiderhoney))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/spiderhoney))
 		name = "honey syruped [name]"
 		desc = "[desc] A generous serving of honey has been poured on top."
 		add_overlay("griddlehoney")
-	else if(istype(I, /obj/item/reagent_containers/food/snacks/chocolate))
+	else if(istype(tool, /obj/item/reagent_containers/food/snacks/chocolate))
 		name = "chocolate drizzled [name]"
 		desc = "[desc] Luxurious chocolate has been drizzled on top."
 		add_overlay("griddlechocolate")
+
+	qdel(tool)
+	return ITEM_INTERACT_SUCCESS
+
+/*----------\
+| Dot Tarts |
+\----------*/
+
+/*	.................   Unfinished Dot Tarts   ................... */
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base
+	name = "unfilled dot tart"
+	icon_state = "dottart_base"
+	eat_effect = /datum/status_effect/debuff/uncookedfood
+	rotprocess = SHELFLIFE_DECENT
+	faretype = FARE_IMPOVERISHED
+	foodtype = GRAIN | DAIRY | RAW
+	nutrition = BUTTERDOUGHSLICE_NUTRITION
+	item_weight = 60 GRAMS
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base/strawberry
+	name = "raw strawberry dot tart"
+	icon_state = "strawberry_dottart_base"
+	foodtype = GRAIN | DAIRY | RAW | FRUIT
+	nutrition = BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base/tangerine
+	name = "raw tangerine dot tart"
+	icon_state = "tangerine_dottart_base"
+	foodtype = GRAIN | DAIRY | RAW | FRUIT
+	nutrition = BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base/plum
+	name = "raw plum dot tart"
+	icon_state = "plum_dottart_base"
+	foodtype = GRAIN | DAIRY | RAW | FRUIT
+	nutrition = BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base/blackberry
+	name = "raw blackberry dot tart"
+	icon_state = "blackberry_dottart_base"
+	foodtype = GRAIN | DAIRY | RAW | FRUIT
+	nutrition = BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base/raspberry
+	name = "raw raspberry dot tart"
+	icon_state = "raspberry_dottart_base"
+	foodtype = GRAIN | DAIRY | RAW | FRUIT
+	nutrition = BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base/lemon
+	name = "raw lemon dot tart"
+	icon_state = "lemon_dottart_base"
+	foodtype = GRAIN | DAIRY | RAW | FRUIT
+	nutrition = BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base/lime
+	name = "raw lime dot tart"
+	icon_state = "lime_dottart_base"
+	foodtype = GRAIN | DAIRY | RAW | FRUIT
+	nutrition = BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION
+
+/obj/item/reagent_containers/food/snacks/foodbase/dottart_base/pear
+	name = "raw pear dot tart"
+	icon_state = "pear_dottart_base"
+	foodtype = GRAIN | DAIRY | RAW | FRUIT
+	nutrition = BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION
+
+/*	.................   Finished Dot Tarts   ................... */
+
+/obj/item/reagent_containers/food/snacks/dottart_strawberry
+	name = "strawberry dot tart"
+	desc = "A small strawberry jam-filled pastry, for when a whole pie would be inapropriate for canapes."
+	bitesize = 2
+	icon_state = "strawberry_dottart"
+	tastes = list("crispy butterdough" = 1, "strawberry jam" = 1)
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | DAIRY | FRUIT
+	nutrition = (BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION) * COOK_MOD
+	item_weight = 60 GRAMS
+
+/obj/item/reagent_containers/food/snacks/dottart_tangerine
+	name = "tangerine dot tart"
+	desc = "A small tangerine jam-filled pastry, for when a whole pie would be inapropriate for canapes."
+	bitesize = 2
+	icon_state = "tangerine_dottart"
+	tastes = list("crispy butterdough" = 1, "tangerine jam" = 1)
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | DAIRY | FRUIT
+	nutrition = (BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION) * COOK_MOD
+	item_weight = 60 GRAMS
+
+/obj/item/reagent_containers/food/snacks/dottart_plum
+	name = "plum dot tart"
+	desc = "A small plum jam-filled pastry, for when a whole pie would be inapropriate for canapes."
+	bitesize = 2
+	icon_state = "plum_dottart"
+	tastes = list("crispy butterdough" = 1, "plum jam" = 1)
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | DAIRY | FRUIT
+	nutrition = (BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION) * COOK_MOD
+	item_weight = 60 GRAMS
+
+/obj/item/reagent_containers/food/snacks/dottart_blackberry
+	name = "blackberry dot tart"
+	desc = "A small blackberry jam-filled pastry, for when a whole pie would be inapropriate for canapes."
+	bitesize = 2
+	icon_state = "blackberry_dottart"
+	tastes = list("crispy butterdough" = 1, "blackberry jam" = 1)
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | DAIRY | FRUIT
+	nutrition = (BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION) * COOK_MOD
+	item_weight = 60 GRAMS
+
+/obj/item/reagent_containers/food/snacks/dottart_raspberry
+	name = "raspberry dot tart"
+	desc = "A small raspberry jam-filled pastry, for when a whole pie would be inapropriate for canapes."
+	bitesize = 2
+	icon_state = "raspberry_dottart"
+	tastes = list("crispy butterdough" = 1, "raspberry jam" = 1)
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | DAIRY | FRUIT
+	nutrition = (BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION) * COOK_MOD
+	item_weight = 60 GRAMS
+
+/obj/item/reagent_containers/food/snacks/dottart_lemon
+	name = "lemon dot tart"
+	desc = "A small lemon jam-filled pastry, for when a whole pie would be inapropriate for canapes."
+	bitesize = 2
+	icon_state = "lemon_dottart"
+	tastes = list("crispy butterdough" = 1, "lemon jam" = 1)
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | DAIRY | FRUIT
+	nutrition = (BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION) * COOK_MOD
+	item_weight = 60 GRAMS
+
+/obj/item/reagent_containers/food/snacks/dottart_lime
+	name = "lime dot tart"
+	desc = "A small lime jam-filled pastry, for when a whole pie would be inapropriate for canapes."
+	bitesize = 2
+	icon_state = "lime_dottart"
+	tastes = list("crispy butterdough" = 1, "lime jam" = 1)
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | DAIRY | FRUIT
+	nutrition = (BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION) * COOK_MOD
+	item_weight = 60 GRAMS
+
+/obj/item/reagent_containers/food/snacks/dottart_pear
+	name = "pear dot tart"
+	desc = "A small pear jam-filled pastry, for when a whole pie would be inapropriate for canapes."
+	bitesize = 2
+	icon_state = "pear_dottart"
+	tastes = list("crispy butterdough" = 1, "pear jam" = 1)
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | DAIRY | FRUIT
+	nutrition = (BUTTERDOUGHSLICE_NUTRITION + FRUIT_NUTRITION) * COOK_MOD
+	item_weight = 60 GRAMS
+
+/*---------------------\
+| Tamto Plates (Pizza) |
+\---------------------*/
+
+/*	.................   Unfinished Tamto Plates   ................... */
+
+/obj/item/reagent_containers/food/snacks/foodbase/tamtoplate_base
+	name = "unfinished tamto plate"
+	icon_state = "pizza_base"
+	dropshrink = 0.9
+	eat_effect = /datum/status_effect/debuff/uncookedfood
+	w_class = WEIGHT_CLASS_NORMAL
+	rotprocess = SHELFLIFE_DECENT
+	faretype = FARE_IMPOVERISHED
+	foodtype = GRAIN | FRUIT | RAW
+	nutrition = SMALLDOUGH_NUTRITION + FRUIT_NUTRITION
+	item_weight = 450 GRAMS
+
+/obj/item/reagent_containers/food/snacks/foodbase/tamtoplate_unfinished
+	name = "unbaked cheese tamto plate"
+	icon_state = "pizza_uncooked"
+	dropshrink = 0.9
+	eat_effect = /datum/status_effect/debuff/uncookedfood
+	w_class = WEIGHT_CLASS_NORMAL
+	rotprocess = SHELFLIFE_DECENT
+	faretype = FARE_IMPOVERISHED
+	foodtype = GRAIN | FRUIT | RAW | DAIRY
+	nutrition = SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION
+	item_weight = 450 GRAMS
+
+/obj/item/reagent_containers/food/snacks/foodbase/tamtoplate_unfinished_meat
+	name = "unbaked sausage tamto plate"
+	icon_state = "meat_pizza_uncooked"
+	dropshrink = 0.9
+	eat_effect = /datum/status_effect/debuff/uncookedfood
+	w_class = WEIGHT_CLASS_NORMAL
+	rotprocess = SHELFLIFE_DECENT
+	faretype = FARE_IMPOVERISHED
+	foodtype = GRAIN | FRUIT | RAW | DAIRY | MEAT
+	nutrition = SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + RAWMEAT_NUTRITION
+	item_weight = 450 GRAMS
+
+/obj/item/reagent_containers/food/snacks/foodbase/tamtoplate_unfinished_fish
+	name = "unbaked fish tamto plate"
+	icon_state = "fish_pizza_uncooked"
+	dropshrink = 0.9
+	eat_effect = /datum/status_effect/debuff/uncookedfood
+	w_class = WEIGHT_CLASS_NORMAL
+	rotprocess = SHELFLIFE_DECENT
+	faretype = FARE_IMPOVERISHED
+	foodtype = GRAIN | FRUIT | RAW | DAIRY | MEAT
+	nutrition = SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + MINCE_NUTRITION
+	item_weight = 450 GRAMS
+
+/obj/item/reagent_containers/food/snacks/foodbase/tamtoplate_unfinished_onion
+	name = "unbaked onion tamto plate"
+	icon_state = "onion_pizza_uncooked"
+	dropshrink = 0.9
+	eat_effect = /datum/status_effect/debuff/uncookedfood
+	w_class = WEIGHT_CLASS_NORMAL
+	rotprocess = SHELFLIFE_DECENT
+	faretype = FARE_IMPOVERISHED
+	foodtype = GRAIN | FRUIT | RAW | DAIRY | VEGETABLES
+	nutrition = SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + VEGGIE_NUTRITION
+	item_weight = 450 GRAMS
+
+/*	.................   Finished Tamto Plates   ................... */
+
+/obj/item/reagent_containers/food/snacks/tamtoplate
+	name = "cheese tamto plate"
+	desc = "A deliciously greasy cheese half-pie originating from the trade-capital of Vanderlin, long may it reign!"
+	bitesize = 6
+	slices_num = 6
+	slice_path = /obj/item/reagent_containers/food/snacks/tamtoplate_slice
+	w_class = WEIGHT_CLASS_NORMAL
+	slice_batch = TRUE
+	slice_sound = TRUE
+	icon_state = "pizza"
+	dropshrink = 0.9
+	tastes = list("crispy dough" = 1, "warm tomato" = 1, "gooey cheese" = 1, "")
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | FRUIT | DAIRY
+	nutrition = (SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION) * COOK_MOD
+	item_weight = 450 GRAMS
+
+/obj/item/reagent_containers/food/snacks/tamtoplate/meat
+	name = "sausage tamto plate"
+	desc = "A deliciously greasy sausage half-pie originating from the trade-capital of Vanderlin, long may it reign!"
+	slice_path = /obj/item/reagent_containers/food/snacks/tamtoplate_slice/meat
+	icon_state = "meat_pizza"
+	tastes = list("crispy dough" = 1, "warm tomato" = 1, "gooey cheese" = 1, "savory sausage")
+	faretype = FARE_FINE
+	foodtype = GRAIN | FRUIT | DAIRY | MEAT
+	nutrition = (SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + RAWMEAT_NUTRITION) * COOK_MOD
+	item_weight = 450 GRAMS
+
+/obj/item/reagent_containers/food/snacks/tamtoplate/fish
+	name = "fish tamto plate"
+	desc = "A deliciously greasy fish half-pie originating from the trade-capital of Vanderlin, long may it reign!"
+	slice_path = /obj/item/reagent_containers/food/snacks/tamtoplate_slice/fish
+	icon_state = "fish_pizza"
+	tastes = list("crispy dough" = 1, "warm tomato" = 1, "gooey cheese" = 1, "crispy fish" = 1)
+	faretype = FARE_FINE
+	foodtype = GRAIN | FRUIT | DAIRY | MEAT
+	nutrition = (SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + MINCE_NUTRITION) * COOK_MOD
+	item_weight = 450 GRAMS
+
+/obj/item/reagent_containers/food/snacks/tamtoplate/onion
+	name = "onion tamto plate"
+	desc = "A deliciously greasy onion half-pie originating from the trade-capital of Vanderlin, long may it reign!"
+	slice_path = /obj/item/reagent_containers/food/snacks/tamtoplate_slice/onion
+	icon_state = "onion_pizza"
+	tastes = list("crispy dough" = 1, "warm tomato" = 1, "gooey cheese" = 1, "crunchy onion" = 1)
+	faretype = FARE_FINE
+	foodtype = GRAIN | FRUIT | DAIRY | VEGETABLES
+	nutrition = (SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + VEGGIE_NUTRITION) * COOK_MOD
+	item_weight = 450 GRAMS
+
+/*	.................  Tamto Plate Slices   ................... */
+
+/obj/item/reagent_containers/food/snacks/tamtoplate_slice
+	name = "cheese tamto plate slice"
+	desc = "A deliciously greasy cheese half-pie originating from the trade-capital of Vanderlin, long may it reign!"
+	bitesize = 3
+	w_class = WEIGHT_CLASS_SMALL
+	icon_state = "pizza_slice"
+	dropshrink = 0.8
+	tastes = list("crispy dough" = 1, "warm tomato" = 1, "gooey cheese" = 1, "")
+	rotprocess = SHELFLIFE_LONG
+	faretype = FARE_NEUTRAL
+	foodtype = GRAIN | FRUIT | DAIRY
+	nutrition = ((SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION) * COOK_MOD) * SLICED_MOD
+	item_weight = 75 GRAMS
+
+/obj/item/reagent_containers/food/snacks/tamtoplate_slice/meat
+	name = "sausage tamto plate slice"
+	desc = "A deliciously greasy sausage half-pie originating from the trade-capital of Vanderlin, long may it reign!"
+	icon_state = "meat_pizza_slice"
+	tastes = list("crispy dough" = 1, "warm tomato" = 1, "gooey cheese" = 1, "savory sausage")
+	faretype = FARE_FINE
+	foodtype = GRAIN | FRUIT | DAIRY | MEAT
+	nutrition = ((SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + RAWMEAT_NUTRITION) * COOK_MOD) * SLICED_MOD
+	item_weight = 75 GRAMS
+
+/obj/item/reagent_containers/food/snacks/tamtoplate_slice/fish
+	name = "sausage tamto plate"
+	desc = "A deliciously greasy fish half-pie originating from the trade-capital of Vanderlin, long may it reign!"
+	icon_state = "fish_pizza_slice"
+	tastes = list("crispy dough" = 1, "warm tomato" = 1, "gooey cheese" = 1, "crispy fish" = 1)
+	faretype = FARE_FINE
+	foodtype = GRAIN | FRUIT | DAIRY | MEAT
+	nutrition = ((SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + MINCE_NUTRITION) * COOK_MOD) * SLICED_MOD
+	item_weight = 75 GRAMS
+
+/obj/item/reagent_containers/food/snacks/tamtoplate_slice/onion
+	name = "onion tamto plate slice"
+	desc = "A deliciously greasy onion half-pie originating from the trade-capital of Vanderlin, long may it reign!"
+	icon_state = "onion_pizza_slice"
+	tastes = list("crispy dough" = 1, "warm tomato" = 1, "gooey cheese" = 1, "crunchy onion" = 1)
+	faretype = FARE_FINE
+	foodtype = GRAIN | FRUIT | DAIRY | VEGETABLES
+	nutrition = ((SMALLDOUGH_NUTRITION + FRUIT_NUTRITION + CHEESE_NUTRITION + VEGGIE_NUTRITION) * COOK_MOD) * SLICED_MOD
+	item_weight = 75 GRAMS

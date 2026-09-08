@@ -79,11 +79,6 @@
 	///Economy cost of item in premium vendor
 	var/custom_premium_price
 
-	/// Will move to flags_1 when i can be arsed to (2019, has not done so)
-	var/rad_flags = NONE
-
-	///Bitfield for how the atom handles materials.
-	var/material_flags = NONE
 	///Modifier that raises/lowers the effect of the amount of a material, prevents small and easy to get items from being death machines.
 	var/material_modifier = 1
 
@@ -145,8 +140,10 @@
 
 	/// Any atom that uses integrity and can be damaged must set this to true, otherwise the integrity procs will throw an error
 	var/uses_integrity = FALSE
+	/// Armor datum type created lazily by this atom.
+	VAR_PROTECTED/datum/armor/armor_type = /datum/armor/none
 	///Armor datum used by the atom
-	var/datum/armor/armor
+	VAR_PRIVATE/datum/armor/armor
 	///Current integrity, defaults to max_integrity on init
 	VAR_PRIVATE/atom_integrity
 	///Maximum integrity
@@ -249,7 +246,6 @@
 
 	if(uses_integrity)
 		atom_integrity = max_integrity
-	TEST_ONLY_ASSERT((!armor || istype(armor)), "[type] has an armor that contains an invalid value at intialize")
 
 	if(ispath(ai_controller))
 		ai_controller = new ai_controller(src)
@@ -282,6 +278,7 @@
  * * clears the light object
  */
 /atom/Destroy(force)
+	set_armor(null)
 	if(alternate_appearances)
 		for(var/K in alternate_appearances)
 			var/datum/atom_hud/alternate_appearance/AA = alternate_appearances[K]
@@ -948,6 +945,7 @@
 	VV_DROPDOWN_OPTION(VV_HK_ADD_REAGENT, "Add Reagent")
 	VV_DROPDOWN_OPTION(VV_HK_TRIGGER_EXPLOSION, "Explosion")
 	VV_DROPDOWN_OPTION(VV_HK_ADD_AI, "Add AI controller")
+	VV_DROPDOWN_OPTION(VV_HK_ARMOR_MOD, "Modify Armor")
 	if(greyscale_colors)
 		VV_DROPDOWN_OPTION(VV_HK_MODIFY_GREYSCALE, "Modify greyscale colors")
 
@@ -988,6 +986,37 @@
 					message_admins("<span class='notice'>[key_name(usr)] has added [amount] units of [chosen_id] to [src]</span>")
 	if(href_list[VV_HK_TRIGGER_EXPLOSION] && check_rights(R_FUN))
 		usr.client.cmd_admin_explosion(src)
+
+	if(href_list[VV_HK_ARMOR_MOD])
+		if(!check_rights(R_VAREDIT))
+			return
+		var/list/picker_list = list()
+		var/list/armor_list = get_armor().get_rating_list()
+		for(var/rating in armor_list)
+			picker_list += list(list("value" = armor_list[rating], "name" = rating))
+
+		var/list/result = presentpicker(
+			usr,
+			"Modify armor",
+			"Modify armor: [src]",
+			Button1 = "Save",
+			Button2 = "Cancel",
+			Timeout = FALSE,
+			inputtype = "text",
+			values = picker_list,
+		)
+		if(islist(result) && result["button"] != 2)
+			var/list/converted_ratings = list()
+			for(var/rating in ARMOR_LIST_ALL)
+				converted_ratings[rating] = text2num(result["values"][rating])
+			set_armor(get_armor().generate_new_with_specific(converted_ratings))
+
+			var/message = "[key_name(usr)] modified the armor on [src] ([type]) to: "
+			for(var/rating in ARMOR_LIST_ALL)
+				message += "[rating]=[get_armor_rating(rating)],"
+			message = copytext(message, 1, -1)
+			log_admin(span_notice(message))
+			message_admins(span_notice(message))
 
 	if(href_list[VV_HK_ADD_AI])
 		if(!check_rights(R_VAREDIT))
@@ -1066,73 +1095,8 @@
 /atom/Exited(atom/movable/AM, atom/newLoc)
 	SEND_SIGNAL(src, COMSIG_ATOM_EXITED, AM, newLoc)
 
-/**
- *Tool behavior procedure. Redirects to tool-specific procs by default.
- *
- * You can override it to catch all tool interactions, for use in complex deconstruction procs.
- *
- * Must return  parent proc ..() in the end if overridden
- */
-/atom/proc/tool_act(mob/living/user, obj/item/I, tool_type)
-	switch(tool_type)
-		if(TOOL_CROWBAR)
-			. |= crowbar_act(user, I)
-		if(TOOL_MULTITOOL)
-			. |= multitool_act(user, I)
-		if(TOOL_SCREWDRIVER)
-			. |= screwdriver_act(user, I)
-		if(TOOL_WRENCH)
-			. |= wrench_act(user, I)
-		if(TOOL_WIRECUTTER)
-			. |= wirecutter_act(user, I)
-		if(TOOL_WELDER)
-			. |= welder_act(user, I)
-		if(TOOL_ANALYZER)
-			. |= analyzer_act(user, I)
-	if(. & COMPONENT_BLOCK_TOOL_ATTACK)
-		return TRUE
-
-//! Tool-specific behavior procs. They send signals, so try to call ..()
-///
-
-///Crowbar act
-/atom/proc/crowbar_act(mob/living/user, obj/item/I)
-	return SEND_SIGNAL(src, COMSIG_ATOM_CROWBAR_ACT, user, I)
-
-///Multitool act
-/atom/proc/multitool_act(mob/living/user, obj/item/I)
-	return SEND_SIGNAL(src, COMSIG_ATOM_MULTITOOL_ACT, user, I)
-
-///Check if the multitool has an item in it's data buffer
-/atom/proc/multitool_check_buffer(user, obj/item/I, silent = FALSE)
-	if(!istype(I, /obj/item/multitool))
-		if(user && !silent)
-			to_chat(user, "<span class='warning'>[I] has no data buffer!</span>")
-		return FALSE
-	return TRUE
-
-///Screwdriver act
-/atom/proc/screwdriver_act(mob/living/user, obj/item/I)
-	return SEND_SIGNAL(src, COMSIG_ATOM_SCREWDRIVER_ACT, user, I)
-
-///Wrench act
-/atom/proc/wrench_act(mob/living/user, obj/item/I)
-	return SEND_SIGNAL(src, COMSIG_ATOM_WRENCH_ACT, user, I)
-
-///Wirecutter act
-/atom/proc/wirecutter_act(mob/living/user, obj/item/I)
-	return SEND_SIGNAL(src, COMSIG_ATOM_WIRECUTTER_ACT, user, I)
-
-///Welder act
-/atom/proc/welder_act(mob/living/user, obj/item/I)
-	return SEND_SIGNAL(src, COMSIG_ATOM_WELDER_ACT, user, I)
-
-///Analyzer act
-/atom/proc/analyzer_act(mob/living/user, obj/item/I)
-	return SEND_SIGNAL(src, COMSIG_ATOM_ANALYSER_ACT, user, I)
-
 ///Generate a tag for this atom
-/atom/proc/GenerateTag()
+/atom/GenerateTag()
 	return
 
 /// Generic logging helper
@@ -1438,3 +1402,15 @@
 		var/mouseparams = list2params(paramslist)
 		usr_client.Click(src, loc, null, mouseparams)
 		return TRUE
+
+/// Relay a rider's input to its riding component.
+/atom/proc/relaydrive(mob/living/user, direction)
+	return !(SEND_SIGNAL(src, COMSIG_RIDDEN_DRIVER_MOVE, user, direction) & COMPONENT_DRIVER_BLOCK_MOVE)
+
+/atom/proc/set_density(new_value)
+	SHOULD_CALL_PARENT(TRUE)
+	if(density == new_value)
+		return
+	. = density
+	density = new_value
+	SEND_SIGNAL(src, COMSIG_ATOM_DENSITY_CHANGED, new_value)

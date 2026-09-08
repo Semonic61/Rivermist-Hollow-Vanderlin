@@ -5,7 +5,7 @@
 	base_icon_state = "artery"
 	sellprice = 1
 
-	organ_flags = ORGAN_LIMB_SUPPORTER|ORGAN_INDESTRUCTIBLE|ORGAN_NO_VIOLENT_DAMAGE
+	organ_flags = ORGAN_ORGANIC|ORGAN_LIMB_SUPPORTER|ORGAN_INDESTRUCTIBLE|ORGAN_NO_VIOLENT_DAMAGE
 	organ_efficiency = list(ORGAN_SLOT_ARTERY = 100)
 	needs_processing = TRUE
 
@@ -34,10 +34,18 @@
 	///squirting sound
 	var/squirt_sound = list('sound/gore/artery1.ogg', 'sound/gore/artery2.ogg', 'sound/gore/artery3.ogg')
 
-/obj/item/organ/artery/can_heal(delta_time, times_fired)
+/obj/item/organ/artery/can_heal(delta_time, times_fired, in_bleedout)
 	return FALSE
 
-/obj/item/organ/artery/on_life(delta_time, times_fired)
+/obj/item/organ/artery/proc/is_bleeding()
+	if(!iscarbon(owner))
+		return FALSE
+	var/mob/living/carbon/carbon_owner = owner
+	if(!is_bruised() || !carbon_owner.pulse || (carbon_owner.bodytemperature <= -15))
+		return FALSE
+	return TRUE
+
+/obj/item/organ/artery/on_life(delta_time, times_fired, in_bleedout, virus_immunity, antibiotics, immunity_weakness, passed_temp)
 	. = ..()
 	if(!iscarbon(owner))
 		return
@@ -76,6 +84,13 @@
 		squirt(final_bleed_rate)
 	else
 		squirt_less(final_bleed_rate)
+	consider_processing(in_bleedout)
+
+/obj/item/organ/artery/handle_blood(delta_time, times_fired, in_bleedout)
+	var/arterial_efficiency = get_slot_efficiency(ORGAN_SLOT_ARTERY)
+	if(is_failing_without_bleedout() || in_bleedout)
+		return
+	current_blood = min(current_blood + 5 * (0.5 * delta_time) * (max(1, arterial_efficiency) / ORGAN_OPTIMAL_EFFICIENCY), max_blood_storage)
 
 /obj/item/organ/artery/tear()
 	if(!owner)
@@ -101,8 +116,8 @@
 	COOLDOWN_START(src, next_squirt, cd_time)
 	COOLDOWN_START(src, self_heal, ARTERY_SELF_HEAL_TIME)
 
-/obj/item/organ/artery/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE)
-	. = ..()
+/obj/item/organ/artery/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE, required_organ_flag = NONE)
+	. = ..(amount, maximum, required_organ_flag)
 	if(damage <= 0)
 		mend()
 
@@ -148,3 +163,5 @@
 	// No open wound, even less drama
 	else
 		owner.adjust_bloodvolume(-amount)
+	current_blood = max(current_blood - amount, 0)
+	consider_processing()

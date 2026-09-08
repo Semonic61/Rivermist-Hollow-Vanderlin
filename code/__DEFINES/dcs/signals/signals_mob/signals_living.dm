@@ -131,6 +131,10 @@
 /// From organ insertion/removal after a living mob's organ slot changes. (obj/item/organ/organ, organ_slot, inserted)
 #define COMSIG_LIVING_ORGAN_CHANGED "living_organ_changed"
 
+/// Sent from /mob/living/get_ear_protection(): (list/protection)
+#define COMSIG_LIVING_GET_EAR_PROTECTION "living_get_ear_protection"
+#define EAR_PROTECTION_ARG 1
+
 #define COMSIG_LIVING_ADJUSTED "living_damage_adjusted"
 
 #define COMSIG_LIVING_PREBITE_SELF  "living_prebite"
@@ -141,3 +145,5 @@
 /// From /mob/living/simple_animal/proc/tamed(), sent to the animal being tamed: (mob/tamer)
 /// COMSIG_ANIMAL_TAMED is the objective-side counterpart and fires on the tamer instead.
 #define COMSIG_LIVING_TAMED "living_tamed"
+/// Sent to a mob when one of their bodypart's surgery state changes, OR sent from the basic_surgery_state holder when its surgery state changes (old_state, new_state, changed_states)
+#define COMSIG_LIVING_UPDATING_SURGERY_STATE "carbon_updating_surgery_state"

@@ -1,5 +1,6 @@
 /obj/machinery
 	name = "machinery"
+	armor_type = /datum/armor/machinery
 	icon = 'icons/obj/stationobjs.dmi'
 	desc = ""
 	verb_say = "beeps"
@@ -31,8 +32,6 @@
 	var/mob/living/structureclimber
 
 /obj/machinery/Initialize(mapload, ...)
-	if(!armor)
-		armor = list("blunt" = 25, "slash" = 25, "stab" = 25,  "piercing" = 10, "fire" = 50, "acid" = 70)
 	. = ..()
 	GLOB.machines += src
 

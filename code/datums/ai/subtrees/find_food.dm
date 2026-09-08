@@ -5,8 +5,6 @@
 	if(!isliving(controller.pawn))
 		return FALSE
 	var/hunger = SEND_SIGNAL(controller.pawn, COMSIG_MOB_RETURN_HUNGER)
-	if(controller.blackboard[BB_IS_BEING_RIDDEN])
-		return hunger > 0
 	return hunger >= 50
 
 /// similar to finding a target but looks for food types in the // the what?

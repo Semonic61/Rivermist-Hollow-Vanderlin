@@ -108,6 +108,12 @@
 
 	var/mob/living/carbon/human/subject = allocate(/mob/living/carbon/human, floor)
 	TEST_ASSERT_NOTNULL(subject.reflective_icon, "Test setup needs a subject that casts a reflection.")
+	TEST_ASSERT(subject.reflective_icon.appearance_flags & KEEP_TOGETHER, "The stencil mask must clip bodypart and clothing overlays together.")
+	// FOV assigns a render target on client login; an unconnected test mob doesn't have one.
+	subject.render_target = ref(subject)
+	subject.update_reflection()
+	TEST_ASSERT_NULL(subject.reflective_icon.render_target, "A reflection must not overwrite the subject's FOV render target.")
+	TEST_ASSERT_NULL(subject.reflective_icon.render_source, "A reflection must use the copied appearance, not the subject's already-rotated render target.")
 
 	// Upright, the reflection is the plain vertical flip it always was.
 	var/matrix/upright = subject.reflective_icon.transform
@@ -117,6 +123,9 @@
 	subject.set_body_position(LYING_DOWN)
 	subject.set_lying_angle(90)
 	TEST_ASSERT_NOTNULL(subject.reflective_icon, "A lying subject still casts a reflection.")
+	TEST_ASSERT(subject.reflective_icon.appearance_flags & KEEP_TOGETHER, "Updating a reflection must preserve its masking group.")
+	TEST_ASSERT_NULL(subject.reflective_icon.render_target, "A pose update must not restore the subject's render target on its reflection.")
+	TEST_ASSERT_NULL(subject.reflective_icon.render_source, "A pose update must not reuse the subject's already-rotated image.")
 
 	// The reflection has to be our own transform with its y row negated - anything else is a standing reflection.
 	var/matrix/lying = subject.transform
@@ -126,6 +135,18 @@
 	TEST_ASSERT_EQUAL(reflected.d, -lying.d, "A lying reflection must flip the subject's rotation vertically.")
 	TEST_ASSERT_EQUAL(reflected.e, -lying.e, "A lying reflection must flip the subject's rotation vertically.")
 	TEST_ASSERT_NOTEQUAL(reflected.b, 0, "A mob lying at 90 degrees must produce a rotated reflection, not an upright one.")
+
+	subject.set_lying_angle(270)
+	lying = subject.transform
+	reflected = subject.reflective_icon.transform
+	TEST_ASSERT_EQUAL(reflected.b, lying.b, "Turning over must update the reflection's rotation.")
+	TEST_ASSERT_EQUAL(reflected.d, -lying.d, "Turning over must preserve the vertical reflection.")
+
+	subject.set_body_position(STANDING_UP)
+	subject.set_lying_angle(0)
+	upright = subject.reflective_icon.transform
+	TEST_ASSERT_EQUAL(upright.a, 1, "Standing up must restore an unrotated reflection.")
+	TEST_ASSERT_EQUAL(upright.e, -1, "Standing up must preserve the vertical reflection.")
 
 /// Walking up to a mirror should ease the reflection in rather than switch it on at the last tile.
 /datum/unit_test/reflection_fades_in_with_distance

@@ -21,6 +21,9 @@
 /datum/job/moon_priest
 	title = "Moon Priest"
 	f_title = "Moon Priestess"
+	unique_alt_honorary = TRUE
+	alt_honorary = list("Father")
+	alt_honorary_female = list("Mother Superior")
 	tutorial = "You serve Selune, the Moonmaiden. \
 	In darkness and doubt, her silver light guides the lost. \
 	This humble chapel is a refuge for travelers and the faithful. \

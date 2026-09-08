@@ -393,7 +393,7 @@
 				var/obj/item/rand_item = SEND_SIGNAL(src, COMSIG_BODYSTORAGE_REMOVE_RAND_ITEM, STORAGE_LAYER_INNER)
 				if(!rand_item)
 					return
-				if(H.client?.prefs.showrolls)
+				if(H.client?.prefs?.read_preference(/datum/preference/toggle/showrolls))
 					to_chat(H, span_alert("Damn! I lose my [pick(altnames)]'s grip on [rand_item]! [keepinsidechance]%"))
 				else
 					to_chat(H, span_alert("Damn! I lose my [pick(altnames)]'s grip on [rand_item]!"))
@@ -404,7 +404,7 @@
 				var/turf/selectedturf = pick(orange(H, yeet)) //object flies off the hole with pressure at a random turf, funny.
 				rand_item.throw_at(selectedturf, yeet, 2)
 			else
-				if(H.client?.prefs.showrolls)
+				if(H.client?.prefs?.read_preference(/datum/preference/toggle/showrolls))
 					if(keepinsidechance < 10)
 						to_chat(H, span_blue("I easily maintain my [pick(altnames)]'s grip on it's contents. [keepinsidechance]%"))
 					else

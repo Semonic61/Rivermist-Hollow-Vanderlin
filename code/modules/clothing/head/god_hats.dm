@@ -15,7 +15,7 @@
 	default_hidden = HIDEEARS|HIDEHAIR
 	dropshrink = 0.8
 
-	armor = ARMOR_WEAK
+	armor_type = /datum/armor/weak
 	prevent_crits = MINOR_CRITICALS
 	salvage_amount = 1
 	salvage_result = /obj/item/natural/silk
@@ -27,7 +27,7 @@
 	icon_state = "deathface"
 	flags_inv = HIDEEARS | HIDEHAIR | HIDEFACIALHAIR
 
-	armor = ARMOR_WEAK
+	armor_type = /datum/armor/weak
 	prevent_crits = MINOR_CRITICALS
 
 /obj/item/clothing/head/padded/deathshroud
@@ -63,7 +63,7 @@
 	worn_x_dimension = 64
 	worn_y_dimension = 64
 	resistance_flags = FIRE_PROOF // Made of metal
-	armor = ARMOR_WEAK
+	armor_type = /datum/armor/head/eora
 	salvage_result = NUTRITION_LEVEL_HUNGRY
 
 /obj/item/clothing/head/roguehood/astrata
@@ -72,7 +72,7 @@
 	icon_state = "astratahood"
 	resistance_flags = FIRE_PROOF // Not the sun hat!
 
-	armor = ARMOR_MINIMAL
+	armor_type = /datum/armor/minimal
 	prevent_crits = MINOR_CRITICALS
 
 /obj/item/clothing/head/roguehood/priest
@@ -90,7 +90,7 @@
 	default_hidden = HIDEEARS|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR
 	resistance_flags = FIRE_PROOF
 
-	armor = ARMOR_WEAK
+	armor_type = /datum/armor/weak
 	body_parts_covered = FULL_HEAD | NECK
 	prevent_crits = MINOR_CRITICALS
 

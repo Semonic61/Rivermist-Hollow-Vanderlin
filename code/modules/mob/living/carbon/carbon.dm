@@ -1,7 +1,9 @@
 /mob/living/carbon/Initialize()
 	. = ..()
 	create_reagents(1000)
-	update_body_parts() //to update the carbon's new bodyparts appearance
+	update_organ_requirements()
+	update_limb_efficiencies()
+	update_body() //to update the carbon's new bodyparts appearance
 	LoadComponent(/datum/component/storage/concrete/organ)
 	GLOB.carbon_list += src
 
@@ -102,32 +104,6 @@
 	else
 		mode() // Activate held item
 
-/mob/living/attackby(obj/item/I, mob/user, list/modifiers)
-	if(!user.cmode && (istype(user.rmb_intent, /datum/rmb_intent/weak) || istype(user.rmb_intent, /datum/rmb_intent/strong)))
-		var/try_to_fail = !istype(user.rmb_intent, /datum/rmb_intent/weak)
-		var/list/possible_steps = list()
-		for(var/datum/surgery_step/surgery_step as anything in GLOB.surgery_steps)
-			if(!surgery_step.name)
-				continue
-			if(surgery_step.can_do_step(user, src, user.zone_selected, I, user.used_intent))
-				possible_steps[surgery_step.name] = surgery_step
-		var/possible_len = length(possible_steps)
-		if(possible_len)
-			var/datum/surgery_step/done_step
-			if(possible_len > 1)
-				var/input = input(user, "Which surgery step do you want to perform?", "PESTRA", ) as null|anything in possible_steps
-				if(input)
-					done_step = possible_steps[input]
-			else
-				done_step = possible_steps[possible_steps[1]]
-			if(done_step?.try_op(user, src, user.zone_selected, I, user.used_intent, try_to_fail))
-				return TRUE
-		if(I.item_flags & SURGICAL_TOOL)
-			to_chat(user, span_warning("You're unable to perform surgery!"))
-			return TRUE
-
-	return ..()
-
 /mob/living/carbon/throw_impact(atom/hit_atom, datum/thrownthing/throwingdatum)
 	. = ..()
 	var/hurt = TRUE
@@ -179,7 +155,7 @@
 		hud_used.throw_icon?.update_appearance(UPDATE_ICON_STATE)
 
 /mob/proc/throw_item(atom/target, offhand = FALSE)
-	SEND_SIGNAL(src, COMSIG_MOB_THROW, target)
+	return
 
 /mob/living/carbon/throw_item(atom/target, offhand = FALSE)
 	. = ..()
@@ -205,34 +181,41 @@
 			if(pulling && pulling != src)
 				if(isliving(pulling))
 					var/mob/living/throwable_mob = pulling
-					if(!throwable_mob.buckled)
-						var/obj/item/grabbing/other_grab = offhand ? get_active_held_item() : get_inactive_held_item()
-						if(grab_state < GRAB_AGGRESSIVE)
-							stop_pulling(pulling_broke_free = TRUE)
-							return
+					if(QDELETED(throwable_mob))
+						return
+					var/is_fireman_carried = (throwable_mob.buckled == src) && buckle_lying
+					if(throwable_mob.buckled && !is_fireman_carried)
+						return
+					var/obj/item/grabbing/other_grab = offhand ? get_active_held_item() : get_inactive_held_item()
+					if(!is_fireman_carried && grab_state < GRAB_AGGRESSIVE)
 						stop_pulling(pulling_broke_free = TRUE)
-						if(HAS_TRAIT(src, TRAIT_PACIFISM))
-							to_chat(src, span_notice("I gently let go of [throwable_mob]."))
+						return
+					if(is_fireman_carried)
+						if(!unbuckle_mob(throwable_mob, force = TRUE) || QDELETED(throwable_mob))
 							return
-						thrown_thing = throwable_mob
-						thrown_speed = 1
-						thrown_range = round((GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH)/GET_MOB_ATTRIBUTE_VALUE(throwable_mob, STAT_CONSTITUTION))*2)
-						if(body_position == LYING_DOWN || (!HAS_TRAIT(thrown_thing, TRAIT_TINY) && throwable_mob.cmode && (throwable_mob.body_position != LYING_DOWN || GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH) < 15)))
-							while(end_T.z > start_T.z)
-								end_T = GET_TURF_BELOW(end_T)
-						if((end_T.z > start_T.z) && throwable_mob.cmode)
-							thrown_range -= 1
-						if(!istype(other_grab) || other_grab.grabbed != throwable_mob)
-							thrown_range -= 1
-						if(thrown_range <= 0)
-							return
-						if(start_T && end_T)
-							log_combat(src, throwable_mob, "thrown", addition="grab from tile in [AREACOORD(start_T)] towards tile at [AREACOORD(end_T)]")
+					stop_pulling(pulling_broke_free = TRUE)
+					if(HAS_TRAIT(src, TRAIT_PACIFISM) || HAS_TRAIT(src, TRAIT_NO_THROWING))
+						to_chat(src, span_notice("I gently let go of [throwable_mob]."))
+						return
+					thrown_thing = throwable_mob
+					thrown_speed = 1
+					thrown_range = round((GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH)/GET_MOB_ATTRIBUTE_VALUE(throwable_mob, STAT_CONSTITUTION))*2)
+					if(body_position == LYING_DOWN || (!HAS_TRAIT(thrown_thing, TRAIT_TINY) && throwable_mob.cmode && (throwable_mob.body_position != LYING_DOWN || GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH) < 15)))
+						while(end_T.z > start_T.z)
+							end_T = GET_TURF_BELOW(end_T)
+					if((end_T.z > start_T.z) && throwable_mob.cmode)
+						thrown_range -= 1
+					if(!istype(other_grab) || other_grab.grabbed != throwable_mob)
+						thrown_range -= 1
+					if(thrown_range <= 0)
+						return
+					if(start_T && end_T)
+						log_combat(src, throwable_mob, "thrown", addition="grab from tile in [AREACOORD(start_T)] towards tile at [AREACOORD(end_T)]")
 				else
 					thrown_thing = pulling
 					dropItemToGround(I, silent = TRUE)
 
-		else if(!CHECK_BITFIELD(I.item_flags, ABSTRACT) && !HAS_TRAIT(I, TRAIT_NODROP))
+		else if(ismobholder(I) && !(I.item_flags & ABSTRACT) && !HAS_TRAIT(I, TRAIT_NODROP))
 			thrown_thing = I
 			if(ismobholder(thrown_thing))
 				var/obj/item/mob_holder/old = thrown_thing
@@ -246,12 +229,14 @@
 			else
 				dropItemToGround(I, silent = TRUE)
 
-			if(HAS_TRAIT(src, TRAIT_PACIFISM) && I.throwforce)
+			if((HAS_TRAIT(src, TRAIT_PACIFISM) && I.throwforce) || HAS_TRAIT(src, TRAIT_NO_THROWING))
 				to_chat(src, "<span class='notice'>I set [I] down gently on the ground.</span>")
 				return
 
+		else
+			thrown_thing = I.on_thrown(src, target)
 
-	if(thrown_thing)
+	if(thrown_thing && !HAS_TRAIT(src, TRAIT_NO_THROWING))
 		if(!thrown_speed)
 			thrown_speed = thrown_thing.throw_speed
 		if(!thrown_range)
@@ -259,7 +244,10 @@
 		visible_message("<span class='danger'>[src] throws [thrown_thing].</span>", \
 						"<span class='danger'>I toss [thrown_thing].</span>")
 		log_message("has thrown [thrown_thing]", LOG_ATTACK)
-		thrown_thing.safe_throw_at(end_T, thrown_range, thrown_speed, src, null, null, null, move_force)
+		var/atom/throw_start_loc = thrown_thing.loc
+		var/throw_started = thrown_thing.safe_throw_at(end_T, thrown_range, thrown_speed, src, null, null, null, move_force)
+		if(!QDELETED(thrown_thing) && (throw_started || thrown_thing.throwing || thrown_thing.loc != throw_start_loc))
+			SEND_SIGNAL(src, COMSIG_MOB_THROW, thrown_thing)
 		if(!used_sound)
 			used_sound = pick(PUNCHWOOSH)
 		playsound(src, used_sound, 60, FALSE)
@@ -915,7 +903,7 @@
 	else
 		clear_fullscreen("oxy")
 
-	var/hurtdamage = ((getPainLoss() / max(1, (GET_MOB_ATTRIBUTE_VALUE(src, STAT_ENDURANCE) * 10))) * 100) //what percent out of 100 to max pain
+	var/hurtdamage = can_feel_pain() ? (getShockStage() / SHOCK_STAGE_MAX) * 100 : 0 //what percent out of 100 to max pain
 	if(hurtdamage)
 		var/severity = 0
 		switch(hurtdamage)
@@ -1022,6 +1010,8 @@
 
 	for(var/obj/item/organ/parent in internal_organs)//we treat this like the initial heart beat filling all the arteries with blood again
 		parent.current_blood = min(parent.current_blood + (parent.max_blood_storage * 0.4), parent.max_blood_storage)
+	pump_heart(forced_pump = 1.3)
+	set_heartattack(FALSE)
 
 	. = ..()
 
@@ -1174,7 +1164,8 @@
 
 /mob/living/carbon/proc/create_internal_organs()
 	for(var/obj/item/organ/I as anything in internal_organs)
-		I.Insert(src)
+		if(!I.owner)
+			I.Insert(src)
 
 /mob/living/carbon/vv_get_dropdown()
 	. = ..()
@@ -1184,6 +1175,7 @@
 	VV_DROPDOWN_OPTION(VV_HK_MARTIAL_ART, "Give Martial Arts")
 	VV_DROPDOWN_OPTION(VV_HK_GIVE_TRAUMA, "Give Brain Trauma")
 	VV_DROPDOWN_OPTION(VV_HK_CURE_TRAUMA, "Cure Brain Traumas")
+	VV_DROPDOWN_OPTION(VV_HK_SHOW_RELATIONS, "Show Relations")
 	VV_DROPDOWN_OPTION(VV_HK_UNLINK_RUNES, "Unlink From All Runes")
 
 /mob/living/carbon/vv_do_topic(list/href_list)
@@ -1273,6 +1265,10 @@
 		cure_all_traumas(TRAUMA_RESILIENCE_ABSOLUTE)
 		log_admin("[key_name(usr)] has cured all traumas from [key_name(src)].")
 		message_admins("<span class='notice'>[key_name_admin(usr)] has cured all traumas from [key_name_admin(src)].</span>")
+	if(href_list[VV_HK_SHOW_RELATIONS])
+		if(!check_rights(NONE))
+			return
+		mind?.display_relations(usr)
 	if(href_list[VV_HK_UNLINK_RUNES])
 		if(!check_rights(R_ADMIN))
 			return
@@ -1347,18 +1343,6 @@
 			return FALSE
 	if(istype(loc, /turf/open/water) && body_position == LYING_DOWN)
 		return FALSE
-
-///Returns a list of all body_zones covered by clothing
-/mob/living/carbon/proc/get_covered_body_zones()
-	RETURN_TYPE(/list)
-	SHOULD_NOT_OVERRIDE(TRUE)
-
-	var/covered_flags = NONE
-	var/list/all_worn_items = get_all_worn_items(src)
-	for(var/obj/item/worn_item in all_worn_items)
-		covered_flags |= worn_item.body_parts_covered
-
-	return body_parts_covered2organ_names(covered_flags)
 
 /mob/living/carbon/proc/try_skin_burn(reaction_volume)
 	var/list/covered_zones = get_covered_body_zones()
@@ -1539,4 +1523,38 @@
 	if(to_dismember)
 		to_dismember.dismember()
 		return TRUE
+	return FALSE
+
+/**
+ * This proc is used to determine whether or not the mob can handle touching an acid affected object.
+ */
+/mob/living/carbon/proc/can_touch_acid(atom/acided_atom)
+	// So people can take their own clothes off
+	if((acided_atom == src) || (acided_atom.loc == src))
+		return TRUE
+
+	if(isitem(acided_atom))
+		var/obj/item/acided = acided_atom
+		if(acided.acid_level < 20)
+			return TRUE
+
+	if(gloves?.resistance_flags & (UNACIDABLE | ACID_PROOF))
+		return TRUE
+
+	return FALSE
+
+/**
+ * This proc is used to determine whether or not the mob can handle touching a burning object.
+ */
+/mob/living/carbon/proc/can_touch_burning(atom/burning_atom)
+	// So people can take their own clothes off
+	if((burning_atom == src) || (burning_atom.loc == src))
+		return TRUE
+
+	if(HAS_TRAIT(src, TRAIT_RESISTHEAT) || HAS_TRAIT(src, TRAIT_RESISTHEATHANDS))
+		return TRUE
+
+	if(gloves?.max_heat_protection_temperature >= 360)
+		return TRUE
+
 	return FALSE

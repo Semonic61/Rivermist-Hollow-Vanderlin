@@ -14,15 +14,6 @@
 	if(stat != DEAD && bleed_rate)
 		to_chat(src, span_warning("The blood soaks through my bandage."))
 
-/mob/living/carbon/monkey/handle_blood()
-	if(HAS_TRAIT(src, TRAIT_HUSK)) //cryosleep or husked people do not pump the blood.
-		return
-	//Blood regeneration if there is some space
-	if(blood_volume < BLOOD_VOLUME_NORMAL && !bleed_rate)
-		blood_volume += 0.1 // regenerate blood VERY slowly
-		if((blood_volume < BLOOD_VOLUME_OKAY) && !HAS_TRAIT(src, TRAIT_BLOODLOSS_IMMUNE))
-			adjustOxyLoss(round((BLOOD_VOLUME_NORMAL - blood_volume) * 0.02, 1))
-
 /mob/living/proc/handle_blood()
 	if(HAS_TRAIT(src, TRAIT_HUSK)) //cryosleep or husked people do not pump the blood.
 		return
@@ -98,7 +89,7 @@
 #define CONSTITUTION_BLEEDRATE_MOD 0.03
 
 /// Makes a blood drop, leaking amt units of blood from the mob
-/mob/living/proc/bleed(amt)
+/mob/living/proc/bleed(amt, should_update = TRUE)
 	if(!iscarbon(src) && !HAS_TRAIT(src, TRAIT_SIMPLE_WOUNDS))
 		return
 	if(surrendering)
@@ -128,18 +119,19 @@
 		if(body_position != LYING_DOWN && !stat)
 			playsound(src, pick('sound/misc/bleed (1).ogg', 'sound/misc/bleed (2).ogg', 'sound/misc/bleed (3).ogg'), 100, FALSE)
 
-	updatehealth()
+	if(should_update)
+		updatehealth()
 
 	return TRUE
 
 #undef CONSTITUTION_BLEEDRATE_MOD
 
-/mob/living/carbon/human/bleed(amt)
+/mob/living/carbon/human/bleed(amt, should_update = TRUE)
 	if(NOBLOOD in dna?.species?.species_traits)
 		return FALSE
 	if(physiology)
 		amt *= physiology.bleed_mod
-	return ..()
+	return ..(amt, should_update)
 
 /mob/living/proc/restore_blood()
 	blood_volume = initial(blood_volume)
@@ -174,7 +166,7 @@
 	var/blacklisted_reagents = list(/datum/reagent/steam, /datum/reagent/water, /datum/reagent/blood, /datum/reagent/consumable/nutriment, /datum/reagent/consumable/soup)
 	var/blood_purity = 1
 	amount = min(amount, transfer_to.maximum_volume - transfer_to.total_volume)
-	if(reagents.total_volume)
+	if(reagents?.total_volume)
 		var/impurity_volume = reagents.total_volume
 		for(var/reagent_type in blacklisted_reagents)
 			impurity_volume -= reagents.get_reagent_amount(reagent_type, FALSE)

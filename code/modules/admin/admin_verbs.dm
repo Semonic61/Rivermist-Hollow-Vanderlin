@@ -190,12 +190,13 @@ GLOBAL_PROTECT(admin_verbs_debug)
 /world/proc/AVerbsDebug()
 	return list(
 	/client/proc/restart_controller,
+	/client/proc/view_armor_compare,
 	/client/proc/cmd_admin_list_open_jobs,
 	/client/proc/Debug2,
 	/client/proc/cmd_debug_mob_lists,
 	/client/proc/cmd_admin_delete,
 	/client/proc/cmd_debug_del_all,
-	/client/proc/restart_controller,
+	/client/proc/cmd_controller_view_ui,
 	/client/proc/enable_debug_verbs,
 	/client/proc/callproc,
 	/client/proc/callproc_datum,
@@ -261,6 +262,7 @@ GLOBAL_LIST_INIT(admin_verbs_hideable, list(
 	/client/proc/cmd_admin_direct_narrate,
 	/client/proc/cmd_admin_world_narrate,
 	/client/proc/cmd_admin_local_narrate,
+	/client/proc/cmd_controller_view_ui,
 	/client/proc/play_local_sound,
 	/client/proc/play_sound,
 	/client/proc/set_round_end_sound,
@@ -281,6 +283,7 @@ GLOBAL_LIST_INIT(admin_verbs_hideable, list(
 	/client/proc/everyone_random,
 	/datum/admins/proc/toggleAI,
 	/client/proc/restart_controller,
+	/client/proc/view_armor_compare,
 	/client/proc/cmd_admin_list_open_jobs,
 	/client/proc/callproc,
 	/client/proc/callproc_datum,
@@ -790,8 +793,8 @@ GLOBAL_PROTECT(admin_verbs_hideable)
 
 	// Ensure the admin stops hearing ghosts like a mortal
 	if(prefs)
-		prefs.chat_toggles &= ~CHAT_GHOSTEARS   // Explicitly remove ghost hearing
-		prefs.chat_toggles &= ~CHAT_GHOSTWHISPER // Explicitly remove ghost whispers
+		prefs.preference_clear_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTEARS)   // Explicitly remove ghost hearing
+		prefs.preference_clear_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTWHISPER) // Explicitly remove ghost whispers
 		prefs.save_preferences()
 		to_chat(src, span_info("I will hear like a mortal."))
 
@@ -1015,30 +1018,27 @@ GLOBAL_PROTECT(admin_verbs_hideable)
 	if(!check_rights_for(src, R_DEBUG))
 		return
 #ifndef OPENDREAM
-	if(GLOB.tracy_initialized)
+	if(Tracy.enabled)
 		to_chat(src, span_warning("byond-tracy is already running!"))
 		return
-	else if(GLOB.tracy_init_error)
-		to_chat(src, span_danger("byond-tracy failed to initialize during an earlier attempt: [GLOB.tracy_init_error]"))
+	else if(Tracy.error)
+		to_chat(src, span_danger("byond-tracy failed to initialize during an earlier attempt: [Tracy.error]"))
 		return
 	else if(!fexists(TRACY_DLL_PATH))
 		to_chat(src, span_danger("byond-tracy library ([TRACY_DLL_PATH]) not present!"))
 		return
 	message_admins(span_adminnotice("[key_name_admin(src)] is trying to start the byond-tracy profiler."))
 	log_admin("[key_name(src)] is trying to start the byond-tracy profiler.")
-	GLOB.tracy_initialized = FALSE
-	GLOB.tracy_init_reason = "[ckey]"
-	world.init_byond_tracy()
-	if(GLOB.tracy_init_error)
-		to_chat(src, span_danger("byond-tracy failed to initialize: [GLOB.tracy_init_error]"))
-		message_admins(span_adminnotice("[key_name_admin(src)] tried to start the byond-tracy profiler, but it failed to initialize ([GLOB.tracy_init_error])"))
-		log_admin("[key_name(src)] tried to start the byond-tracy profiler, but it failed to initialize ([GLOB.tracy_init_error])")
+	if(!Tracy.enable("[ckey]"))
+		to_chat(src, span_danger("byond-tracy failed to initialize: [Tracy.error]"))
+		message_admins(span_adminnotice("[key_name_admin(src)] tried to start the byond-tracy profiler, but it failed to initialize ([Tracy.error])"))
+		log_admin("[key_name(src)] tried to start the byond-tracy profiler, but it failed to initialize ([Tracy.error])")
 		return
 	to_chat(src, span_notice("byond-tracy successfully started!"))
 	message_admins(span_adminnotice("[key_name_admin(src)] started the byond-tracy profiler."))
 	log_admin("[key_name(src)] started the byond-tracy profiler.")
-	if(GLOB.tracy_log)
-		rustg_file_write("[GLOB.tracy_log]", "[GLOB.log_directory]/tracy.loc")
+	if(Tracy.trace_path)
+		rustg_file_write("[Tracy.trace_path]", "[GLOB.log_directory]/tracy.loc")
 #else
 	to_chat(src, span_danger("byond-tracy is not supported on OpenDream, sorry!"))
 #endif

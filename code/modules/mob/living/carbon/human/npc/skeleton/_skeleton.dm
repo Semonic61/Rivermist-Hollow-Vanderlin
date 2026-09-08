@@ -41,10 +41,10 @@
 	name = "skeleton"
 	real_name = "skeleton"
 	mob_biotypes = MOB_UNDEAD
-	faction = list(FACTION_UNDEAD)
+	set_faction(list(FACTION_UNDEAD))
 	var/turf/turf = get_turf(src)
 	if(SSterrain_generation.get_island_at_location(turf))
-		faction |= "islander"
+		add_faction("islander")
 	if(length(quirks))
 		clear_quirks()
 	if(dna?.species)

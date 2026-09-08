@@ -64,7 +64,7 @@
 	lines += cast_on.has_erp_pref(/datum/erp_preference/boolean/fatal_drain_ok) ? "I could drink this one to the very dregs..." : "Something guards their lifespark; I may sip, never drain."
 	if(cast_on.IsWedded())
 		lines += "A mortal vow binds this soul. Corrupting it would be especially sweet."
-	if(cast_on.virginity)
+	if(HAS_TRAIT(cast_on, TRAIT_VIRGIN))
 		lines += "This soul is untouched. Its first surrender would be potent."
 	to_chat(owner, span_love(lines.Join("<br>")))
 

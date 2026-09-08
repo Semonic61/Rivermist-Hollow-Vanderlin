@@ -403,7 +403,7 @@
 		guardian.maxHealth = round(guardian.maxHealth * heat_hp_mult)
 		guardian.health = guardian.maxHealth
 	// One shared faction so goblins, bogbugs and wolves never brawl each other.
-	guardian.faction = list(FACTION_DUNGEON)
+	guardian.set_faction(list(FACTION_DUNGEON))
 	// Some carbon NPCs (goblins et al) finish their setup on a delayed
 	// after_creation timer that stomps faction back to their overworld one.
 	// Re-assert ours after any such timer has fired.
@@ -431,7 +431,7 @@
 	var/mob/living/guardian = guardian_ref?.resolve()
 	if(QDELETED(guardian) || !guardian_refs || !guardian_refs["[REF(guardian)]"])
 		return
-	guardian.faction = list(FACTION_DUNGEON)
+	guardian.set_faction(list(FACTION_DUNGEON))
 	guardian.kidnap_lair_tag = owning_run?.get_live_larder_tag()
 
 /// A carbon guardian knocked into crit counts as defeated (see register_guardian).

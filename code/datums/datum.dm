@@ -137,6 +137,11 @@
 
 	return QDEL_HINT_QUEUE
 
+/// Generate a tag for this datum, if it implements one.
+/// Call this as early as possible to avoid weakref mistargets.
+/datum/proc/GenerateTag()
+	datum_flags |= DF_USE_TAG
+
 ///Only override this if you know what you're doing. You do not know what you're doing
 ///This is a threat
 /datum/proc/clear_signal_refs()

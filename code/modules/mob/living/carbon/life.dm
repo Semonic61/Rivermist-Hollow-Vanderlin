@@ -20,8 +20,27 @@
 		. = ..()
 	else
 		//Reagent processing needs to come before breathing, to prevent edge cases.
-		handle_organs(delta_time, times_fired)
-		handle_bodyparts(delta_time, times_fired)
+		var/virus_immunity = virus_immunity()
+		var/antibiotics = get_antibiotics()
+		var/immunity_weakness = immunity_weakness()
+		var/turf/turf_loc = get_turf(loc)
+		var/passed_temp = turf_loc?.return_temperature()
+		var/organ_flags = handle_organs(delta_time, times_fired, virus_immunity, antibiotics, immunity_weakness, passed_temp)
+		var/bodypart_flags = handle_bodyparts(delta_time, times_fired, virus_immunity, antibiotics, immunity_weakness, passed_temp)
+		var/shock_flags = handle_shock(delta_time, times_fired) | handle_shock_stage(delta_time, times_fired)
+		var/sleep_flags = handle_sleep()
+
+		if((blood_volume > BLOOD_VOLUME_SURVIVE) || HAS_TRAIT(src, TRAIT_BLOODLOSS_IMMUNE))
+			if(!heart_attacking)
+				if(oxyloss)
+					adjustOxyLoss(-5, FALSE)
+					organ_flags |= ORGAN_PROCESS_UPDATE_HEALTH
+			else if(getOxyLoss() < 20)
+				heart_attacking = FALSE
+
+		if((organ_flags & ORGAN_PROCESS_UPDATE_HEALTH) || (bodypart_flags & BODYPART_LIFE_UPDATE_HEALTH) || (shock_flags & SHOCK_PROCESS_UPDATE_HEALTH) || (sleep_flags & BODYPART_LIFE_UPDATE_HEALTH))
+			updatehealth()
+			update_stamina()
 
 		. = ..()
 
@@ -33,19 +52,6 @@
 		handle_roguebreath()
 		update_stress()
 		handle_nausea()
-
-		handle_shock(delta_time, times_fired)
-		handle_shock_stage(delta_time, times_fired)
-
-		if((blood_volume > BLOOD_VOLUME_SURVIVE) || HAS_TRAIT(src, TRAIT_BLOODLOSS_IMMUNE))
-			if(!heart_attacking)
-				if(oxyloss)
-					adjustOxyLoss(-5)
-			else
-				if(getOxyLoss() < 20)
-					heart_attacking = FALSE
-
-		handle_sleep()
 
 	check_cremation()
 
@@ -222,16 +228,17 @@
 		return TRUE
 	return FALSE
 
-/mob/living/carbon/proc/handle_bodyparts(delta_time, times_fired)
+/mob/living/carbon/proc/handle_bodyparts(delta_time, times_fired, virus_immunity, antibiotics, immunity_weakness, passed_temp)
 	for(var/I in bodyparts)
 		var/obj/item/bodypart/BP = I
 		if(BP.needs_processing)
-			. |= BP.on_life(delta_time, times_fired)
+			. |= BP.on_life(delta_time, times_fired, virus_immunity, antibiotics, immunity_weakness, passed_temp)
 
 
-/mob/living/carbon/proc/handle_organs(delta_time, times_fired)
+/mob/living/carbon/proc/handle_organs(delta_time, times_fired, virus_immunity, antibiotics, immunity_weakness, passed_temp)
 	if(HAS_TRAIT(src, TRAIT_NO_ORGAN_PROCESS)) //internal stasis basically
 		return
+	var/in_bleedout = in_bleedout()
 	if(stat < DEAD)
 		var/list/already_processed_life = list()
 		var/list/organlist
@@ -247,8 +254,8 @@
 				// Reagent metabolization can shuffle organs during life processing.
 				if(QDELETED(organ) || already_processed_life[organ] || (organ.owner != src))
 					continue
-				if(organ.needs_processing)
-					organ.on_life(delta_time, times_fired)
+				if(in_bleedout || organ.needs_processing)
+					. |= organ.on_life(delta_time, times_fired, in_bleedout, virus_immunity, antibiotics, immunity_weakness, passed_temp)
 				already_processed_life[organ] = TRUE
 		var/datum/organ_process/organ_process
 		for(var/thing in GLOB.organ_process_datum_order)
@@ -256,13 +263,13 @@
 				break
 			organ_process = GLOB.organ_processes_by_slot[thing]
 			if(organ_process.needs_process(src))
-				organ_process.handle_process(src, delta_time, times_fired)
+				. |= organ_process.handle_process(src, delta_time, times_fired)
 	else
 		var/obj/item/organ/organ
 		for(var/thing in internal_organs)
 			organ = thing
 			//Needed so organs decay while inside the body.
-			organ.on_death(delta_time, times_fired)
+			. |= organ.on_death(delta_time, times_fired, passed_temp)
 
 /mob/living/carbon/handle_embedded_objects()
 	for(var/obj/item/bodypart/bodypart as anything in bodyparts)
@@ -325,8 +332,8 @@ All effects don't start immediately, but rather get worse over time; the rate is
 				remove_status_effect(/datum/status_effect/buff/drunk_master)
 		if(drunkenness >= 1)
 			SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
-			if(has_quirk(/datum/quirk/vice/alcoholic))
-				sate_addiction(/datum/quirk/vice/alcoholic)
+			if(has_quirk(/datum/quirk/vice/addiction/alcoholic))
+				sate_addiction(/datum/quirk/vice/addiction/alcoholic)
 		if(drunkenness >= 3)
 			if(prob(3))
 				slurring += 2
@@ -500,7 +507,7 @@ All effects don't start immediately, but rather get worse over time; the rate is
 	if(!needs_heart())
 		return FALSE
 	var/obj/item/organ/heart/heart = getorganslot(ORGAN_SLOT_HEART)
-	if(!heart || (heart.organ_flags & ORGAN_SYNTHETIC))
+	if(!heart || IS_ROBOTIC_ORGAN(heart))
 		return FALSE
 	return TRUE
 
@@ -618,8 +625,9 @@ All effects don't start immediately, but rather get worse over time; the rate is
 					if(!wound.sleep_healing)
 						continue
 					wound.heal_wound(wound.sleep_healing * sleepy_mod)
-			adjustToxLoss( - ( sleepy_mod * 0.15) )
-			updatehealth()
+			if(toxloss)
+				adjustToxLoss(-(sleepy_mod * 0.15), FALSE, TRUE)
+				. |= BODYPART_LIFE_UPDATE_HEALTH
 			if(eyesclosed && !HAS_TRAIT(src, TRAIT_NOSLEEP))
 				Sleeping(300)
 		tiredness = 0

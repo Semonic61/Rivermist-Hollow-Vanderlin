@@ -1003,29 +1003,26 @@ GLOBAL_VAR_INIT(mobids, 1)
  *
  * Turns you to face the other mob too
  */
-/mob/buckle_mob(mob/living/M, force = FALSE, check_loc = TRUE)
-	if(M.buckled)
-		return 0
-	var/turf/T = get_turf(src)
-	if(M.loc != T)
-		var/old_density = density
-		density = FALSE
-		var/can_step = step_towards(M, T)
-		density = old_density
-		if(!can_step)
-			return 0
+/mob/buckle_mob(mob/living/M, force = FALSE, check_loc = TRUE, buckle_mob_flags = NONE)
+	if(buckled)
+		return FALSE
 	return ..()
 
 ///Call back post buckle to a mob to offset your visual height
 /mob/post_buckle_mob(mob/living/M)
+	. = ..()
+	if(GetComponent(/datum/component/riding))
+		return
 	var/height = M.get_mob_buckling_height(src)
 	M.pixel_y = M.base_pixel_y + height
 	if(M.layer < layer)
 		M.layer = layer + 0.1
 ///Call back post unbuckle from a mob, (reset your visual height here)
 /mob/post_unbuckle_mob(mob/living/M)
-	M.layer = initial(M.layer)
-	M.pixel_y = M.base_pixel_y
+	. = ..()
+	M.layer = M.body_position == LYING_DOWN ? LYING_MOB_LAYER : initial(M.layer)
+	M.pixel_x = M.get_standard_pixel_x_offset()
+	M.pixel_y = M.get_standard_pixel_y_offset()
 
 ///returns the height in pixel the mob should have when buckled to another mob.
 /mob/proc/get_mob_buckling_height(mob/seat)
@@ -1069,30 +1066,10 @@ GLOBAL_VAR_INIT(mobids, 1)
 ///Can this mob use storage
 /mob/proc/canUseStorage()
 	return FALSE
-/**
- * Check if the other mob has any factions the same as us
- *
- * If exact match is set, then all our factions must match exactly
- */
-/atom/movable/proc/faction_check_mob(mob/target, exact_match)
-
-/mob/faction_check_mob(mob/target, exact_match)
-	if(exact_match) //if we need an exact match, we need to do some bullfuckery.
-		var/list/faction_src = faction.Copy()
-		var/list/faction_target = target.faction.Copy()
-		if(!("[REF(src)]" in faction_target)) //if they don't have our ref faction, remove it from our factions list.
-			faction_src -= "[REF(src)]" //if we don't do this, we'll never have an exact match.
-		if(!("[REF(target)]" in faction_src))
-			faction_target -= "[REF(target)]" //same thing here.
-		return faction_check(faction_src, faction_target, TRUE)
-	var/list/faction2use = target.faction.Copy()
-	faction2use += target.name
-	return faction_check(faction, faction2use, FALSE)
-
 /mob/living/proc/ai_targeting_ally_check(mob/living/target)
 	if(!target)
 		return FALSE
-	if(faction_check_mob(target, exact_match = FALSE))
+	if(faction_check_atom(target, exact_match = FALSE))
 		return TRUE
 	if(ai_targeting_related_faction_check(target))
 		return TRUE
@@ -1105,7 +1082,7 @@ GLOBAL_VAR_INIT(mobids, 1)
 /mob/living/proc/ai_targeting_related_faction_check(mob/living/target)
 	if(!target)
 		return FALSE
-	return ai_faction_relation_check(faction, target.faction)
+	return ai_faction_relation_check(get_faction(), target.get_faction())
 
 /mob/living/proc/get_ai_targeting_job_group()
 	var/datum/job/role = mind?.assigned_role
@@ -1150,24 +1127,6 @@ GLOBAL_VAR_INIT(mobids, 1)
 			return TRUE
 
 	return FALSE
-/*
- * Compare two lists of factions, returning true if any match
- *
- * If exact match is passed through we only return true if both faction lists match equally
- */
-/proc/faction_check(list/faction_A, list/faction_B, exact_match)
-	var/list/match_list
-	if(exact_match)
-		match_list = faction_A&faction_B //only items in both lists
-		var/length = LAZYLEN(match_list)
-		if(length)
-			return (length == LAZYLEN(faction_A)) //if they're not the same len(gth) or we don't have a len, then this isn't an exact match.
-	else
-		match_list = faction_A&faction_B
-		return LAZYLEN(match_list)
-	return FALSE
-
-
 /**
  * Fully update the name of a mob
  *

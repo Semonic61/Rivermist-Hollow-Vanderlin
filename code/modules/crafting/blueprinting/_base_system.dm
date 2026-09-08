@@ -27,7 +27,6 @@
 	create_buttons()
 	holder.screen += buttons
 	holder.click_intercept = src
-	init_blueprint_recipes()
 	registered_mob = holder.mob
 	if(registered_mob)
 		RegisterSignal(registered_mob, COMSIG_USER_MOUSE_ENTERED, PROC_REF(on_mouse_moved))
@@ -38,16 +37,6 @@
 	SSblueprints.add_viewer_to_all(registered_mob)
 
 /datum/blueprint_system/proc/quit()
-	if(holder)
-		holder.screen -= buttons
-		if(holder.click_intercept == src)
-			holder.click_intercept = null
-	clear_preview()
-	clear_pixel_positioning_dummy()
-	if(recipe_browser)
-		recipe_browser.close()
-		recipe_browser = null
-	unregister_mouse_signals()
 	qdel(src)
 
 /datum/blueprint_system/proc/unregister_mouse_signals()
@@ -61,6 +50,9 @@
 	source.exit_blueprint()
 
 /datum/blueprint_system/Destroy()
+	if(registered_mob?.blueprints == src)
+		registered_mob.blueprints = null
+		REMOVE_TRAIT(registered_mob, TRAIT_BLUEPRINT_VISION, TRAIT_GENERIC)
 	if(holder)
 		holder.screen -= buttons
 		if(holder.click_intercept == src)
@@ -695,7 +687,7 @@
 
 	var/atom/selected_output = selected_recipe.result_type
 
-	if(ispath(selected_output, /turf/closed) && (istype(get_area(final_location), /area/overlord_lair) && !("overlord" in user.faction)))
+	if(ispath(selected_output, /turf/closed) && (istype(get_area(final_location), /area/overlord_lair) && !user.has_faction("overlord")))
 		return
 
 	// Handle wall fixtures - place blueprint on adjacent floor when clicking on wall

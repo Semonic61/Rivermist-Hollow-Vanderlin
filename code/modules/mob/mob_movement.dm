@@ -157,14 +157,18 @@
 
 	. = ..()
 
+	var/movement_distance = 1
 	if((direct & (direct - 1)) && mob.loc == new_loc) //moved diagonally successfully
-		add_delay *= sqrt(2)
+		movement_distance = sqrt(2)
+		add_delay *= movement_distance
 
 	var/after_glide = 0
 	if(visual_delay)
 		after_glide = visual_delay
 	else
-		after_glide = DELAY_TO_GLIDE_SIZE(add_delay)
+		// Match the next available movement tick without rounding away fractional movement speed.
+		var/glide_delay = max(world.tick_lag, CEILING(move_delay + add_delay - world.time, world.tick_lag))
+		after_glide = MOVEMENT_ADJUSTED_GLIDE_SIZE(glide_delay, movement_distance)
 
 	mob.set_glide_size(after_glide)
 
@@ -571,6 +575,8 @@
 	if(!silent)
 		playsound_local(src, 'sound/misc/click.ogg', 100)
 
+	SEND_SIGNAL(src, COMSIG_MOVE_INTENT_TOGGLED)
+
 /mob/proc/toggle_eye_intent(mob/user) //clicking the fixeye button either makes you fixeye or clears your target
 	if(fixedeye)
 		fixedeye = 0
@@ -591,9 +597,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTEARS
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTEARS)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTEARS)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTEARS))
 		to_chat(src, span_info("I will hear all now."))
 	else
 		to_chat(src, span_info("I will hear like a mortal."))
@@ -605,9 +611,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTWHISPER
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTWHISPER)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTWHISPER)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTWHISPER))
 		to_chat(src, span_info("I will hear all whispers now."))
 	else
 		to_chat(src, span_info("I will hear like a mortal."))
@@ -619,9 +625,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTSIGHT
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTSIGHT)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTSIGHT)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTSIGHT))
 		to_chat(src, span_info("I will see all whispers now."))
 	else
 		to_chat(src, span_info("I will see like a mortal."))

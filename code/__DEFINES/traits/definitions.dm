@@ -47,6 +47,16 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define TRAIT_UI_BLOCKED "uiblocked"
 /// Inability to pull things. Turned into a trait from [MOBILITY_PULL] to be able to track sources.
 #define TRAIT_PULL_BLOCKED "pullblocked"
+/// Makes a mob non-dense without overriding other sources, such as lying down.
+#define TRAIT_UNDENSE "undense"
+/// Prevents a buckled mob from controlling its carrier.
+#define TRAIT_CANT_RIDE "cant_ride"
+/// Suspends AI planning and execution independently of client and idle state.
+#define TRAIT_AI_PAUSED "ai_paused"
+/// Suspends AI movement without disabling other behaviors.
+#define TRAIT_AI_MOVEMENT_HALTED "ai_movement_halted"
+/// Prevents throwing items.
+#define TRAIT_NO_THROWING "no_throwing"
 /// Abstract condition that prevents movement if being pulled and might be resisted against. Handcuffs and straight jackets, basically.
 #define TRAIT_RESTRAINED "restrained"
 /// Generically incapacitated, cannot interact
@@ -205,8 +215,6 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define TRAIT_XRAY_VISION "xray_vision"
 /// Can see mobs through opaque atoms
 #define TRAIT_THERMAL_VISION "thermal_vision"
-/// Unused
-#define TRAIT_SURGEON "surgeon"
 /// Immediately upgrade grabs when in combat mode
 #define TRAIT_STRONG_GRABBER "strong_grabber"
 /// Used for the choking status effect
@@ -485,6 +493,12 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define TRAIT_NO_EXPERIENCE	"unlearning"
 /// This mob should never close UI even if it doesn't have a client
 #define TRAIT_PRESERVE_UI_WITHOUT_CLIENT "preserve_ui_without_client"
+/// This mob is considered a virgin by blood, cult, and relationship mechanics.
+#define TRAIT_VIRGIN "virginity"
+
+/// This mob's surgical operations ignore ALL speed modifiers (even positive ones!) besides tool quality.
+/// The mob can also no longer fail their operations, unless the operation says otherwise
+#define TRAIT_IGNORE_SURGERY_MODIFIERS "ignore_surgery_modifiers"
 
 /// applied to orphans
 #define TRAIT_ORPHAN "Orphan"
@@ -556,6 +570,10 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 /// The limb has no fingies
 #define TRAIT_FINGERLESS "fingerless"
 
+// **** organ traits
+/// Applied to an organ that has been operated on - some organs can't be operated on multiple times
+#define TRAIT_ORGAN_OPERATED_ON "organ_operated_on"
+
 // **** item traits
 /// Can't drop
 #define TRAIT_NODROP "nodrop"
@@ -572,10 +590,21 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define TRAIT_HARD_TO_STEAL "hard_to_steal"
 /// This organ's passive liquid leakage is temporarily plugged.
 #define TRAIT_PASSIVE_LEAK_BLOCKED "passive_leak_blocked"
+/// Prevents reagent containers from using their splash interaction on this atom.
+#define TRAIT_DO_NOT_SPLASH "do_not_splash"
+/// Fish can be released into this fishing source.
+#define TRAIT_CATCH_AND_RELEASE "catch_and_release"
 
 // ************* turf traits
 /// Turf trait for when a turf is transparent
 #define TRAIT_Z_TRANSPARENT "turf_z_transparent"
+
+// **** turf traits
+///Turf slowdown will be ignored when this trait is added to a turf.
+#define TRAIT_TURF_IGNORE_SLOWDOWN "turf_ignore_slowdown"
+/// Turf is one that ai mobs will generally avoid pathing through
+/// Doesn't need to be applied to any turfs that override can_cross_safely
+#define TRAIT_AI_AVOID_TURF "warning_turf"
 
 // ************* Debug traits
 /// This object has sound debugging tools attached to it

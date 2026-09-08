@@ -14,6 +14,10 @@
 	item_weight = 15 GRAMS
 	///For Mappers; gem_path = weight
 	var/list/valid_gems = list()
+	/// Magical charge contributed when this gem is used as a spellbook catalyst.
+	var/arcyne_potency = 20
+	/// The mana attunement carried by this gem.
+	var/datum/attunement/attuned
 
 	var/quality = GEM_REGULAR
 	var/datum/gem_effect/effect_template

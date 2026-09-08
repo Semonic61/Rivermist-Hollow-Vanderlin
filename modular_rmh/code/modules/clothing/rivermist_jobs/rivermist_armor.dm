@@ -17,7 +17,7 @@
 	clothing_flags = CANT_SLEEP_IN
 	//Plate doesn't protect a lot against blunt
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/rmh/armor/bulwark
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS //Has shoulder guards, and nothing else to suggest leg protection
 	prevent_crits = ALL_EXCEPT_BLUNT
 	max_integrity = INTEGRITY_STRONGEST

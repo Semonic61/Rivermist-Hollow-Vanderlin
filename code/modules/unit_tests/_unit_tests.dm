@@ -2,6 +2,9 @@
 
 #if defined(UNIT_TESTS) || defined(SPACEMAN_DMM)
 
+/// A trait source when adding traits through unit tests
+#define TRAIT_SOURCE_UNIT_TESTS "unit_tests"
+
 /// For advanced cases, fail unconditionally but don't return (so a test can return multiple results)
 #define TEST_FAIL(reason) (Fail(reason || "No reason", __FILE__, __LINE__))
 
@@ -75,6 +78,7 @@
 #include "bellyriding.dm"
 #include "blueprint_mode.dm"
 #include "body_storage.dm"
+#include "buckling_port.dm"
 #include "buildmode_search.dm"
 #include "camp_shelters.dm"
 #include "character_menu.dm"
@@ -106,11 +110,13 @@
 #include "map_landmarks.dm"
 #include "mapping.dm"
 #include "mindbound_actions.dm"
+#include "movement_ports.dm"
 #include "painting_archive.dm"
 #include "pocket_access.dm"
 #include "pocket_dimensions.dm"
 #include "preferences_erp.dm"
 #include "preferences_extra_genitals.dm"
+#include "preferences_migration.dm"
 #include "preferences_preview_construct_cleanup.dm"
 #include "preferences_preview_taur_cleanup.dm"
 #include "projectiles.dm"
@@ -124,6 +130,7 @@
 #include "resurrection_rune.dm"
 #include "rogue_inhands.dm"
 #include "roguetown_clothing.dm"
+#include "rotation_network.dm"
 #include "runtime_gc_regressions.dm"
 #include "runtime_regressions.dm"
 #include "sex_clench.dm"
@@ -139,6 +146,7 @@
 #include "spell_invocations.dm"
 #include "spell_names.dm"
 #include "spell_shapeshift.dm"
+#include "startup.dm"
 #include "subsystem_init.dm"
 #include "succubus.dm"
 #include "surgeries.dm"
@@ -146,6 +154,7 @@
 #include "swingdelay.dm"
 #include "tempo.dm"
 #include "thermal_vision_sight.dm"
+#include "throwing_regressions.dm"
 #include "timer_sanity.dm"
 #include "unit_test.dm"
 #include "visible_message_fov.dm"

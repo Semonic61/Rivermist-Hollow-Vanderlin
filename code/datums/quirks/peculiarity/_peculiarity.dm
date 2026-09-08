@@ -96,18 +96,7 @@
 /datum/quirk/peculiarity/virgin
 	name = "Virgin"
 	desc = "I am a virgin, whether truly, by magic or plot holes. Vampires and cultists are likely to lust for my blood."
-
-/datum/quirk/peculiarity/virgin/on_spawn()
-	if(!ishuman(owner))
-		return
-	var/mob/living/carbon/human/H = owner
-	H.virginity = TRUE
-
-/datum/quirk/peculiarity/virgin/after_job_spawn()
-	if(!ishuman(owner))
-		return
-	var/mob/living/carbon/human/H = owner
-	H.virginity = TRUE
+	traits_to_add = list(TRAIT_VIRGIN)
 
 
 /*/datum/quirk/peculiarity/mystery_box
@@ -241,7 +230,7 @@
 		. += span_green("You know the words to open this box: \"[linked_quirk.passcode]\"")
 	else
 		. += span_notice("It seems to respond to spoken words. Perhaps [linked_quirk?.keeper ? linked_quirk.keeper.real_name : "someone"] knows how to open it.")
-	. += span_notice("Right-click to get a hint about who might know the passcode.")*/
+	. += span_notice("Click in-hand to get a hint about who might know the passcode.")*/
 
 /datum/quirk/peculiarity/selfawaregeni
 	name = "Sensitiveness"

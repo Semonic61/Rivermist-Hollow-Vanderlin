@@ -2,7 +2,7 @@
 	icon = 'modular_rmh/icons/clothing/armor/corset.dmi'
 	mob_overlay_icon = 'modular_rmh/icons/clothing/armor/onmob/corset.dmi'
 	icon_state = "corset"
-	armor = ARMOR_PADDED
+	armor_type = /datum/armor/rmh/corset
 	body_parts_covered = COVERAGE_VEST
 	ignore_sleeves_code = TRUE // No sleeves, otherwise arms will be over the sprite
 	nodismemsleeves = TRUE

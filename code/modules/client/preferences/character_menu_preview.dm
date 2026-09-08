@@ -163,7 +163,7 @@
 	var/datum/job/preview_job = character_setup_preview_clothes ? character_setup_preview_job() : null
 	var/datum/outfit/preview_outfit
 	if(preview_job)
-		preview_outfit = (gender == FEMALE && preview_job.outfit_female) ? preview_job.outfit_female : preview_job.outfit
+		preview_outfit = (read_preference(/datum/preference/choiced/gender) == FEMALE && preview_job.outfit_female) ? preview_job.outfit_female : preview_job.outfit
 	character_setup_validate_smallclothes()
 	var/datum/customizer_entry/hover_entry
 	var/hover_old_acc

@@ -14,7 +14,7 @@
 	clothing_flags = CANT_SLEEP_IN
 	//Plate doesn't protect a lot against blunt
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/plate
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS //Has shoulder guards, and nothing else to suggest leg protection
 	prevent_crits = ALL_EXCEPT_BLUNT
 	max_integrity = ARMOR_INT_CHEST_PLATE_STEEL
@@ -32,7 +32,7 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_ARMOR
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/plate/bad
 	max_integrity = ARMOR_INT_CHEST_PLATE_IRON
 
 //................ Full Plate Armor ............... //
@@ -45,7 +45,7 @@
 	unequip_delay_self = 7 SECONDS
 	sellprice = VALUE_FULL_PLATE
 
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/plate
 	body_parts_covered = COVERAGE_FULL
 	item_weight = 17 KILOGRAMS
 
@@ -58,7 +58,7 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/plate/bad
 	max_integrity = ARMOR_INT_CHEST_PLATE_IRON
 	item_weight = 17 KILOGRAMS
 
@@ -74,7 +74,7 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/plate/bad
 	max_integrity = ARMOR_INT_CHEST_PLATE_DECREPIT
 	item_weight = 8.75 KILOGRAMS
 
@@ -152,7 +152,7 @@
 	desc = "A finely forged set of full silver plate, with long tassets protecting the legs."
 	icon_state = "silverarmor"
 	allowed_ages = ALL_AGES_LIST //placeholder until younglings have onmob sprites for this item
-	armor = ARMOR_PLATE_SILVER
+	armor_type = /datum/armor/plate/silver
 	smeltresult = /obj/item/ingot/silver
 	melting_material = /datum/material/silver
 	item_weight = 22 KILOGRAMS
@@ -182,7 +182,7 @@
 	max_integrity = ARMOR_INT_CHEST_PLATE_PSYDON
 	melt_amount = 150
 	melting_material = /datum/material/silver
-	armor = ARMOR_PLATE // overall worse because of the endurance buff //Changed to Plate armor
+	armor_type = /datum/armor/plate // overall worse because of the endurance buff //Changed to Plate armor
 
 
 /obj/item/clothing/armor/plate/fluted/ornate/ordinator

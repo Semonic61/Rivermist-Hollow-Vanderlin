@@ -13,6 +13,7 @@ import {
 } from 'tgui-core/components';
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
+import { PreferencesJobs } from './PreferencesJobs';
 
 type Booleanish = boolean | number;
 
@@ -332,6 +333,7 @@ const charSections = [
   { id: 'identity', label: 'Identity', icon: 'id-card' },
   { id: 'appearance', label: 'Appearance', icon: 'palette' },
   { id: 'gameplay', label: 'Gameplay', icon: 'gamepad' },
+  { id: 'jobs', label: 'Jobs', icon: 'briefcase' },
   { id: 'loadout', label: 'Loadout', icon: 'box-open' },
   { id: 'profile', label: 'Character Profile', icon: 'image' },
 ];
@@ -692,7 +694,7 @@ export const PreferencesMenu = () => {
       setTimeout(() => window.dispatchEvent(new Event('resize')), delay),
     );
     return () => timers.forEach(clearTimeout);
-  }, [data.preview_map, data.preview_map_front, data.preview_map_side, menuScale, data.preferences_fullscreen]);
+  }, [activeSection, data.preview_map, data.preview_map_front, data.preview_map_side, menuScale, data.preferences_fullscreen]);
 
   const [previewBoxPx, setPreviewBoxPx] = useState({
     main: 0,
@@ -722,7 +724,7 @@ export const PreferencesMenu = () => {
       timers.forEach(clearTimeout);
       window.removeEventListener('resize', measure);
     };
-  }, [data.preview_map, menuScale, data.preferences_fullscreen]);
+  }, [activeSection, data.preview_map, menuScale, data.preferences_fullscreen]);
 
   const previewBboxW = Math.max(16, Number(data.preview_bbox_w) || 0);
   const previewBboxH = Math.max(16, Number(data.preview_bbox_h) || 0);
@@ -762,7 +764,7 @@ export const PreferencesMenu = () => {
     };
     const t = setTimeout(report, 250);
     return () => clearTimeout(t);
-  }, [data.preview_map, menuScale, data.preferences_fullscreen, previewZoom, previewMiniZoom]);
+  }, [activeSection, data.preview_map, menuScale, data.preferences_fullscreen, previewZoom, previewMiniZoom]);
 
   const [localRoundSeconds, setLocalRoundSeconds] = useState<number>(-1);
 
@@ -1498,6 +1500,7 @@ export const PreferencesMenu = () => {
           <Panel title="Standing" icon="sun">
             <PrefRow icon="hand-paper" label="Dominant Hand" value={data.domhand} onClick={() => doPref('domhand')} />
             <PrefRow icon="theater-masks" label="Quirks" value="Select" onClick={() => doPref('select_quirks')} />
+            <PrefRow icon="users" label="Family & Bonds" value="Configure" onClick={() => doPref('family')} />
           </Panel>
         </Stack.Item>
       </Stack>
@@ -2170,7 +2173,7 @@ export const PreferencesMenu = () => {
   const renderGameplay = () => (
     <>
       <Panel title="Class & Roles" icon="shield-alt">
-        <PrefRow icon="briefcase" label="Class / Jobs" value={data.high_job} onClick={() => doPref('job', 'menu')} />
+        <PrefRow icon="briefcase" label="Class / Jobs" value={data.high_job} onClick={() => setActiveSection('jobs')} />
         <PrefRow icon="list-ol" label="Ready Order" value="Edit" onClick={() => doPref('multi', 'menu')} />
       </Panel>
 
@@ -2581,9 +2584,7 @@ export const PreferencesMenu = () => {
       </Panel>
 
       <Panel title="Rumours & Song" icon="feather">
-        <PrefRow icon="comment-dots" label="Rumours" value="Edit" onClick={() => doPref('rumour', 'input')} />
-        <PrefRow icon="crown" label="Noble Gossip" value="Edit" onClick={() => doPref('gossip', 'input')} />
-        <PrefRow icon="eye" label="Preview Rumours" value="View" onClick={() => doPref('rumour_preview', 'input')} />
+        <ActionButton icon="users" label="Rivals, Rumours & Gossip" onClick={() => doPref('relations_gossip')} />
         <PrefRow icon="music" label="Examine Song URL" value={asBool(data.song_set) ? 'URL set' : 'No URL set'} onClick={() => doPref('song_link', 'input')} />
         <PrefRow icon="heading" label="Song Title" value={data.song_title} onClick={() => doPref('change_title', 'input')} />
         <PrefRow icon="user" label="Song Artist" value={data.song_artist} onClick={() => doPref('change_artist', 'input')} />
@@ -2881,6 +2882,8 @@ export const PreferencesMenu = () => {
         return renderAppearance();
       case 'gameplay':
         return renderGameplay();
+      case 'jobs':
+        return <PreferencesJobs />;
       case 'loadout':
         return renderLoadout();
       case 'profile':
@@ -3495,6 +3498,7 @@ export const PreferencesMenu = () => {
                   </Stack>
                 </Stack.Item>
 
+                {activeSection !== 'jobs' ? (
                 <Stack.Item basis="520px">
                   <Section fill title="Looking Glass">
                     <Stack vertical fill>
@@ -3604,7 +3608,8 @@ export const PreferencesMenu = () => {
                     </Stack.Item>
                   </Stack>
                 </Section>
-              </Stack.Item>
+                </Stack.Item>
+                ) : null}
 
               <Stack.Item grow basis={0}>
                 <Section fill scrollable>{renderActiveSection()}</Section>
@@ -3618,7 +3623,7 @@ export const PreferencesMenu = () => {
                 <Stack.Item grow>
                   <Stack>
                     <Stack.Item>
-                      <FooterSummary icon="shield-alt" label="Class" value={data.high_job} onClick={() => setActiveSection('gameplay')} />
+                      <FooterSummary icon="shield-alt" label="Class" value={data.high_job} onClick={() => setActiveSection('jobs')} />
                     </Stack.Item>
                     <Stack.Item>
                       <FooterSummary icon="trophy" label="Triumphs" value={data.triumphs} onClick={() => setActiveSection('gameplay')} />

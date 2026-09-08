@@ -622,8 +622,8 @@
 	TEST_ASSERT(editor.is_allowed_disguise_action("pref", list("preference" = "character_setup_body_marking", "marking_action" = "use_preset")), "the allowlist must accept the sandbox's direct marking route")
 	TEST_ASSERT(!editor.is_allowed_disguise_action("pref", list("preference" = "save")), "the allowlist must reject character-save controls")
 	TEST_ASSERT(!editor.is_allowed_disguise_action("commit", list()), "the allowlist must reject unknown top-level actions")
-	editor.real_name = "Crafted Face"
-	editor.voice_color = "f0a0b0"
+	editor.write_preference(/datum/preference/text/real_name, "Crafted Face")
+	editor.write_preference(/datum/preference/color/voice_color, "f0a0b0")
 	var/datum/identity_snapshot/built_form = editor.build_disguise_snapshot()
 	TEST_ASSERT_NOTNULL(built_form, "an allowed draft must build a complete temporary identity snapshot")
 	TEST_ASSERT_NOTNULL(built_form.dna, "a built disguise must own copied DNA")

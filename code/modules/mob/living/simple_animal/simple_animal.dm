@@ -1,6 +1,7 @@
 GLOBAL_VAR_INIT(farm_animals, FALSE)
 
 /mob/living/simple_animal
+	buckle_delay = 0
 	name = "animal"
 	icon = 'icons/mob/animal.dmi'
 	health = 20
@@ -120,6 +121,10 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 
 	///Domestication.
 	var/tame = FALSE
+	/// Spawn with taming setup applied once, including riding and pet commands.
+	var/start_tamed = FALSE
+	/// Rotation applied while carried; resting animals use their own lying sprites.
+	var/carried_lying_angle = 0
 	///What the mob eats, typically used for taming or animal husbandry.
 	var/list/food_type
 	///Starting success chance for taming.
@@ -213,6 +218,9 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		genetics = new genetics(src)
 		genetics.roll_guaranteed_genes()
 		roll_initial_genetics()
+	if(start_tamed || tame)
+		tame = FALSE
+		tamed(owner)
 
 /mob/living/simple_animal/Destroy()
 	if(nest)
@@ -291,17 +299,19 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		. += barding_base_overlay
 		. += barding_above_overlay
 
-/mob/living/simple_animal/attackby(obj/item/O, mob/user, list/modifiers)
-	if(is_type_in_list(O, drink_type) && try_drink(O, user))
-		SEND_SIGNAL(src, COMSIG_ATOM_ATTACKBY, O, user, modifiers)
-		return TRUE
-	if(!is_type_in_list(O, food_type))
-		return ..()
-	else
-		if(try_tame(O, user))
-			SEND_SIGNAL(src, COMSIG_ATOM_ATTACKBY, O, user, modifiers) // for udder functionality
-			return TRUE
-	. = ..()
+/mob/living/simple_animal/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(is_type_in_list(tool, drink_type))
+		if(!try_drink(tool, user))
+			return ITEM_INTERACT_BLOCKING
+		return ITEM_INTERACT_SUCCESS
+
+	if(!is_type_in_list(tool, food_type))
+		return NONE
+
+	if(!attempt_feed(tool, user))
+		return ITEM_INTERACT_BLOCKING
+
+	return ITEM_INTERACT_SUCCESS
 
 /// Waters the animal from a held container. Unlike feeding this leaves the container intact and
 /// doesn't roll for taming, so a bucket survives the trip to the trough.
@@ -319,29 +329,35 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 	SEND_SIGNAL(src, COMSIG_FRIENDSHIP_CHANGE, user, 5)
 	return TRUE
 
-/mob/living/simple_animal/proc/try_tame(obj/item/O, mob/living/carbon/human/user)
-	if(!stat)
-		user.visible_message("<span class='info'>[user] hand-feeds [O] to [src].</span>", "<span class='notice'>I hand-feed [O] to [src].</span>")
-		playsound(src,'sound/misc/eat.ogg', rand(30,60), TRUE)
-		SEND_SIGNAL(src, COMSIG_MOB_FEED, O, 30, user)
-		SEND_SIGNAL(src, COMSIG_FRIENDSHIP_CHANGE, user, 10)
-		qdel(O)
-		if(tame && owner == user)
-			return TRUE
-		var/realchance = tame_chance
-		if(realchance)
-			if(user.mind)
-				realchance += (GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/labor/taming) * 20)
-			if(prob(realchance))
-				tamed(user)
-				var/boon = user.get_learning_boon(/datum/attribute/skill/labor/taming)
-				user.adjust_experience(/datum/attribute/skill/labor/taming, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*10) * boon)
-			else
-				tame_chance += bonus_tame_chance
+/mob/living/simple_animal/proc/attempt_feed(obj/item/food, mob/living/carbon/human/user)
+	if(stat >= UNCONSCIOUS || QDELETED(food) || QDELETED(user) || !is_type_in_list(food, food_type))
+		return FALSE
+	user.visible_message(span_info("[user] hand-feeds [food] to [src]."), span_notice("I hand-feed [food] to [src]."))
+	playsound(src, 'sound/misc/eat.ogg', rand(30, 60), TRUE)
+	// Feeding listeners inspect the food, so notify them before deleting it.
+	SEND_SIGNAL(src, COMSIG_MOB_FEED, food, 30, user)
+	SEND_SIGNAL(src, COMSIG_FRIENDSHIP_CHANGE, user, 10)
+	qdel(food)
+	try_tame(user)
+	return TRUE
+
+/mob/living/simple_animal/proc/try_tame(mob/user, additional_tame_chance = 0)
+	if(QDELETED(user) || (tame && has_ally(user)) || !isnum(tame_chance) || (!tame_chance && !additional_tame_chance))
+		return FALSE
+	var/real_chance = tame_chance + additional_tame_chance
+	real_chance += GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/labor/taming) * 20
+	var/gained_xp = GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) * user.get_learning_boon(/datum/attribute/skill/labor/taming)
+	if(prob(real_chance))
+		tamed(user)
+		user.adjust_experience(/datum/attribute/skill/labor/taming, gained_xp * 10)
 		return TRUE
+	user.adjust_experience(/datum/attribute/skill/labor/taming, gained_xp)
+	tame_chance += bonus_tame_chance
+	return FALSE
 
 ///Extra effects to add when the mob is tamed, such as adding a riding component
 /mob/living/simple_animal/proc/tamed(mob/user)
+	var/was_tamed = tame
 	INVOKE_ASYNC(src, PROC_REF(emote), "lower_head", null, null, null, TRUE)
 
 	if(ai_controller)
@@ -364,6 +380,7 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 				AddComponent(/datum/component/obeys_commands, pet_commands)
 
 	tame = TRUE
+	tame_chance = initial(tame_chance)
 	if(user)
 		SEND_SIGNAL(src, COMSIG_FRIENDSHIP_CHANGE, user, 55)
 		befriend(user)
@@ -375,7 +392,9 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		owner = user
 	// Fired unconditionally so admin- and map-spawned tames transition the same way a hand-fed one does.
 	SEND_SIGNAL(src, COMSIG_LIVING_TAMED, user)
+	ai_controller?.reset_ai_status()
 	update_appearance()
+	return was_tamed
 
 //mob/living/simple_animal/examine(mob/user)
 //	. = ..()
@@ -728,7 +747,7 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 	if(dextrous)
 		drop_all_held_items()
 	if(!gibbed)
-		emote("death", forced = TRUE)
+		INVOKE_ASYNC(src, PROC_REF(emote), "death", forced = TRUE)
 	layer = layer-0.1
 	if(del_on_death)
 		..()
@@ -786,16 +805,27 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 	return ..()
 
 /mob/living/simple_animal/update_transform()
-	var/matrix/ntransform = matrix(transform) //aka transform.Copy()
+	var/matrix/ntransform = matrix(transform)
 	var/changed = FALSE
+	var/new_carry_angle = buckled && buckled.buckle_lying != NO_BUCKLE_LYING ? lying_angle : 0
+	if(new_carry_angle != carried_lying_angle)
+		ntransform.TurnTo(carried_lying_angle, new_carry_angle)
+		carried_lying_angle = new_carry_angle
+		changed = TRUE
 
 	if(resize != RESIZE_DEFAULT_SIZE)
 		changed = TRUE
 		ntransform.Scale(resize)
 		resize = RESIZE_DEFAULT_SIZE
 
+	// Animal resting/death sprites already encode their posture. Only carried animals
+	// use the human-style posture offset; source-keyed riding offsets still compose.
+	if(buckled || length(mob_offsets))
+		pixel_x = get_standard_pixel_x_offset()
+		pixel_y = get_standard_pixel_y_offset() - (buckled ? 0 : body_position_pixel_y_offset)
 	if(changed)
 		animate(src, transform = ntransform, time = 2, easing = EASE_IN|EASE_OUT)
+		SEND_SIGNAL(src, COMSIG_LIVING_POST_UPDATE_TRANSFORM, resize, lying_angle, FALSE)
 
 /mob/living/simple_animal/update_sight()
 	if(!client)
@@ -905,41 +935,27 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 	M.adjust_experience(/datum/attribute/skill/misc/riding, GET_MOB_ATTRIBUTE_VALUE(M, STAT_INTELLIGENCE), FALSE)
 	update_appearance(UPDATE_OVERLAYS)
 
-/mob/living/simple_animal/hostile/user_buckle_mob(mob/living/M, mob/user)
-	if(user != M)
-		return
-	var/datum/component/riding/riding_datum = GetComponent(/datum/component/riding)
-	if(riding_datum)
-		var/time2mount = 12
-		riding_datum.vehicle_move_delay = move_to_delay
-		if(M.mind)
-			var/amt = GET_MOB_SKILL_VALUE_OLD(M, /datum/attribute/skill/misc/riding)
-			if(amt)
-				if(amt <= 3)
-					time2mount = 50 - (amt * 10)
-				else
-					time2mount = 0 // Instant at Master and above
-			else
-				time2mount = 50
-
-		if(!do_after(M, time2mount, src))
-			return
-		if(user.incapacitated())
-			return
-//		for(var/atom/movable/A in get_turf(src))
-//			if(A != src && A != M && A.density)
-//				return
-		M.forceMove(get_turf(src))
-		M.adjust_experience(/datum/attribute/skill/misc/riding, GET_MOB_ATTRIBUTE_VALUE(M, STAT_INTELLIGENCE), FALSE)
-		if(ssaddle)
-			playsound(src, 'sound/foley/saddlemount.ogg', 100, TRUE)
-	..()
+/mob/living/simple_animal/hostile/user_buckle_mob(mob/living/rider, mob/user, check_loc = TRUE)
+	if(!tame || !is_user_buckle_possible(rider, user, check_loc))
+		return FALSE
+	var/riding_skill = GET_MOB_SKILL_VALUE_OLD(rider, /datum/attribute/skill/misc/riding)
+	var/mount_delay = riding_skill > 3 ? 0 : 5 SECONDS - riding_skill * 1 SECONDS
+	if(!do_after(user, mount_delay, src))
+		return FALSE
+	if(QDELETED(src) || QDELETED(rider) || QDELETED(user) || !tame)
+		return FALSE
+	. = ..()
+	if(!.)
+		return FALSE
+	rider.adjust_experience(/datum/attribute/skill/misc/riding, GET_MOB_ATTRIBUTE_VALUE(rider, STAT_INTELLIGENCE) * 0.1, FALSE)
+	if(ssaddle)
+		playsound(src, 'sound/foley/saddlemount.ogg', 100, TRUE)
 	update_appearance(UPDATE_OVERLAYS)
 
 /mob/living/simple_animal/hostile
 	var/do_footstep = FALSE
 
-/mob/living/simple_animal/hostile/RangedAttack(atom/A, list/modifiers) //Player firing
+/mob/living/simple_animal/hostile/ranged_attack(atom/A, list/modifiers) //Player firing
 	if(!ai_controller && ranged && ranged_cooldown <= world.time)
 		target = A
 		OpenFire(A)
@@ -980,52 +996,32 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 		P.fire()
 		return P
 
-/mob/living/simple_animal/hostile/relaymove(mob/user, direction)
-	if (stat == DEAD)
-		return
-	var/oldloc = loc
-	var/datum/component/riding/riding_datum = GetComponent(/datum/component/riding)
-	if(tame && riding_datum)
-		if(riding_datum.handle_ride(user, direction))
-			riding_datum.vehicle_move_delay = move_to_delay
+/mob/living/simple_animal/relaymove(mob/living/user, direction)
+	if(stat >= UNCONSCIOUS || user.incapacitated())
+		return FALSE
+	return relaydrive(user, direction)
+
+/mob/living/simple_animal/hostile/relaydrive(mob/living/user, direction)
+	if(!tame || user.buckled != src)
+		return FALSE
+	var/old_location = loc
+	. = ..()
+	if(!. || loc == old_location || user.buckled != src)
+		return .
+	var/turf/open/ground = loc
+	if(istype(ground) && ground.footstep)
+		do_footstep = !do_footstep
+		if(do_footstep)
 			if(user.m_intent == MOVE_INTENT_RUN)
-				riding_datum.vehicle_move_delay -= 1
-				if(loc != oldloc)
-					var/turf/open/T = loc
-					if(!do_footstep && T.footstep)
-						do_footstep = TRUE
-						playsound(src,pick('sound/foley/footsteps/hoof/horserun (1).ogg','sound/foley/footsteps/hoof/horserun (2).ogg','sound/foley/footsteps/hoof/horserun (3).ogg'), 100, TRUE)
-					else
-						do_footstep = FALSE
+				playsound(src, pick('sound/foley/footsteps/hoof/horserun (1).ogg', 'sound/foley/footsteps/hoof/horserun (2).ogg', 'sound/foley/footsteps/hoof/horserun (3).ogg'), 100, TRUE)
 			else
-				if(loc != oldloc)
-					var/turf/open/T = loc
-					if(!do_footstep && T.footstep)
-						do_footstep = TRUE
-						playsound(src,pick('sound/foley/footsteps/hoof/horsewalk (1).ogg','sound/foley/footsteps/hoof/horsewalk (2).ogg','sound/foley/footsteps/hoof/horsewalk (3).ogg'), 100, TRUE)
-					else
-						do_footstep = FALSE
-			if(user.mind)
-				var/amt = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/misc/riding)
-				if(amt)
-					amt = clamp(amt, 0, 4) //higher speed amounts are a little wild. Max amount achieved at expert riding.
-					riding_datum.vehicle_move_delay -= (amt/5 + 1.5)
-					riding_datum.vehicle_move_delay -= 3
-			// Charged after the skill bonus so a tired mount stays slow no matter how good the rider is.
-			if(loc != oldloc && isliving(user) && handle_ride_upkeep(user, user.m_intent == MOVE_INTENT_RUN, riding_datum))
-				return
-			if(loc != oldloc)
-				var/obj/structure/door/MD = locate() in loc
-				if(MD && !MD.ridethrough)
-					if(isliving(user))
-						var/mob/living/L = user
-						var/strong_thighs = GET_MOB_SKILL_VALUE_OLD(L, (/datum/attribute/skill/misc/riding))
-						if(prob(60 - (strong_thighs * 10))) // Legendary riders do not fall!
-							unbuckle_mob(L)
-							L.Paralyze(50)
-							L.Stun(50)
-							playsound(L, 'sound/foley/zfall.ogg', 100, FALSE)
-							L.visible_message(span_danger("[L] falls off [src]!"))
+				playsound(src, pick('sound/foley/footsteps/hoof/horsewalk (1).ogg', 'sound/foley/footsteps/hoof/horsewalk (2).ogg', 'sound/foley/footsteps/hoof/horsewalk (3).ogg'), 100, TRUE)
+	var/obj/structure/door/doorway = locate() in loc
+	if(doorway && !doorway.ridethrough)
+		var/riding_skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/misc/riding)
+		if(prob(60 - riding_skill * 10))
+			violent_dismount(user)
+	return .
 
 /// Spends a ridden tile out of the mount's hunger and applies what an empty meter costs: a tired
 /// mount plods, and a starved one may throw its rider. Returns TRUE if the rider came off.
@@ -1084,11 +1080,11 @@ GLOBAL_VAR_INIT(farm_animals, FALSE)
 /mob/living/simple_animal/proc/remove_gene(datum/animal_gene/G)
 	G.remove_from(src)
 
-/mob/living/simple_animal/buckle_mob(mob/living/buckled_mob, force = 0, check_loc = 1)
+/mob/living/simple_animal/buckle_mob(mob/living/buckled_mob, force = FALSE, check_loc = TRUE, buckle_mob_flags = NONE)
 	. = ..()
 	// A fresh rider hasn't been told anything yet, however much the last one heard.
-	mount_hunger_warning = MOUNT_WARNING_NONE
-	LoadComponent(/datum/component/riding)
+	if(.)
+		mount_hunger_warning = MOUNT_WARNING_NONE
 
 /mob/living/simple_animal/Life()
 	. = ..()

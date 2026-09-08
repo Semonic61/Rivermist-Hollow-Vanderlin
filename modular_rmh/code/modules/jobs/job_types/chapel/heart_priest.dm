@@ -19,6 +19,9 @@
 /datum/job/heart_priest
 	title = "Heart Priest"
 	f_title = "Heart Priestess"
+	unique_alt_honorary = TRUE
+	alt_honorary = list("Father")
+	alt_honorary_female = list("Mother Superior")
 	tutorial = "You serve Sune Firehair, Lady of Love and Beauty. \
 	Where hearts ache and spirits falter, you restore warmth and desire. \
 	This chapel is a place of healing, art, and emotional refuge."

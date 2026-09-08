@@ -85,9 +85,10 @@ GLOBAL_LIST_INIT(special_traits, build_special_traits())
 		player = character.client
 	if(!player?.prefs || !character?.dna?.species)
 		return
-	if(player.prefs.voice_pack == VOICE_PACK_DEFAULT)
+	var/voice_pack = player.prefs.read_preference(/datum/preference/choiced/voice_pack)
+	if(voice_pack == VOICE_PACK_DEFAULT)
 		return
-	var/voicepack_type = GLOB.voice_packs_list[player.prefs.voice_pack]
+	var/voicepack_type = GLOB.voice_packs_list[voice_pack]
 	if(!voicepack_type)
 		return
 	character.dna.species.soundpack_m = new voicepack_type()

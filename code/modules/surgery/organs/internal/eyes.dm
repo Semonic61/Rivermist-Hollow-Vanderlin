@@ -109,9 +109,10 @@
 	M.eye_organs.len = max(length(M.eye_organs), sight_index)
 	M.eye_organs[sight_index] = src
 
-	if(ishuman(owner))
-		var/mob/living/carbon/human/HMN = owner
-		HMN.regenerate_icons()
+	if(!(owner.status_flags & BUILDING_ORGANS))
+		if(ishuman(owner))
+			var/mob/living/carbon/human/HMN = owner
+			HMN.regenerate_icons()
 
 	M.update_eyes()
 	M.update_tint()
@@ -145,8 +146,8 @@
 	if(M.has_dna() && ishuman(M))
 		M.dna.species.handle_body(M)
 
-/obj/item/organ/eyes/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE)
-	. = ..()
+/obj/item/organ/eyes/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE, required_organ_flag = NONE)
+	. = ..(amount, maximum, required_organ_flag)
 	if(iscarbon(owner))
 		var/mob/living/carbon/carbon_owner = owner
 		carbon_owner.update_eyes()

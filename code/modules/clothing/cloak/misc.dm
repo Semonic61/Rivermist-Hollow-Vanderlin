@@ -90,18 +90,7 @@
 	allowed_sex = list(MALE, FEMALE)
 	allowed_race = SPECIES_BASE_BODY
 	is_rain_protective = TRUE
-
-/obj/item/clothing/cloak/half/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
-
-/obj/item/clothing/cloak/half/dropped(mob/living/carbon/human/user)
-	..()
-	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
-	if(STR)
-		var/list/things = STR.contents()
-		for(var/obj/item/I in things)
-			STR.remove_from_storage(I, get_turf(src))
+	has_storage = TRUE
 
 /obj/item/clothing/cloak/half/guard
 	name = "guard's half cloak"
@@ -136,7 +125,7 @@
 	desc = "Those who wear, thy should beware, for those who do; never come back as who they once were again."
 	allowed_race = ALL_RACES_LIST
 	body_parts_covered = ARMS|CHEST
-	armor = ARMOR_MAILLE_GOOD
+	armor_type = /datum/armor/maille/good
 
 /obj/item/clothing/cloak/half/colored
 	misc_flags = CRAFTING_TEST_EXCLUDE
@@ -170,6 +159,7 @@
 	slot_flags = ITEM_SLOT_CLOAK | ITEM_SLOT_BACK_R
 	nodismemsleeves = TRUE
 	is_rain_protective = TRUE
+	has_storage = TRUE
 
 //............... Battle Nun ........................... (unique kit for the role, tabard for aesthetics)
 /obj/item/clothing/cloak/battlenun

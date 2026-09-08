@@ -8,7 +8,7 @@
 	blade_dulling = DULLING_BASHCHOP
 	resistance_flags = FLAMMABLE // Made of leather
 
-	armor = ARMOR_PADDED_BAD
+	armor_type = /datum/armor/gloves/padded/bad
 	prevent_crits = CUT_AND_MINOR_CRITS
 	max_integrity = ARMOR_INT_SIDE_LEATHER
 	salvage_result = null
@@ -26,14 +26,14 @@
 	desc = "Sturdy, durable, flexible. A marvel of the dark ages that exists solely to protect your fingers."
 	max_integrity = ARMOR_INT_SIDE_HARDLEATHER
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST)
-	armor = list("blunt" = DR_HEAVY, "slash" = DBLOCK_MEDIUM, "stab" = DBLOCK_LIGHT, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/gloves/leather/advanced
 
 /obj/item/clothing/gloves/leather/masterwork
 	name = "masterwork leather gloves"
 	desc = "These gloves are a craftsmanship marvel. Made with the finest leather. Strong, nimble, reliable."
 	max_integrity = ARMOR_INT_SIDE_STEEL // masterwork leather = steel-grade integrity, intended
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST, BCLASS_CHOP) //we're adding chop here!
-	armor = list("blunt" = DR_ULTRA, "slash" = DBLOCK_HEAVY, "stab" = DBLOCK_MEDIUM, "piercing" = DBLOCK_NONE, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/gloves/leather/master
 
 /obj/item/clothing/gloves/leather/masterwork/Initialize()
 	. = ..()
@@ -59,7 +59,7 @@
 	desc = "A pair of heavy Darkholdian leather gloves, commonly used by fencers, renowned for their quality."
 	icon_state = "fencergloves"
 	item_state = "fencergloves"
-	armor = ARMOR_LEATHER_GOOD
+	armor_type = /datum/armor/gloves/leather/good
 	prevent_crits = list(BCLASS_CHOP, BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST)
 	resistance_flags = FIRE_PROOF
 	blocksound = SOFTHIT
@@ -83,7 +83,7 @@
 	blocksound = SOFTHIT
 	blade_dulling = DULLING_BASHCHOP
 	resistance_flags = FLAMMABLE // Made of leather
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/gloves/leather/dueling
 	prevent_crits = ALL_EXCEPT_CHOP_AND_STAB
 	max_integrity = ARMOR_INT_SIDE_LEATHER
 	salvage_result = /obj/item/natural/fur

@@ -105,8 +105,8 @@
 			continue
 		var/is_protective = length(armor_piece.prevent_crits)
 		if(!is_protective)
-			for(var/rating in armor_piece.armor.getList())
-				if(armor_piece.armor.getRating(rating) > 0)
+			for(var/rating in ARMOR_LIST_ALL)
+				if(armor_piece.get_armor_rating(rating) > 0)
 					is_protective = TRUE
 					break
 		if(is_protective)

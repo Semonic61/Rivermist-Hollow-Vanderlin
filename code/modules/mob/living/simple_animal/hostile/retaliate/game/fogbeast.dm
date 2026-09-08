@@ -107,10 +107,12 @@ GLOBAL_LIST_INIT(valid_honse_colors, list("White" = COLOR_WHITE, "Gray" = COLOR_
 
 
 /mob/living/simple_animal/hostile/retaliate/honse/tamed()
-	..()
+	. = ..()
+	if(.)
+		return
 	deaggroprob = 20
 	if(can_buckle)
-		AddComponent(/datum/component/riding/saiga)
+		AddElement(/datum/element/ridable, /datum/component/riding/creature/saiga)
 
 /mob/living/simple_animal/hostile/retaliate/honse/death()
 	unbuckle_all_mobs()

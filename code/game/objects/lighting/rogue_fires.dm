@@ -140,6 +140,39 @@
 	soundloop = null
 	temperature_change = 0
 
+/obj/machinery/light/fueled/wallfire/candle/incense
+	name = "incense"
+	icon_state = "incense1"
+	base_state = "incense"
+	bulb_colour = "#ffa35c"
+	crossfire = FALSE
+	cookonme = FALSE
+	SET_BASE_PIXEL(0, 32)
+	soundloop = null
+	temperature_change = 0
+
+/obj/machinery/light/fueled/wallfire/candle/silver
+	name = "silver candle"
+	icon_state = "silvercandle1"
+	base_state = "silvercandle"
+	bulb_colour = "#ffa35c"
+	crossfire = FALSE
+	cookonme = FALSE
+	SET_BASE_PIXEL(0, 32)
+	soundloop = null
+	temperature_change = 0
+
+/obj/machinery/light/fueled/wallfire/candle/goldcandle
+	name = "gold candle"
+	icon_state = "goldcandle1"
+	base_state = "goldcandle"
+	bulb_colour = "#ffa35c"
+	crossfire = FALSE
+	cookonme = FALSE
+	SET_BASE_PIXEL(0, 32)
+	soundloop = null
+	temperature_change = 0
+
 /obj/machinery/light/fueled/wallfire/candle/OnCrafted(dirin, mob/user)
 	pixel_x = base_pixel_x
 	pixel_y = base_pixel_y
@@ -414,8 +447,21 @@
 	var/obj/item/reagent_containers/food/snacks/food = null
 	var/rawegg = FALSE
 
-/obj/machinery/light/fueled/hearth/Initialize()
-	. = ..()
+/obj/machinery/light/fueled/hearth/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(attachment)
+		tool.melee_attack_chain(user, attachment, modifiers)
+		return ITEM_INTERACT_SUCCESS
+	else if(istype(tool, /obj/item/cooking/pan) || istype(tool, /obj/item/reagent_containers/glass/bucket/pot) || istype(tool, /obj/item/reagent_containers/glass/carafe/teapot))
+		playsound(user, 'sound/foley/dropsound/shovel_drop.ogg', 40, TRUE, -1)
+
+		if(!user.transferItemToLoc(tool, src, silent = TRUE))
+			return ITEM_INTERACT_BLOCKING
+
+		attachment = tool
+		update_appearance(UPDATE_ICON_STATE | UPDATE_OVERLAYS)
+		return ITEM_INTERACT_SUCCESS
+
+	return ..()
 
 /obj/machinery/light/fueled/hearth/Destroy()
 	if(attachment)
@@ -424,22 +470,6 @@
 	if(food)
 		food.forceMove(loc)
 		food = null
-	. = ..()
-
-/obj/machinery/light/fueled/hearth/attackby(obj/item/W, mob/living/user, list/modifiers)
-	if(!attachment)
-		if(istype(W, /obj/item/cooking/pan) || istype(W, /obj/item/reagent_containers/glass/bucket/pot) || istype(W, /obj/item/reagent_containers/glass/carafe/teapot))
-			playsound(user, 'sound/foley/dropsound/shovel_drop.ogg', 40, TRUE, -1)
-
-			if(user.transferItemToLoc(W, src, silent = TRUE))
-				attachment = W
-				update_appearance(UPDATE_ICON_STATE | UPDATE_OVERLAYS)
-			return
-
-	else
-		. = attachment.attackby(W, user, modifiers)
-		if(.)
-			return
 	. = ..()
 
 /obj/machinery/light/fueled/hearth/MouseDrop(mob/over, src_location, over_location, src_control, over_control, params)

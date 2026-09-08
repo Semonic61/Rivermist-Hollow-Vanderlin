@@ -132,6 +132,7 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	var/sharpness = IS_BLUNT
 
 	var/tool_behaviour = NONE
+	///How fast does the tool work
 	var/toolspeed = 1
 
 	/// Organ storage component requires this
@@ -768,43 +769,47 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 		return
 	return attempt_pickup(user)
 
-/obj/item/proc/attempt_pickup(mob/user)
+/obj/item/proc/attempt_pickup(mob/living/user)
 	. = TRUE
-	var/mob/living/carbon/C = user
-	if(C.has_status_effect(/datum/status_effect/tremor_grip_loss))
+	if(user.has_status_effect(/datum/status_effect/tremor_grip_loss))
 		return
 
 	if(HAS_TRAIT(src, TRAIT_NEEDS_QUENCH))
-		to_chat(user, "<span class='warning'>[src] is too hot to touch.</span>")
-		return
+		var/can_handle_quenching_item = FALSE
+		if(iscarbon(user))
+			var/mob/living/carbon/carbon_user = user
+			can_handle_quenching_item = carbon_user.can_touch_burning(src)
+		if(!can_handle_quenching_item)
+			to_chat(user, "<span class='warning'>[src] is too hot to touch.</span>")
+			return
 
 	if(resistance_flags & ON_FIRE)
-		var/can_handle_hot = FALSE
-		if(!istype(C))
-			can_handle_hot = TRUE
-		else if(C.gloves && (C.gloves.max_heat_protection_temperature > 360))
-			can_handle_hot = TRUE
-		else if(HAS_TRAIT(C, TRAIT_RESISTHEAT) || HAS_TRAIT(C, TRAIT_RESISTHEATHANDS))
-			can_handle_hot = TRUE
+		var/can_handle_hot = TRUE
+		if(iscarbon(user))
+			var/mob/living/carbon/C = user
+			if(!C.can_touch_burning(src))
+				can_handle_hot = FALSE
+
+		extinguish()
 
 		if(can_handle_hot)
-			extinguish()
 			user.visible_message("<span class='warning'>[user] puts out the fire on [src].</span>")
 		else
 			user.visible_message("<span class='warning'>[user] burns [user.p_their()] hand putting out the fire on [src]!</span>")
-			extinguish()
-			var/obj/item/bodypart/affecting = C.get_bodypart("[(user.active_hand_index % 2 == 0) ? "r" : "l" ]_arm")
-			if(affecting && affecting.receive_damage( 0, 5 ))		// 5 burn damage
-				C.update_damage_overlays()
+			if(iscarbon(user))
+				var/mob/living/carbon/C = user
+				var/obj/item/bodypart/affecting = C.get_bodypart("[(user.active_hand_index % 2 == 0) ? "r" : "l" ]_arm")
+				if(affecting?.receive_damage(0, 5))		// 5 burn damage
+					C.update_damage_overlays()
 			return
 
-	if(acid_level > 20 && !ismob(loc))// so we can still remove the clothes on us that have acid.
-		if(istype(C))
-			if(!C.gloves || (!(C.gloves.resistance_flags & (UNACIDABLE|ACID_PROOF))))
-				to_chat(user, "<span class='warning'>The acid on [src] burns my hand!</span>")
-				var/obj/item/bodypart/affecting = C.get_bodypart("[(user.active_hand_index % 2 == 0) ? "r" : "l" ]_arm")
-				if(affecting && affecting.receive_damage( 0, 5 ))		// 5 burn damage
-					C.update_damage_overlays()
+	if(acid_level && iscarbon(user))// so we can still remove the clothes on us that have acid.
+		var/mob/living/carbon/C = user
+		if(!C.can_touch_acid(src))
+			to_chat(user, "<span class='warning'>The acid on [src] burns my hand!</span>")
+			var/obj/item/bodypart/affecting = C.get_bodypart("[(user.active_hand_index % 2 == 0) ? "r" : "l" ]_arm")
+			if(affecting?.receive_damage(0, 5))
+				C.update_damage_overlays()
 
 	if(!(interaction_flags_item & INTERACT_ITEM_ATTACK_HAND_PICKUP))		//See if we're supposed to auto pickup.
 		return
@@ -848,13 +853,18 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	if(loc == user && outside_storage)
 		if(!allow_attack_hand_drop(user) || !user.temporarilyRemoveItemFromInventory(src))
 			return
+		if(QDELETED(src))
+			return
 
 	. = FALSE
 
 	pickup(user)
+	if(QDELETED(src))
+		return TRUE
 	add_fingerprint(user)
 	if(!user.put_in_active_hand(src, ignore_animation = !outside_storage))
-		user.dropItemToGround(src)
+		if(!QDELETED(src))
+			user.dropItemToGround(src)
 		return TRUE
 	afterpickup(user)
 
@@ -1508,6 +1518,17 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 /obj/item/proc/doStrip(mob/stripper, mob/owner)
 	return owner.dropItemToGround(src)
 
+///Called by the carbon throw_item() proc. Returns null if the item negates the throw, or a reference to the thing to suffer the throw else.
+/obj/item/proc/on_thrown(mob/living/carbon/user, atom/target)
+	if((item_flags & ABSTRACT) || HAS_TRAIT(src, TRAIT_NODROP))
+		return
+	if(!user.dropItemToGround(src, silent = TRUE) || QDELETED(src))
+		return
+	if(throwforce && (HAS_TRAIT(user, TRAIT_PACIFISM)) || HAS_TRAIT(user, TRAIT_NO_THROWING))
+		to_chat(user, span_notice("You set [src] down gently on the ground."))
+		return
+	return src
+
 /obj/item/update_appearance(updates)
 	. = ..()
 	update_transform()
@@ -1721,6 +1742,19 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 				if(1 to 4)
 					if(alch_skill >= SKILL_LEVEL_EXPERT)
 						. += span_notice(" Smells faintly of [smell].")
+
+/**
+ * Returns the atom(either itself or an internal module) that will interact/attack the target on behalf of us
+ * For example an object can have different `tool_behaviours` (e.g borg omni tool) but will return an internal reference of that tool to attack for us
+ * You can use it for general purpose polymorphism if you need a proxy atom to interact in a specific way
+ * with a target on behalf on this atom
+ *
+ * Currently used only in the object melee attack chain but can be used anywhere else or even moved up to the atom level if required
+ */
+/obj/item/proc/get_proxy_attacker_for(atom/target, mob/user)
+	RETURN_TYPE(/obj/item)
+
+	return src
 
 /obj/item/atom_break(damage_flag, silent)
 	. = ..()

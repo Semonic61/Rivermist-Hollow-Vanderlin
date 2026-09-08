@@ -5,13 +5,14 @@
 	var/static/sound/fastbeat = sound('sound/heart/fastbeat.ogg', volume = 10, channel = CHANNEL_HEARTBEAT, repeat = TRUE)
 
 /datum/organ_process/heart/handle_process(mob/living/carbon/owner, delta_time, times_fired)
+	var/return_flags = NONE
 	if(owner.needs_heart())
-		handle_pulse(owner, delta_time, times_fired)
 		handle_heart_failure(owner, delta_time, times_fired)
+		handle_pulse(owner, delta_time, times_fired)
 		if(owner.pulse)
 			handle_heartbeat(owner, delta_time, times_fired)
-	handle_blood(owner, delta_time, times_fired)
-	return TRUE
+	return_flags |= handle_blood(owner, delta_time, times_fired)
+	return return_flags
 
 /// Handles the failure messaging and cardiac arrest flagging for a failing heart.
 /// Separated from handle_pulse so the logic is readable and the failed flag is managed cleanly.
@@ -140,7 +141,7 @@
 				var/obj/item/bodypart/artery_popper = pick(owner.bodyparts)
 				if(!artery_popper.is_artery_torn())
 					artery_popper.add_wound(/datum/wound/artery)
-		if(-INFINITY to BLOOD_VOLUME_BLEEDOUT)
+		if(-INFINITY to BLOOD_VOLUME_SURVIVE)
 			if(!(owner.status_flags & BLEEDOUT))
 				owner.status_flags |= BLEEDOUT
 				to_chat(owner, span_userdanger("My organs feel outrageously heavy!"))
@@ -177,10 +178,12 @@
 		else
 			temp_bleed += resulting_bleed
 	if(temp_bleed)
-		if(owner.bleed(temp_bleed) && (temp_bleed >= 1.5))
-			var/bleed_sound = "sound/gore/blood[rand(1, 6)].ogg"
-			if((temp_bleed > 1) && (owner.body_position == STANDING_UP))
-				playsound(owner, bleed_sound, 60, FALSE)
+		if(owner.bleed(temp_bleed, FALSE))
+			. |= ORGAN_PROCESS_UPDATE_HEALTH
+			if(temp_bleed >= 1.5)
+				var/bleed_sound = "sound/gore/blood[rand(1, 6)].ogg"
+				if(owner.body_position == STANDING_UP)
+					playsound(owner, bleed_sound, 60, FALSE)
 
 	if(!HAS_TRAIT(owner, TRAIT_BLOODLOSS_IMMUNE) && owner.stat != DEAD)
 		switch(owner.blood_volume)
@@ -201,14 +204,13 @@
 		owner.remove_status_effect(/datum/status_effect/debuff/bleedingworse)
 		owner.remove_status_effect(/datum/status_effect/debuff/bleedingworst)
 
-	var/bleed_rate = owner.get_bleed_rate()
-	if(bleed_rate)
+	if(temp_bleed)
 		owner.add_stress(/datum/stress_event/bleeding)
 	else
 		owner.remove_stress(/datum/stress_event/bleeding)
 
 /datum/organ_process/heart/proc/handle_heartbeat(mob/living/carbon/owner, delta_time, times_fired)
-	var/cardiac_arrest = owner.undergoing_nervous_system_failure()
+	var/cardiac_arrest = owner.undergoing_cardiac_arrest()
 	var/nervous_failure = owner.undergoing_nervous_system_failure()
 	if((owner.heartbeat_sound != BEAT_SLOW) && (cardiac_arrest || nervous_failure))
 		owner.heartbeat_sound = BEAT_SLOW
@@ -224,7 +226,7 @@
 		SEND_SOUND(owner, fastbeat)
 		owner.heartbeat_sound = BEAT_FAST
 		return
-	if((owner.heartbeat_sound == BEAT_FAST) && (owner.has_status_effect(/datum/status_effect/jitter)))
+	if((owner.heartbeat_sound == BEAT_FAST) && !owner.has_status_effect(/datum/status_effect/jitter))
 		owner.stop_sound_channel(CHANNEL_HEARTBEAT)
 		owner.heartbeat_sound = BEAT_NONE
 		return

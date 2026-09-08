@@ -354,12 +354,18 @@
 	icon_state = "act_drop"
 	plane = HUD_PLANE
 
-/atom/movable/screen/drop/Click()
-	if(ismob(usr))
-		var/mob/M = usr
-		M.playsound_local(M, 'sound/misc/click.ogg', 100)
-	if(usr.stat == CONSCIOUS)
-		usr.dropItemToGround(usr.get_active_held_item(), silent = FALSE)
+/atom/movable/screen/drop/Click(location, control, params)
+	if(!isliving(usr))
+		return
+
+	var/mob/living/L = usr
+
+	if(L.incapacitated(IGNORE_GRAB))
+		return
+
+	L.playsound_local(L, 'sound/misc/click.ogg', 100)
+
+	L.dropItemToGround(L.get_active_held_item(), silent = FALSE)
 
 /atom/movable/screen/act_intent
 	name = "intent"
@@ -937,10 +943,12 @@
 
 /atom/movable/screen/throw_catch/update_icon_state()
 	. = ..()
-	if(!ismob(usr))
+
+	if(!hud || !hud.mymob || !isliving(hud.mymob))
 		return
-	var/mob/M = usr
-	if(M.get_active_held_item())
+
+	var/mob/living/living_hud_owner = hud.mymob
+	if(living_hud_owner.get_active_held_item())
 		icon_state = "throw[throwy]"
 	else
 		icon_state = "catch[throwy]"
@@ -1295,8 +1303,8 @@
 		if(LAZYACCESS(modifiers, RIGHT_CLICK))
 			if(!user_mob.mind)
 				return
-			if(length(user_mob.mind.known_people))
-				user_mob.mind.display_known_people(user_mob)
+			if(length(user_mob.mind.relations))
+				user_mob.mind.display_relations(user_mob)
 			else
 				to_chat(user_mob, "<span class='warning'>I don't know anyone.</span>")
 		if(LAZYACCESS(modifiers, MIDDLE_CLICK))

@@ -46,7 +46,7 @@ GLOBAL_LIST_INIT_TYPED(blood_types, /datum/blood_type, init_subtypes_w_path_keys
 	blood_data["blood_type"] = sampled_from.get_blood_type().type
 	blood_data["gender"] = sampled_from.gender
 	blood_data["real_name"] = sampled_from.real_name
-	blood_data["factions"] = sampled_from.faction
+	blood_data["factions"] = sampled_from.get_faction()
 
 	blood_data["preferences"] = get_blood_prefs(sampled_from)
 	blood_data["vitae"] = vitae
@@ -107,7 +107,7 @@ GLOBAL_LIST_INIT_TYPED(blood_types, /datum/blood_type, init_subtypes_w_path_keys
 	blood_data["gender"] = sampled_from.gender
 	blood_data["real_name"] = sampled_from.real_name
 	blood_data["features"] = sampled_from.dna.features
-	blood_data["factions"] = sampled_from.faction
+	blood_data["factions"] = sampled_from.get_faction()
 
 	blood_data["preferences"] = get_blood_prefs(sampled_from)
 	blood_data["vitae"] = vitae
@@ -122,7 +122,7 @@ GLOBAL_LIST_INIT_TYPED(blood_types, /datum/blood_type, init_subtypes_w_path_keys
 		return
 	if(sampled_from.cleric && istype(sampled_from.patron, /datum/patron/divine))
 		. |= BLOOD_PREFERENCE_HOLY
-	if(sampled_from.virginity)
+	if(HAS_TRAIT(sampled_from, TRAIT_VIRGIN))
 		. |= BLOOD_PREFERENCE_VIRGIN
 
 

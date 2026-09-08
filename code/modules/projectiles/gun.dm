@@ -30,7 +30,9 @@
 	var/spread = 0						//Spread induced by the gun itself.
 	var/randomspread = 1				//Set to 0 for shotguns. This is used for weapons that don't fire all their bullets at once.
 
-	var/ammo_x_offset = 0 //used for positioning ammo count overlay on sprite
+	/// X offset of ammo counter
+	var/ammo_x_offset = 0
+	/// Y offset of ammo counter
 	var/ammo_y_offset = 0
 	var/flight_x_offset = 0
 	var/flight_y_offset = 0
@@ -110,7 +112,6 @@
 
 /obj/item/gun/proc/recharge_newshot()
 	return
-
 
 /obj/item/gun/proc/process_fire(atom/target, mob/living/user, message = TRUE, list/modifiers, zone_override, bonus_spread = 0)
 	if(user)

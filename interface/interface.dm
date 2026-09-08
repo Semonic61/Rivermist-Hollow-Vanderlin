@@ -226,7 +226,7 @@
 	set name = "IconScaling"
 	set category = "Preferences.Options"
 	if(prefs)
-		if(prefs.crt == TRUE)
+		if(prefs.read_preference(/datum/preference/toggle/crt))
 			to_chat(src, "CRT mode is on.")
 			winset(src, "mapwindow.map", "zoom-mode=blur")
 			return
@@ -242,16 +242,16 @@
 	set name = "ToggleCRT"
 	if(!prefs)
 		return
-	if(prefs.crt == TRUE)
+	if(prefs.read_preference(/datum/preference/toggle/crt))
 		winset(src, "mapwindow.map", "zoom-mode=normal")
-		prefs.crt = FALSE
+		prefs.write_preference(/datum/preference/toggle/crt, FALSE)
 		prefs.save_preferences()
 		to_chat(src, "CRT... OFF")
 		for(var/atom/movable/screen/scannies/S in screen)
 			S.alpha = 0
 	else
 		winset(src, "mapwindow.map", "zoom-mode=blur")
-		prefs.crt = TRUE
+		prefs.write_preference(/datum/preference/toggle/crt, TRUE)
 		prefs.save_preferences()
 		to_chat(src, "CRT... ON")
 		for(var/atom/movable/screen/scannies/S in screen)
@@ -261,9 +261,9 @@
 	set category = "OOC"
 	set name = "Anonymize"
 
-	if(prefs.anonymize == TRUE)
+	if(prefs.read_preference(/datum/preference/toggle/anonymize))
 		if(alert(src, "Disable Anonymize? (Not Recommended)", "Rivermist Hollow", "YES", "NO") == "YES")
-			prefs.anonymize = FALSE
+			prefs.write_preference(/datum/preference/toggle/anonymize, FALSE)
 			prefs.save_preferences()
 			to_chat(src, "No longer anonymous.")
 			GLOB.anonymize -= ckey
@@ -271,7 +271,7 @@
 		if(alert(src, "Enable Anonymize? This will hide your BYOND name from anyone except \
 		Dungeon Masters while playing here, useful for dealing with negative OOC bias or \
 		maintaining privacy from other BYOND users.", "Rivermist Hollow", "YES", "NO") == "YES")
-			prefs.anonymize = TRUE
+			prefs.write_preference(/datum/preference/toggle/anonymize, TRUE)
 			prefs.save_preferences()
 			to_chat(src, "Anonymous... OK")
 			GLOB.anonymize |= ckey
@@ -283,13 +283,13 @@
 		var/current_scaling = window_scaling * 100
 		var/new_scaling = input(usr, "Enter UI Scaling (Your current scaling is [current_scaling]%). Cancel to reset to native scaling.", "New UI Scaling", window_scaling * 100) as null|num
 		if(!isnull(new_scaling))
-			prefs.toggles |= UI_SCALE
+			prefs.preference_set_flag(/datum/preference/bitwise/toggles, UI_SCALE)
 			window_scaling = new_scaling / 100
-			prefs.ui_scale = window_scaling
+			prefs.write_preference(/datum/preference/numeric/ui_scale, window_scaling)
 			prefs.save_preferences()
 			to_chat(src, span_notice("UI Scaling set to [window_scaling * 100]%. Changes take effect when opening new windows."))
 		else
-			prefs.toggles &= ~UI_SCALE
+			prefs.preference_clear_flag(/datum/preference/bitwise/toggles, UI_SCALE)
 			window_scaling = text2num(winget(src, null, "dpi"))
 			to_chat(src, span_notice("UI Scaling reset to native [window_scaling * 100]%. Changes take effect when opening new windows."))
 		native_say?.refresh_channels()
@@ -308,8 +308,8 @@
 		return
 	var/newfps = input(usr, "Enter new FPS", "New FPS", 100) as null|num
 	if (!isnull(newfps))
-		prefs.clientfps = clamp(newfps, 1, 1000)
-		fps = prefs.clientfps
+		prefs.write_preference(/datum/preference/numeric/clientfps, clamp(newfps, 1, 1000))
+		fps = prefs.read_preference(/datum/preference/numeric/clientfps)
 		prefs.save_preferences()
 
 /client/verb/changelog()

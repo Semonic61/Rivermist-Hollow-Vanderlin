@@ -188,7 +188,7 @@
 	..()
 	if(impact_explode)
 		if(active)
-			detonate(throwingdatum.thrower)
+			detonate(throwingdatum.get_thrower())
 		else
 			new turf_debris (get_turf(src))
 			qdel(src)

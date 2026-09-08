@@ -458,25 +458,24 @@
 	component_type = /datum/component/storage/concrete/grid/belt/knife_belt
 	empty_when_dropped = FALSE
 
-/obj/item/storage/belt/leather/knifebelt/attack_atom(atom/attacked_atom, mob/living/user)
-	if(!isturf(attacked_atom))
-		return ..()
-
-	. = TRUE
+/obj/item/storage/belt/leather/knifebelt/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isturf(interacting_with))
+		return NONE
 	if(length(contents) >= max_storage)
-		to_chat(user, span_warning("Your [src.name] is full!"))
-		return
-	var/turf/T = attacked_atom
-	to_chat(user, span_notice("You begin to gather the ammunition..."))
-	for(var/obj/item/weapon/knife/throwingknife/knife in T.contents)
-		if(do_after(user, 5 DECISECONDS))
-			if(!eat_knife(knife))
-				break
+		to_chat(user, span_warning("Your [name] is full!"))
+		return ITEM_INTERACT_BLOCKING
 
-/obj/item/storage/belt/leather/knifebelt/proc/eat_knife(obj/A)
-	if(A.type in typesof(/obj/item/weapon/knife/throwingknife))
-		if(length(contents) < max_storage)
-			return SEND_SIGNAL(src, COMSIG_TRY_STORAGE_INSERT, A, null, FALSE)
+	var/turf/target_turf = interacting_with
+	to_chat(user, span_notice("You begin to gather the ammunition..."))
+	for(var/obj/item/weapon/knife/throwingknife/knife in target_turf.contents)
+		if(!do_after(user, 0.5 SECONDS, target = target_turf))
+			break
+		if(length(contents) >= max_storage)
+			break
+		if(!SEND_SIGNAL(src, COMSIG_TRY_STORAGE_INSERT, knife, user, FALSE))
+			break
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/storage/belt/leather/knifebelt/attackby(obj/A, mob/living/user, list/modifiers)
 	if(A.type in typesof(/obj/item/weapon/knife/throwingknife))

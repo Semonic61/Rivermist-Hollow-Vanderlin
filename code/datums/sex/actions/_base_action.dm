@@ -232,10 +232,10 @@
 	action_target = controller.target
 	if(ishuman(action_user))
 		var/mob/living/carbon/human/human_user = action_user
-		action_user_was_virgin = human_user.virginity
+		action_user_was_virgin = HAS_TRAIT(human_user, TRAIT_VIRGIN)
 	if(ishuman(action_target))
 		var/mob/living/carbon/human/human_target = action_target
-		action_target_was_virgin = human_target.virginity
+		action_target_was_virgin = HAS_TRAIT(human_target, TRAIT_VIRGIN)
 	speed = controller.speed
 	force = controller.force
 	stop_on_climax = controller.do_until_finished
@@ -715,7 +715,7 @@
 			var/obj/item/clothing/C = I
 			if(C.armor_class > AC_LIGHT && !C.allow_erp_equipped && !C.genital_access) //ig we can use genital access as a general allower
 				hidden_slots |= C.body_parts_covered
-	if(location in body_parts_covered2organ_names(hidden_slots))
+	if(location in cover_flags2body_zones(hidden_slots))
 		return FALSE
 
 	if(location == BODY_ZONE_PRECISE_MOUTH)

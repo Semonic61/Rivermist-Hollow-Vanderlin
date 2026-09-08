@@ -59,8 +59,12 @@ have ways of interacting with a specific atom and control it. They posses a blac
 	var/list/movement_path
 	///Cooldown for JPS movement, how often we're allowed to try making a new path
 	COOLDOWN_DECLARE(repath_cooldown)
+	///Cooldown for loot scanning
+	COOLDOWN_DECLARE(loot_scan_cooldown)
 	///AI paused time
 	var/paused_until = 0
+	/// Updated by pause traits and timers, not by polling every tick.
+	var/able_to_run = FALSE
 	///Idle cooldown so that mobs dont run around like rockets
 	COOLDOWN_DECLARE(idle_cooldown)
 	var/failed_sneak_check = 0
@@ -202,6 +206,9 @@ have ways of interacting with a specific atom and control it. They posses a blac
 	RegisterSignal(pawn, COMSIG_MOB_LOGIN, PROC_REF(on_sentience_gained))
 	RegisterSignal(pawn, COMSIG_MOB_STATCHANGE, PROC_REF(on_stat_changed))
 	RegisterSignal(pawn, COMSIG_ATOM_WAS_ATTACKED, PROC_REF(on_pawn_attacked))
+	RegisterSignal(pawn, COMSIG_PARENT_QDELETING, PROC_REF(on_pawn_qdeleted))
+	setup_able_to_run()
+	update_able_to_run()
 
 	our_cells = new(interesting_dist, interesting_dist, 1)
 	set_new_cells()
@@ -271,7 +278,7 @@ have ways of interacting with a specific atom and control it. They posses a blac
 	recalculate_idle()
 
 /datum/ai_controller/proc/should_idle()
-	if(!can_idle)
+	if(!can_idle || isnull(our_cells))
 		return FALSE
 	if((blackboard[BB_AI_ALERT_MODE_UNTIL] || 0) > world.time)
 		return FALSE
@@ -284,7 +291,7 @@ have ways of interacting with a specific atom and control it. They posses a blac
 	if(current_target && !QDELETED(current_target))
 		return FALSE
 	for(var/datum/spatial_grid_cell/grid as anything in our_cells.member_cells)
-		if(length(grid.client_contents))
+		if(locate(/mob/living) in grid.client_contents)
 			return FALSE
 	return TRUE
 
@@ -314,7 +321,10 @@ have ways of interacting with a specific atom and control it. They posses a blac
 			if(get_dist(pawn, entered_client) <= AI_ALERT_ON_CLIENT_DIST)
 				enter_alert_mode(AI_ALERT_ON_CLIENT_TIME)
 				break
-	reset_ai_status()
+	if(ai_status == AI_STATUS_IDLE)
+		set_ai_status(AI_STATUS_ON)
+	else
+		reset_ai_status()
 
 /datum/ai_controller/proc/on_client_exit(datum/source, datum/exited)
 	SIGNAL_HANDLER
@@ -357,7 +367,20 @@ have ways of interacting with a specific atom and control it. They posses a blac
 
 ///Proc for deinitializing the pawn to the old controller
 /datum/ai_controller/proc/UnpossessPawn(destroy)
-	UnregisterSignal(pawn, list(COMSIG_MOVABLE_Z_CHANGED, COMSIG_MOB_LOGIN, COMSIG_MOB_LOGOUT, COMSIG_MOB_STATCHANGE, COMSIG_ATOM_WAS_ATTACKED))
+	SHOULD_CALL_PARENT(TRUE)
+	if(isnull(pawn))
+		return
+	set_ai_status(AI_STATUS_OFF)
+	clear_able_to_run()
+	UnregisterSignal(pawn, list(COMSIG_MOVABLE_Z_CHANGED, COMSIG_MOVABLE_MOVED, COMSIG_MOB_LOGIN, COMSIG_MOB_LOGOUT, COMSIG_MOB_STATCHANGE, COMSIG_ATOM_WAS_ATTACKED, COMSIG_PARENT_QDELETING))
+	if(our_cells)
+		for(var/datum/spatial_grid_cell/cell as anything in our_cells.member_cells)
+			UnregisterSignal(cell, list(SPATIAL_GRID_CELL_ENTERED(SPATIAL_GRID_CONTENTS_TYPE_CLIENTS), SPATIAL_GRID_CELL_EXITED(SPATIAL_GRID_CONTENTS_TYPE_CLIENTS)))
+		our_cells = null
+	set_movement_target(type, null)
+	if(ai_movement.moving_controllers[src])
+		ai_movement.stop_moving_towards(src)
+	able_to_run = FALSE
 	var/turf/pawn_turf = get_turf(pawn)
 	if(pawn_turf)
 		GLOB.ai_controllers_by_zlevel[pawn_turf.z] -= src
@@ -380,7 +403,7 @@ have ways of interacting with a specific atom and control it. They posses a blac
 	set_ai_status(get_expected_ai_status())
 
 /datum/ai_controller/proc/can_move()
-	if(QDELETED(pawn))
+	if(!able_to_run || QDELETED(pawn) || HAS_TRAIT(pawn, TRAIT_AI_MOVEMENT_HALTED))
 		return
 	var/mob/living/living_pawn = pawn
 	if(HAS_TRAIT(living_pawn, TRAIT_INCAPACITATED))
@@ -402,6 +425,8 @@ have ways of interacting with a specific atom and control it. They posses a blac
  * Returns AI_STATUS_ON otherwise.
  */
 /datum/ai_controller/proc/get_expected_ai_status()
+	if(!able_to_run || QDELETED(pawn))
+		return AI_STATUS_OFF
 
 	if (!ismob(pawn))
 		return AI_STATUS_ON
@@ -421,18 +446,47 @@ have ways of interacting with a specific atom and control it. They posses a blac
 	if(!("[pawn_turf?.z]" in GLOB.weatherproof_z_levels))
 		if(SSmapping.level_has_any_trait(pawn_turf?.z, list(ZTRAIT_IGNORE_WEATHER_TRAIT)))
 			GLOB.weatherproof_z_levels |= "[pawn_turf?.z]"
-	if("[pawn_turf?.z]" in GLOB.weatherproof_z_levels)
+	if(!(pawn_turf?.z in SSmobs.town_z))
 		if(!length(SSmobs.clients_by_zlevel[pawn_turf?.z]))
 			return AI_STATUS_OFF
 	if(should_idle())
 		return AI_STATUS_IDLE
 	return AI_STATUS_ON
 
-///Returns TRUE if the ai controller can actually run at the moment.
-/datum/ai_controller/proc/able_to_run()
-	if(world.time < paused_until)
-		return FALSE
-	return TRUE
+/// Register event-driven pause controls. Movement-only pauses leave planning enabled.
+/datum/ai_controller/proc/setup_able_to_run()
+	RegisterSignals(pawn, list(SIGNAL_ADDTRAIT(TRAIT_AI_PAUSED), SIGNAL_REMOVETRAIT(TRAIT_AI_PAUSED)), PROC_REF(update_able_to_run))
+	RegisterSignal(pawn, SIGNAL_ADDTRAIT(TRAIT_AI_MOVEMENT_HALTED), PROC_REF(on_movement_halted))
+
+/datum/ai_controller/proc/clear_able_to_run()
+	UnregisterSignal(pawn, list(SIGNAL_ADDTRAIT(TRAIT_AI_PAUSED), SIGNAL_REMOVETRAIT(TRAIT_AI_PAUSED), SIGNAL_ADDTRAIT(TRAIT_AI_MOVEMENT_HALTED)))
+
+/datum/ai_controller/proc/update_able_to_run()
+	SIGNAL_HANDLER
+	var/run_flags = get_able_to_run()
+	able_to_run = !(run_flags & AI_UNABLE_TO_RUN)
+	if(!able_to_run)
+		on_movement_halted()
+	set_ai_status(get_expected_ai_status(), run_flags)
+
+/datum/ai_controller/proc/get_able_to_run()
+	if(QDELETED(pawn) || HAS_TRAIT(pawn, TRAIT_AI_PAUSED) || world.time < paused_until)
+		return AI_UNABLE_TO_RUN
+	return NONE
+
+/datum/ai_controller/proc/on_movement_halted()
+	SIGNAL_HANDLER
+	if(ai_movement.moving_controllers[src])
+		ai_movement.stop_moving_towards(src)
+	if(ismovable(pawn))
+		SSmove_manager.stop_looping(pawn)
+
+/datum/ai_controller/proc/on_pawn_qdeleted()
+	SIGNAL_HANDLER
+	able_to_run = FALSE
+	set_ai_status(AI_STATUS_OFF)
+	set_movement_target(type, null)
+	on_movement_halted()
 
 /datum/ai_controller/proc/is_hot_pursuit_target(atom/target)
 	if(!target || QDELETED(target))
@@ -444,9 +498,8 @@ have ways of interacting with a specific atom and control it. They posses a blac
 
 /// Generates a plan and see if our existing one is still valid.
 /datum/ai_controller/process(delta_time)
-	if(!able_to_run())
-		walk(pawn, 0) //stop moving
-		return //this should remove them from processing in the future through event-based stuff.
+	if(!able_to_run)
+		return // A subsystem may still have us in its current-run snapshot.
 
 	if(!LAZYLEN(current_behaviors) && idle_behavior)
 
@@ -540,6 +593,8 @@ have ways of interacting with a specific atom and control it. They posses a blac
 
 ///Determines whether the AI can currently make a new plan
 /datum/ai_controller/proc/able_to_plan()
+	if(!able_to_run)
+		return FALSE
 	. = TRUE
 	for(var/datum/ai_behavior/current_behavior as anything in current_behaviors)
 		if(!(current_behavior.behavior_flags & AI_BEHAVIOR_CAN_PLAN_DURING_EXECUTION)) //We have a behavior that blocks planning
@@ -570,7 +625,9 @@ have ways of interacting with a specific atom and control it. They posses a blac
 
 
 ///This proc handles changing ai status, and starts/stops processing if required.
-/datum/ai_controller/proc/set_ai_status(new_ai_status)
+/datum/ai_controller/proc/set_ai_status(new_ai_status, run_flags = NONE)
+	if(!able_to_run)
+		new_ai_status = AI_STATUS_OFF
 	if(ai_status == new_ai_status)
 		return FALSE //no change
 
@@ -586,7 +643,8 @@ have ways of interacting with a specific atom and control it. They posses a blac
 		if(AI_STATUS_IDLE)
 			START_PROCESSING(SSidle_ai_behaviors, src)
 		if(AI_STATUS_OFF)
-			CancelActions()
+			if(!(run_flags & AI_PREVENT_CANCEL_ACTIONS))
+				CancelActions()
 
 /datum/ai_controller/proc/stop_previous_processing()
 	switch(ai_status)
@@ -596,7 +654,9 @@ have ways of interacting with a specific atom and control it. They posses a blac
 			STOP_PROCESSING(SSidle_ai_behaviors, src)
 
 /datum/ai_controller/proc/PauseAi(time)
-	paused_until = world.time + time
+	paused_until = max(paused_until, world.time + time)
+	update_able_to_run()
+	addtimer(CALLBACK(src, PROC_REF(update_able_to_run)), max(0, paused_until - world.time), TIMER_UNIQUE|TIMER_OVERRIDE|TIMER_NO_HASH_WAIT|TIMER_DELETE_ME)
 
 /datum/ai_controller/proc/modify_cooldown(datum/ai_behavior/behavior, new_cooldown)
 	behavior_cooldowns[behavior] = new_cooldown

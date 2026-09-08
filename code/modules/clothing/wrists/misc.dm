@@ -108,7 +108,7 @@
 	desc = "Stalwart bronze bracers, from an age long past."
 	icon_state = "aasimarwrist"
 	item_state = "aasimarwrist"
-	armor = list("blunt" = DR_SUPER, "slash" = DBLOCK_MEDIUM, "stab" = DBLOCK_MEDIUM, "piercing" = DBLOCK_MEDIUM, "fire" = DR_NONE, "acid" = DR_NONE) // Less protection than steel
+	armor_type = /datum/armor/wrist/plate/hoplite // Less protection than steel
 	smeltresult = /obj/item/ingot/bronze
 	melting_material = /datum/material/bronze
 	melt_amount = 100
@@ -121,7 +121,7 @@
 	body_parts_covered = ARMS
 	icon_state = "copperarm"
 	item_state = "copperarm"
-	armor = list("blunt" = DR_HEAVY, "slash" = DBLOCK_HEAVY, "stab" = DBLOCK_HEAVY, "piercing" = DBLOCK_HEAVY, "fire" = DR_NONE, "acid" = DR_NONE)
+	armor_type = /datum/armor/wrist/plate/copper
 	prevent_crits = list(BCLASS_LASHING, BCLASS_BITE, BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_TWIST)
 	smeltresult = /obj/item/ingot/copper
 	melting_material = /datum/material/copper

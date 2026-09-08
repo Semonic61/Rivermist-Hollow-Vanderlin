@@ -51,6 +51,9 @@
 #define DISABLE_BALLOON_COMBAT (1<<4)
 #define DISABLE_BALLOON_EXP (1<<5)
 
+// Gameplay toggles
+#define DISABLE_SPLIT_PERSONALITY (1<<0)
+
 #define PARALLAX_INSANE -1 //for show offs
 #define PARALLAX_HIGH    0 //default.
 #define PARALLAX_MED     1
@@ -244,3 +247,39 @@ DEFINE_BITFIELD(toggles_maptext, list(
 	//"Disable hover text" = DISABLE_HOVER_TEXT,
 	"Disable runechat" = DISABLE_RUNECHAT,
 ))
+
+DEFINE_BITFIELD(toggles_gameplay, list(
+	"Disable random split personality" = DISABLE_SPLIT_PERSONALITY,
+))
+
+/// Species applies first so external organs and bodyparts can reference it.
+#define PREF_PRIORITY_SPECIES 1
+/// Bodypart-related preferences apply after species.
+#define PREF_PRIORITY_BODYPARTS 2
+/// Gender is resolved before names so randomisation is sex-aware.
+#define PREF_PRIORITY_GENDER 3
+/// Body type follows gender so a "use gender" option can resolve correctly.
+#define PREF_PRIORITY_BODY_TYPE 4
+/// Names are resolved last among the core character identity preferences.
+#define PREF_PRIORITY_NAMES 5
+/// Modifications that adjust the selected name.
+#define PREF_PRIORITY_NAME_MODS 6
+/// Default preference priority. Keep this last.
+#define PREF_PRIORITY_DEFAULT 7
+#define MAX_PREF_PRIORITY PREF_PRIORITY_DEFAULT
+
+/// Stored below /character[N] in the player's savefile.
+#define PREF_CHARACTER "character"
+/// Stored at the player savefile root.
+#define PREF_PLAYER "player"
+
+#define ROLE_SETTING_LIST_PICK "picker"
+#define ROLE_SETTING_TEXT "freetext"
+
+#define MAX_RUMORS 5
+#define MAX_NOBLE_GOSSIP 5
+#define MAX_GOSSIP_LENGTH 250
+
+#define DEFAULT_SPRITE_LIST "default_sprites"
+#define MALE_SPRITE_LIST "male_sprites"
+#define FEMALE_SPRITE_LIST "female_sprites"

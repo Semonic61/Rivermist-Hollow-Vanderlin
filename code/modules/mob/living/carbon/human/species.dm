@@ -25,8 +25,6 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 	var/sexes = TRUE
 	/// Percentage split of male female members of this species. Skews for males.
 	var/gender_ratio = 50
-	/// Whether this species a requires donator subscription to access, we removed all donator restrictions for species, but it's here if we ever want to reenable them or smth.
-	var/donator_req = FALSE
 	/// Used for sorting the species in the species_list, check out species_order_list for the order itself
 	var/order_num = 99 // so that if there's nothing in the species_order_list, we still don't break
 	var/default_mob_weight = HUMAN_WEIGHT
@@ -447,7 +445,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 				ACCENT_KOBOLD
 			)
 
-			///This will only trigger for donators
+			/// A player-selected accent outside the species default uses its own accent rules.
 			if(human.accent in accents_list)
 				/// If the human is using a specie with multiple accents
 				if(length(human.dna.species.multiple_accents))
@@ -948,11 +946,11 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 		C.setToxLoss(0, TRUE, TRUE)
 
 	if(TRAIT_NOMETABOLISM in inherent_traits)
-		C.reagents.end_metabolization(src, keep_liverless = TRUE)
+		C.reagents?.end_metabolization(src, keep_liverless = TRUE)
 
 	if(inherent_factions)
 		for(var/i in inherent_factions)
-			C.faction += i //Using +=/-= for this in case you also gain the faction from a different source.
+			C.set_faction(C.get_faction() + i) //Using +=/-= for this in case you also gain the faction from a different source.
 
 	soundpack_m = new soundpack_m()
 	soundpack_f = new soundpack_f()
@@ -975,6 +973,10 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 
 	on_gender_update(C)
 	C.update_organ_requirements() //post species trait gains
+
+	if(!(C.status_flags & BUILDING_ORGANS))
+		C.regenerate_icons()
+
 	SEND_SIGNAL(C, COMSIG_SPECIES_GAIN, src, old_species)
 
 /datum/species/proc/get_inherent_attribute_sheet()
@@ -1022,7 +1024,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 
 	if(inherent_factions)
 		for(var/i in inherent_factions)
-			C.faction -= i
+			C.set_faction(C.get_faction() - i)
 
 	SEND_SIGNAL(C, COMSIG_SPECIES_LOSS, src)
 
@@ -1492,12 +1494,12 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 	return
 
 /datum/species/proc/help(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/martial_art/attacker_style)
-//	if(!((target.health < 0 || HAS_TRAIT(target, TRAIT_FAKEDEATH)) && !(target.mobility_flags & MOBILITY_STAND)))
 	if(!(istype(user.rmb_intent, /datum/rmb_intent/weak)) && target.body_position == LYING_DOWN)
 		target.help_shake_act(user)
 		if(target != user)
 			log_combat(user, target, "shaken")
 		return TRUE
+
 	else if(istype(user.rmb_intent, /datum/rmb_intent/weak) && (target.body_position == LYING_DOWN) && (user.zone_selected in list(BODY_ZONE_CHEST, BODY_ZONE_PRECISE_MOUTH)))
 		user.do_cpr(target, user.zone_selected == BODY_ZONE_CHEST ? CPR_CHEST : CPR_MOUTH)
 		return TRUE
@@ -2015,7 +2017,8 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 		var/attacker_sneaking = GET_MOB_SKILL_VALUE(user, /datum/attribute/skill/misc/sneaking)
 		if((blunt || I.wbalance >= HARD_TO_DODGE) && attacker_sneaking >= 10)
 			H.next_attack_msg += " [span_userdanger("SNEAK ATTACK!")]"
-			var/percentage = attacker_sneaking / (SKILL_LEVEL_LEGENDARY)
+			// Get extra damage as a percent of 50% extra based on skill
+			var/percentage = attacker_sneaking / SKILL_LEVEL_LEGENDARY
 			if(blunt)
 				knockout_modifier = FLOOR(15 * percentage, 1)
 			item_force += (item_force * 0.5) * percentage
@@ -2315,11 +2318,11 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 		// Apply damage
 		if(burn_damage > 0)
 			var/final_damage = CLAMP(burn_damage * H.physiology.heat_mod, 0, CONFIG_GET(number/per_tick/max_fire_damage))
-			H.apply_damage(final_damage, BURN, spread_damage = TRUE, flashes = FALSE)
+			INVOKE_ASYNC(H, PROC_REF(apply_damage), final_damage, BURN, spread_damage = TRUE, flashes = FALSE)
 			if(!H.has_smoke_protection())
-				H.apply_damage(final_damage/4, OXY, flashes = FALSE) // Smoke inhalation
+				INVOKE_ASYNC(H, PROC_REF(apply_damage), final_damage / 4, OXY, flashes = FALSE) // Smoke inhalation
 			if(H.stat < UNCONSCIOUS && prob(burn_damage * 10 / 4))
-				H.emote("pain")
+				INVOKE_ASYNC(H, TYPE_PROC_REF(/mob, emote), "pain")
 		// Apply building heat debuffs
 		apply_heat_debuffs(H, debuff_level)
 	// Cold damage and effects
@@ -2333,7 +2336,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 		debuff_level = calculate_cold_debuff_level(cold_deficit)
 		// Apply damage
 		if(cold_damage > 0)
-			H.apply_damage(cold_damage * H.physiology.cold_mod, BURN, flashes = FALSE)
+			INVOKE_ASYNC(H, PROC_REF(apply_damage), cold_damage * H.physiology.cold_mod, BURN, flashes = FALSE)
 		// Apply building cold debuffs
 		apply_cold_debuffs(H, debuff_level, cold_deficit)
 	// Clear effects when in safe range

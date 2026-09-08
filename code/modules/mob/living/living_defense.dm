@@ -134,9 +134,17 @@
 /mob/living/proc/get_eye_protection()
 	return 0
 
-//this returns the mob's protection against ear damage (0:no protection; 1: some ear protection; 2: has no ears)
-/mob/living/proc/get_ear_protection()
-	return 0
+/// Applies both lasting ear damage and temporary deafness where supported.
+/mob/living/proc/sound_damage(damage, deafen)
+	return
+
+/// Returns additive protection against sound trauma.
+/mob/living/proc/get_ear_protection(ignore_deafness = FALSE)
+	if(!ignore_deafness && HAS_TRAIT(src, TRAIT_DEAF))
+		return EAR_PROTECTION_FULL
+	var/list/signal_protection = list(EAR_PROTECTION_NONE)
+	SEND_SIGNAL(src, COMSIG_LIVING_GET_EAR_PROTECTION, signal_protection)
+	return signal_protection[EAR_PROTECTION_ARG]
 
 /**
  * Checks if our mob has their mouth covered.
@@ -149,13 +157,15 @@
  *
  * Retuns a truthy value (a ref to what is covering mouth), or a falsy value (null)
  */
-/mob/living/proc/is_mouth_covered(head_only = 0, mask_only = 0)
+/mob/living/proc/is_mouth_covered(check_flags)
 	return FALSE
 
-/mob/living/proc/is_eyes_covered(check_glasses = 1, check_head = 1, check_mask = 1)
+/mob/living/proc/is_eyes_covered(check_flags)
 	return FALSE
+
 /mob/living/proc/is_pepper_proof(check_head = TRUE, check_mask = TRUE)
 	return FALSE
+
 /mob/living/proc/on_hit(obj/projectile/P)
 	return BULLET_ACT_HIT
 
@@ -258,9 +268,9 @@
 		var/zone = ran_zone(BODY_ZONE_CHEST, 65)//Hits a random part of the body, geared towards the chest
 		SEND_SIGNAL(I, COMSIG_MOVABLE_IMPACT_ZONE, src, zone)
 		if(!blocked)
-			var/mob/living/thrower
-			if(isliving(throwingdatum?.thrower))
-				thrower = throwingdatum.thrower
+			var/mob/living/thrower = throwingdatum?.get_thrower()
+			if(!istype(thrower))
+				thrower = null
 			var/armor = run_armor_check(zone, damage_type, "", "", I.armor_penetration, damage = I.throwforce, used_weapon = I, attacker = thrower)
 			next_attack_msg.Cut()
 			var/nodmg = FALSE
@@ -281,10 +291,7 @@
 				if(iscarbon(src))
 					var/obj/item/bodypart/affecting = get_bodypart(zone)
 					if(affecting)
-						var/throwee = null
-						if(throwingdatum)
-							throwee = isliving(throwingdatum.thrower) ? throwingdatum.thrower : null
-						affecting.bodypart_attacked_by(I.thrown_bclass, real_damage, throwee, affecting.body_zone, crit_message = TRUE, incoming_germ = I.germ_level, pre_applied = TRUE)
+						affecting.bodypart_attacked_by(I.thrown_bclass, real_damage, thrower, affecting.body_zone, crit_message = TRUE, incoming_germ = I.germ_level, pre_applied = TRUE)
 					I.do_special_attack_effect(I.thrownby, affecting, null, src, zone, thrown = TRUE)
 				else
 					simple_woundcritroll(I.thrown_bclass, I.throwforce, null, zone, crit_message = TRUE)
@@ -367,7 +374,7 @@
 
 	if(!prob(probby) && !instant && !stat && cmode)
 		var/self_message
-		if(src.client?.prefs.showrolls)
+		if(src.client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 			self_message = span_warning("I struggle with [user]! ([probby]%)")
 		else
 			self_message = span_warning("I struggle with [user]!")
@@ -477,7 +484,7 @@
 	return TRUE
 
 
-/mob/living/attack_paw(mob/living/carbon/monkey/M)
+/mob/living/attack_paw(mob/living/carbon/M)
 	if(isturf(loc) && istype(loc.loc, /area/start))
 //		to_chat(M, "No attacking people at spawn, you jackass.")
 		return FALSE
@@ -543,9 +550,27 @@
 		return TRUE
 	return FALSE
 
-//called when the mob receives a loud bang
-/mob/living/proc/soundbang_act()
-	return 0
+/// Applies the physical effects of a loud noise after accounting for ear protection.
+/mob/living/proc/soundbang_act(intensity = SOUNDBANG_NORMAL, stun_pwr = 2 SECONDS, damage_pwr = 5, deafen_pwr = 1.5 SECONDS, ignore_deafness = FALSE, send_sound = TRUE)
+	var/protection = get_ear_protection(ignore_deafness)
+	if(protection >= intensity)
+		return FALSE
+	var/effect_amount = protection > 0 ? 1 - (protection / intensity) : 1 - protection
+	if(stun_pwr)
+		Paralyze(stun_pwr * effect_amount * 0.1)
+		Knockdown(stun_pwr * effect_amount)
+	var/obj/item/organ/ears/ears = getorganslot(ORGAN_SLOT_EARS)
+	. = effect_amount
+	if(!ears || !(deafen_pwr || damage_pwr))
+		return
+	sound_damage(damage_pwr * effect_amount, deafen_pwr * effect_amount)
+	if(send_sound)
+		SEND_SOUND(src, sound('sound/flash_ring.ogg', FALSE, TRUE, FALSE, 250))
+	if(ears.damage >= 15 && prob(ears.damage - 5))
+		to_chat(src, span_userdanger("You can't hear anything!"))
+		ears.setOrganDamage(ears.maxHealth)
+	else if(ears.damage >= 5)
+		to_chat(src, span_warning("Your ears start to ring[ears.damage >= 15 ? " badly!" : "!"]"))
 
 //to damage the clothes worn by a mob
 /mob/living/proc/damage_clothes(damage_amount, damage_type = BRUTE, damage_flag = 0, def_zone)

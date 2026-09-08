@@ -23,6 +23,18 @@
 
 	var/list/quirk_data
 	S["quirks"] >> quirk_data
+	var/static/list/legacy_addiction_paths = list(
+		/datum/quirk/vice/alcoholic = /datum/quirk/vice/addiction/alcoholic,
+		/datum/quirk/vice/smoker = /datum/quirk/vice/addiction/smoker,
+		/datum/quirk/vice/junkie = /datum/quirk/vice/addiction/junkie,
+		/datum/quirk/vice/pyromaniac = /datum/quirk/vice/addiction/pyromaniac,
+		/datum/quirk/vice/kleptomaniac = /datum/quirk/vice/addiction/kleptomaniac,
+		/datum/quirk/vice/godfearing = /datum/quirk/vice/addiction/godfearing,
+		/datum/quirk/vice/maniac = /datum/quirk/vice/addiction/sadist,
+		/datum/quirk/vice/sadist = /datum/quirk/vice/addiction/sadist,
+		/datum/quirk/vice/lovefiend = /datum/quirk/vice/addiction/lovefiend,
+		/datum/quirk/vice/masochist = /datum/quirk/vice/addiction/masochist,
+	)
 
 	if(!quirk_data || !islist(quirk_data))
 		if(pref_species && islist(customizer_entries))
@@ -33,6 +45,7 @@
 		if(!islist(entry))
 			continue
 		var/quirk_type = entry["type"]
+		quirk_type = legacy_addiction_paths[quirk_type] || quirk_type
 		var/custom_val = entry["value"]
 		var/list/extra_val = entry["extra"]
 

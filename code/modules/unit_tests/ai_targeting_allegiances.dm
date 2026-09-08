@@ -1,4 +1,7 @@
 /datum/unit_test/ai_targeting_respects_job_group
+#ifdef FOCUS_BUCKLING_PORT_TESTS
+	focus = TRUE
+#endif
 	procs_tested = list(
 		/datum/targetting_datum/proc/can_attack,
 		/mob/living/proc/ai_targeting_ally_check,
@@ -10,8 +13,8 @@
 	var/datum/targetting_datum/basic/targetting_datum = allocate(/datum/targetting_datum/basic)
 	var/mob/living/carbon/human/attacker = allocate(/mob/living/carbon/human)
 	var/mob/living/carbon/human/target = allocate(/mob/living/carbon/human)
-	attacker.faction = list(FACTION_HOSTILE)
-	target.faction = list(FACTION_TOWN)
+	attacker.set_faction(list(FACTION_HOSTILE))
+	target.set_faction(list(FACTION_TOWN))
 
 	TEST_ASSERT(targetting_datum.can_attack(attacker, target), "Test setup should allow basic AI to attack before job group allegiance is applied.")
 
@@ -37,6 +40,9 @@
 	target.mind.assigned_role = null
 
 /datum/unit_test/ai_targeting_respects_family
+#ifdef FOCUS_BUCKLING_PORT_TESTS
+	focus = TRUE
+#endif
 	procs_tested = list(
 		/datum/targetting_datum/proc/can_attack,
 		/mob/living/proc/ai_targeting_ally_check,
@@ -47,8 +53,8 @@
 	var/datum/targetting_datum/basic/targetting_datum = allocate(/datum/targetting_datum/basic)
 	var/mob/living/carbon/human/attacker = allocate(/mob/living/carbon/human)
 	var/mob/living/carbon/human/target = allocate(/mob/living/carbon/human)
-	attacker.faction = list(FACTION_HOSTILE)
-	target.faction = list(FACTION_TOWN)
+	attacker.set_faction(list(FACTION_HOSTILE))
+	target.set_faction(list(FACTION_TOWN))
 
 	TEST_ASSERT(targetting_datum.can_attack(attacker, target), "Test setup should allow basic AI to attack before family allegiance is applied.")
 
@@ -61,6 +67,9 @@
 	target.family_datum = null
 
 /datum/unit_test/ai_targeting_respects_faction_relations
+#ifdef FOCUS_BUCKLING_PORT_TESTS
+	focus = TRUE
+#endif
 	procs_tested = list(
 		/datum/targetting_datum/proc/can_attack,
 		/mob/living/proc/ai_targeting_ally_check,
@@ -73,9 +82,9 @@
 	var/mob/living/carbon/human/undead = allocate(/mob/living/carbon/human)
 	var/mob/living/carbon/human/minotaur = allocate(/mob/living/carbon/human)
 	var/mob/living/carbon/human/townie = allocate(/mob/living/carbon/human)
-	undead.faction = list(FACTION_UNDEAD)
-	minotaur.faction = list(FACTION_MINOTAURS)
-	townie.faction = list(FACTION_TOWN)
+	undead.set_faction(list(FACTION_UNDEAD))
+	minotaur.set_faction(list(FACTION_MINOTAURS))
+	townie.set_faction(list(FACTION_TOWN))
 
 	TEST_ASSERT(!targetting_datum.can_attack(undead, minotaur), "Basic AI should not attack factions linked by AI targeting relations.")
 	TEST_ASSERT(!targetting_datum.can_attack(minotaur, undead), "AI targeting faction relations should be symmetric.")

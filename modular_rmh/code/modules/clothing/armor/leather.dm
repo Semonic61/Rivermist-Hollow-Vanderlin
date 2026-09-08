@@ -5,7 +5,7 @@
 	item_state = "studleather"
 	resistance_flags = FLAMMABLE
 	blocksound = SOFTHIT
-	armor = ARMOR_LEATHER_STUDDED
+	armor_type = /datum/armor/rmh/leather/studded
 	prevent_crits = ALL_EXCEPT_STAB
 	nodismemsleeves = TRUE
 	body_parts_covered = COVERAGE_TORSO

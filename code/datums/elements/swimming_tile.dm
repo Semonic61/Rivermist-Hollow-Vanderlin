@@ -2,8 +2,8 @@
 /datum/element/swimming_tile
 	element_flags = ELEMENT_DETACH | ELEMENT_BESPOKE
 	id_arg_index = 2
-	/// Stamina drained each status tick.
-	var/ticking_stamina_cost
+	/// Stamina drained by movement, at most once per status interval.
+	var/swimming_stamina_cost
 	/// Oxygen damage dealt each status tick while drowning.
 	var/ticking_oxygen_damage
 	/// Whether standing human-sized mobs are still fully underwater.
@@ -15,12 +15,12 @@
 	swimmers = null
 	return ..()
 
-/datum/element/swimming_tile/Attach(turf/target, ticking_stamina_cost = 5, ticking_oxygen_damage = 2, block_breathing = FALSE)
+/datum/element/swimming_tile/Attach(turf/target, swimming_stamina_cost = 5, ticking_oxygen_damage = 2, block_breathing = FALSE)
 	. = ..()
 	if(!isturf(target))
 		return ELEMENT_INCOMPATIBLE
 
-	src.ticking_stamina_cost = ticking_stamina_cost
+	src.swimming_stamina_cost = swimming_stamina_cost
 	src.ticking_oxygen_damage = ticking_oxygen_damage
 	src.block_breathing = block_breathing
 	RegisterSignals(target, list(COMSIG_ATOM_ENTERED, COMSIG_ATOM_AFTER_SUCCESSFUL_INITIALIZED_ON), PROC_REF(enter_water))
@@ -73,9 +73,9 @@
 	SIGNAL_HANDLER
 	var/datum/status_effect/swimming/current_status = swimmer.has_status_effect(/datum/status_effect/swimming)
 	if(current_status)
-		current_status.update_water_config(ticking_stamina_cost, ticking_oxygen_damage, block_breathing)
+		current_status.update_water_config(swimming_stamina_cost, ticking_oxygen_damage, block_breathing)
 		return
-	swimmer.apply_status_effect(/datum/status_effect/swimming, null, ticking_stamina_cost, ticking_oxygen_damage, block_breathing)
+	swimmer.apply_status_effect(/datum/status_effect/swimming, null, swimming_stamina_cost, ticking_oxygen_damage, block_breathing)
 
 /// Owns stamina drain, drowning, and sinking while a mob is swimming.
 /datum/status_effect/swimming
@@ -84,7 +84,7 @@
 	duration = STATUS_EFFECT_PERMANENT
 	status_type = STATUS_EFFECT_UNIQUE
 	tick_interval = 2 SECONDS
-	/// Stamina drained each interval before skill reduction.
+	/// Stamina drained per movement interval before skill reduction.
 	var/stamina_per_interval
 	/// Oxygen damage dealt each interval while drowning.
 	var/oxygen_per_interval
@@ -92,6 +92,8 @@
 	var/block_breathing
 	/// Prevents repeated stamina knockdowns from chaining without recovery time.
 	COOLDOWN_DECLARE(stamina_failure_pity)
+	/// Caps stamina drain when movement signals arrive faster than the status tick interval.
+	COOLDOWN_DECLARE(stamina_drain_cooldown)
 
 /datum/status_effect/swimming/on_creation(mob/living/new_owner, duration_override, ticking_stamina_cost = 5, ticking_oxygen_damage = 2, block_breathing = FALSE)
 	. = ..()
@@ -103,6 +105,7 @@
 	src.block_breathing = block_breathing
 	RegisterSignal(owner, SIGNAL_REMOVETRAIT(TRAIT_IMMERSED), PROC_REF(stop_swimming))
 	RegisterSignal(owner, COMSIG_MOB_STATCHANGE, PROC_REF(on_stat_change))
+	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(on_swim_moved))
 	RegisterSignals(owner, list(COMSIG_MOB_EQUIPPED_ITEM, COMSIG_MOB_UNEQUIPPED_ITEM), PROC_REF(on_equipment_changed))
 	update_sinking_state()
 
@@ -116,6 +119,7 @@
 	UnregisterSignal(owner, list(
 		SIGNAL_REMOVETRAIT(TRAIT_IMMERSED),
 		COMSIG_MOB_STATCHANGE,
+		COMSIG_MOVABLE_MOVED,
 		COMSIG_MOB_EQUIPPED_ITEM,
 		COMSIG_MOB_UNEQUIPPED_ITEM,
 	))
@@ -131,17 +135,6 @@
 	update_sinking_state(move_down = TRUE)
 	if(QDELETED(src))
 		return
-
-	if(!ismob(owner.buckled) && !HAS_TRAIT(owner, TRAIT_GOOD_SWIM) && COOLDOWN_FINISHED(src, stamina_failure_pity))
-		var/swimming_skill = GET_MOB_SKILL_VALUE_OLD(owner, /datum/attribute/skill/misc/swimming)
-		var/final_stamina_cost = max(stamina_per_interval - swimming_skill, 0)
-		if(final_stamina_cost > 0 && !owner.adjust_stamina(final_stamina_cost, "drown"))
-			addtimer(CALLBACK(owner, TYPE_PROC_REF(/mob/living, Knockdown), 3 SECONDS), 1 SECONDS)
-			COOLDOWN_START(src, stamina_failure_pity, 6 SECONDS)
-		owner.adjust_experience(
-			/datum/attribute/skill/misc/swimming,
-			max(stamina_per_interval, 1) * GET_MOB_ATTRIBUTE_VALUE(owner, STAT_ENDURANCE) * 0.01,
-		)
 
 	if(HAS_TRAIT(owner, TRAIT_WATER_BREATHING) || HAS_TRAIT(owner, TRAIT_NOBREATH))
 		return
@@ -160,6 +153,42 @@
 	owner.apply_damage(oxygen_per_interval, OXY)
 	if(prob(20))
 		owner.losebreath += oxygen_per_interval
+
+/// Charges exertion for active swimming without turning standing in water into a permanent stamina drain.
+/datum/status_effect/swimming/proc/spend_swimming_stamina()
+	if(QDELETED(owner) || owner.stat != CONSCIOUS || owner.buckled || owner.throwing || owner.moving_from_pull)
+		return
+	if(owner.movement_type & (FLYING | FLOATING))
+		return
+	if(HAS_TRAIT(owner, TRAIT_GOOD_SWIM) || !COOLDOWN_FINISHED(src, stamina_drain_cooldown))
+		return
+	if(!COOLDOWN_FINISHED(src, stamina_failure_pity))
+		return
+
+	var/turf/open/water/current_water = get_turf(owner)
+	if(!istype(current_water) || !current_water.is_swimmable() || !HAS_TRAIT(owner, TRAIT_IMMERSED))
+		return
+	for(var/obj/structure/support in current_water)
+		if(support.obj_flags & BLOCK_Z_OUT_DOWN)
+			return
+
+	COOLDOWN_START(src, stamina_drain_cooldown, initial(tick_interval))
+	var/swimming_skill = GET_MOB_SKILL_VALUE_OLD(owner, /datum/attribute/skill/misc/swimming)
+	var/final_stamina_cost = max(stamina_per_interval - swimming_skill, 0)
+	if(final_stamina_cost > 0 && !owner.adjust_stamina(final_stamina_cost, "drown"))
+		addtimer(CALLBACK(owner, TYPE_PROC_REF(/mob/living, Knockdown), 3 SECONDS), 1 SECONDS)
+		COOLDOWN_START(src, stamina_failure_pity, 6 SECONDS)
+	owner.adjust_experience(
+		/datum/attribute/skill/misc/swimming,
+		max(stamina_per_interval, 1) * GET_MOB_ATTRIBUTE_VALUE(owner, STAT_ENDURANCE) * 0.01,
+	)
+
+/datum/status_effect/swimming/proc/on_swim_moved(atom/movable/source, atom/old_loc, direction, forced)
+	SIGNAL_HANDLER
+
+	if(forced || old_loc == source.loc)
+		return
+	spend_swimming_stamina()
 
 /datum/status_effect/swimming/proc/update_sinking_state(move_down = FALSE)
 	var/turf/open/water/current_water = get_turf(owner)

@@ -10,6 +10,9 @@
 	water_height = WATER_HEIGHT_DEEP
 
 /datum/unit_test/swimming_state_lifecycle
+#ifdef FOCUS_SWIMMING
+	focus = TRUE
+#endif
 	var/turf/original_start
 	var/turf/original_destination
 	var/original_start_type
@@ -51,6 +54,31 @@
 	var/datum/status_effect/swimming/swimming_status = swimmer.has_status_effect(/datum/status_effect/swimming)
 	TEST_ASSERT_NOTNULL(swimming_status, "Entering swimmable water did not apply the swimming status.")
 	TEST_ASSERT(swimming_status.block_breathing, "Full water did not configure the status as fully submerged.")
+	var/starting_stamina = swimmer.stamina
+	swimming_status.tick()
+	swimming_status.tick()
+	TEST_ASSERT_EQUAL(swimmer.stamina, starting_stamina, "Remaining stationary in water drained stamina.")
+
+	TEST_ASSERT(swimmer.Move(destination_water, EAST), "The swimmer could not move into adjacent water for the stamina check.")
+	TEST_ASSERT(swimmer.stamina > starting_stamina, "Active swimming did not drain stamina.")
+	TEST_ASSERT_EQUAL(COOLDOWN_TIMELEFT(swimming_status, stamina_drain_cooldown), 2 SECONDS, "Swimming used an absolute tick timestamp as its stamina cooldown.")
+	var/stamina_after_moving = swimmer.stamina
+	TEST_ASSERT(swimmer.Move(start_water, WEST), "The swimmer could not return through adjacent water for the stamina check.")
+	TEST_ASSERT_EQUAL(swimmer.stamina, stamina_after_moving, "Swimming movement ignored its stamina-drain interval.")
+	swimming_status.tick()
+	TEST_ASSERT_EQUAL(swimmer.stamina, stamina_after_moving, "The swimming status tick drained stamina after movement stopped.")
+	swimmer.last_fatigued = world.time - 3 SECONDS
+	swimmer.update_stamina()
+	TEST_ASSERT(swimmer.stamina < stamina_after_moving, "Resting in water did not allow stamina regeneration.")
+
+	COOLDOWN_RESET(swimming_status, stamina_drain_cooldown)
+	var/stamina_after_resting = swimmer.stamina
+	swimmer.forceMove(destination_water)
+	swimmer.forceMove(start_water)
+	TEST_ASSERT_EQUAL(swimmer.stamina, stamina_after_resting, "Forced movement through water drained swimming stamina.")
+	TEST_ASSERT(swimmer.Move(destination_water, EAST), "The swimmer could not resume swimming after resting.")
+	TEST_ASSERT(swimmer.stamina > stamina_after_resting, "Swimming did not charge stamina again after its cooldown expired.")
+	swimmer.forceMove(start_water)
 
 	swimmer.encumbrance = ENCUMBRANCE_MEDIUM
 	swimming_status.update_sinking_state()

@@ -13,10 +13,10 @@ GLOBAL_LIST_EMPTY(trophy_cases)
 
 GLOBAL_LIST_EMPTY(mob_spawners) 		    // All mob_spawn objects
 
-GLOBAL_LIST_INIT(anvil_recipes, init_subtypes(/datum/anvil_recipe, list()))
-GLOBAL_LIST_INIT(artificer_recipes, init_subtypes(/datum/artificer_recipe, list()))
-GLOBAL_LIST_INIT(alch_grind_recipes, init_subtypes(/datum/alch_grind_recipe, list()))
-GLOBAL_LIST_INIT(alch_cauldron_recipes, init_subtypes(/datum/alch_cauldron_recipe, list()))
+GLOBAL_LIST_INIT(anvil_recipes, init_subtypes(/datum/anvil_recipe, list(), allow_abstract = FALSE))
+GLOBAL_LIST_INIT(artificer_recipes, init_subtypes(/datum/artificer_recipe, list(), allow_abstract = FALSE))
+GLOBAL_LIST_INIT(alch_grind_recipes, init_subtypes(/datum/alch_grind_recipe, list(), allow_abstract = FALSE))
+GLOBAL_LIST_INIT(alch_cauldron_recipes, init_subtypes(/datum/alch_cauldron_recipe, list(), allow_abstract = FALSE))
 
 /* COLORS */
 GLOBAL_LIST_INIT(peasant_dyes, list(

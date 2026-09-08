@@ -80,7 +80,7 @@
 	forge_werewolf_objectives()
 
 	owner.current.grant_language(/datum/language/beast)
-	owner.current.faction.Add(FACTION_WOLVES)
+	owner.current.add_faction(FACTION_WOLVES)
 
 	wolfname = "[pick(strings("werewolf_names.json", "wolf_prefixes"))] [pick(strings("werewolf_names.json", "wolf_suffixes"))]"
 	last_seen_tod = GLOB.tod
@@ -120,7 +120,7 @@
 
 	if(owner.current)
 		owner.current.remove_language(/datum/language/beast)
-		owner.current.faction.Remove(FACTION_WOLVES)
+		owner.current.remove_faction(FACTION_WOLVES)
 
 	return ..()
 
@@ -221,7 +221,7 @@
 	icon_state = null
 	body_parts_covered = FULL_BODY
 	resistance_flags = FIRE_PROOF
-	armor = ARMOR_BRIGANDINE
+	armor_type = /datum/armor/brigandine
 	prevent_crits = list(BCLASS_CUT, BCLASS_CHOP, BCLASS_STAB, BCLASS_BLUNT, BCLASS_TWIST)
 	blocksound = SOFTHIT
 	blade_dulling = DULLING_BASHCHOP

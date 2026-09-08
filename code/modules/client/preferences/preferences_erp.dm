@@ -30,15 +30,17 @@
 	living_owner.invalidate_erp_preference_cache()
 
 /datum/preferences/proc/ensure_erp_preferences()
-	if(!erp_preferences)
+	var/list/erp_preferences = read_preference(/datum/preference/list_type/erp_preferences)
+	if(!islist(erp_preferences))
 		erp_preferences = list()
+		write_preference(/datum/preference/list_type/erp_preferences, erp_preferences)
 	return erp_preferences
 
 /datum/preferences/proc/get_default_kink_preference_data()
 	return list("enabled" = FALSE, "intensity" = 1, "notes" = "")
 
 /datum/preferences/proc/ensure_kink_preferences()
-	ensure_erp_preferences()
+	var/list/erp_preferences = ensure_erp_preferences()
 	var/list/kink_prefs = erp_preferences["kinks"]
 	if(!islist(kink_prefs))
 		kink_prefs = list()
@@ -276,8 +278,10 @@
 	mark_erp_preferences_dirty()
 
 /datum/preferences/proc/apply_character_kinks(mob/living/carbon/human/character)
+	var/list/erp_preferences = ensure_erp_preferences()
 	if(!length(erp_preferences))
 		setup_default_erp_preferences()
+		erp_preferences = ensure_erp_preferences()
 
 	var/list/kink_prefs = erp_preferences?["kinks"]
 	if(!kink_prefs)
@@ -301,18 +305,8 @@
 		LAZYADD(character_kink.tracked_mobs, character) //this kinda makes tracked_mobs redundant since its no longer singletons but w/e this allows notes
 		character_kink.apply_kink(character)
 
-/datum/preferences/proc/save_erp_preferences(savefile/S)
-	WRITE_FILE(S["erp_preferences"], erp_preferences)
-
-/datum/preferences/proc/load_erp_preferences(savefile/S)
-	S["erp_preferences"] >> erp_preferences
-	erp_preferences = SANITIZE_LIST(erp_preferences)
-	validate_erp_preferences()
-	setup_default_erp_preferences()
-	mark_erp_preferences_dirty()
-
 /datum/preferences/proc/validate_erp_preferences()
-	ensure_erp_preferences()
+	var/list/erp_preferences = ensure_erp_preferences()
 
 	// Clean up any invalid preference types that might have been loaded
 	var/list/valid_types = list()
@@ -336,10 +330,11 @@
 		for(var/kink_name in kink_prefs)
 			if(!GLOB.available_kinks[kink_name])
 				kink_prefs -= kink_name
+	write_preference(/datum/preference/list_type/erp_preferences, erp_preferences)
 	mark_erp_preferences_dirty()
 
 /datum/preferences/proc/setup_default_erp_preferences()
-	ensure_erp_preferences()
+	var/list/erp_preferences = ensure_erp_preferences()
 	var/changed = FALSE
 
 	// Set up default values for any missing ERP preferences
@@ -365,4 +360,5 @@
 			changed = TRUE
 
 	if(changed)
+		write_preference(/datum/preference/list_type/erp_preferences, erp_preferences)
 		mark_erp_preferences_dirty()

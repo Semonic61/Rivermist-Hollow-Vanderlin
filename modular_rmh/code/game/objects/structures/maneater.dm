@@ -422,7 +422,7 @@
 		user_unbuckle_mob(M, user, break_factor * 1.5)
 	. = ..()
 
-/obj/structure/flora/grass/maneater/real/user_buckle_mob(mob/living/M, mob/living/user) //Don't want them getting put on the rack other than by spiking
+/obj/structure/flora/grass/maneater/real/user_buckle_mob(mob/living/M, mob/living/user, check_loc = TRUE) //Don't want them getting put on the rack other than by spiking
 	return
 
 /obj/structure/flora/grass/maneater/real/attackby(obj/item/W, mob/user, params)

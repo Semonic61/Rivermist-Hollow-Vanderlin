@@ -15,7 +15,7 @@
 	name = "corset"
 	desc = "A leather binding to constrict one's figure... and lungs."
 	icon_state = "corset"
-	armor = ARMOR_PADDED_BAD
+	armor_type = /datum/armor/padded/bad
 	body_parts_covered = COVERAGE_VEST
 
 //................ Amazon chainkini ............... //
@@ -33,7 +33,7 @@
 	// It looks better without these
 	flags_inv = HIDEUNDIES
 	armor_class = AC_LIGHT
-	armor = ARMOR_LEATHER_GOOD
+	armor_type = /datum/armor/leather/good
 	body_parts_covered = COVERAGE_TORSO
 	prevent_crits = ALL_EXCEPT_BLUNT
 	item_weight = 3.2 KILOGRAMS
@@ -56,7 +56,7 @@
 	clothing_flags = CANT_SLEEP_IN
 
 	armor_class = AC_HEAVY
-	armor = ARMOR_BRIGANDINE
+	armor_type = /datum/armor/brigandine
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS
 	max_integrity = INTEGRITY_STRONGEST
 	prevent_crits = ALL_EXCEPT_BLUNT
@@ -99,7 +99,7 @@
 	sellprice = VALUE_BRIGANDINE
 	clothing_flags = CANT_SLEEP_IN
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/plate/bad
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS
 	max_integrity = INTEGRITY_STRONGEST
 	prevent_crits = ALL_EXCEPT_BLUNT
@@ -119,7 +119,7 @@
 	icon_state = "coat_of_plates"
 	blocksound = PLATEHIT
 	sellprice = VALUE_SNOWFLAKE_STEEL
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/plate/bad
 	// add armor plate bad from defines
 	stand_speed_reduction = 1.05
 
@@ -145,7 +145,7 @@
 	icon_state = "light_brigandine"
 	blocksound = SOFTHIT
 	body_parts_covered = COVERAGE_TORSO
-	armor = ARMOR_LEATHER_STUDDED
+	armor_type = /datum/armor/leather/studded
 	max_integrity = ARMOR_INT_CHEST_PLATE_BRIGANDINE
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron

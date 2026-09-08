@@ -10,8 +10,8 @@
 	now_fixed = span_info("My heart begins to beat again.")
 	high_threshold_cleared = span_info("The pain in my chest has died down, and my breathing becomes more relaxed.")
 	organ_volume = 0.5
-	max_blood_storage = 100
-	current_blood = 100
+	max_blood_storage = 600
+	current_blood = 600
 	blood_req = 10
 	oxygen_req = 5
 	nutriment_req = 2
@@ -115,7 +115,7 @@
 		user.visible_message(span_notice("[user] squeezes [src] to make it beat again!"), \
 					span_notice("You squeeze [src] to make it beat again!"))
 		Restart()
-		addtimer(CALLBACK(src, PROC_REF(stop_if_unowned)), 8 SECONDS)
+		addtimer(CALLBACK(src, PROC_REF(stop_if_unowned)), 12 SECONDS)
 
 /obj/item/organ/heart/proc/can_stop()
 	if(beating)
@@ -138,6 +138,7 @@
 				deathsdoor = FALSE
 		if(deathsdoor)
 			to_chat(owner, span_danger("I'm knocking on death's door!"))
+	consider_processing()
 	return TRUE
 
 /obj/item/organ/heart/proc/Restart()
@@ -146,6 +147,8 @@
 	update_appearance()
 	if(owner && !old_beating)
 		to_chat(owner, span_userdanger("My [name] beats again!"))
+	current_blood = max(current_blood, 60)
+	consider_processing()
 	return TRUE
 
 /obj/item/organ/heart/get_availability(datum/species/S)

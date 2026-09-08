@@ -159,9 +159,9 @@ GLOBAL_LIST_EMPTY(created_sound_groups)
 		deltimer(timerid)
 		timerid = null
 	stopped = TRUE
+	on_stop()
 	if(null_parent)
 		set_parent(null)
-	on_stop()
 	loop_started = FALSE
 //		if(!timerid)
 //			return
@@ -276,6 +276,7 @@ GLOBAL_LIST_EMPTY(created_sound_groups)
 	if(direct)
 		var/mob/P = parent
 		if(P?.client)
+			P.client.played_loops -= src
 			P.stop_sound_channel(channel) //This is mostly used for weather
 		return
 	for(var/mob/M as anything in thingshearing)
@@ -305,6 +306,9 @@ GLOBAL_LIST_EMPTY(created_sound_groups)
 /// A simple proc to change who our parent is set to, also handling registering and unregistering the QDELETING signals on the parent.
 /datum/looping_sound/proc/set_parent(new_parent)
 	if(parent)
+		if(ismob(parent))
+			var/mob/mob_parent = parent
+			mob_parent.client?.played_loops -= src
 		UnregisterSignal(parent, COMSIG_PARENT_QDELETING)
 	parent = new_parent
 	if(parent)

@@ -19,7 +19,7 @@
 	melt_amount = 100
 
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/gloves/plate
 	prevent_crits = ALL_EXCEPT_STAB
 	max_integrity = INTEGRITY_STRONGEST
 
@@ -34,7 +34,7 @@
 	desc = "Plated gauntlets made out of iron. Offers good protection against melee attacks."
 	icon_state = "igauntlets"
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/gloves/plate/bad
 	max_integrity = INTEGRITY_STRONG
 
 /obj/item/clothing/gloves/plate/rust
@@ -49,7 +49,7 @@
 	melting_material = /datum/material/iron
 	melt_amount = 100
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/gloves/plate/bad
 	max_integrity = INTEGRITY_STANDARD
 
 /obj/item/clothing/gloves/plate/blk
@@ -64,7 +64,7 @@
 	melting_material = /datum/material/blacksteel
 	melt_amount = 100
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PLATE_GOOD
+	armor_type = /datum/armor/gloves/plate/good
 	item_weight = 1.65 KILOGRAMS
 	sellprice = VALUE_SILVER_ITEM * 2
 
@@ -72,7 +72,7 @@
 	name = "silver gauntlets"
 	desc = "Finely forged gauntlets made out of silver."
 	icon_state = "silvergloves"
-	armor = ARMOR_PLATE_SILVER
+	armor_type = /datum/armor/gloves/plate/silver
 	smeltresult = /obj/item/ingot/silver
 	melting_material = /datum/material/silver
 	melt_amount = 100

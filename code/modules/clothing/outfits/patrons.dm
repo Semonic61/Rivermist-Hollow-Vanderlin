@@ -1,17 +1,6 @@
 /obj/item/clothing/cloak/templar
 	var/overarmor = TRUE
-
-/obj/item/clothing/cloak/templar/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
-
-/obj/item/clothing/cloak/templar/dropped(mob/living/carbon/human/user)
-	..()
-	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
-	if(STR)
-		var/list/things = STR.contents()
-		for(var/obj/item/I in things)
-			STR.remove_from_storage(I, get_turf(src))
+	has_storage = TRUE
 
 
 /obj/item/clothing/cloak/templar/astratan
@@ -85,10 +74,7 @@
 	sleevetype = "shirt"
 	nodismemsleeves = TRUE
 	inhand_mod = TRUE
-
-/obj/item/clothing/cloak/wardencloak/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
+	has_storage = TRUE
 
 /obj/item/clothing/cloak/graggar
 	name = "vicious cloak"
@@ -112,10 +98,7 @@
 	sleevetype = "shirt"
 	nodismemsleeves = TRUE
 	inhand_mod = TRUE
-
-/obj/item/clothing/cloak/forrestercloak/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
+	has_storage = TRUE
 
 /obj/item/clothing/cloak/forrestercloak/snow
 	name = "snow cloak"
@@ -306,9 +289,8 @@
 	melting_material = /datum/material/steel
 	melt_amount = 150
 
-/obj/item/clothing/head/helmet/heavy/ravoxhelm/attackby(obj/item/W, mob/living/user, params)
-	..()
-	var/list/colorlist = list(
+/obj/item/clothing/head/helmet/heavy/ravoxhelm/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	var/static/list/colorlist = list(
 		"PURPLE"="#865c9c",
 		"RED"="#8f3636",
 		"BLACK"="#2f352f",
@@ -322,16 +304,20 @@
 		"MAJENTA"="#822b52",
 	)
 
-	if(istype(W, /obj/item/natural/feather) && !detail_tag)
-		var/choice = input(user, "Choose a color.", "Plume") as anything in colorlist
+	if(detail_tag)
+		return NONE
+
+	if(istype(tool, /obj/item/natural/feather))
+		var/choice = tgui_input_list(user, "Choose a color.", "Plume", colorlist)
 		detail_color = colorlist[choice]
 		detail_tag = "_detail"
-		user.visible_message(span_warning("[user] adds [W] to [src]."))
-		user.transferItemToLoc(W, src, FALSE, FALSE)
+		user.visible_message(span_warning("[user] adds [tool] to [src]."))
+		user.transferItemToLoc(tool, src, FALSE, FALSE)
 		update_appearance(UPDATE_OVERLAYS)
 		if(loc == user && ishuman(user))
 			var/mob/living/carbon/H = user
 			H.update_inv_head()
+		return ITEM_INTERACT_SUCCESS
 
 /obj/item/clothing/head/helmet/heavy/volfplate
 	name = "wolf-face helm"

@@ -543,7 +543,7 @@
 // Here's where we rewrite how byond handles movement except slightly different
 // To be removed on step_ conversion
 // All this work to prevent a second bump
-/atom/movable/Move(atom/newloc, direct=0, glide_size_override = 0, update_dir = TRUE)
+/atom/movable/proc/CardinalMove(atom/newloc, direct = 0, glide_size_override = 0, update_dir = TRUE)
 	. = FALSE
 	if(!newloc || newloc == loc)
 		return
@@ -609,7 +609,7 @@
 	if(loc != newloc)
 		if (!(direct & (direct - 1))) //Cardinal move
 			lastcardinal = direct
-			. = ..()
+			. = CardinalMove(newloc, direct, glide_size_override, update_dir)
 		else //Diagonal move, split it into cardinal moves
 			if(HAS_TRAIT(src, TRAIT_BLOCKED_DIAGONAL))
 				if (direct & NORTH)
@@ -748,7 +748,7 @@
 
 	//glide_size strangely enough can change mid movement animation and update correctly while the animation is playing
 	//This means that if you don't override it late like this, it will just be set back by the movement update that's called when you move turfs.
-	if(glide_size_override)
+	if(glide_size_override && glide_size != glide_size_override)
 		set_glide_size(glide_size_override)
 
 	last_move = direct
@@ -1013,16 +1013,16 @@
 		pulledby.stop_pulling()
 
 	//They are moving! Wouldn't it be cool if we calculated their momentum and added it to the throw?
-	if (thrower && thrower.last_move && thrower.client && thrower.client.move_delay >= world.time + world.tick_lag*2)
+	if (ismob(thrower) && !QDELETED(thrower) && thrower.last_move && thrower.client && thrower.client.move_delay >= world.time + world.tick_lag*2)
 		var/user_momentum = thrower.cached_multiplicative_slowdown
-		if (!user_momentum) //no movement_delay, this means they move once per byond tick, lets calculate from that instead.
+		if(user_momentum <= 0) // Zero or negative slowdown still cannot move faster than one step per tick.
 			user_momentum = world.tick_lag
 
 		user_momentum = 1 / user_momentum // convert from ds to the tiles per ds that throw_at uses.
 
-		if (get_dir(thrower, target) & last_move)
+		if (get_dir(thrower, target) & thrower.last_move)
 			user_momentum = user_momentum //basically a noop, but needed
-		else if (get_dir(target, thrower) & last_move)
+		else if (get_dir(target, thrower) & thrower.last_move)
 			user_momentum = -user_momentum //we are moving away from the target, lets slowdown the throw accordingly
 		else
 			user_momentum = 0
@@ -1041,9 +1041,11 @@
 	var/target_zone
 	if(QDELETED(thrower))
 		thrower = null //Let's not pass a qdeleting reference if any.
-	else
+	else if(ismob(thrower))
 		target_zone = thrower.zone_selected
 
+	// Replacing a throw must also release its signals and processing entry.
+	QDEL_NULL(throwing)
 	var/datum/thrownthing/TT = new(src, target, get_dir(src, target), range, speed, thrower, diagonals_first, force, gentle, callback, target_zone)
 
 	var/dist_x = abs(target.x - src.x)
@@ -1082,6 +1084,8 @@
 		SpinAnimation(5, 1)
 
 	SEND_SIGNAL(src, COMSIG_MOVABLE_POST_THROW, TT, spin)
+	if(QDELETED(src) || QDELETED(TT) || throwing != TT)
+		return
 	SSthrowing.processing[src] = TT
 	if (SSthrowing.state == SS_PAUSED && length(SSthrowing.currentrun))
 		SSthrowing.currentrun[src] = TT
@@ -1590,3 +1594,11 @@
 
 #undef ATTACK_ANIMATION_PIXEL_DIFF
 #undef ATTACK_ANIMATION_TIME
+
+/atom/movable/proc/set_anchored(new_value)
+	SHOULD_CALL_PARENT(TRUE)
+	if(anchored == new_value)
+		return
+	. = anchored
+	anchored = new_value
+	SEND_SIGNAL(src, COMSIG_MOVABLE_SET_ANCHORED, new_value)

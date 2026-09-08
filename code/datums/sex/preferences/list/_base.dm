@@ -13,7 +13,9 @@
 		CRASH("ERP preference [type] has a default choice which is unavailable in its choice list.")
 
 /datum/erp_preference/list_choice/get_value(datum/preferences/prefs)
-	return get_value_from_list(prefs?.erp_preferences)
+	if(!prefs)
+		return get_default_value()
+	return get_value_from_list(prefs.read_preference(/datum/preference/list_type/erp_preferences))
 
 /datum/erp_preference/list_choice/get_value_from_list(list/stored_preferences)
 	var/stored_value = stored_preferences?[type]

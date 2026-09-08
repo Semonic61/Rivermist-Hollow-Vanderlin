@@ -90,7 +90,6 @@
 
 	if(uses_integrity)
 		atom_integrity = max_integrity
-	TEST_ONLY_ASSERT((!armor || istype(armor)), "[type] has an armor that contains an invalid value at intialize")
 
 	var/turf/T = GET_TURF_ABOVE(src)
 	if(T)
@@ -234,7 +233,7 @@
 	GLOB.preset_fish_sources[fish_source].readd_fish(src, fish, releaser)
 
 /turf/proc/is_blocked_turf(exclude_mobs = FALSE, source_atom = null, list/ignore_atoms, type_list = FALSE)
-	if((!isnull(source_atom) && !CanPass(source_atom, get_dir(src, source_atom))) || density)
+	if((!isnull(source_atom) && !CanPass(source_atom, src)) || density)
 		return TRUE
 
 	for(var/atom/movable/movable_content as anything in contents)
@@ -251,7 +250,7 @@
 		// If the thing is dense AND we're including mobs or the thing isn't a mob AND if there's a source atom and
 		// it cannot pass through the thing on the turf,  we consider the turf blocked.
 		if(movable_content.density && (!exclude_mobs || !ismob(movable_content)))
-			if(source_atom && movable_content.CanPass(source_atom, get_dir(src, source_atom)))
+			if(source_atom && movable_content.CanPass(source_atom, src))
 				continue
 			return TRUE
 	return FALSE

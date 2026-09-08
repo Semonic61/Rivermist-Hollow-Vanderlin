@@ -8,7 +8,7 @@
 	. = ..()
 	if(next_time > world.time)
 		return
-	if(!controller.able_to_run())
+	if(!controller.able_to_run)
 		return
 	if(controller.blackboard[BB_BASIC_MOB_FOOD_TARGET]) // this means we are likely eating a corpse
 		return
@@ -20,7 +20,7 @@
 
 	next_time = world.time + cooldown
 	var/mob/living/living_pawn = controller.pawn
-	if(prob(walk_chance) && !HAS_TRAIT(living_pawn, TRAIT_IMMOBILIZED) && isturf(living_pawn.loc) && !living_pawn.pulledby)
+	if(controller.can_move() && prob(walk_chance) && !HAS_TRAIT(living_pawn, TRAIT_IMMOBILIZED) && isturf(living_pawn.loc) && !living_pawn.pulledby)
 		var/move_dir = pick(GLOB.alldirs)
 		var/turf/step_turf = get_step(living_pawn, move_dir)
 		if(ai_turf_is_hazardous(step_turf))

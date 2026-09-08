@@ -6,10 +6,10 @@
 			if(SSmapping.level_has_any_trait(turf.z, list(ZTRAIT_IGNORE_WEATHER_TRAIT)))
 				GLOB.weatherproof_z_levels |= "[turf.z]"
 		if("[turf.z]" in GLOB.weatherproof_z_levels)
-			faction |= FACTION_MATTHIOS
+			add_faction(FACTION_MATTHIOS)
 			SSmatthios_mobs.register_mob(src)
 		if(SSterrain_generation.get_island_at_location(turf))
-			faction |= "islander"
+			add_faction("islander")
 			SSisland_mobs.register_mob(src, SSterrain_generation.get_island_at_location(turf))
 
 /mob/living/Initialize()
@@ -20,7 +20,7 @@
 	if(unique_name)
 		name = "[name] ([rand(1, 1000)])"
 		real_name = name
-	faction += "[REF(src)]"
+	add_ally(src)
 	GLOB.mob_living_list += src
 	AddElement(/datum/element/movetype_handler)
 	init_faith()
@@ -34,6 +34,9 @@
 		LoadComponent(/datum/component/field_of_vision, FOV_90_DEGREES, get_fov_angle(FOV_90_DEGREES))
 		update_fov_angles()
 	recalculate_stats()
+	var/turf/current_turf = get_turf(src)
+	if(current_turf)
+		update_z(current_turf.z)
 	//for organ spawning
 	if(ai_controller)
 		var/datum/ai_planning_subtree/horny/hornybehavior = locate() in ai_controller.planning_subtrees
@@ -49,8 +52,8 @@
 		SSmatthios_mobs.unregister_mob(src)
 	if(cached_island_id)
 		SSisland_mobs.remove_mob(src)
+	update_z(null)
 
-	surgeries = null
 	if(LAZYLEN(status_effects))
 		for(var/datum/status_effect/S as anything in status_effects)
 			if(S.on_remove_on_mob_delete) //the status effect calls on_remove when its mob is deleted
@@ -61,6 +64,8 @@
 		buckled.unbuckle_mob(src,force=1)
 
 	stop_offering_item()
+
+	QDEL_LIST(surgeries)
 
 	GLOB.mob_living_list -= src
 	for(var/datum/soullink/S as anything in ownedSoullinks)
@@ -428,6 +433,8 @@
 	return TRUE
 
 /mob/living/start_pulling(atom/movable/AM, state, force = pull_force, suppress_message = FALSE, obj/item/item_override, accurate = FALSE)
+	if(SEND_SIGNAL(src, COMSIG_LIVING_TRY_PULL, AM, force) & COMSIG_LIVING_CANCEL_PULL)
+		return FALSE
 	if(!AM || !src)
 		return FALSE
 	if(!(AM.can_be_pulled(src, state, force)))
@@ -956,7 +963,7 @@
 /mob/living/proc/on_lying_down(new_lying_angle)
 	if(layer == initial(layer)) //to avoid things like hiding larvas.
 		layer = LYING_MOB_LAYER //so mob lying always appear behind standing mobs
-	density = FALSE // We lose density and stop bumping passable dense things.
+	update_density()
 	if(HAS_TRAIT(src, TRAIT_FLOORED) && !(dir & (NORTH|SOUTH)))
 		setDir(pick(NORTH, SOUTH)) // We are and look helpless.
 	body_position_pixel_y_offset = PIXEL_Y_OFFSET_LYING
@@ -966,7 +973,7 @@
 /mob/living/proc/on_standing_up()
 	if(layer == LYING_MOB_LAYER)
 		layer = initial(layer)
-	density = initial(density) // We were prone before, so we become dense and things can bump into us again.
+	update_density()
 	body_position_pixel_y_offset = 0
 
 //Recursive function to find everything a mob is holding. Really shitty proc tbh, you should use get_all_gear for carbons.
@@ -1366,7 +1373,7 @@
 				resist_leash() //trying to remove a leash.
 			else
 				resist_restraints() //trying to remove cuffs.
-				var/datum/component/riding/human/riding_datum = GetComponent(/datum/component/riding/human)
+				var/datum/component/riding/creature/human/riding_datum = GetComponent(/datum/component/riding/creature/human)
 				if(HAS_TRAIT(src, TRAIT_PONYGIRL_RIDEABLE) && riding_datum)
 					for(var/mob/M in buckled_mobs)
 						riding_datum.force_dismount(M)
@@ -1782,7 +1789,7 @@
 	MOBTIMER_SET(pulledby, MT_RESIST_GRAB)
 
 	var/shitte = ""
-	if(client?.prefs.showrolls)
+	if(client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 		shitte = " ([resist_chance]%)"
 	if(prob(resist_chance))
 		visible_message("<span class='warning'>[src] breaks free of [pulledby]'s grip!</span>", \
@@ -2276,32 +2283,34 @@
 			reset_perspective()
 
 /mob/living/proc/update_z(new_z) // 1+ to register, null to unregister
-	if (registered_z != new_z)
-		if (registered_z)
-			SSmobs.clients_by_zlevel[registered_z] -= src
-		if (client)
-			//Check the amount of clients exists on the Z level we're leaving from,
-			//this excludes us because at this point we are not registered to any z level.
-			var/old_level_new_clients = (registered_z ? SSmobs.clients_by_zlevel[registered_z].len : null)
-			if(registered_z && old_level_new_clients == 0)
-				if(SSmapping.level_has_any_trait(registered_z, list(ZTRAIT_IGNORE_WEATHER_TRAIT)) && !SSmapping.level_has_any_trait(new_z, list(ZTRAIT_IGNORE_WEATHER_TRAIT)))
-					for(var/datum/ai_controller/controller as anything in GLOB.ai_controllers_by_zlevel[registered_z])
-						controller.set_ai_status(AI_STATUS_OFF)
+	if(registered_z == new_z)
+		return
 
-			if (new_z)
-				//Check the amount of clients exists on the Z level we're moving towards, excluding ourselves.
-				var/new_level_old_clients = SSmobs.clients_by_zlevel[new_z].len
-				SSmobs.clients_by_zlevel[new_z] += src
+	if(registered_z)
+		var/list/old_clients = SSmobs.clients_by_zlevel[registered_z]
+		var/had_client_registration = (src in old_clients)
+		// Logout can already have cleared client; registration still needs to be removed.
+		old_clients -= src
+		SSmobs.mobs_by_zlevel[registered_z] -= src
+		if(had_client_registration && !length(old_clients))
+			for(var/datum/ai_controller/controller as anything in GLOB.ai_controllers_by_zlevel[registered_z])
+				// Preserve the local town/idle policy instead of forcing every NPC off.
+				controller.reset_ai_status()
 
-				if(new_level_old_clients == 0) //No one was here before, wake up all the AIs.
-					for (var/datum/ai_controller/controller as anything in GLOB.ai_controllers_by_zlevel[new_z])
-						//We don't set them directly on, for instances like AIs acting while dead and other cases that may exist in the future.
-						//This isn't a problem for AIs with a client since the client will prevent this from being called anyway.
-						controller.set_ai_status(controller.get_expected_ai_status())
+	registered_z = new_z
+	if(!new_z)
+		return
 
-			registered_z = new_z
-		else
-			registered_z = null
+	SSmobs.mobs_by_zlevel[new_z] |= src
+	if(!client)
+		return
+
+	var/list/new_clients = SSmobs.clients_by_zlevel[new_z]
+	var/first_client = !length(new_clients)
+	new_clients |= src
+	if(first_client)
+		for(var/datum/ai_controller/controller as anything in GLOB.ai_controllers_by_zlevel[new_z])
+			controller.reset_ai_status()
 
 /mob/living/onTransitZ(old_z,new_z)
 	..()
@@ -2712,7 +2721,7 @@
 					M.update_sneak_invis(reset = TRUE)
 			else
 				if(M.m_intent == MOVE_INTENT_SNEAK)
-					if(M.client?.prefs.showrolls)
+					if(M.client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 						to_chat(M, "<span class='warning'>[src] didn't find me... [probby]%</span>")
 					else
 						to_chat(M, "<span class='warning'>[src] didn't find me.</span>")
@@ -3082,10 +3091,9 @@
 /// Proc for giving a mob a new 'friend', generally used for AI control and targeting. Returns false if already friends.
 /mob/living/proc/befriend(mob/living/new_friend)
 	SHOULD_CALL_PARENT(TRUE)
-	var/friend_ref = REF(new_friend)
-	if (faction.Find(friend_ref))
+	if(QDELETED(new_friend) || has_ally(new_friend))
 		return FALSE
-	faction |= friend_ref
+	add_ally(new_friend)
 	ai_controller?.insert_blackboard_key_lazylist(BB_FRIENDS_LIST, new_friend)
 
 	SEND_SIGNAL(src, COMSIG_LIVING_BEFRIENDED, new_friend)
@@ -3100,10 +3108,9 @@
 /// Proc for removing a friend you added with the proc 'befriend'. Returns true if you removed a friend.
 /mob/living/proc/unfriend(mob/living/old_friend)
 	SHOULD_CALL_PARENT(TRUE)
-	var/friend_ref = REF(old_friend)
-	if (!faction.Find(friend_ref))
+	if(QDELETED(old_friend) || !has_ally(old_friend))
 		return FALSE
-	faction -= friend_ref
+	remove_ally(old_friend)
 	ai_controller?.remove_thing_from_blackboard_key(BB_FRIENDS_LIST, old_friend)
 
 	SEND_SIGNAL(src, COMSIG_LIVING_UNFRIENDED, old_friend)
@@ -3285,7 +3292,7 @@
 /mob/living/proc/offer_item(mob/living/offered_to, obj/offered_item)
 	if(isnull(offered_to) || isnull(offered_item))
 		stack_trace("no offered_to or offered_item in offer_item()")
-		return
+		return FALSE
 
 	var/time_left = COOLDOWN_TIMELEFT(src, offer_cooldown)
 
@@ -3311,11 +3318,14 @@
 
 	new /obj/effect/temp_visual/offered_item_effect(get_turf(src), offered_item, src, offered_to, stealthy)
 
+	return TRUE
+
 /mob/living/proc/cancel_offering_item(stealthy)
 	var/obj/offered_item = offered_item_ref?.resolve()
 	if(isnull(offered_item))
 		stop_offering_item()
 		return
+
 	if(stealthy)
 		to_chat(src, "I stop offering [offered_item ? offered_item : "the item"].")
 	else
@@ -3375,3 +3385,25 @@
 	if(hud_used)
 		var/atom/movable/screen/eye_intent/eyet = locate() in hud_used.static_inventory
 		eyet?.update_appearance(UPDATE_ICON)
+
+/// Keep posture and other non-density sources intact when a riding trait ends.
+/mob/living/proc/update_density()
+	set_density(initial(density) && body_position == STANDING_UP && !HAS_TRAIT(src, TRAIT_UNDENSE))
+
+/mob/living/proc/undense_changed(datum/source)
+	SIGNAL_HANDLER
+	update_density()
+
+/**
+ * Check if the passed body zone is covered by some clothes
+ *
+ * * location: body zone to check
+ * ([BODY_ZONE_CHEST], [BODY_ZONE_HEAD], etc)
+ * * exluded_equipment_slots: equipment slots to ignore when checking coverage
+ * (for example, if you want to ignore helmets, pass [ITEM_SLOT_HEAD])
+ *
+ * Returns TRUE if the location is accessible (not covered)
+ * Returns FALSE if the location is covered by something
+ */
+/mob/living/proc/is_location_accessible(location, exluded_equipment_slots = NONE)
+	return TRUE

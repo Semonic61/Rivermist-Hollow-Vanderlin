@@ -34,8 +34,9 @@
 		stencil_mask.Flip(NORTH)
 
 	var/mutable_appearance/reflection = copy_appearance_filter_overlays(appearance)
-	if(render_target)
-		reflection.render_source = render_target
+	// FOV gives player mobs a render target whose image is already transformed. Reusing it here
+	// would apply the lying rotation twice and draw the copied body overlays a second time.
+	reflection.render_target = null
 	reflection.plane = REFLECTION_PLANE
 	reflection.pixel_y = -32
 	// Mirror our own transform rather than replacing it, or a mob lying down stands up in the water.
@@ -60,7 +61,8 @@
 	plane = REFLECTION_PLANE
 	// We are handed a finished copy of the subject's appearance, so don't let the subject's own colour,
 	// transparency and rotation apply a second time on top of it.
-	appearance_flags = RESET_COLOR | RESET_ALPHA | RESET_TRANSFORM
+	// Apply the stencil mask to the whole copied mob, including its bodypart and clothing overlays.
+	appearance_flags = KEEP_TOGETHER | RESET_COLOR | RESET_ALPHA | RESET_TRANSFORM
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	blocks_emissive = NONE
 
@@ -83,7 +85,7 @@
 	reflective_icon.appearance = build_reflection_appearance()
 	// Assigning an appearance can carry these along, so set them afterwards rather than trusting what arrived.
 	// VIS_INHERIT_DIR keeps the reflection facing where we face without needing a rebuild every time we turn.
-	reflective_icon.appearance_flags = RESET_COLOR | RESET_ALPHA | RESET_TRANSFORM
+	reflective_icon.appearance_flags = KEEP_TOGETHER | RESET_COLOR | RESET_ALPHA | RESET_TRANSFORM
 	reflective_icon.vis_flags = VIS_INHERIT_DIR
 	SEND_SIGNAL(src, COMSIG_LIVING_REFLECTION_CHANGED)
 

@@ -17,7 +17,7 @@
 	sleeved = 'icons/roguetown/clothing/onmob/helpers/stonekeep_merc.dmi'
 	detail_tag = "_detail"
 	colorgrenz = TRUE
-	armor = ARMOR_PADDED
+	armor_type = /datum/armor/pants/padded
 	prevent_crits = MINOR_CRITICALS
 	max_integrity = INTEGRITY_STANDARD
 	item_weight = 400 GRAMS

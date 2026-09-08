@@ -116,11 +116,12 @@
 /obj/item/clothing/get_inspect_entries(list/inspect_list)
 	. = ..()
 
-	if(armor)
+	var/datum/armor/item_armor = get_armor()
+	if(item_armor.has_any_armor())
 		. += "\n<u><b>DEFENSE:</b></u>\n"
 		var/list/defense_strings = list()
-		for(var/damage_key in ARMOR_LIST_DAMAGE())
-			var/rating = armor.get_rating(damage_key)
+		for(var/damage_key in ARMOR_LIST_DAMAGE)
+			var/rating = item_armor.get_rating(damage_key)
 			defense_strings += "<font color='[armor_to_color(rating)]'>[armor_to_protection_name(damage_key)] [armor_to_protection_class(rating)]</font>"
 		. += defense_strings.Join(" | ")
 
@@ -131,7 +132,7 @@
 	if(body_parts_covered)
 		. += "\n<u><b>COVERAGE:</b></u>\n"
 		var/list/parsed_zones = list()
-		for(var/zone in body_parts_covered2organ_names(body_parts_covered))
+		for(var/zone in cover_flags2body_zones(body_parts_covered))
 			parsed_zones += "[parse_zone(zone)]"
 		. += parsed_zones.Join(" | ")
 
@@ -332,17 +333,19 @@
 				qdel(src)
 				return
 		qdel(clothing_as_food)
-	if(M.on_fire)
-		if(user == M)
-			return
-		user.changeNext_move(CLICK_CD_MELEE)
-		M.visible_message(span_warning("[user] pats out the flames on [M] with [src]!"))
-		M.adjust_divine_fire_stacks(-2)
-		if(M.fire_stacks > 0)
-			M.adjust_fire_stacks(-2)
-		take_damage(10, BURN, "fire")
-	else
+	if(!M.on_fire)
 		return ..()
+
+	if(user == M)
+		return
+
+	user.changeNext_move(CLICK_CD_MELEE)
+	M.visible_message(span_warning("[user] pats out the flames on [M] with [src]!"))
+	M.adjust_divine_fire_stacks(-2)
+	if(M.fire_stacks > 0)
+		M.adjust_fire_stacks(-2)
+
+	take_damage(10, BURN, "fire")
 
 /obj/item/clothing/dropped(mob/user)
 	..()
@@ -409,7 +412,7 @@
 	if(!damaged_clothes)
 		update_clothes_damaged_state(TRUE)
 	var/brokemessage = FALSE
-	var/list/armorlist = armor?.getList()
+	var/list/armorlist = get_armor().get_rating_list()
 	for(var/x in armorlist)
 		if(armorlist[x] > 0)
 			brokemessage = TRUE

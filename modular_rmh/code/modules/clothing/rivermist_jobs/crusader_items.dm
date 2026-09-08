@@ -20,6 +20,8 @@
 	mob_overlay_icon = 'icons/roguetown/clothing/special/onmob/crusader.dmi'
 	sleeved = 'icons/roguetown/clothing/special/onmob/crusader.dmi'
 	misc_flags = CRAFTING_TEST_EXCLUDE
+	has_storage = TRUE
+	storage_component_path = /datum/component/storage/concrete/grid/crusader_helm
 
 /obj/item/clothing/head/helmet/heavy/crusader
 	name = "bucket helm"
@@ -42,17 +44,3 @@
 	worn_x_dimension = 32
 	worn_y_dimension = 32
 	misc_flags = CRAFTING_TEST_EXCLUDE
-
-/obj/item/clothing/cloak/cape/crusader/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak/lord)
-
-/obj/item/clothing/cloak/cape/crusader/dropped(mob/living/carbon/human/user)
-	..()
-	if(QDELETED(src))
-		return
-	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
-	if(STR)
-		var/list/things = STR.contents()
-		for(var/obj/item/I in things)
-			STR.remove_from_storage(I, get_turf(src))

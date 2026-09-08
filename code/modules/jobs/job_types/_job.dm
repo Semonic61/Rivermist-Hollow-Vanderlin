@@ -3,6 +3,11 @@
 	var/enabled = TRUE
 	/// The name of the job , used for preferences, bans and more. Make sure you know what you're doing before changing this.
 	var/title = "NOPE"
+	/// Player-selectable titles which do not change the underlying job.
+	var/list/alt_titles
+	/// Female-presenting alternatives used instead of alt_titles when unique_alt_titles is set.
+	var/list/alt_titles_female
+	var/unique_alt_titles = FALSE
 	/// Visual title override
 	var/title_override = null
 	/// The title of this job given to female mobs. Fluff, not as important as [var/title].
@@ -201,6 +206,11 @@
 	/// Honorary titles appended to names. Based off pronouns
 	var/honorary
 	var/honorary_f
+	/// Player-selectable honorary prefixes which do not change the underlying job.
+	var/list/alt_honorary
+	/// Female-presenting alternatives used instead of alt_honorary when unique_alt_honorary is set.
+	var/list/alt_honorary_female
+	var/unique_alt_honorary = FALSE
 	/// Same as above, but for suffixes. See Khan
 	var/honorary_suffix
 	var/honorary_suffix_f
@@ -340,6 +350,7 @@
 /datum/job/proc/after_spawn(mob/living/carbon/human/spawned, client/player_client, clear_job_stats = TRUE)
 	SHOULD_CALL_PARENT(TRUE)
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_JOB_AFTER_SPAWN, src, spawned, player_client)
+	apply_alt_title_preferences(spawned, player_client?.prefs)
 
 	var/used_attribute_sheet = FALSE
 	if(spawned.attributes)
@@ -438,6 +449,8 @@
 		spawned.dna?.species.soundpack_f = new voicepack_f()
 
 	assign_honorary_titles(spawned)
+	if(spawned.familytree_pref != FAMILY_NONE && !spawned.family_datum)
+		SSfamilytree.AddLocal(spawned, spawned.familytree_pref)
 
 	var/list/owned_triumph_buys = LAZYACCESS(SStriumphs.triumph_buy_owners, player_client?.ckey)
 	for(var/datum/triumph_buy/T in owned_triumph_buys)
@@ -710,7 +723,7 @@
 /mob/living/carbon/human/apply_prefs_job(client/player_client, datum/job/job, latejoining = FALSE)
 	var/fully_randomize = is_banned_from(player_client.ckey, "Appearance")
 	var/mob/dead/new_player/np = player_client?.mob
-	if(istype(np) && player_client?.prefs?.multi_char_ready && !latejoining)
+	if(istype(np) && player_client?.prefs?.read_preference(/datum/preference/toggle/multi_char_ready) && !latejoining)
 		np.ensure_multi_ready_character_loaded()
 	if(!player_client)
 		return // Disconnected while checking for the appearance ban.
@@ -722,7 +735,7 @@
 		var/is_antag = (player_client.mob.mind in GLOB.pre_setup_antags)
 		player_client.prefs.safe_transfer_prefs_to(src, TRUE, is_antag)
 		if(CONFIG_GET(flag/force_random_names))
-			player_client.prefs.real_name = player_client.prefs.pref_species.random_name(player_client.prefs.gender, TRUE)
+			player_client.prefs.write_preference(/datum/preference/text/real_name, player_client.prefs.pref_species.random_name(player_client.prefs.read_preference(/datum/preference/choiced/gender), TRUE))
 	dna.update_dna_identity()
 
 /datum/job/proc/adjust_current_positions(offset)
@@ -773,6 +786,10 @@
 
 	if(title_override)
 		return title_override
+	if(isliving(mob))
+		var/mob/living/living_mob = mob
+		if(living_mob.job_title_override)
+			return living_mob.job_title_override
 	if(uses_parent_title && parent_job)
 		return parent_job.title
 
@@ -789,10 +806,12 @@
 	return title
 
 /datum/job/proc/assign_honorary_titles(mob/living/carbon/grantee)
-	if(honorary)
-		grantee.honorary = honorary
-	if(honorary_f && grantee.pronouns == SHE_HER)
+	if(grantee.job_honorary_override)
+		grantee.honorary = grantee.job_honorary_override
+	else if(honorary_f && grantee.pronouns == SHE_HER)
 		grantee.honorary = honorary_f
+	else if(honorary)
+		grantee.honorary = honorary
 	if(honorary_suffix)
 		grantee.honorary_suffix = honorary_suffix
 	if(honorary_suffix_f && grantee.pronouns == SHE_HER)

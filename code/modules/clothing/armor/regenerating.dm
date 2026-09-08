@@ -72,7 +72,7 @@
 	armor_class = AC_LIGHT
 	blocksound = SOFTUNDERHIT
 	blade_dulling = DULLING_BASHCHOP
-	armor = ARMOR_PADDED
+	armor_type = /datum/armor/padded
 	surgery_cover = FALSE
 	clothing_flags = NONE
 
@@ -94,7 +94,7 @@
 /obj/item/clothing/armor/regenerating/skin/disciple
 	name = "disciple's skin"
 	desc = "It's far more than just an oath. Mercurial circles of silver are etched into the skin of this person, engraved with fanatic zeal and faithful reverence. May it ward the darkness. It seems to be written in red ink."
-	armor = list("blunt" = DR_MEDIUM, "slash" = DBLOCK_HEAVY, "stab" = DBLOCK_HEAVY, "piercing" = DBLOCK_LIGHT, "fire" = DR_NONE, "acid" = DR_NONE) // Custom value: heavy slash/stab block on regenerating skin (was raw 50)
+	armor_type = /datum/armor/skin/disciple // Custom value: heavy slash/stab block on regenerating skin (was raw 50)
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT)
 	max_integrity = 300
 	repair_time = 20 SECONDS

@@ -51,4 +51,4 @@
 	boobed = FALSE
 	grid_width = 64
 	grid_height = 64
-	pocket_storage_component_path = /datum/component/storage/concrete/grid/cloak
+	has_storage = TRUE

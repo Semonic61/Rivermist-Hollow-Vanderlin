@@ -73,7 +73,7 @@
 		head = /obj/item/clothing/head/wizhat
 		backl = /obj/item/storage/backpack/backpack
 
-/datum/outfit/adventurer_wizard/hedge_wizard/post_equip(mob/living/carbon/human/H, visuals_only = FALSE)
+/datum/job/advclass/combat/adventurer_wizard/hedge_wizard/after_spawn(mob/living/carbon/human/spawned, client/player_client)
 	. = ..()
 	var/static/list/selectablehat = list(
 		"Witch hat" = /obj/item/clothing/head/wizhat/witch,
@@ -82,10 +82,12 @@
 		"Generic Wizard hat" = /obj/item/clothing/head/wizhat/gen,
 		"Black hood" = /obj/item/clothing/head/roguehood/colored/black,
 	)
-	H.select_equippable(H, selectablehat, message = "Choose your hat of choice", title = "HEDGE WIZARD")
+	spawned.select_equippable(player_client, selectablehat, message = "Choose your hat of choice", title = "HEDGE WIZARD")
+	if(QDELETED(spawned))
+		return
 
 	var/static/list/selectablerobe = list(
 		"Black robes" = /obj/item/clothing/shirt/robe/colored/black,
 		"Mage robes" = /obj/item/clothing/shirt/robe/colored/mage,
 	)
-	H.select_equippable(H, selectablerobe, message = "Choose your robe of choice", title = "HEDGE WIZARD")
+	spawned.select_equippable(player_client, selectablerobe, message = "Choose your robe of choice", title = "HEDGE WIZARD")

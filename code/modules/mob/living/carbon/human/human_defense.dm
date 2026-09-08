@@ -35,7 +35,7 @@
 				if(C.uses_integrity)
 					if(C.get_integrity() <= 0)
 						continue
-				var/val = C.armor.getRating(d_type)
+				var/val = C.get_armor_rating(d_type)
 				// The code below finally fixes the targetting order of armor > shirt > flesh. - Foxtrot (#gundamtanaka)
 				var/obj/item/armorworn = src.get_item_by_slot(ITEM_SLOT_ARMOR) // The armor we're wearing
 				var/obj/item/shirtworn = src.get_item_by_slot(ITEM_SLOT_SHIRT) // The shirt we're wearing
@@ -91,7 +91,7 @@
 		steam_boiler.take_damage(boiler_damage, damage_flag = d_type, sound_effect = FALSE, armor_penetration = 100)
 
 	if(physiology)
-		protection += physiology.armor.getRating(d_type)
+		protection += physiology.armor.get_rating(d_type)
 	return protection
 
 /// Returns the best protection tier covering a body part without triggering armor-hit effects.
@@ -113,11 +113,11 @@
 			continue
 		if(armor_layer.uses_integrity && armor_layer.get_integrity() <= 0)
 			continue
-		var/armor_rating = armor_layer.armor?.getRating(attack_flag)
+		var/armor_rating = armor_layer.get_armor_rating(attack_flag)
 		protection_tier = max(protection_tier, normalize_armor_rating(attack_flag, armor_rating))
 
 	if(physiology)
-		var/innate_armor_rating = physiology.armor.getRating(attack_flag)
+		var/innate_armor_rating = physiology.armor.get_rating(attack_flag)
 		protection_tier = max(protection_tier, normalize_armor_rating(attack_flag, innate_armor_rating))
 
 	return protection_tier
@@ -418,7 +418,7 @@
 		var/mob/living/carbon/human/H = user
 		dna.species.spec_attack_hand(H, src)
 
-/mob/living/carbon/human/attack_paw(mob/living/carbon/monkey/M)
+/mob/living/carbon/human/attack_paw(mob/living/carbon/M)
 	var/dam_zone = pick(BODY_ZONE_CHEST, BODY_ZONE_PRECISE_L_HAND, BODY_ZONE_PRECISE_R_HAND, BODY_ZONE_L_LEG, BODY_ZONE_R_LEG)
 	var/obj/item/bodypart/affecting = get_bodypart(ran_zone(dam_zone))
 	if(!affecting)

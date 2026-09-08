@@ -194,6 +194,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	.["species_options"] = character_setup_species_options()
 	.["smallclothes_catalog"] = character_setup_smallclothes_static()
 	.["loadout_catalog"] = character_setup_loadout_static(user)
+	.["job_categories"] = character_setup_job_categories(user)
 	character_setup_log_op("ui_static_data", _t, "thumbs=[length(.["thumbs"])] species=[length(.["species_options"])]")
 
 /datum/preferences/proc/character_setup_handle_color_task(mob/user, list/href_list)
@@ -250,7 +251,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	if(!species)
 		return list()
 	var/sheet_type = species.statsheet_male
-	if(gender == FEMALE && species.statsheet_female)
+	if(read_preference(/datum/preference/choiced/gender) == FEMALE && species.statsheet_female)
 		sheet_type = species.statsheet_female
 	return character_setup_stat_modifiers_for_sheet(sheet_type)
 
@@ -373,12 +374,12 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	if(pref_species?.type == species_type)
 		return TRUE
 
-	var/saved_age = age
-	var/saved_name = real_name
-	selected_accent = ACCENT_DEFAULT
-	pref_species = new_species
+	var/saved_age = read_preference(/datum/preference/choiced/age)
+	var/saved_name = read_preference(/datum/preference/text/real_name)
+	write_preference(/datum/preference/choiced/selected_accent, ACCENT_DEFAULT)
+	set_species_preference(new_species)
 	if(!LAZYLEN(pref_species.allowed_taur_types))
-		taur_type = null
+		write_preference(/datum/preference/choiced/taur_type, null)
 
 	to_chat(user, "<em>[pref_species.name]</em>")
 	if(pref_species.desc)
@@ -387,11 +388,11 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	if(!length(pref_species.allowed_pronouns))
 		to_chat(user, span_warning("This species does not have any allowed pronouns. Please contact a coder to add them."))
 	else if(length(pref_species.allowed_pronouns) == 1)
-		pronouns = pref_species.allowed_pronouns[1]
-	else if(!(pronouns in pref_species.allowed_pronouns))
-		pronouns = pref_species.allowed_pronouns[1]
+		write_preference(/datum/preference/choiced/pronouns, pref_species.allowed_pronouns[1])
+	else if(!(read_preference(/datum/preference/choiced/pronouns) in pref_species.allowed_pronouns))
+		write_preference(/datum/preference/choiced/pronouns, pref_species.allowed_pronouns[1])
 
-	real_name = pref_species.random_name(gender, TRUE)
+	write_preference(/datum/preference/text/real_name, pref_species.random_name(read_preference(/datum/preference/choiced/gender), TRUE))
 	reset_jobs(user)
 	reset_patron(user)
 	reset_culture(user)
@@ -405,7 +406,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	validate_customizer_entries()
 	reset_all_customizer_accessory_colors()
 	randomize_all_customizer_accessories()
-	accessory = "Nothing"
+	write_preference(/datum/preference/choiced/accessory, "Nothing")
 	for(var/genital_customizer_type in enabled_genital_customizers)
 		var/datum/customizer_entry/new_entry = get_customizer_entry_for_customizer_type(genital_customizer_type)
 		if(new_entry)
@@ -413,11 +414,11 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 
 	var/list/selectable_ages = character_setup_species_display_ages(pref_species)
 	if(saved_age && (saved_age in selectable_ages))
-		age = saved_age
+		write_preference(/datum/preference/choiced/age, saved_age)
 	else if(length(selectable_ages))
-		age = selectable_ages[1]
+		write_preference(/datum/preference/choiced/age, selectable_ages[1])
 	if(saved_name)
-		real_name = saved_name
+		write_preference(/datum/preference/text/real_name, saved_name)
 
 	update_menu_data(user)
 	return TRUE
@@ -449,6 +450,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	var/list/patrons = GLOB.patrons_by_faith[faith_type]
 	if(!length(patrons))
 		return
+	var/datum/patron/selected_patron = read_preference(/datum/preference/choiced/patron)
 	var/current_patron_type = selected_patron?.type
 	// GLOB.patrons_by_faith is keyed by patron INSTANCES, not typepaths.
 	for(var/datum/patron/patron as anything in patrons)
@@ -471,6 +473,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 
 /datum/preferences/proc/character_setup_faith_options()
 	. = list()
+	var/datum/patron/selected_patron = read_preference(/datum/preference/choiced/patron)
 	var/current_faith = selected_patron ? selected_patron.associated_faith : /datum/patron/divine/astrata::associated_faith
 	for(var/faith_type in GLOB.faith_list)
 		var/datum/faith/faith = GLOB.faith_list[faith_type]
@@ -494,7 +497,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 		return "None"
 	var/list/skins = pref_species.get_skin_list()
 	for(var/skin_name in skins)
-		if(skins[skin_name] == skin_tone)
+		if(skins[skin_name] == read_preference(/datum/preference/choiced/skin_tone))
 			return "[skin_name]"
 	return "None"
 
@@ -509,7 +512,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 			"name" = "[skin_name]",
 			"value" = "[skin_name]",
 			"color" = "[skin_value]",
-			"selected" = skin_value == skin_tone,
+			"selected" = skin_value == read_preference(/datum/preference/choiced/skin_tone),
 		))
 
 /datum/preferences/proc/character_setup_apply_patron(mob/user, patron_id)
@@ -523,7 +526,8 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 		to_chat(user, span_warning("[patron.display_name || patron.name] is not available for this character."))
 		return TRUE
 
-	selected_patron = GLOB.patron_list[patron_type]
+	write_preference(/datum/preference/choiced/patron, patron_type)
+	var/datum/patron/selected_patron = read_preference(/datum/preference/choiced/patron)
 	to_chat(user, "<font color='purple'>Patron: [selected_patron.name]</font>")
 	to_chat(user, "<font color='purple'>Domain: [selected_patron.domain]</font>")
 	to_chat(user, "<font color='purple'>Background: [selected_patron.desc]</font>")
@@ -558,7 +562,7 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	if(!patron_type)
 		return TRUE
 
-	selected_patron = GLOB.patron_list[patron_type]
+	write_preference(/datum/preference/choiced/patron, patron_type)
 	to_chat(user, "<font color='purple'>Faith: [faith.name]</font>")
 	to_chat(user, "<font color='purple'>Background: [faith.desc]</font>")
 	save_character()
@@ -572,8 +576,8 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	if(!(ancestry_name in skins))
 		return TRUE
 	var/new_skin_tone = skins[ancestry_name]
-	if(skin_tone != new_skin_tone)
-		skin_tone = new_skin_tone
+	if(read_preference(/datum/preference/choiced/skin_tone) != new_skin_tone)
+		write_preference(/datum/preference/choiced/skin_tone, new_skin_tone)
 		save_character()
 		update_menu_data(user)
 	return TRUE
@@ -743,6 +747,43 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 
 /datum/preferences/ui_data(mob/user)
 	var/list/data = list()
+	var/real_name = read_preference(/datum/preference/text/real_name)
+	var/gender = read_preference(/datum/preference/choiced/gender)
+	var/age = read_preference(/datum/preference/choiced/age)
+	var/pronouns = read_preference(/datum/preference/choiced/pronouns)
+	var/domhand = read_preference(/datum/preference/choiced/domhand)
+	var/skin_tone = read_preference(/datum/preference/choiced/skin_tone)
+	var/culture = read_preference(/datum/preference/choiced/culture)
+	var/datum/patron/selected_patron = read_preference(/datum/preference/choiced/patron)
+	var/selected_title = read_preference(/datum/preference/text/selected_title)
+	var/taur_type = read_preference(/datum/preference/choiced/taur_type)
+	var/taur_color = read_preference(/datum/preference/color/taur_color)
+	var/taur_markings = read_preference(/datum/preference/color/taur_markings)
+	var/taur_tertiary = read_preference(/datum/preference/color/taur_tertiary)
+	var/headshot_link = read_preference(/datum/preference/text/headshot_link)
+	var/nsfw_headshot_link = read_preference(/datum/preference/text/nsfw_headshot_link)
+	var/voice_type = read_preference(/datum/preference/choiced/voice_type)
+	var/voice_color = read_preference(/datum/preference/color/voice_color)
+	var/voice_pack = read_preference(/datum/preference/choiced/voice_pack)
+	var/moan_selection = read_preference(/datum/preference/choiced/moan_selection)
+	var/selected_accent = read_preference(/datum/preference/choiced/selected_accent)
+	var/combat_music_type = read_preference(/datum/preference/choiced/combat_music)
+	var/datum/combat_music/combat_music = GLOB.cmode_tracks_by_type[combat_music_type]
+	var/song_link = read_preference(/datum/preference/text/song_link)
+	var/song_title = read_preference(/datum/preference/text/song_title)
+	var/song_artist = read_preference(/datum/preference/text/song_artist)
+	var/toggles = read_preference(/datum/preference/bitwise/toggles)
+	var/hotkeys = read_preference(/datum/preference/toggle/hotkeys)
+	var/buttons_locked = read_preference(/datum/preference/toggle/buttons_locked)
+	var/see_chat_non_mob = read_preference(/datum/preference/toggle/see_chat_non_mob)
+	var/tgui_fancy = read_preference(/datum/preference/toggle/tgui_fancy)
+	var/tgui_lock = read_preference(/datum/preference/toggle/tgui_lock)
+	var/windowflashing = read_preference(/datum/preference/toggle/windowflashing)
+	var/ambientocclusion = read_preference(/datum/preference/toggle/ambientocclusion)
+	var/auto_fit_viewport = read_preference(/datum/preference/toggle/auto_fit_viewport)
+	var/widescreenpref = read_preference(/datum/preference/toggle/widescreenpref)
+	var/pixel_size = read_preference(/datum/preference/numeric/pixel_size)
+	var/scaling_method = read_preference(/datum/preference/choiced/scaling_method)
 
 	var/datum/faith/selected_faith
 	if(selected_patron)
@@ -752,7 +793,8 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	for(var/job_type in job_preferences)
 		if(job_preferences[job_type] != JP_HIGH)
 			continue
-		high_job = "[job_type]"
+		var/datum/job/high_job_datum = SSjob?.GetJob(job_type)
+		high_job = high_job_datum ? get_selected_job_alt_value(high_job_datum, "title") : "[job_type]"
 		break
 
 	var/gender_name = "Other"
@@ -877,7 +919,8 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 	data["preview_bbox_w"] = character_setup_view_zoom_w
 	data["preview_bbox_h"] = character_setup_view_zoom_h
 
-	data["culture_name"] = culture ? culture::name : "None"
+	var/datum/culture/culture_datum = GLOB.culture_singletons[culture]
+	data["culture_name"] = culture_datum?.name || "None"
 	data["voice_type"] = voice_type || "Default"
 	data["voice_color"] = voice_color ? "#[voice_color]" : "#a0a0a0"
 	data["voice_pack"] = voice_pack || VOICE_PACK_DEFAULT
@@ -975,6 +1018,9 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 		"pixel_size" = "[pixel_size]",
 		"scaling_method" = "[scaling_method]",
 	)
+	var/list/job_data = character_setup_job_data(user)
+	for(var/key in job_data)
+		data[key] = job_data[key]
 
 	return data
 
@@ -1046,10 +1092,64 @@ GLOBAL_VAR_INIT(character_setup_flat_origin_y, 0)
 
 			var/age_index = clamp(round(new_age), 1, length(selectable_ages))
 			var/selected_age = selectable_ages[age_index]
-			if(age != selected_age)
-				age = selected_age
+			if(read_preference(/datum/preference/choiced/age) != selected_age)
+				write_preference(/datum/preference/choiced/age, selected_age)
 				reset_jobs(user)
 				update_menu_data(user)
+			return TRUE
+
+		if("job_set_pref_level")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			var/datum/job/level_job = SSjob?.GetJob(params["job"])
+			if(!job_is_available(level_job, user))
+				return FALSE
+			var/new_level = params["level"]
+			if(isnull(new_level))
+				job_preferences -= level_job.title
+			else
+				if(!isnum(new_level))
+					new_level = text2num("[new_level]")
+				if(!(new_level in list(JP_LOW, JP_MEDIUM, JP_HIGH)))
+					return FALSE
+				set_job_preference_level(level_job, new_level)
+			update_menu_data(user)
+			return TRUE
+
+		if("job_set_alt")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			var/datum/job/alt_job = SSjob?.GetJob(params["job"])
+			if(!job_is_available(alt_job, user))
+				return FALSE
+			if(!set_job_alt_preference(alt_job, params["category"], params["value"]))
+				return FALSE
+			update_menu_data(user)
+			return TRUE
+
+		if("job_toggle_unavailable")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			switch(read_preference(/datum/preference/choiced/joblessrole))
+				if(RETURNTOLOBBY)
+					write_preference(/datum/preference/choiced/joblessrole, BERANDOMJOB)
+				if(BERANDOMJOB)
+					write_preference(/datum/preference/choiced/joblessrole, RETURNTOLOBBY)
+			update_menu_data(user)
+			return TRUE
+
+		if("job_reset_priorities")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			reset_jobs(user, TRUE)
+			update_menu_data(user)
+			return TRUE
+
+		if("job_play_last_class")
+			if(SSticker?.job_change_locked)
+				return FALSE
+			reset_last_class(user)
+			update_menu_data(user)
 			return TRUE
 
 	return FALSE

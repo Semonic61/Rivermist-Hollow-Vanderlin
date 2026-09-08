@@ -99,7 +99,7 @@
 	set_patron(master.patron)
 	copy_known_languages_from(master, TRUE)
 	mob_biotypes = MOB_UNDEAD
-	faction = list(FACTION_UNDEAD)
+	set_faction(list(FACTION_UNDEAD))
 	ambushable = FALSE
 	candodge = FALSE
 

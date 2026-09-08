@@ -12,6 +12,25 @@
 	resistance_flags = FLAMMABLE
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
 	sellprice = 5
+
+/obj/item/natural/hide/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/paper/scroll))
+		return NONE
+	if(!isturf(loc) || !locate(/obj/structure/table) in loc)
+		to_chat(user, span_warning("You need to put [src] on a table to work on it."))
+		return ITEM_INTERACT_BLOCKING
+
+	var/crafttime = max(0, 100 - GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane) * 5)
+	if(!do_after(user, crafttime, target = src))
+		return ITEM_INTERACT_BLOCKING
+
+	playsound(src, 'sound/items/book_close.ogg', 100, TRUE)
+	to_chat(user, span_notice("I add the first few pages to the leather cover..."))
+	new /obj/item/spellbook_unfinished(loc)
+	qdel(tool)
+	qdel(src)
+	return ITEM_INTERACT_SUCCESS
+
 /obj/item/natural/hide/cured
 	name = "cured leather"
 	icon_state = "leather"

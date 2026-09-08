@@ -54,7 +54,7 @@
 
 /proc/send_prayer(mob/living/follower, prayer, patron_name, bigger = FALSE)
 	var/ident_string = "[follower.key]/([follower.real_name]) (follower of [patron_name])"
-	if(follower.has_quirk(/datum/quirk/vice/godfearing))
+	if(follower.has_quirk(/datum/quirk/vice/addiction/godfearing))
 		ident_string += "[SPAN_GOD_GENERIC("(GODFEARING)")]"
 	/// Usually I hate not using spans properly, but in this case it's going to make my life easier.
 	var/lowercase_god = "generic"
@@ -66,7 +66,7 @@
 	for(var/client/admin_client in GLOB.admins)
 		if(check_rights_for(admin_client, R_ADMIN))
 			to_chat(admin_client, message)
-			if(admin_client.prefs.toggles & SOUND_PRAYERS)
+			if(admin_client.prefs.read_preference(/datum/preference/bitwise/toggles) & SOUND_PRAYERS)
 				admin_client.mob.playsound_local(admin_client, 'sound/misc/yeoldebwoink.ogg', 100)
 
 
@@ -140,22 +140,22 @@
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/scream/painscream/run_emote(mob/user, params, type_override, intentional)
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/scream/firescream/run_emote(mob/user, params, type_override, intentional)
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/aggro
 	key = "aggro"
@@ -372,7 +372,7 @@
 	. = ..()
 	if(. && iscarbon(user))
 		var/mob/living/carbon/L = user
-		if(L.getPainLoss() > (GET_MOB_ATTRIBUTE_VALUE(L, STAT_ENDURANCE) * 9))
+		if(L.getShockStage() > (GET_MOB_ATTRIBUTE_VALUE(L, STAT_ENDURANCE) * 9))
 			L.setDir(2)
 			L.SetUnconscious(200)
 		else
@@ -1441,7 +1441,7 @@
 			if(!M.client || isnewplayer(M))
 				continue
 			var/T = get_turf(emotelocation)
-			if(M.stat == DEAD && M.client && (M.client.prefs?.chat_toggles & CHAT_GHOSTSIGHT) && !(M in viewers(T, null)))
+			if(M.stat == DEAD && M.client && (M.client.prefs?.read_preference(/datum/preference/bitwise/chat_toggles) & CHAT_GHOSTSIGHT) && !(M in viewers(T, null)))
 				M.show_message(msg)
 		var/runechat_msg_to_use = null
 		var/obfuscated_runechat_msg_to_use = null

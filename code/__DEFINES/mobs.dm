@@ -11,6 +11,20 @@
 #define DAMAGE_ATTACK_CONTEXT_WINDOW (2 SECONDS)
 #define RESURRECTION_TRAUMA_SOURCE_WINDOW (5 MINUTES)
 
+/**
+ * Ear protection values are additive and are compared against soundbang strength.
+ */
+#define EAR_PROTECTION_NONE 0
+#define EAR_PROTECTION_NORMAL 1
+#define EAR_PROTECTION_HEAVY 2
+#define EAR_PROTECTION_VACUUM 3
+#define EAR_PROTECTION_FULL INFINITY
+
+#define SOUNDBANG_NORMAL 1
+#define SOUNDBANG_STRONG 2
+#define SOUNDBANG_MASSIVE 3
+#define SOUNDBANG_OVERWHELMING 4
+
 // Organ/bodypart side markers.
 #define NO_SIDE 0
 #define RIGHT_SIDE (1<<0)
@@ -43,8 +57,8 @@
 #define BLOOD_VOLUME_SLIME_SPLIT BLOOD_VOLUME_NORMAL
 #define BLOOD_VOLUME_SAFE		BLOOD_VOLUME_NORMAL * 0.8
 #define BLOOD_VOLUME_OKAY		BLOOD_VOLUME_NORMAL * 0.6
+#define BLOOD_VOLUME_RISKY		BLOOD_VOLUME_NORMAL * 0.55
 #define BLOOD_VOLUME_BAD 		BLOOD_VOLUME_NORMAL * 0.4
-#define BLOOD_VOLUME_BLEEDOUT 	BLOOD_VOLUME_NORMAL * 0.35
 #define BLOOD_VOLUME_BLEEDOUT_PASSOUT BLOOD_VOLUME_NORMAL * 0.25
 #define BLOOD_VOLUME_SURVIVE	BLOOD_VOLUME_NORMAL * 0.2
 
@@ -88,12 +102,6 @@
 #define CHRONIC_NERVE_DAMAGE 2
 #define CHRONIC_OLD_FRACTURE 3
 #define CHRONIC_SCAR_TISSUE 4
-
-#define ORGAN_ORGANIC   1
-#define ORGAN_ROBOTIC   2
-
-#define BODYPART_ORGANIC   1
-#define BODYPART_ROBOTIC   2
 
 #define BODYPART_NOT_DISABLED 0
 #define BODYPART_DISABLED_DAMAGE 1
@@ -398,9 +406,13 @@
 
 /// Possible value of [/atom/movable/buckle_lying]. If set to a different (positive-or-zero) value than this, the buckling thing will force a lying angle on the buckled.
 #define NO_BUCKLE_LYING -1
+/// Possible value of [/atom/movable/buckle_dir]. If set to a different (positive-or-zero) value than this, the buckling thing will force a dir on the buckled.
+#define BUCKLE_MATCH_DIR -1
 
 /// Simple mob trait, indicating it may follow continuous move actions controlled by code instead of by user input.
 #define MOVES_ON_ITS_OWN (1<<0)
+/// Simple mob trait, can be fireman carried
+#define CAN_BE_FIREMANNED (1<<1)
 
 // Body position defines.
 /// Mob is standing up, usually associated with lying_angle value of 0.
