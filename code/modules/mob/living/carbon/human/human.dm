@@ -201,6 +201,7 @@
 		AddComponent(/datum/component/arousal)
 
 /mob/living/carbon/human/Destroy()
+	remove_dnd_spell_hud()
 	QDEL_NULL(physiology)
 	culture = null
 	GLOB.human_list -= src

@@ -226,7 +226,7 @@ SUBSYSTEM_DEF(relations)
 	var/datum/mind/aggressor = A
 	var/datum/mind/victim = B
 	if(job_a && job_b && length(G.aggressor_titles) && length(G.victim_titles))
-		if(job_b.title in G.aggressor_titles && job_a.title in G.victim_titles)
+		if((job_b.title in G.aggressor_titles) && (job_a.title in G.victim_titles))
 			aggressor = B
 			victim = A
 

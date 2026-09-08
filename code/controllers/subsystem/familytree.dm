@@ -468,7 +468,7 @@ SUBSYSTEM_DEF(familytree)
 			var/datum/family_member/parent2
 			if(parent1 && potential_parents.len > 1)
 				for(var/datum/family_member/possible_parent in potential_parents)
-					if(possible_parent != parent1 && possible_parent in parent1.spouses)
+					if(possible_parent != parent1 && (possible_parent in parent1.spouses))
 						parent2 = possible_parent
 						break
 

@@ -206,7 +206,18 @@ GLOBAL_LIST_INIT(name2reagent, build_name2reagent())
 		scent_description = data["custom_scent"]
 	if("custom_tastes" in data)
 		taste_description = data["custom_tastes"]
+	apply_stored_metabolization_mult()
 	return
+
+/**
+ * Cook-skill potency has to ride along inside data: every transfer builds a
+ * fresh reagent from the type, so a rate set on the pot's own instance would
+ * be lost the moment the soup is ladled out or drunk.
+ */
+/datum/reagent/proc/apply_stored_metabolization_mult()
+	var/stored = data?["metabolization_mult"]
+	if(stored)
+		metabolization_rate = initial(metabolization_rate) * stored
 
 // Called when two reagents of the same are mixing.
 /datum/reagent/proc/on_merge(list/incoming_data, other_volume)
@@ -235,6 +246,7 @@ GLOBAL_LIST_INIT(name2reagent, build_name2reagent())
 		scent_description = data["custom_scent"]
 	if("custom_tastes" in data)
 		taste_description = data["custom_tastes"]
+	apply_stored_metabolization_mult()
 	return
 
 /datum/reagent/proc/get_quality_metabolization_modifier()

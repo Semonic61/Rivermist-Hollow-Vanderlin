@@ -103,7 +103,7 @@
 	. = ..()
 	. += "[dna.species.type]"
 
-/mob/living/carbon/human/can_see_reagents()
+/mob/living/carbon/human/can_see_reagents(atom/target)
 	. = ..()
 	if(.) //No need to run through all of this if it's already true.
 		return
@@ -215,7 +215,7 @@
 /mob/living/carbon/human/proc/RomanticPartner(mob/living/carbon/human/H)
 	if(!ishuman(H))
 		return FALSE
-	if(family_member_datum && H.family_member_datum && H.family_member_datum in family_member_datum.spouses)
+	if(family_member_datum && H.family_member_datum && (H.family_member_datum in family_member_datum.spouses))
 		return TRUE
 	return spouse_mob == H
 

@@ -26,10 +26,16 @@
 	var/datum/callback/on_craft_failed
 	/// Time with no progress before auto-aborting (in deciseconds)
 	var/timeout_period = 30 SECONDS // 30 seconds default
+	/// Grace window for crafts paused by recipe.can_progress()
+	var/paused_timeout_period = 2 MINUTES
 	///do we need the initator near us
 	var/requires_proximity = FALSE
 	///Path of looping_sound to use while cooking
 	var/datum/looping_sound/cooking_sound
+	/// TRUE while the craft is paused and the sound loop is stopped
+	var/sound_paused = FALSE
+	/// TRUE while progress is held by recipe.can_progress()
+	var/stalled = FALSE
 
 /**
  * Initialize a new crafting operation
@@ -42,11 +48,12 @@
 	src.on_craft_start = on_craft_start
 	src.on_craft_failed = on_craft_failed
 
+	// Batch size deliberately does NOT stretch the timer: the food burner starts
+	// its 2 minute clock as soon as ingredients enter, so a x5 batch would burn
+	// before it finished. Skill scaling still applies.
+	target_time = recipe.get_real_time(crafter, initiator, 1)
 	if(recipe.user_craft)
-		target_time = recipe.get_real_time(crafter, initiator, estimated_multiplier)
 		src.requires_proximity = TRUE
-	else
-		target_time = recipe.crafting_time
 
 	stored_items = list()
 
@@ -108,7 +115,7 @@
 		on_craft_start.InvokeAsync(crafter, initiator, estimated_multiplier)
 
 	if(cooking_sound)
-		src.cooking_sound = new cooking_sound(get_turf(crafter), TRUE)
+		src.cooking_sound = new cooking_sound(crafter, TRUE)
 
 /**
  * Process tick for crafting progress
@@ -128,6 +135,27 @@
 		if(QDELETED(item) || item.loc != crafter)
 			abort_craft("Requirements no longer met")
 			return
+
+	if(!recipe.can_progress(crafter))
+		if(!stalled)
+			stalled = TRUE
+			announce_stall()
+		if(cooking_sound && !sound_paused)
+			cooking_sound.stop()
+			sound_paused = TRUE
+		if((world.time - last_progress_time) > paused_timeout_period)
+			abort_craft("Craft paused for too long")
+		return
+	if(stalled)
+		stalled = FALSE
+		// Restart the no-progress clock, otherwise the generic timeout below
+		// sees the whole pause as idle time and aborts a craft that just resumed.
+		last_progress_time = world.time
+		announce_resume()
+	if(sound_paused)
+		sound_paused = FALSE
+		if(cooking_sound)
+			cooking_sound.start()
 
 	// Check for timeout (no progress in a while)
 	if((world.time - last_progress_time) > timeout_period)
@@ -167,6 +195,31 @@
  * Aborts the crafting operation
  * @param reason The reason for aborting
  */
+/// Told to the room when a craft stops making progress but is not lost.
+/datum/container_craft_operation/proc/announce_stall()
+	if(QDELETED(crafter))
+		return
+	crafter.visible_message(span_warning("The [lowertext(recipe.name)] stops cooking."))
+
+/// Told to the room when conditions recover and progress resumes.
+/datum/container_craft_operation/proc/announce_resume()
+	if(QDELETED(crafter))
+		return
+	crafter.visible_message(span_notice("The [lowertext(recipe.name)] starts cooking again."))
+
+/**
+ * Lets outside code push progress into a running craft, e.g. fanning a fire.
+ * Refuses while stalled so fanning a dead fire does nothing.
+ */
+/datum/container_craft_operation/proc/add_progress(amount)
+	if(aborted || stalled || amount <= 0)
+		return FALSE
+	if(!recipe.can_progress(crafter))
+		return FALSE
+	progress += amount
+	last_progress_time = world.time
+	return TRUE
+
 /datum/container_craft_operation/proc/abort_craft(reason)
 	if(aborted)
 		return
@@ -177,6 +230,9 @@
 
 	if(on_craft_failed)
 		on_craft_failed.InvokeAsync(crafter, initiator)
+
+	if(!QDELETED(crafter))
+		SEND_SIGNAL(crafter, COMSIG_CONTAINER_CRAFT_ABORTED)
 
 	qdel(src)
 
