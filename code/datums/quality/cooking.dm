@@ -162,3 +162,13 @@
 			food_item.tastes = list()
 		for(var/taste in tastes)
 			food_item.tastes[taste] = tastes[taste]
+
+	var/skill_factor = min(skill_quality, 6) / 6
+	// Rounded UP, and taken from the same uplifted figure the item was actually
+	// built with: round() on the raw value gave the median foodstuff a bonus of
+	// zero, so a legendary cook's dish was identical to a novice's.
+	if(skill_factor > 0 && food_item.nutrition)
+		var/bonus_nutrition = CEILING(SOLID_FOOD_NUTRITION(food_item.nutrition) * skill_factor * 0.15, 1)
+		if(bonus_nutrition > 0)
+			food_item.reagents.add_reagent(/datum/reagent/consumable/nutriment, bonus_nutrition)
+	food_item.eat_effect_duration_mult = 1 + (skill_factor * 0.2)
