@@ -227,6 +227,23 @@
 	finished_smell = /datum/pollutant/food/herb
 	complete_message = "The panacea glows with herbal potency!"
 
+// Mercy Draught (defeat trauma treatment)
+/datum/container_craft/cooking/herbal_tea/mercy_draught
+	name = "Mercy Draught"
+	created_reagent = /datum/reagent/medicine/herbal/mercy_draught
+	// One of each healing herb (kept at 1 so the single-herb teas are not a subset of this recipe
+	// and cannot collide with it), plus BOTH precious dusts to make it a costly, deliberate brew.
+	requirements = list(
+		/obj/item/alch/herb/symphitum = 1,
+		/obj/item/alch/herb/hypericum = 1,
+		/obj/item/alch/herb/rosa = 1,
+		/obj/item/alch/silverdust = 1,
+		/obj/item/alch/golddust = 1,
+	)
+	crafting_time = 30 SECONDS
+	finished_smell = /datum/pollutant/food/herb
+	complete_message = "The mercy draught settles into a pale, steady glow."
+
 // Witch's Bane (anti-poison blend)
 /datum/container_craft/cooking/herbal_tea/witches_bane
 	name = "Witch's Bane"
@@ -356,6 +373,19 @@
 	used_skill = /datum/attribute/skill/craft/alchemy
 	quality_modifier = 0.8
 
+/datum/container_craft/cooking/perfume/create_item(obj/item/crafter, mob/initiator, list/found_optional_requirements, list/found_optional_wildcards, list/found_optional_reagents, list/removing_items)
+	var/turf/pot_turf = get_turf(crafter)
+	var/skill_factor = 0
+	if(initiator && initiator.mind)
+		skill_factor = min(GET_MOB_SKILL_VALUE_OLD(initiator, used_skill), 6) / 6
+
+	for(var/j = 1 to output_amount)
+		var/obj/item/perfume/made = new created_reagent(pot_turf)
+		made.mood_duration_mult = 1 + (skill_factor * 0.2)
+		after_craft(made, crafter, initiator, found_optional_requirements, found_optional_wildcards, found_optional_reagents, removing_items)
+		if(finished_smell)
+			pot_turf.pollute_turf(finished_smell, pollute_amount)
+		initiator?.nobles_seen_servant_work()
 
 /datum/container_craft/cooking/perfume/rosa
 	name = "Rosa Perfume"

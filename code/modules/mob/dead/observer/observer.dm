@@ -117,12 +117,59 @@ GLOBAL_LIST_INIT(ghost_verbs, list(
 	invisibility = INVISIBILITY_GHOST
 	see_invisible = SEE_INVISIBLE_GHOST
 
+/mob/dead/observer/screye/Initialize()
+	. = ..()
+	add_verb(src, /mob/dead/observer/screye/proc/reach_with_mage_hand)
+
 /mob/dead/observer/screye/blackmirror
 	sight = SEE_TURFS | SEE_MOBS | SEE_OBJS
 	see_in_dark = 100
 
 /mob/dead/observer/screye/Move(n, direct)
 	return
+
+/mob/dead/observer/screye/proc/get_scrying_mage_hand_caster()
+	var/mob/living/caster = mind?.current
+	if(!isliving(caster))
+		return null
+	return caster
+
+/mob/dead/observer/screye/proc/reach_with_mage_hand()
+	set category = "Magic"
+	set name = "Reach With Mage Hand"
+	set desc = "Project Mage Hand through this scrying vision."
+
+	if(!client)
+		return
+	var/mob/living/caster = get_scrying_mage_hand_caster()
+	if(!caster || !caster.get_spell(/datum/action/cooldown/spell/mage_hand/scrying, TRUE))
+		to_chat(src, span_warning("I don't know how to project Mage Hand through this vision."))
+		return
+
+	var/list/targets = list()
+	for(var/mob/living/possible_target in view(client.view, src))
+		if(possible_target == caster)
+			continue
+		if(QDELETED(possible_target) || possible_target.stat == DEAD)
+			continue
+		targets += possible_target
+
+	if(!length(targets))
+		to_chat(src, span_warning("No living target is close enough to this vision."))
+		return
+
+	var/mob/living/target = input(src, "Reach toward whom?", "Scrying Mage Hand") as null|anything in targets
+	if(!target || !client)
+		return
+	if(!(target in view(client.view, src)))
+		to_chat(src, span_warning("[target] is no longer within this vision."))
+		return
+	if(!can_start_scrying_mage_hand(caster, target))
+		to_chat(src, span_warning("I can't project Mage Hand toward [target]."))
+		return
+	if(!reenter_corpse(TRUE))
+		return
+	start_scrying_mage_hand(caster, target)
 
 /mob/dead/observer/profane // Ghost type for souls trapped by the profane dagger. They can't move, but can talk to the dagger's wielder and other trapped souls.
 	sight = 0
@@ -132,8 +179,9 @@ GLOBAL_LIST_INIT(ghost_verbs, list(
 /mob/dead/observer/profane/Move(n, direct)
 	return
 
-/mob/dead/observer/profane/canZMove(direction, turf/target)
-	return
+/mob/dead/observer/profane/can_z_move(direction, turf/start, turf/destination, z_move_flags = NONE, mob/living/rider)
+	SHOULD_CALL_PARENT(FALSE)
+	return FALSE
 
 /mob/dead/observer/Initialize()
 	set_invisibility(GLOB.observer_default_invisibility)
@@ -295,7 +343,7 @@ Works together with spawning an observer, noted above.
 				ghost.key = key
 				return ghost
 //		if(client)
-//			var/S = sound('sound/ambience/creepywind.ogg', repeat = 1, wait = 0, volume = client.prefs.musicvol, channel = CHANNEL_MUSIC)
+//			var/S = sound('sound/ambience/creepywind.ogg', repeat = 1, wait = 0, volume = client.prefs.read_preference(/datum/preference/numeric/musicvol), channel = CHANNEL_MUSIC)
 //			play_priomusic(S)
 		var/mob/dead/observer/rogue/ghost	// Transfer safety to observer spawning proc.
 		if(drawskip)
@@ -496,8 +544,8 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 		if(source)
 			var/atom/movable/screen/alert/A = throw_alert("[REF(source)]_notify_cloning", /atom/movable/screen/alert/notify_cloning)
 			if(A)
-				if(client && client.prefs && client.prefs.UI_style)
-					A.icon = ui_style2icon(client.prefs.UI_style)
+				if(client && client.prefs && client.prefs.read_preference(/datum/preference/choiced/UI_style))
+					A.icon = ui_style2icon(client.prefs.read_preference(/datum/preference/choiced/UI_style))
 				A.desc = message
 				var/old_layer = source.layer
 				var/old_plane = source.plane
@@ -741,7 +789,7 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 
 /mob/dead/observer/update_sight()
 	if(client)
-		ghost_others = client.prefs.ghost_others //A quick update just in case this setting was changed right before calling the proc
+		ghost_others = client.prefs.read_preference(/datum/preference/choiced/ghost_others) //A quick update just in case this setting was changed right before calling the proc
 
 	if (!ghostvision)
 		see_invisible = SEE_INVISIBLE_LIVING
@@ -753,8 +801,8 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 	..()
 
 /proc/updateallghostimages()
-	listclearnulls(GLOB.ghost_images_default)
-	listclearnulls(GLOB.ghost_images_simple)
+	list_clear_nulls(GLOB.ghost_images_default)
+	list_clear_nulls(GLOB.ghost_images_simple)
 
 	for (var/mob/dead/observer/O in GLOB.player_list)
 		O.updateghostimages()
@@ -781,11 +829,11 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 				client.images -= GLOB.ghost_images_default
 			if(GHOST_OTHERS_SIMPLE)
 				client.images -= GLOB.ghost_images_simple
-	lastsetting = client.prefs.ghost_others
+	lastsetting = client.prefs.read_preference(/datum/preference/choiced/ghost_others)
 	if(!ghostvision)
 		return
-	if(client.prefs.ghost_others != GHOST_OTHERS_THEIR_SETTING)
-		switch(client.prefs.ghost_others)
+	if(client.prefs.read_preference(/datum/preference/choiced/ghost_others) != GHOST_OTHERS_THEIR_SETTING)
+		switch(client.prefs.read_preference(/datum/preference/choiced/ghost_others))
 			if(GHOST_OTHERS_DEFAULT_SPRITE)
 				client.images |= (GLOB.ghost_images_default-ghostimage_default)
 			if(GHOST_OTHERS_SIMPLE)
@@ -818,7 +866,7 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 		return FALSE
 
 	target.key = key
-	target.faction = list(FACTION_NEUTRAL)
+	target.set_faction(list(FACTION_NEUTRAL))
 	return TRUE
 
 //this is a mob verb instead of atom for performance reasons
@@ -930,9 +978,9 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 		return
 	set_ghost_appearance()
 	if(client && client.prefs)
-		deadchat_name = client.prefs.real_name
-		mind.ghostname = client.prefs.real_name
-		name = client.prefs.real_name
+		deadchat_name = client.prefs.read_preference(/datum/preference/text/real_name)
+		mind.ghostname = client.prefs.read_preference(/datum/preference/text/real_name)
+		name = client.prefs.read_preference(/datum/preference/text/real_name)
 
 /mob/dead/observer/proc/apply_admin_ghost_icon_preference()
 	if(type != /mob/dead/observer || !client?.holder || !client?.prefs)

@@ -9,7 +9,7 @@
 	mob_biotypes = MOB_SPIRIT|MOB_HUMANOID
 	gib_type = /obj/effect/decal/cleanable/blood/gibs
 	bodyparts = list(/obj/item/bodypart/chest/spirit, /obj/item/bodypart/head/spirit, /obj/item/bodypart/l_arm/spirit,
-					/obj/item/bodypart/r_arm/spirit, /obj/item/bodypart/r_leg/spirit, /obj/item/bodypart/l_leg/spirit)
+					/obj/item/bodypart/r_arm/spirit, /obj/item/bodypart/r_leg/spirit, /obj/item/bodypart/l_leg/spirit, /obj/item/bodypart/mouth)
 	hud_type = /datum/hud/spirit
 	var/paid = FALSE
 	var/beingmoved = FALSE //repurposed for speak with soul
@@ -176,7 +176,7 @@
 			success = TRUE
 	for(var/mob/living/carbon/human/human_corpse in coffin)
 		if(human_corpse.funeral) /* The proc succeeds even if the corpse already received a funeral before.
-	    Coffins and graves have checks to prevent giving too much influence / devotion to Necra. */
+	Coffins and graves have checks to prevent giving too much influence / devotion to Necra. */
 			success = TRUE
 	for(var/obj/item/bodypart/head/head in coffin)
 		if(!head.brainmob)
@@ -208,11 +208,11 @@
 	var/datum/mind/corpse_mind = get_mind(corpse, include_last = TRUE)
 	if(corpse_mind?.remove_antag_datum(/datum/antagonist/zombie))
 		. = TRUE
-	if(QDELETED(corpse_mind) || corpse.has_quirk(/datum/quirk/vice/hardcore))
+	if(QDELETED(corpse_mind))
 		return
 	var/mob/ghost
 	//Try to find a lost ghost if there is no client
-	if(!corpse.client && !corpse.has_quirk(/datum/quirk/vice/hardcore))
+	if(!corpse.client)
 		ghost = corpse.get_ghost()
 		//Try to find underworld spirit, if there is no observer ghost
 		if(!ghost)

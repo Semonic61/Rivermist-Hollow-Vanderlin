@@ -45,11 +45,13 @@
 	name = "crimson spectacles"
 	desc = "Spectacles evoking the stained glass of imposing cathedrals."
 	icon_state = "bglasses"
+	anvilrepair = /datum/attribute/skill/craft/armorsmithing
 
 /obj/item/clothing/face/spectacles/sglasses
 	name = "smokey onyxa spectacles"
 	desc = "Death has come to your little town, Sheriff. Now, you can either ignore it, or you can help me to stop it."
 	icon_state = "sglasses"
+	anvilrepair = /datum/attribute/skill/craft/armorsmithing
 
 /obj/item/clothing/face/spectacles/inq
 	name = "inquisitorial spectacles"
@@ -61,7 +63,7 @@
 	resistance_flags = FIRE_PROOF
 	body_parts_covered = EYES
 	slot_flags = ITEM_SLOT_MASK|ITEM_SLOT_HEAD
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	var/lensmoved = TRUE // starts with the lenses out of the way, night vision being off.
 
 /obj/item/clothing/face/spectacles/inq/examine(mob/user) // informs inquisition members of the night vision functionality.
@@ -119,8 +121,8 @@
 	body_parts_covered = FACE|HEAD
 	block2add = FOV_BEHIND
 	slot_flags = ITEM_SLOT_MASK|ITEM_SLOT_HIP
-	armor = ARMOR_PADDED
-	sewrepair = TRUE
+	armor_type = /datum/armor/mask/padded
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 
 /obj/item/clothing/face/sack/psy
 	name = "exotic sack mask"
@@ -141,8 +143,8 @@
 	flags_inv = HIDEFACE|HIDEHAIR|HIDEEARS
 	body_parts_covered = FACE|HEAD
 	slot_flags = ITEM_SLOT_MASK|ITEM_SLOT_HIP
-	armor = ARMOR_PADDED
-	sewrepair = TRUE
+	armor_type = /datum/armor/mask/padded
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 
 /obj/item/clothing/face/facemask/steel/confessor
 	name = "strange mask"

@@ -1,12 +1,13 @@
 /mob/living/simple_animal/hostile/retaliate/wolf
+	living_flags = MOVES_ON_ITS_OWN|CAN_BE_FIREMANNED
 	icon = 'icons/roguetown/mob/monster/vol.dmi'
-	name = "volf"
+	name = "wolf"
 	desc = "Usually content to leave menfolk alone if well-fed, but something in the wilds turns them hungry, persistent, and vicious."
 	icon_state = "vv"
 	icon_living = "vv"
 	icon_dead = "vvd"
 
-	faction = list(FACTION_ORCS)
+	faction = list(FACTION_ORCS, FACTION_WOLVES)
 	emote_hear = null
 	emote_see = null
 	see_in_dark = 9
@@ -29,6 +30,7 @@
 						/obj/item/alch/bone = 2)
 	head_butcher = /obj/item/natural/head/volf
 
+	indexed = TRUE
 	health = VOLF_HEALTH
 	maxHealth = VOLF_HEALTH
 	food_type = list(/obj/item/reagent_containers/food/snacks/meat,
@@ -62,7 +64,7 @@
 	///this mob was updated to new ai
 
 
-	ai_controller = /datum/ai_controller/volf
+	ai_controller = /datum/ai_controller/volf/agile
 	var/static/list/pet_commands = list(
 		/datum/pet_command/fish,
 		/datum/pet_command/idle,

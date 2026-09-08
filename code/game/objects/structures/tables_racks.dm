@@ -34,6 +34,8 @@
 	destroy_sound = 'sound/combat/hits/onwood/destroyfurniture.ogg'
 	attacked_sound = list('sound/combat/hits/onwood/woodimpact (1).ogg','sound/combat/hits/onwood/woodimpact (2).ogg')
 	blade_dulling = DULLING_BASHCHOP
+	hidingspot = TRUE
+	var/mob/living/hiddenguy = null // So we can find them with fixed eye search
 
 /obj/structure/table/Initialize()
 	. = ..()
@@ -54,6 +56,13 @@
 	return attack_hand(user)
 
 /obj/structure/table/attack_hand(mob/living/user)
+	if(user.m_intent == MOVE_INTENT_SNEAK)
+		var/turf/T = get_turf(src)
+		for(var/obj/structure/bars/B in T)
+			to_chat(user, span_warning("I can't fit down there with the bars in the way!"))
+			return
+		hideinside(user)
+		return
 	if(Adjacent(user) && user.pulling)
 		if(isliving(user.pulling))
 			var/mob/living/pushed_mob = user.pulling
@@ -83,6 +92,34 @@
 					"<span class='notice'>I place [user.pulling] onto [src].</span>")
 				user.stop_pulling()
 	return ..()
+
+/obj/structure/table/proc/hideinside(mob/living/user)
+	var/sneak_level = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/misc/sneaking) || 0
+	var/sneaktime = max(10, 50 - (sneak_level * 10)) // Hard caps at 1 second at Expert and above.
+	if(user.loc == src)
+		unhide(user)
+		return
+	if(occupied)
+		to_chat(user, span_warning("Someone is already hiding under [src]!"))
+		return
+	if(!do_after(user, sneaktime, src))
+		return
+	user.forceMove(src)
+	occupied = TRUE
+	hiddenguy = user
+	to_chat(user, span_warning("I hide under [src]!"))
+
+/obj/structure/table/proc/unhide(mob/living/user)
+	var/turf/T = get_turf(src)
+	if(!T) return
+	user.forceMove(T)
+	occupied = FALSE
+	hiddenguy = null
+	to_chat(user, span_warning("I come out from under [src]!"))
+
+/obj/structure/table/relaymove(mob/user)
+	if(user.loc == src)
+		unhide(user)
 
 /obj/structure/table/proc/after_added_effects(obj/item/item, mob/user)
 
@@ -122,7 +159,7 @@
 	if(pushed_mob.loc != loc) //Something prevented the tabling
 		return
 	pushed_mob.Knockdown(30)
-	pushed_mob.apply_damage(10, BRUTE)
+	pushed_mob.apply_damage(10, BRUTE, damage_type = BCLASS_BLUNT)
 	pushed_mob.apply_damage(40, STAMINA)
 	if(user.mind?.martial_art.smashes_tables && user.mind?.martial_art.can_use(user))
 		deconstruct(FALSE)
@@ -133,7 +170,7 @@
 
 /obj/structure/table/proc/tableheadsmash(mob/living/user, mob/living/pushed_mob)
 	pushed_mob.Knockdown(30)
-	pushed_mob.apply_damage(40, BRUTE, BODY_ZONE_HEAD)
+	pushed_mob.apply_damage(40, BRUTE, BODY_ZONE_HEAD, damage_type = BCLASS_BLUNT)
 	pushed_mob.apply_damage(60, STAMINA)
 	take_damage(50)
 	if(user.mind?.martial_art.smashes_tables && user.mind?.martial_art.can_use(user))
@@ -144,36 +181,52 @@
 	log_combat(user, pushed_mob, "head slammed", null, "against [src]")
 	pushed_mob.add_stress(/datum/stress_event/table_headsmash)
 
-/obj/structure/table/attackby(obj/item/I, mob/user, list/modifiers)
-	if(!(flags_1 & NODECONSTRUCT_1))
-		if(I.tool_behaviour == TOOL_SCREWDRIVER && deconstruction_ready)
-			to_chat(user, "<span class='notice'>I start disassembling [src]...</span>")
-			if(I.use_tool(src, user, 20, volume=50))
-				deconstruct(TRUE)
-			return
+/obj/structure/table/screwdriver_act(mob/living/user, obj/item/tool)
+	if((flags_1 & NODECONSTRUCT_1) || !deconstruction_ready)
+		return NONE
 
-		if(I.tool_behaviour == TOOL_WRENCH && deconstruction_ready)
-			to_chat(user, "<span class='notice'>I start deconstructing [src]...</span>")
-			if(I.use_tool(src, user, 40, volume=50))
-				playsound(src, 'sound/blank.ogg', 50, TRUE)
-				deconstruct(TRUE, 1)
-			return
+	if(tool.use_tool(src, user, 20, volume=50))
+		deconstruct(TRUE)
 
-	if(!user.cmode)
-		if(!(I.item_flags & ABSTRACT))
-			if(user.transferItemToLoc(I, drop_location(), silent = FALSE))
-				var/icon_x = text2num(LAZYACCESS(modifiers, ICON_X))
-				var/icon_y = text2num(LAZYACCESS(modifiers, ICON_Y))
-				//Center the icon where the user clicked.
-				if(!icon_x || !icon_y)
-					return
-				//Clamp it so that the icon never moves more than 16 pixels in either direction (thus leaving the table turf)
-				I.pixel_x = I.base_pixel_x + CLAMP(icon_x - 16, -(world.icon_size/2), world.icon_size/2)
-				I.pixel_y = I.base_pixel_y + CLAMP(icon_y - 16, -(world.icon_size/2), world.icon_size/2)
-				after_added_effects(I, user)
-				return TRUE
+	return ITEM_INTERACT_SUCCESS
 
-	return ..()
+/obj/structure/table/wrench_act(mob/living/user, obj/item/tool)
+	if((flags_1 & NODECONSTRUCT_1) || !deconstruction_ready)
+		return NONE
+
+	if(tool.use_tool(src, user, 40, volume=50))
+		deconstruct(TRUE, TRUE)
+
+	return ITEM_INTERACT_SUCCESS
+
+/obj/structure/table/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(user.cmode)
+		return NONE
+	if(!(flags_1 & NODECONSTRUCT_1) && deconstruction_ready && (tool.tool_behaviour == TOOL_SCREWDRIVER || tool.tool_behaviour == TOOL_WRENCH))
+		return NONE
+
+	if(tool.item_flags & ABSTRACT || HAS_TRAIT(tool, TRAIT_NODROP))
+		return NONE
+
+	if(!user.temporarilyRemoveItemFromInventory(tool))
+		return NONE
+
+	if(!user.transferItemToLoc(tool, drop_location(), silent = FALSE))
+		return NONE
+
+	var/icon_x = text2num(LAZYACCESS(modifiers, ICON_X))
+	var/icon_y = text2num(LAZYACCESS(modifiers, ICON_Y))
+	// Center the icon where the user clicked, or default to the center.
+	if(!icon_x || !icon_y)
+		icon_x = ICON_SIZE_X / 2
+		icon_y = ICON_SIZE_Y / 2
+
+	tool.pixel_x = tool.base_pixel_x + CLAMP(icon_x - 16, -(world.icon_size / 2), world.icon_size / 2)
+	tool.pixel_y = tool.base_pixel_y + CLAMP(icon_y - 16, -(world.icon_size / 2), world.icon_size / 2)
+
+	after_added_effects(tool, user)
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/structure/table/deconstruct(disassembled = TRUE, wrench_disassembly = 0)
 	if(disassembled)
@@ -434,6 +487,12 @@
 	debris = list(/obj/item/grown/log/tree/small, /obj/item/gear/metal)
 	climb_offset = 10
 
+/obj/structure/table/wood/smooth
+	name = "wooden table"
+	icon = MAP_SWITCH('icons/obj/smooth_structures/tablewood_smooth.dmi', 'icons/obj/structures.dmi')
+	icon_state = "tablewood_smooth"
+	smoothing_flags = SMOOTH_BITMASK | SMOOTH_OBJ
+
 /*	..................   More tables   ................... */
 /obj/structure/table/wood/reinf_long
 	icon_state = "tablewood_reinf"
@@ -490,25 +549,40 @@
 	if(O.loc != src.loc)
 		step(O, get_dir(O, src))
 
-/obj/structure/rack/attackby(obj/item/I, mob/user, list/modifiers)
-	. = ..()
-	if (I.tool_behaviour == TOOL_WRENCH && !(flags_1&NODECONSTRUCT_1) && user.used_intent.type != INTENT_HELP)
-		I.play_tool_sound(src)
-		deconstruct(TRUE)
-		return
+/obj/structure/rack/wrench_act(mob/living/user, obj/item/I)
+	if((flags_1 & NODECONSTRUCT_1) || user.used_intent?.type == INTENT_HELP)
+		return NONE
 
-	if(!user.cmode)
-		if(!(I.item_flags & ABSTRACT))
-			if(user.transferItemToLoc(I, drop_location(), silent = FALSE))
-				var/icon_x = text2num(LAZYACCESS(modifiers, ICON_X))
-				var/icon_y = text2num(LAZYACCESS(modifiers, ICON_Y))
-				//Center the icon where the user clicked.
-				if(!icon_x || !icon_y)
-					return
-				//Clamp it so that the icon never moves more than 16 pixels in either direction (thus leaving the table turf)
-				I.pixel_x = I.base_pixel_x + CLAMP(icon_x - 16, -(world.icon_size/2), world.icon_size/2)
-				I.pixel_y = I.base_pixel_y + CLAMP(icon_y - 16, -(world.icon_size/2), world.icon_size/2)
-				return 1
+	I.play_tool_sound(src)
+	deconstruct(TRUE)
+	return ITEM_INTERACT_SUCCESS
+
+/obj/structure/rack/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(user.cmode)
+		return NONE
+	if(!(flags_1 & NODECONSTRUCT_1) && tool.tool_behaviour == TOOL_WRENCH && user.used_intent?.type != INTENT_HELP)
+		return NONE
+
+	if(tool.item_flags & ABSTRACT)
+		return NONE
+
+	if(!user.temporarilyRemoveItemFromInventory(tool))
+		return NONE
+
+	if(!user.transferItemToLoc(tool, drop_location(), silent = FALSE))
+		return NONE
+
+	var/icon_x = text2num(LAZYACCESS(modifiers, ICON_X))
+	var/icon_y = text2num(LAZYACCESS(modifiers, ICON_Y))
+	// Center the icon where the user clicked. Or the center of the thing
+	if(!icon_x || !icon_y)
+		icon_x = ICON_SIZE_X / 2
+		icon_y = ICON_SIZE_Y / 2
+
+	tool.pixel_x = tool.base_pixel_x + CLAMP(icon_x - 16, -(world.icon_size / 2), world.icon_size / 2)
+	tool.pixel_y = tool.base_pixel_y + CLAMP(icon_y - 16, -(world.icon_size / 2), world.icon_size / 2)
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/structure/rack/attack_paw(mob/living/user)
 	attack_hand(user)
@@ -547,24 +621,6 @@
 /obj/structure/rack/shelf/notdense
 	density = FALSE
 	SET_BASE_PIXEL(0, 24)
-
-// Necessary to avoid a critical bug with disappearing weapons.
-/obj/structure/rack/attackby(obj/item/I, mob/user, list/modifiers)
-	if(!user.cmode)
-		if(!(I.item_flags & ABSTRACT))
-			if(user.transferItemToLoc(I, drop_location(), silent = FALSE))
-				var/icon_x = text2num(LAZYACCESS(modifiers, ICON_X))
-				var/icon_y = text2num(LAZYACCESS(modifiers, ICON_Y))
-				//Center the icon where the user clicked.
-				if(!icon_x || !icon_y)
-					return
-				//Clamp it so that the icon never moves more than 16 pixels in either direction (thus leaving the table turf)
-				I.pixel_x = I.base_pixel_x + CLAMP(icon_x - 16, -(world.icon_size/2), world.icon_size/2)
-				I.pixel_y = I.base_pixel_y + CLAMP(icon_y - 16, -(world.icon_size/2), world.icon_size/2)
-				return 1
-	else
-		. = ..()
-
 
 /obj/structure/table/optable
 	name = "operating table"

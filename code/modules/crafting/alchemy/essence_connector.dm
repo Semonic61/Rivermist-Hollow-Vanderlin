@@ -1,4 +1,5 @@
 /obj/item/essence_connector
+	item_weight = 340 GRAMS
 	name = "pestran connector"
 	desc = "A oddly shaped object used to create connections between alchemical apparatus. Can sense nearby essence nodes. Something under the metal squirms..."
 	icon = 'icons/roguetown/misc/alchemy.dmi'
@@ -9,20 +10,26 @@
 	slot_flags = ITEM_SLOT_HIP
 	COOLDOWN_DECLARE(next_scan)
 
-/obj/item/essence_connector/afterattack(atom/target, mob/user, proximity_flag, list/modifiers)
-	if(!proximity_flag)
-		. = ..()
-		return
-
-	var/obj/machinery/essence/machine = target
-	if(!istype(machine))
-		to_chat(user, span_warning("[target] is not an essence device."))
-		return
+/obj/item/essence_connector/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	var/obj/machinery/essence/machine = resolve_essence_machine(interacting_with)
+	if(!machine)
+		if(connecting)
+			to_chat(user, span_warning("[interacting_with] is not an essence device."))
+			return ITEM_INTERACT_BLOCKING
+		return NONE
 
 	if(connecting)
 		complete_connection(machine, user)
-	else
-		start_connection(machine, user)
+		return ITEM_INTERACT_SUCCESS
+
+	start_connection(machine, user)
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/essence_connector/proc/resolve_essence_machine(atom/target)
+	if(istype(target, /obj/machinery/essence))
+		return target
+
+	return null
 
 /obj/item/essence_connector/attack_self(mob/user, list/modifiers)
 	if(connecting)
@@ -126,34 +133,34 @@
 
 /obj/machinery/essence/splitter/can_connect_to(obj/machinery/essence/target)
 	return istype(target, /obj/machinery/essence/combiner) || \
-		   istype(target, /obj/machinery/essence/reservoir) || \
-		   istype(target, /obj/machinery/essence/enchantment_altar) || \
-		   istype(target, /obj/machinery/essence/test_tube) || \
-		   istype(target, /obj/machinery/essence/infuser) || \
-		   istype(target, /obj/machinery/essence/research_matrix)
+		istype(target, /obj/machinery/essence/reservoir) || \
+		istype(target, /obj/machinery/essence/enchantment_altar) || \
+		istype(target, /obj/machinery/essence/test_tube) || \
+		istype(target, /obj/machinery/essence/infuser) || \
+		istype(target, /obj/machinery/essence/research_matrix)
 
 /obj/machinery/essence/combiner/can_connect_to(obj/machinery/essence/target)
 	return istype(target, /obj/machinery/essence/reservoir) || \
-		   istype(target, /obj/machinery/essence/enchantment_altar) || \
-		   istype(target, /obj/machinery/essence/test_tube) || \
-		   istype(target, /obj/machinery/essence/infuser) || \
-		   istype(target, /obj/machinery/essence/research_matrix)
+		istype(target, /obj/machinery/essence/enchantment_altar) || \
+		istype(target, /obj/machinery/essence/test_tube) || \
+		istype(target, /obj/machinery/essence/infuser) || \
+		istype(target, /obj/machinery/essence/research_matrix)
 
 /obj/machinery/essence/reservoir/can_connect_to(obj/machinery/essence/target)
 	return istype(target, /obj/machinery/essence/combiner) || \
-		   istype(target, /obj/machinery/essence/reservoir) || \
-		   istype(target, /obj/machinery/essence/enchantment_altar) || \
-		   istype(target, /obj/machinery/essence/test_tube) || \
-		   istype(target, /obj/machinery/essence/infuser) || \
-		   istype(target, /obj/machinery/essence/research_matrix)
+		istype(target, /obj/machinery/essence/reservoir) || \
+		istype(target, /obj/machinery/essence/enchantment_altar) || \
+		istype(target, /obj/machinery/essence/test_tube) || \
+		istype(target, /obj/machinery/essence/infuser) || \
+		istype(target, /obj/machinery/essence/research_matrix)
 
 /obj/machinery/essence/harvester/can_connect_to(obj/machinery/essence/target)
 	return istype(target, /obj/machinery/essence/combiner) || \
-		   istype(target, /obj/machinery/essence/reservoir) || \
-		   istype(target, /obj/machinery/essence/enchantment_altar) || \
-		   istype(target, /obj/machinery/essence/test_tube) || \
-		   istype(target, /obj/machinery/essence/infuser) || \
-		   istype(target, /obj/machinery/essence/research_matrix)
+		istype(target, /obj/machinery/essence/reservoir) || \
+		istype(target, /obj/machinery/essence/enchantment_altar) || \
+		istype(target, /obj/machinery/essence/test_tube) || \
+		istype(target, /obj/machinery/essence/infuser) || \
+		istype(target, /obj/machinery/essence/research_matrix)
 
 /datum/essence_connection
 	var/obj/machinery/essence/source

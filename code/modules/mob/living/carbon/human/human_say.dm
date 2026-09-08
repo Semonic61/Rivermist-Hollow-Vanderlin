@@ -1,6 +1,6 @@
 /mob/living/carbon/human/say_mod(input, list/message_mods = list())
 	verb_say = dna.species.say_mod
-	if(slurring)
+	if(slurring || aroused_slurring)
 		return "slurs"
 	else
 		. = ..()
@@ -31,10 +31,16 @@
 	return special_voice
 
 /mob/living/carbon/human/get_alt_name()
-	if(get_face_name("") != GetVoice())
+	var/face_name = get_face_name("")
+	var/voice_name = GetVoice()
+	// Dungeon titles are a declared suffix, not an attempt to conceal the face
+	// underneath. Unrelated name changes keep the normal anonymity behavior.
+	if(applied_dungeon_title && voice_name == "[face_name], [applied_dungeon_title]")
+		return
+	if(face_name != voice_name)
 		// This isn't accurate purposely
 		var/appendage = "Figure"
-		switch(client?.prefs.voice_type)
+		switch(client?.prefs?.read_preference(/datum/preference/choiced/voice_type))
 			if(VOICE_TYPE_FEM)
 				appendage = "Woman"
 			if(VOICE_TYPE_MASC)

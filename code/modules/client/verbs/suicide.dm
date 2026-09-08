@@ -116,25 +116,6 @@
 
 		death(FALSE)
 
-/mob/living/carbon/monkey/verb/suicide()
-	set hidden = 1
-	if(!usr.client.holder)
-		return
-	if(!canSuicide())
-		return
-	var/confirm = alert("Are you sure you want to commit suicide?", "Confirm Suicide", "Yes", "No")
-	if(!canSuicide())
-		return
-	if(confirm == "Yes")
-		set_suicide(TRUE)
-		visible_message("<span class='danger'>[src] is attempting to bite [p_their()] tongue. It looks like [p_theyre()] trying to commit suicide.</span>", \
-				"<span class='danger'>[src] is attempting to bite [p_their()] tongue. It looks like [p_theyre()] trying to commit suicide.</span>")
-
-		suicide_log()
-
-		adjustOxyLoss(max(200- getToxLoss() - getFireLoss() - getBruteLoss() - getOxyLoss(), 0))
-		death(FALSE)
-
 /mob/living/simple_animal/verb/suicide()
 	set hidden = 1
 	if(!usr.client.holder)
@@ -163,7 +144,7 @@
 	switch(stat)
 		if(CONSCIOUS)
 			return TRUE
-		if(SOFT_CRIT)
+		if(SOFT_CRIT,HARD_CRIT)
 			to_chat(src, "<span class='warning'>I can't commit suicide while in a critical condition!</span>")
 		if(UNCONSCIOUS)
 			to_chat(src, "<span class='warning'>I need to be conscious to commit suicide!</span>")

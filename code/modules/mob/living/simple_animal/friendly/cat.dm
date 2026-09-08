@@ -1,5 +1,7 @@
 //Cat
 /mob/living/simple_animal/pet/cat
+	living_flags = MOVES_ON_ITS_OWN|CAN_BE_FIREMANNED
+	abstract_type = /mob/living/simple_animal/pet/cat
 	name = "parent roguecat"
 	desc = "If you're seeing this, someone forgot to set a mob desc or it spawned the parent mob. Report to the Creators."
 	icon = 'icons/roguetown/mob/monster/pets.dmi'

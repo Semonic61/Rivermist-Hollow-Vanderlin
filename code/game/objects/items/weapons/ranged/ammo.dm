@@ -18,6 +18,7 @@
 
 //................ Crossbow Bolt ............... //
 /obj/item/ammo_casing/caseless/bolt
+	item_weight = 26 GRAMS
 	name = "bolt"
 	desc = "A small and sturdy bolt, with simple plume and metal tip, alongside a groove to load onto a crossbow."
 	icon = 'icons/roguetown/weapons/ammo.dmi'
@@ -59,10 +60,9 @@
 	create_reagents(50, NO_REACT)
 
 /obj/projectile/bullet/reusable/bolt/on_hit(atom/target, blocked = FALSE)
-	if(can_inject && iscarbon(target))
+	if(blocked != 100 && can_inject && iscarbon(target)) // fully blocked (e.g. shield deflection): don't inject or run the armor-integrity check
 		var/mob/living/carbon/M = target
-		var/armor = M.run_armor_check(def_zone, flag, "", "",armor_penetration, damage)
-		var/armor_real_check = max(0, armor - damage)
+		var/armor_real_check = max(0, blocked - damage)
 		if(armor_real_check == 0)
 			if(M.can_inject(null, FALSE, def_zone, piercing)) // Pass the hit zone to see if it can inject by whether it hit the head or the body.
 				..()
@@ -72,7 +72,7 @@
 			else
 				blocked = 100
 				target.visible_message("<span class='danger'>\The [src] was deflected!</span>", \
-									   "<span class='danger'>My armor protected me against \the [src]!</span>")
+									"<span class='danger'>My armor protected me against \the [src]!</span>")
 
 	..(target, blocked)
 	DISABLE_BITFIELD(reagents.flags, NO_REACT)
@@ -264,6 +264,7 @@
 
 //................ Arrow ............... //
 /obj/item/ammo_casing/caseless/arrow
+	item_weight = 35 GRAMS
 	name = "arrow"
 	desc = "A fletched projectile, with simple plumes and metal tip."
 	projectile_type = /obj/projectile/bullet/reusable/arrow
@@ -304,10 +305,9 @@
 	create_reagents(50, NO_REACT)
 
 /obj/projectile/bullet/reusable/arrow/on_hit(atom/target, blocked = FALSE)
-	if(can_inject && iscarbon(target))
+	if(blocked != 100 && can_inject && iscarbon(target)) // fully blocked (e.g. shield deflection): don't inject or run the armor-integrity check
 		var/mob/living/carbon/M = target
-		var/armor = M.run_armor_check(def_zone, flag, "", "",armor_penetration, damage)
-		var/armor_real_check = max(0, armor - damage)
+		var/armor_real_check = max(0, blocked - damage)
 		if(armor_real_check == 0)
 			if(M.can_inject(null, FALSE, def_zone, piercing)) // Pass the hit zone to see if it can inject by whether it hit the head or the body.
 				..()
@@ -541,6 +541,7 @@
 	speed = 0.5
 
 /obj/item/ammo_casing/caseless/bullet
+	item_weight = 70 GRAMS
 	name = "lead ball"
 	desc = "A round lead shot, simple and spherical."
 	projectile_type = /obj/projectile/bullet/reusable/bullet
@@ -598,7 +599,7 @@
 	randomspread = 0
 	variance = 0
 	force = DAMAGE_KNIFE
-	item_weight = 70
+	item_weight = 70 KILOGRAMS
 	grid_width = 96
 	grid_height = 96
 	w_class = WEIGHT_CLASS_HUGE
@@ -617,6 +618,7 @@
 \------*/
 
 /obj/item/ammo_casing/caseless/dart
+	item_weight = 15 GRAMS
 	name = "dart"
 	desc = "A thorn fashioned into a primitive dart."
 	projectile_type = /obj/projectile/bullet/reusable/dart
@@ -652,10 +654,9 @@
 	create_reagents(50, NO_REACT)
 
 /obj/projectile/bullet/reusable/dart/on_hit(atom/target, blocked = FALSE)
-	if(iscarbon(target))
+	if(blocked != 100 && iscarbon(target)) // fully blocked (e.g. shield deflection): don't inject or run the armor-integrity check
 		var/mob/living/carbon/M = target
-		var/armor = M.run_armor_check(def_zone, flag, "", "",armor_penetration, damage)
-		var/armor_real_check = max(0, armor - damage)
+		var/armor_real_check = max(0, blocked - damage)
 		if(armor_real_check == 0)
 			if(M.can_inject(null, FALSE, def_zone, piercing)) // Pass the hit zone to see if it can inject by whether it hit the head or the body.
 				..()

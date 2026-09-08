@@ -305,12 +305,7 @@ Turf and target are separate in case you want to teleport some distance from a t
 	return assembled
 
 /proc/is_blocked_turf(turf/T, exclude_mobs)
-	if(T.density)
-		return 1
-	for(var/atom/A as anything in T)
-		if(A.density && (!exclude_mobs || !ismob(A)))
-			return 1
-	return 0
+	return !T || T.is_blocked_turf(exclude_mobs)
 
 /proc/is_anchored_dense_turf(turf/T) //like the older version of the above, fails only if also anchored
 	if(T.density)
@@ -671,13 +666,11 @@ GLOBAL_LIST_INIT(WALLITEMS_INVERSE, typecacheof(list(
 	return L
 
 //gives us the stack trace from CRASH() without ending the current proc.
-/proc/stack_trace(msg)
-	CRASH(msg)
 
 GLOBAL_REAL_VAR(list/stack_trace_storage)
 /proc/gib_stack_trace()
 	stack_trace_storage = list()
-	stack_trace()
+	stack_trace(null)
 	stack_trace_storage.Cut(1, min(3,stack_trace_storage.len))
 	. = stack_trace_storage
 	stack_trace_storage = null
@@ -892,7 +885,6 @@ GLOBAL_DATUM_INIT(dview_mob, /mob/dview, new)
 
 /proc/get_random_food()
 	var/list/blocked = list(
-		/obj/item/reagent_containers/food/snacks/store,
 		/obj/item/reagent_containers/food/snacks/grown,
 		)
 
@@ -982,7 +974,7 @@ GLOBAL_LIST_INIT(ITEM_DOES_NOT_GENERATE_VAULT_RENT, typecacheof(list(
 
 //Vars that will not be copied when using /DuplicateObject
 GLOBAL_LIST_INIT(duplicate_forbidden_vars,list(
-	"tag", "datum_components", "area", "type", "loc", "locs", "vars", "parent", "parent_type", "verbs", "ckey", "key",
+	"tag", "_datum_components", "area", "type", "loc", "locs", "vars", "parent", "parent_type", "verbs", "ckey", "key",
 	"power_supply", "contents", "reagents", "stat", "x", "y", "z", "group", "atmos_adjacent_turfs", "comp_lookup"
 	))
 

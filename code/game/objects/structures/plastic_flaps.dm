@@ -4,7 +4,7 @@
 	gender = PLURAL
 	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "plasticflaps"
-	armor = list("blunt" = 100, "slash" = 100, "stab" = 100,  "piercing" = 80, "fire" = 50, "acid" = 50) //what?
+	armor_type = /datum/armor/iron_bars //what?
 	density = FALSE
 	anchored = TRUE
 	CanAtmosPass = ATMOS_PASS_NO
@@ -24,19 +24,26 @@
 	else
 		. += "<span class='notice'>[src] are no longer <i>screwed</i> to the floor, and the flaps can be <b>cut</b> apart.</span>"
 
-/obj/structure/plasticflaps/screwdriver_act(mob/living/user, obj/item/W)
-	if(..())
-		return TRUE
+/obj/structure/plasticflaps/screwdriver_act(mob/living/user, obj/item/tool)
+	. = ..()
+	if(.)
+		return
+
 	add_fingerprint(user)
-	var/action = anchored ? "unscrews [src] from" : "screws [src] to"
-	var/uraction = anchored ? "unscrew [src] from " : "screw [src] to"
-	user.visible_message("<span class='warning'>[user] [action] the floor.</span>", "<span class='notice'>I start to [uraction] the floor...</span>", "<span class='hear'>I hear rustling noises.</span>")
-	if(W.use_tool(src, user, 100, volume=100, extra_checks = CALLBACK(src, PROC_REF(check_anchored_state), anchored)))
-		setAnchored(!anchored)
-		to_chat(user, "<span class='notice'>I [anchored ? "unscrew" : "screw"] [src] from the floor.</span>")
-		return TRUE
-	else
-		return TRUE
+	var/was_anchored = anchored
+	var/action = was_anchored ? "unscrews [src] from" : "screws [src] to"
+	var/user_action = was_anchored ? "unscrew [src] from" : "screw [src] to"
+	user.visible_message(
+		span_warning("[user] [action] the floor."),
+		span_notice("I start to [user_action] the floor..."),
+		span_hear("I hear rustling noises."),
+	)
+
+	if(tool.use_tool(src, user, 10 SECONDS, volume = 100, extra_checks = CALLBACK(src, PROC_REF(check_anchored_state), was_anchored)))
+		setAnchored(!was_anchored)
+		to_chat(user, span_notice("I [was_anchored ? "unscrew [src] from" : "screw [src] to"] the floor."))
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/structure/plasticflaps/proc/check_anchored_state(check_anchored)
 	if(anchored != check_anchored)

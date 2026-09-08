@@ -56,6 +56,7 @@ SUBSYSTEM_DEF(merchant)
 	for(var/pack in subtypesof(/datum/supply_pack))
 		var/datum/supply_pack/P = new pack()
 		if(!P.contains)
+			qdel(P)
 			continue
 		supply_packs[P.type] = P
 		if(!(P.group in supply_cats))
@@ -102,6 +103,8 @@ SUBSYSTEM_DEF(merchant)
 
 	// Process ALL anvil recipes
 	for(var/datum/anvil_recipe/recipe_type as anything in subtypesof(/datum/anvil_recipe))
+		if(IS_ABSTRACT(recipe_type))
+			continue
 		var/datum/anvil_recipe/recipe = new recipe_type()
 		var/output = recipe.created_item
 
@@ -161,15 +164,12 @@ SUBSYSTEM_DEF(merchant)
 
 	// Build obtainable items list
 	for(var/datum/supply_pack/pack_type as anything in subtypesof(/datum/supply_pack))
-		var/datum/supply_pack/pack = new pack_type()
-
-		if(islist(pack.contains))
-			for(var/item_type in pack.contains)
+		var/pack_contents = initial(pack_type.contains)
+		if(islist(pack_contents))
+			for(var/item_type in pack_contents)
 				obtainable_items |= item_type
-		else if(pack.contains)
-			obtainable_items |= pack.contains
-
-		qdel(pack)
+		else if(pack_contents)
+			obtainable_items |= pack_contents
 
 	for(var/path in exclusion_subtypes)
 		obtainable_items |= subtypesof(path)
@@ -193,6 +193,8 @@ SUBSYSTEM_DEF(merchant)
 			obtainable_items |= output
 
 	for(var/datum/anvil_recipe/recipe as anything in subtypesof(/datum/anvil_recipe))
+		if(IS_ABSTRACT(recipe))
+			continue
 		var/output = initial(recipe.created_item)
 		if(output)
 			obtainable_items |= output

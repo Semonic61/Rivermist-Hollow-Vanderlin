@@ -34,6 +34,7 @@
 #define STATS_TRADE_VALUE_EXPORTED "trade_exported"
 #define STATS_TRADE_VALUE_IMPORTED "trade_imported"
 #define STATS_GOLDFACE_VALUE_SPENT "goldface_spent"
+#define STATS_SILVERFACE_VALUE_SPENT "silverface_spent" //RMH EDITED
 #define STATS_PURITY_VALUE_SPENT "purity_spent"
 #define STATS_HEADEATER_EXPORTS "headeater_exports"
 #define STATS_TAXES_EVADED "taxes_evaded"
@@ -93,6 +94,7 @@
 #define STATS_ANIMALS_BRED "animals_bred"
 #define STATS_FOOD_ROTTED "food_rotted"
 #define STATS_LUX_REVIVALS "lux_revivals"
+#define STATS_CPR_REVIVALS "cpr_revivals"
 #define STATS_ALIVE_MEDICATORS "alive_medicators"
 
 // Dendor
@@ -302,6 +304,7 @@ GLOBAL_LIST_INIT(vanderlin_round_stats, list(
 	STATS_TRADE_VALUE_EXPORTED = 0,
 	STATS_TRADE_VALUE_IMPORTED = 0,
 	STATS_GOLDFACE_VALUE_SPENT = 0,
+	STATS_SILVERFACE_VALUE_SPENT = 0, //RMH EDITED
 	STATS_PURITY_VALUE_SPENT = 0,
 	STATS_HEADEATER_EXPORTS = 0,
 	STATS_TAXES_EVADED = 0,
@@ -606,10 +609,7 @@ GLOBAL_LIST_EMPTY(chronicle_stats)
 
 		if(M)
 			if(M.assigned_role.title != "Unassigned" && !is_unassigned_job(M.assigned_role))
-				if(user.pronouns == SHE_HER && M.assigned_role.f_title)
-					job_title = " ([M.assigned_role.f_title])"
-				else
-					job_title = " ([M.assigned_role.title])"
+				job_title = " ([M.assigned_role.get_informed_title(user)])"
 			else if(user.job && user.job != "Unassigned")
 				job_title = " ([user.job])"
 			else if(M.special_role)

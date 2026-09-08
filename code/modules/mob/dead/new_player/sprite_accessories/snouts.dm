@@ -41,12 +41,6 @@
 	color_keys = 2
 	color_key_names = list("Snout", "Inner")
 
-/datum/sprite_accessory/snout/shark
-	name = "Shark"
-	icon_state = "shark"
-	color_keys = 2
-	color_key_names = list("Snout", "Inner")
-
 /datum/sprite_accessory/snout/bug
 	name = "Bug"
 	icon_state = "bug"
@@ -439,6 +433,13 @@
 	icon_state = "bird"
 	color_keys = 3
 	color_key_names = list("Beak", "Detail", "Top")
+
+/datum/sprite_accessory/snout/shark
+	name = "Shark"
+	icon_state = "shark"
+	color_keys = 2
+	color_key_names = list("Snout", "Inner")
+
 
 /datum/sprite_accessory/snout/bigbeak
 	name = "Big Beak"

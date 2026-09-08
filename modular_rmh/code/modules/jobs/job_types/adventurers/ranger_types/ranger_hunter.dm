@@ -34,6 +34,7 @@
 
 	traits = list(
 		TRAIT_DODGEEXPERT,
+		TRAIT_DODGE_THROUGH_MOBS,
 		TRAIT_SEEDKNOW,
 		TRAIT_FORAGER,
 		TRAIT_DEADNOSE,
@@ -53,7 +54,7 @@
 	pants = /obj/item/clothing/pants/trou/leather
 	shoes = /obj/item/clothing/shoes/boots/leather
 	backr = /obj/item/gun/ballistic/revolver/grenadelauncher/bow/long
-	backl = /obj/item/storage/backpack/satchel
+	backl = /obj/item/storage/backpack/backpack/longhike/with_bedroll
 	belt = /obj/item/storage/belt/leather/adventurers_subclasses
 	beltr = /obj/item/flashlight/flare/torch/lantern
 	beltl = /obj/item/ammo_holder/quiver/arrows

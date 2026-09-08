@@ -100,10 +100,10 @@
 	var/toggle_helmet = TRUE
 
 	/**
-	 * list of items that should go in the backpack of the user
-	 *
-	 * Format of this list should be: list(path=count,otherpath=count)
-	 */
+	* list of items that should go in the backpack of the user
+	*
+	* Format of this list should be: list(path=count,otherpath=count)
+	*/
 	var/list/backpack_contents = null
 
 	/// Any undershirt. While on humans it is a string, here we use paths to stay consistent with the rest of the equips.
@@ -116,19 +116,19 @@
 	var/can_be_admin_equipped = TRUE
 
 	/**
-	 * extra types for chameleon outfit changes, mostly guns
-	 *
-	 * Format of this list is (typepath, typepath, typepath)
-	 *
-	 * These are all added and returns in the list for get_chamelon_diguise_info proc
-	 */
+	* extra types for chameleon outfit changes, mostly guns
+	*
+	* Format of this list is (typepath, typepath, typepath)
+	*
+	* These are all added and returns in the list for get_chamelon_diguise_info proc
+	*/
 	var/list/chameleon_extras
 
 	/**
-	  * The sheaths this job should start with
-	  *
-	  * Format of this list is (typepath, typepath, typepath)
-	  */
+	* The sheaths this job should start with
+	*
+	* Format of this list is (typepath, typepath, typepath)
+	*/
 	var/list/scabbards = null
 
 /**
@@ -143,10 +143,12 @@
  * If visuals_only is true, you can omit any work that doesn't visually appear on the character sprite
  */
 /datum/outfit/proc/pre_equip(mob/living/carbon/human/H, visuals_only = FALSE)
+	SHOULD_NOT_SLEEP(TRUE)
 	//to be overridden for customization depending on client prefs,species etc
 	return
 
 /datum/outfit/proc/map_override(mob/living/carbon/human/H, visuals_only = FALSE)
+	SHOULD_NOT_SLEEP(TRUE)
 	return
 
 /**
@@ -161,6 +163,7 @@
  * If visuals_only is true, you can omit any work that doesn't visually appear on the character sprite
  */
 /datum/outfit/proc/post_equip(mob/living/carbon/human/H, visuals_only = FALSE)
+	SHOULD_NOT_SLEEP(TRUE)
 	//to be overridden for toggling internals, id binding, access etc
 	return
 
@@ -173,6 +176,7 @@
  * If visuals_only is true, you can omit any work that doesn't visually appear on the character sprite
  */
 /datum/outfit/proc/equip(mob/living/carbon/human/H, visuals_only = FALSE)
+	SHOULD_NOT_SLEEP(TRUE)
 	pre_equip(H, visuals_only)
 	map_override(H, visuals_only)
 
@@ -337,7 +341,7 @@
 /datum/outfit/proc/get_chameleon_disguise_info()
 	var/list/types = list(suit, belt, gloves, shoes, head, mask, neck, glasses, ring, l_pocket, r_pocket, r_hand, l_hand, underwear, bra, undershirt, garter, choker, earring_l, earring_r, legwear_socks)
 	types += chameleon_extras
-	listclearnulls(types)
+	list_clear_nulls(types)
 	return types
 
 /// Return a json list of this outfit

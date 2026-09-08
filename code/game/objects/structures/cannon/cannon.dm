@@ -87,8 +87,11 @@
 		else
 			if(ismobholder(loaded_thing))
 				var/obj/item/mob_holder/curler = loaded_thing
-				loaded_thing = curler.held_mob
-				qdel(curler)
+				var/mob/living/curled_up = curler.held_mob
+				qdel(curler) //dumps the occupant onto turf_to_shoot_from
+				if(!curled_up)
+					continue
+				loaded_thing = curled_up
 			loaded_thing.throw_at(target, blast_range, 3, force = MOVE_FORCE_OVERPOWERING)
 			if(isliving(loaded_thing))
 				var/mob/living/loaded_living = loaded_thing
@@ -96,26 +99,23 @@
 
 	throw_at(get_step(src, REVERSE_DIR(dir)), 1, 3, spin = FALSE)
 
-/obj/structure/cannon/attackby(obj/item/I, mob/user, list/modifiers)
-	if(isreagentcontainer(I))
-		var/obj/item/reagent_containers/reagent_container = I
+/obj/structure/cannon/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(isreagentcontainer(tool))
 		if(do_after(user, 1 SECONDS, src))
-			if(reagent_container.reagents.trans_to(reagents, 10, transfered_by = user))
-				user.visible_message(span_notice("[user] fills the [src] with \the [I]"), span_notice("I fill the [src] with \the [I]"))
+			if(tool.reagents.trans_to(reagents, 10, transfered_by = user))
+				user.visible_message(span_notice("[user] fills \the [name] with \the [tool.name]"), span_notice("I fill \the [name] with \the [tool.name]"))
 				playsound(src, 'sound/foley/gunpowder_fill.ogg', 100, FALSE)
 				balloon_alert(user, "Added!")
 			else
 				balloon_alert(user, "None Left!")
-		return TRUE
+		return ITEM_INTERACT_SUCCESS
 
-	if(isfuse(I))
-		var/obj/item/fuse/fuse = I
+	if(isfuse(tool))
+		var/obj/item/fuse/fuse = tool
 		if(fuse.add_to_cannon(src, user))
 			user.visible_message(span_notice("[user] adds \the [fuse] to \the [src]"), span_notice("I add \the [fuse] to \the [src]"))
 			balloon_alert_to_viewers("Attached!")
-		return TRUE
-
-	. = ..()
+		return ITEM_INTERACT_SUCCESS
 
 /obj/effect/fuse
 	icon = 'icons/roguetown/misc/cannon_fuse.dmi'

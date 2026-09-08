@@ -5,11 +5,11 @@
 	icon = 'icons/roguetown/mob/monster/goblins.dmi'
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
-	armor = list("blunt" = 80, "slash" = 80, "stab" = 80,  "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/cuirass/goblin
 	allowed_race = list(SPEC_ID_GOBLIN)
 	flags_inv = HIDECROTCH|HIDEBOOB|HIDEBELLY|HIDEBUTT
 	body_parts_covered = CHEST|GROIN|ARMS|LEGS|VITALS
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	max_integrity = 60
 	armor_class = AC_LIGHT // Otherwise they get knocked down TOO easily!!!
 	sellprice = 0
@@ -20,7 +20,7 @@
 	icon_state = "leather_armor_item"
 	item_state = "leather_armor"
 	icon = 'icons/roguetown/mob/monster/goblins.dmi'
-	armor = list("blunt" = 60, "slash" = 60, "stab" = 60,  "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/leather/goblin
 	body_parts_covered = CHEST|GROIN|ARMS|VITALS
 	flags_inv = HIDECROTCH|HIDEBOOB|HIDEBELLY
 	armor_class = AC_LIGHT
@@ -35,8 +35,8 @@
 	item_state = "cloth_armor"
 	icon = 'icons/roguetown/mob/monster/goblins.dmi'
 	allowed_race = list(SPEC_ID_GOBLIN)
-	armor = list("blunt" = 30, "slash" = 30, "stab" = 30,  "piercing" = 0, "fire" = 0, "acid" = 0)
-	body_parts_covered = CHEST|GROIN
+	armor_type = /datum/armor/leather/goblin/bad
+	body_parts_covered = GROIN
 	flags_inv = HIDECROTCH
 	sellprice = 0
 	smeltresult = /obj/item/fertilizer/ash
@@ -46,7 +46,7 @@
 	icon_state = "leather_helm_item"
 	item_state = "leather_helm"
 	icon = 'icons/roguetown/mob/monster/goblins.dmi'
-	armor = list("blunt" = 30, "slash" = 30, "stab" = 30,  "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/head/leather/goblin
 	body_parts_covered = HEAD|EARS|HAIR|EYES
 	allowed_race = list(SPEC_ID_GOBLIN)
 	sellprice = 0
@@ -61,6 +61,6 @@
 	melt_amount = 100
 	icon = 'icons/roguetown/mob/monster/goblins.dmi'
 	allowed_race = list(SPEC_ID_GOBLIN)
-	armor = list("blunt" = 80, "slash" = 80, "stab" = 80,  "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/head/plate/goblin
 	body_parts_covered = HEAD|EARS|HAIR|EYES
 	sellprice = 0

@@ -3,10 +3,17 @@
 	var/enabled = TRUE
 	/// The name of the job , used for preferences, bans and more. Make sure you know what you're doing before changing this.
 	var/title = "NOPE"
+	/// Player-selectable titles which do not change the underlying job.
+	var/list/alt_titles
+	/// Female-presenting alternatives used instead of alt_titles when unique_alt_titles is set.
+	var/list/alt_titles_female
+	var/unique_alt_titles = FALSE
 	/// Visual title override
 	var/title_override = null
 	/// The title of this job given to female mobs. Fluff, not as important as [var/title].
 	var/f_title = null
+	/// The title of this job given to male mobs. Fluff, not as important as [var/title].
+	var/m_title = null
 	/// Used if the job gets switched later to something else.
 	var/datum/job/parent_job
 	/// Used if this job uses parent's title for visuals
@@ -169,10 +176,10 @@
 	var/job_reopens_slots_on_death = FALSE
 
 	/**
-	 *	How this works, its CTAG_DEFINE = amount_to_attempt_to_role
-	 *	EX: advclass_cat_rolls = list(CTAG_PILGRIM = 5, CTAG_ADVENTURER = 5)
-	 *	You will still need to contact the subsystem though
-	 */
+	*	How this works, its CTAG_DEFINE = amount_to_attempt_to_role
+	*	EX: advclass_cat_rolls = list(CTAG_PILGRIM = 5, CTAG_ADVENTURER = 5)
+	*	You will still need to contact the subsystem though
+	*/
 	var/list/advclass_cat_rolls
 
 	var/is_foreigner = FALSE
@@ -199,6 +206,11 @@
 	/// Honorary titles appended to names. Based off pronouns
 	var/honorary
 	var/honorary_f
+	/// Player-selectable honorary prefixes which do not change the underlying job.
+	var/list/alt_honorary
+	/// Female-presenting alternatives used instead of alt_honorary when unique_alt_honorary is set.
+	var/list/alt_honorary_female
+	var/unique_alt_honorary = FALSE
 	/// Same as above, but for suffixes. See Khan
 	var/honorary_suffix
 	var/honorary_suffix_f
@@ -247,6 +259,11 @@
 		return FALSE
 
 	var/mob/living/carbon/human/human_spawned = spawned
+	// Knockout Only opted out of the rune: the job's automatic bond must respect that, or the
+	// player still gets the rune's Call offer over their chosen self-rescue. They can always walk
+	// up to a rune and link by hand later - only the auto-link honors the preference.
+	if(human_spawned.defeat_mode == DEFEAT_MODE_KO_ONLY)
+		return FALSE
 	var/obj/structure/resurrection_rune/current_rune = find_resurrection_rune_by_mind(human_spawned.mind)
 	if(current_rune?.rune_tag == rune_linked)
 		GLOB.rune_roundstart_mobs |= human_spawned
@@ -333,6 +350,7 @@
 /datum/job/proc/after_spawn(mob/living/carbon/human/spawned, client/player_client, clear_job_stats = TRUE)
 	SHOULD_CALL_PARENT(TRUE)
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_JOB_AFTER_SPAWN, src, spawned, player_client)
+	apply_alt_title_preferences(spawned, player_client?.prefs)
 
 	var/used_attribute_sheet = FALSE
 	if(spawned.attributes)
@@ -431,7 +449,6 @@
 		spawned.dna?.species.soundpack_f = new voicepack_f()
 
 	assign_honorary_titles(spawned)
-	/// WHY WAS THIS ON OUTFIT??? It shouldn't be HERE either
 	if(spawned.familytree_pref != FAMILY_NONE && !spawned.family_datum)
 		SSfamilytree.AddLocal(spawned, spawned.familytree_pref)
 
@@ -501,8 +518,6 @@
 	var/datum/attribute_holder/sheet/sheet_to_apply
 	if(attribute_sheet_old && spawned_human.age == AGE_OLD)
 		sheet_to_apply = attribute_sheet_old
-	else if(attribute_sheet_child && spawned_human.age == AGE_CHILD)
-		sheet_to_apply = attribute_sheet_child
 	else if(attribute_sheet_adult && spawned_human.age == AGE_ADULT)
 		sheet_to_apply = attribute_sheet_adult
 	else if(attribute_sheet)
@@ -708,7 +723,7 @@
 /mob/living/carbon/human/apply_prefs_job(client/player_client, datum/job/job, latejoining = FALSE)
 	var/fully_randomize = is_banned_from(player_client.ckey, "Appearance")
 	var/mob/dead/new_player/np = player_client?.mob
-	if(istype(np) && player_client?.prefs?.multi_char_ready && !latejoining)
+	if(istype(np) && player_client?.prefs?.read_preference(/datum/preference/toggle/multi_char_ready) && !latejoining)
 		np.ensure_multi_ready_character_loaded()
 	if(!player_client)
 		return // Disconnected while checking for the appearance ban.
@@ -720,7 +735,7 @@
 		var/is_antag = (player_client.mob.mind in GLOB.pre_setup_antags)
 		player_client.prefs.safe_transfer_prefs_to(src, TRUE, is_antag)
 		if(CONFIG_GET(flag/force_random_names))
-			player_client.prefs.real_name = player_client.prefs.pref_species.random_name(player_client.prefs.gender, TRUE)
+			player_client.prefs.write_preference(/datum/preference/text/real_name, player_client.prefs.pref_species.random_name(player_client.prefs.read_preference(/datum/preference/choiced/gender), TRUE))
 	dna.update_dna_identity()
 
 /datum/job/proc/adjust_current_positions(offset)
@@ -729,6 +744,31 @@
 		stack_trace("tried to adjust current positions to less-than-zero")
 
 	current_positions = max(current_positions + offset, 0)
+
+/datum/job/proc/uses_adventurer_slot_pool()
+	if(!(department_flag & ADVENTURERS) || !length(GLOB.adventurers_positions))
+		return FALSE
+	return title in GLOB.adventurers_positions
+
+/datum/job/proc/get_position_count()
+	if(uses_adventurer_slot_pool())
+		return SSjob.get_adventurer_slot_count()
+	return current_positions
+
+/datum/job/proc/get_position_limit(latejoin = FALSE)
+	if(uses_adventurer_slot_pool())
+		return SSjob.get_adventurer_slot_limit(latejoin)
+	return latejoin ? total_positions : spawn_positions
+
+/datum/job/proc/has_open_position(latejoin = FALSE)
+	var/position_limit = get_position_limit(latejoin)
+	return position_limit == -1 || get_position_count() < position_limit
+
+/datum/job/proc/set_total_positions(new_total_positions)
+	if(uses_adventurer_slot_pool())
+		SSjob.set_adventurer_slot_limit(new_total_positions)
+		return
+	total_positions = new_total_positions
 
 /datum/job/proc/add_spells(mob/living/equipped_human)
 	for(var/datum/action/cooldown/spell/spell as anything in spells)
@@ -746,20 +786,32 @@
 
 	if(title_override)
 		return title_override
+	if(isliving(mob))
+		var/mob/living/living_mob = mob
+		if(living_mob.job_title_override)
+			return living_mob.job_title_override
 	if(uses_parent_title && parent_job)
 		return parent_job.title
 
+	return get_gendered_title(mob.gender, mob.pronouns, ignore_pronouns)
+
+/datum/job/proc/get_gendered_title(character_gender, character_pronouns, ignore_pronouns = FALSE)
+	if(m_title && character_gender == MALE)
+		return m_title
+
 	if(f_title)
-		if(ignore_pronouns && mob.gender == FEMALE || !ignore_pronouns && mob.pronouns == SHE_HER)
+		if((ignore_pronouns && character_gender == FEMALE) || (!ignore_pronouns && character_pronouns == SHE_HER))
 			return f_title
 
 	return title
 
 /datum/job/proc/assign_honorary_titles(mob/living/carbon/grantee)
-	if(honorary)
-		grantee.honorary = honorary
-	if(honorary_f && grantee.pronouns == SHE_HER)
+	if(grantee.job_honorary_override)
+		grantee.honorary = grantee.job_honorary_override
+	else if(honorary_f && grantee.pronouns == SHE_HER)
 		grantee.honorary = honorary_f
+	else if(honorary)
+		grantee.honorary = honorary
 	if(honorary_suffix)
 		grantee.honorary_suffix = honorary_suffix
 	if(honorary_suffix_f && grantee.pronouns == SHE_HER)
@@ -769,7 +821,7 @@
 	return spawn_positions
 
 /datum/job/proc/get_total_positions(latejoin)
-	return latejoin ? total_positions : spawn_positions
+	return get_position_limit(latejoin)
 
 /datum/job/proc/get_json_data()
 	var/list/data = list()
@@ -777,6 +829,7 @@
 	data["job_type"] = type
 	data["title"] = title
 	data["f_title"] = f_title
+	data["m_title"] = m_title
 	data["enabled"] = enabled
 	data["spawn_positions"] = spawn_positions
 	data["cmode_music"] = cmode_music
@@ -857,6 +910,7 @@
 
 	title = data["title"]
 	f_title = data["f_title"]
+	m_title = data["m_title"]
 	enabled = data["enabled"]
 	spawn_positions = data["spawn_positions"]
 	cmode_music = data["cmode_music"]

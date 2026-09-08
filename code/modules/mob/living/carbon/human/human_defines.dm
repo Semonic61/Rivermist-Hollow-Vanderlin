@@ -9,11 +9,11 @@
 	hud_type = /datum/hud/human
 	base_intents = list(INTENT_HELP, INTENT_DISARM, INTENT_GRAB, INTENT_HARM)
 	possible_mmb_intents = list(INTENT_STEAL, INTENT_JUMP, INTENT_KICK, INTENT_BITE, INTENT_GIVE)
-	can_buckle = TRUE
 	buckle_lying = 0
 	mob_biotypes = MOB_ORGANIC|MOB_HUMANOID
 
 	ambushable = TRUE //! DEPRECATED VAR, USE TRAIT_NOAMBUSH
+	maxHealth = BRAIN_DAMAGE_DEATH
 
 	voice_pitch = 1
 
@@ -72,7 +72,6 @@
 
 	var/list/datum/bioware = list()
 
-	var/static/list/can_ride_typecache = typecacheof(list(/mob/living/carbon/human))
 	var/lastpuke = 0
 	var/last_fire_update
 	var/account_id //! DEPRECATED
@@ -91,8 +90,18 @@
 	var/mob/living/carbon/spouse_mob
 	var/image/spouse_indicator
 	var/setspouse
+	var/setchild
+	var/setparent
 	var/gender_choice_pref = ANY_GENDER
 	var/familytree_pref = FAMILY_NONE
+	/// Permit an explicitly adoptive roundstart family bond.
+	var/family_adoption_pref = FALSE
+	var/was_divorced = FALSE
+	/// Empty lists mean that this character accepts any option.
+	var/list/accepted_patron_faiths = list()
+	var/list/accepted_family_species = list()
+	var/same_species_family = FALSE
+	var/list/family_job_filter = list()
 	var/datum/heritage/family_datum
 	var/list/temp_ui_list = list()
 
@@ -125,18 +134,12 @@
 	var/list/img_gallery = list()
 	var/list/nsfw_img_gallery = list()
 
-	var/noble_gossip
-	var/rumour
-
 	var/confession_points = 0 // Used to track how many confessions the Inquisitor has gotten signed. Used to buy items at mailboxes.
 	var/purchase_history = null // Used to track what the Inquisitor has bought from the mailbox.
 	var/breathe_tick = 0 // Used for gas mask delays.
 
 	var/merctype = 0 // Used for mercenary backgrounds - check mail.dm
 	var/tokenclaimed = FALSE // Check for one-time tri reward.
-
-	// Boolean. Usually set only to TRUE for non-Eoran church roles.
-	var/virginity = FALSE
 
 	possible_rmb_intents = list(/datum/rmb_intent/feint,\
 	/datum/rmb_intent/aimed,\
@@ -171,6 +174,11 @@
 	var/temp_debuff_level = null
 
 	fovangle = FOV_DEFAULT // our fov
+
+	/// Tempo: assoc list of attacker REF -> expiry world.time. Only populated with TRAIT_TEMPO.
+	var/list/tempo_attackers = list()
+	/// Next world.time we cull stale tempo attackers.
+	var/next_tempo_cull = 0
 
 //Checking the highest armor class worn
 //Limb armors use the second highest armor class

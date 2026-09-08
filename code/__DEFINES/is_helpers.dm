@@ -1,17 +1,18 @@
 // simple is_type and similar inline helpers
 
-
 #define in_range(source, user) (get_dist(source, user) <= 1 && (get_step(source, 0)?:z) == (get_step(user, 0)?:z))
 
 #define in_range_loose(source, user) (get_dist(source, user) <= 2 && (get_step(source, 0)?:z) == (get_step(user, 0)?:z))
 
-
 #define ismovableatom(A) ismovable(A)
-
 
 #define isatom(A) (isloc(A))
 
 #define isweakref(D) (istype(D, /datum/weakref))
+
+// The filters list has the same ref type id as a filter, but isnt one and also isnt a list, so we have to check if the thing has Cut() instead
+GLOBAL_VAR_INIT(refid_filter, TYPEID(filter(type="angular_blur")))
+#define isfilter(thing) (!hascall(thing, "Cut") && TYPEID(thing) == GLOB.refid_filter)
 
 #define isdatum(D) (istype(D, /datum))
 //Turfs
@@ -90,8 +91,6 @@ GLOBAL_LIST_INIT(turfs_without_ground, typecacheof(list(
 
 #define isgoblin(A) (is_species(A, /datum/species/goblin))
 #define isorc(A) (is_species(A, /datum/species/orc))
-//more carbon mobs
-#define ismonkey(A) (istype(A, /mob/living/carbon/monkey))
 
 //Simple animals
 #define isanimal(A) (istype(A, /mob/living/simple_animal))
@@ -148,6 +147,8 @@ GLOBAL_LIST_INIT(turfs_without_ground, typecacheof(list(
 #define isclothing(A) (istype(A, /obj/item/clothing))
 
 #define isclothing_path(A) (ispath(A, /obj/item/clothing))
+
+#define isbundle(A) (istype(A, /obj/item/natural/bundle))
 
 GLOBAL_LIST_INIT(pointed_types, typecacheof(list(
 	/obj/item/kitchen/fork)))

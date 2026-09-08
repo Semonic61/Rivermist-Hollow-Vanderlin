@@ -105,7 +105,7 @@
 	required_materials = list(
 		/obj/item/natural/stone = 1,
 		/obj/item/natural/fibers = 1,
-		/obj/item/natural/dirtclod = 1
+		/obj/item/natural/clod/dirt = 1
 	)
 
 /datum/blueprint_recipe/floor/stonefloor_blocks
@@ -227,7 +227,7 @@
 	result_type = /turf/open/floor/dirt/road
 	required_materials = list(
 		/obj/item/natural/fibers = 1,
-		/obj/item/natural/dirtclod = 3
+		/obj/item/natural/clod/dirt = 3
 	)
 	construct_tool = /obj/item/weapon/shovel
 	category = "Floors"
@@ -239,7 +239,37 @@
 	result_type = /turf/open/floor/dirt
 	required_materials = list(
 		/obj/item/natural/fibers = 1,
-		/obj/item/natural/dirtclod = 3
+		/obj/item/natural/clod/dirt = 3
+	)
+	construct_tool = /obj/item/weapon/shovel
+	category = "Floors"
+	floor_object = TRUE
+
+/datum/blueprint_recipe/floor/desert_dirt
+	name = "Desert Dirt"
+	desc = "Dry, sandy dirt."
+	result_type = /turf/open/floor/dirt/desert
+	required_materials = list(
+		/obj/item/natural/fibers = 1,
+		/obj/item/natural/clod/sand = 1,
+		/obj/item/natural/clod/dirt = 2
+	)
+	construct_tool = /obj/item/weapon/shovel
+	category = "Floors"
+	floor_object = TRUE
+
+/datum/blueprint_recipe/floor/desert_dirt/settled
+	name = "Settled Desert Dirt"
+	desc = "Dry dirt tamped flat enough to hold its shape."
+	result_type = /turf/open/floor/dirt/desert/nospawn
+
+/datum/blueprint_recipe/floor/desert_road
+	name = "Desert Road"
+	desc = "A packed, sandy road."
+	result_type = /turf/open/floor/dirt/road/desert
+	required_materials = list(
+		/obj/item/natural/fibers = 2,
+		/obj/item/natural/clod/sand = 3
 	)
 	construct_tool = /obj/item/weapon/shovel
 	category = "Floors"
@@ -316,6 +346,32 @@
 	name = "Spiral Masonic Tile"
 	result_type = /turf/open/floor/tile/masonic/spiral
 	craftdiff = 3
+
+/datum/blueprint_recipe/floor/masonic/moondark
+	name = "Dark Moon Masonic Tile"
+	result_type = /turf/open/floor/tile/masonic/moondark
+	craftdiff = 3
+
+/datum/blueprint_recipe/floor/masonic/moonbw
+	name = "Black and White Moon Masonic Tile"
+	result_type = /turf/open/floor/tile/masonic/moonbw
+	craftdiff = 3
+
+/datum/blueprint_recipe/floor/masonic/full
+	name = "Masonic White Tile"
+	result_type = /turf/open/floor/tile/masonic/full
+
+/datum/blueprint_recipe/floor/masonic/full/inverted
+	name = "Masonic Black Tile"
+	result_type = /turf/open/floor/tile/masonic/full/inverted
+
+/datum/blueprint_recipe/floor/masonic/arrow
+	name = "Masonic Arrow"
+	result_type = /turf/open/floor/tile/masonic/arrow
+
+/datum/blueprint_recipe/floor/masonic/arrow/inverted
+	name = "Inverted Masonic Arrow"
+	result_type = /turf/open/floor/tile/masonic/arrow/inverted
 
 /datum/blueprint_recipe/floor/brick
 	name = "Brick Tile"
@@ -538,7 +594,7 @@
 	required_materials = list(
 		/obj/item/natural/fibers = 2,
 		/obj/item/neuFarm/seed = 1,
-		/obj/item/natural/dirtclod = 2
+		/obj/item/natural/clod/dirt = 2
 	)
 	construct_tool = /obj/item/weapon/shovel
 	category = "Floors"
@@ -551,7 +607,7 @@
 	required_materials = list(
 		/obj/item/natural/fibers = 2,
 		/obj/item/neuFarm/seed = 1,
-		/obj/item/natural/dirtclod = 2
+		/obj/item/natural/clod/dirt = 2
 	)
 	construct_tool = /obj/item/weapon/shovel
 	category = "Floors"
@@ -564,7 +620,7 @@
 	required_materials = list(
 		/obj/item/natural/fibers = 2,
 		/obj/item/neuFarm/seed = 1,
-		/obj/item/natural/dirtclod = 2
+		/obj/item/natural/clod/dirt = 2
 	)
 	construct_tool = /obj/item/weapon/shovel
 	category = "Floors"
@@ -577,7 +633,7 @@
 	required_materials = list(
 		/obj/item/natural/fibers = 2,
 		/obj/item/neuFarm/seed = 1,
-		/obj/item/natural/dirtclod = 2
+		/obj/item/natural/clod/dirt = 2
 	)
 	construct_tool = /obj/item/weapon/shovel
 	category = "Floors"
@@ -590,7 +646,7 @@
 	required_materials = list(
 		/obj/item/natural/fibers = 2,
 		/obj/item/neuFarm/seed = 1,
-		/obj/item/natural/dirtclod = 2
+		/obj/item/natural/clod/dirt = 2
 	)
 	construct_tool = /obj/item/weapon/shovel
 	category = "Floors"
@@ -603,11 +659,152 @@
 	required_materials = list(
 		/obj/item/natural/fibers = 3,
 		/obj/item/neuFarm/seed = 1,
-		/obj/item/natural/dirtclod = 3
+		/obj/item/natural/clod/dirt = 3
 	)
 	construct_tool = /obj/item/weapon/shovel
 	category = "Floors"
 	floor_object = TRUE
+
+/datum/blueprint_recipe/floor/grass_desert
+	name = "Desert Grass"
+	desc = "Grass rooted in dry soil."
+	result_type = /turf/open/floor/grass/desert
+	required_materials = list(
+		/obj/item/natural/fibers = 2,
+		/obj/item/neuFarm/seed = 1,
+		/obj/item/natural/clod/sand = 1,
+		/obj/item/natural/clod/dirt = 1
+	)
+	construct_tool = /obj/item/weapon/shovel
+	category = "Floors"
+	floor_object = TRUE
+
+/datum/blueprint_recipe/floor/desert_dunes
+	name = "Desert Sand"
+	desc = "Loose sand and gravel raked into place."
+	result_type = /turf/open/floor/desert/dunes
+	required_materials = list(
+		/obj/item/natural/clod/sand = 3,
+		/obj/item/natural/stone = 1
+	)
+	construct_tool = /obj/item/weapon/shovel
+	category = "Floors"
+	floor_object = TRUE
+
+/datum/blueprint_recipe/floor/sandstone_ground
+	name = "Rough Sandstone Ground"
+	desc = "Rough sandstone fitted into a walkable surface."
+	result_type = /turf/open/floor/naturalstone/sandstone
+	required_materials = list(
+		/obj/item/natural/stone = 2
+	)
+	construct_tool = /obj/item/weapon/hammer
+	category = "Floors"
+	floor_object = TRUE
+	skillcraft = /datum/attribute/skill/craft/masonry
+
+/datum/blueprint_recipe/floor/desert_sandbrick
+	name = "Sandbrick Floor"
+	desc = "Clay-bound sandstone bricks laid into a floor."
+	result_type = /turf/open/floor/desert/sandbrick
+	required_materials = list(
+		/obj/item/natural/stoneblock = 1,
+		/obj/item/natural/clay = 1
+	)
+	construct_tool = /obj/item/weapon/hammer
+	category = "Floors"
+	floor_object = TRUE
+	skillcraft = /datum/attribute/skill/craft/masonry
+	craftdiff = 1
+
+/datum/blueprint_recipe/floor/desert_citybrick
+	name = "Desert City Brick Floor"
+	desc = "Fired stone blocks set in a city pattern."
+	result_type = /turf/open/floor/desert/citybrick
+	required_materials = list(
+		/obj/item/natural/stoneblock = 2,
+		/obj/item/natural/clay = 1
+	)
+	construct_tool = /obj/item/weapon/hammer
+	category = "Floors"
+	floor_object = TRUE
+	skillcraft = /datum/attribute/skill/craft/masonry
+	craftdiff = 1
+
+/datum/blueprint_recipe/floor/desert_citybrick/one
+	name = "Desert City Brick Floor I"
+	result_type = /turf/open/floor/desert/citybrick/citybrick1
+
+/datum/blueprint_recipe/floor/desert_citybrick/two
+	name = "Desert City Brick Floor II"
+	result_type = /turf/open/floor/desert/citybrick/citybrick2
+
+/datum/blueprint_recipe/floor/desert_citybrick/three
+	name = "Desert City Brick Floor III"
+	result_type = /turf/open/floor/desert/citybrick/citybrick3
+
+/datum/blueprint_recipe/floor/desert_citybrick/four
+	name = "Desert City Brick Floor IV"
+	result_type = /turf/open/floor/desert/citybrick/citybrick4
+
+/datum/blueprint_recipe/floor/desert_citybrick/five
+	name = "Desert City Brick Floor V"
+	result_type = /turf/open/floor/desert/citybrick/citybrick5
+
+/datum/blueprint_recipe/floor/desert_citybrick/six
+	name = "Desert City Brick Floor VI"
+	result_type = /turf/open/floor/desert/citybrick/citybrick6
+
+/datum/blueprint_recipe/floor/desert_lightpath
+	name = "Light Desert Path"
+	desc = "Pale sand and stone packed into a footpath."
+	result_type = /turf/open/floor/desert/lightpath
+	required_materials = list(
+		/obj/item/natural/clod/sand = 2,
+		/obj/item/natural/stone = 1
+	)
+	construct_tool = /obj/item/weapon/shovel
+	category = "Floors"
+	floor_object = TRUE
+
+/datum/blueprint_recipe/floor/desert_darkpath
+	name = "Dark Desert Path"
+	desc = "Dark grit and stone packed into a footpath."
+	result_type = /turf/open/floor/desert/darkpath
+	required_materials = list(
+		/obj/item/natural/clod/sand = 2,
+		/obj/item/natural/stone = 1
+	)
+	construct_tool = /obj/item/weapon/shovel
+	category = "Floors"
+	floor_object = TRUE
+
+/datum/blueprint_recipe/floor/desert_scrub
+	name = "Scrub Desert Grass"
+	desc = "Sparse grass coaxed through dry ground."
+	result_type = /turf/open/floor/desert/desert_grass
+	required_materials = list(
+		/obj/item/natural/fibers = 2,
+		/obj/item/neuFarm/seed = 1,
+		/obj/item/natural/clod/sand = 1,
+		/obj/item/natural/clod/dirt = 1
+	)
+	construct_tool = /obj/item/weapon/shovel
+	category = "Floors"
+	floor_object = TRUE
+
+/datum/blueprint_recipe/floor/desert_tile
+	name = "Desert Tile Floor"
+	desc = "Squared sandstone tiles set for walking."
+	result_type = /turf/open/floor/desert/deserttile
+	required_materials = list(
+		/obj/item/natural/stoneblock = 2
+	)
+	construct_tool = /obj/item/weapon/hammer
+	category = "Floors"
+	floor_object = TRUE
+	skillcraft = /datum/attribute/skill/craft/masonry
+	craftdiff = 1
 
 /datum/blueprint_recipe/floor/hay
 	name = "Hay"
@@ -616,7 +813,7 @@
 	required_materials = list(
 		/obj/item/natural/fibers = 3,
 		/obj/item/natural/chaff = 2,
-		/obj/item/natural/dirtclod = 1
+		/obj/item/natural/clod/dirt = 1
 	)
 	construct_tool = /obj/item/weapon/pitchfork
 	category = "Floors"

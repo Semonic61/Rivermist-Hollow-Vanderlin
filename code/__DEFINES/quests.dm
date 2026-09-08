@@ -18,12 +18,14 @@
 #define QUEST_HANDLER_REWARD_MULTIPLIER 2
 #define QUEST_MINOR_HANDLER_REWARD_MULTIPLIER 1.2
 #define QUEST_REWARD_PER_RISK_POINT 6
+#define QUEST_ERRAND_REWARD_PER_RISK_POINT 2
+#define QUEST_ERRAND_WORKLOAD_REWARD_MULT 0.2
 #define QUEST_DEPOSIT_RATE 0.18
 #define QUEST_MIN_DEPOSIT 4
 #define QUEST_MAX_DEPOSIT 80
 
-#define QUEST_BASE_REWARD_RETRIEVAL 18
-#define QUEST_BASE_REWARD_COURIER 16
+#define QUEST_BASE_REWARD_RETRIEVAL 8
+#define QUEST_BASE_REWARD_COURIER 8
 #define QUEST_BASE_REWARD_HUNT 8
 #define QUEST_BASE_REWARD_CLEAR_OUT 18
 #define QUEST_BASE_REWARD_RAID 28
@@ -53,6 +55,7 @@
 #define QUEST_BOSS_REWARD_RISK_SQUARE_MULTIPLIER 2
 #define QUEST_BOSS_REWARD_RISK_OVERFLOW_START 8
 #define QUEST_BOSS_REWARD_RISK_OVERFLOW_BONUS 15
+#define QUEST_BOSS_REWARD_MAX 2500
 
 // ===== Map difficulty and reward modifiers =====
 // Map flag bitfields for mob availability per map
@@ -79,10 +82,14 @@
 #define QUEST_MAP_REWARD_DESERT 1.3
 #define QUEST_MAP_REWARD_FROZEN 1.8
 #define QUEST_MAP_REWARD_UNDERDARK 2.5
+#define QUEST_MAP_REWARD_SCALE 2
 
-// Distance bonus config: up to 25% extra reward based on distance from ledger to spawn point.
+// Distance bonus config: base bonus is up to 25% extra reward based on distance from ledger to spawn point.
+// Final bonus scales this base value by QUEST_DISTANCE_BONUS_SCALE and doubles it again across z-levels.
 #define QUEST_DISTANCE_BONUS_MAX_MULT 0.25
 #define QUEST_DISTANCE_BONUS_MAX_RANGE 150
+#define QUEST_DISTANCE_BONUS_SCALE 4
+#define QUEST_DISTANCE_BONUS_CROSS_Z_SCALE 2
 
 // Quest ambush chance config.
 // Ambush chance (%) = clamp(QUEST_AMBUSH_BASE_CHANCE * difficulty_modifier, MIN, MAX).

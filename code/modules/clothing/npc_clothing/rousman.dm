@@ -7,7 +7,7 @@
 	melt_amount = 100
 	icon = 'icons/roguetown/mob/monster/rousman.dmi'
 	allowed_race = list(SPEC_ID_ROUSMAN)
-	armor = list("blunt" = 80, "slash" = 80, "stab" = 80,  "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/head/plate/rous
 	body_parts_covered = HEAD|EARS|HAIR|EYES
 	sellprice = 0
 
@@ -18,10 +18,10 @@
 	icon = 'icons/roguetown/mob/monster/rousman.dmi'
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
-	armor = list("blunt" = 80, "slash" = 80, "stab" = 80,  "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/cuirass/rous
 	allowed_race = list(SPEC_ID_ROUSMAN)
 	body_parts_covered = CHEST|GROIN|ARMS|LEGS|VITALS
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	max_integrity = 60
 	armor_class = AC_LIGHT
 	sellprice = 0
@@ -32,7 +32,7 @@
 	item_state = "rousman_loincloth"
 	icon = 'icons/roguetown/mob/monster/rousman.dmi'
 	allowed_race = list(SPEC_ID_ROUSMAN)
-	armor = list("blunt" = 30, "slash" = 30, "stab" = 30,  "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/leather/rous/bad
 	body_parts_covered = CHEST|GROIN
 	sellprice = 0
 	smeltresult = /obj/item/fertilizer/ash
@@ -54,7 +54,7 @@
 	allowed_race = list(SPEC_ID_ROUSMAN)
 	adjustable = CAN_CADJUST
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST)
-	armor = list("blunt" = 70, "slash" = 60, "stab" = 30, "piercing" = 20, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/head/hood/rous
 	sellprice = 0
 	misc_flags = CRAFTING_TEST_EXCLUDE
 
@@ -80,7 +80,7 @@
 	icon = 'icons/roguetown/mob/monster/rousman.dmi'
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST)
 	body_parts_covered = CHEST|GROIN|VITALS|LEGS
-	armor = list("blunt" = 50, "slash" = 30, "stab" = 20, "piercing" = 10, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/robe/rous
 	allowed_race = list(SPEC_ID_ROUSMAN)
 	misc_flags = CRAFTING_TEST_EXCLUDE
 
@@ -89,5 +89,5 @@
 	icon_state = "seer_hood"
 	item_state = "seer_hood"
 	mob_overlay_icon = 'icons/roguetown/mob/monster/rousman.dmi'
-	armor = list("blunt" = 50, "slash" = 30, "stab" = 20, "piercing" = 10, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/head/hood/rous/bad
 	misc_flags = CRAFTING_TEST_EXCLUDE

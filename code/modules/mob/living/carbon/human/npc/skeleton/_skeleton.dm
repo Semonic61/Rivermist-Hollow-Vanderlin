@@ -5,7 +5,7 @@
 	race = /datum/species/human/northern
 	gender = MALE
 	bodyparts = list(/obj/item/bodypart/chest, /obj/item/bodypart/head, /obj/item/bodypart/l_arm,
-					/obj/item/bodypart/r_arm, /obj/item/bodypart/r_leg, /obj/item/bodypart/l_leg)
+					/obj/item/bodypart/r_arm, /obj/item/bodypart/r_leg, /obj/item/bodypart/l_leg, /obj/item/bodypart/mouth)
 	faction = list(FACTION_UNDEAD)
 	var/skel_outfit = /datum/outfit/npc/skeleton
 	ambushable = FALSE
@@ -41,10 +41,10 @@
 	name = "skeleton"
 	real_name = "skeleton"
 	mob_biotypes = MOB_UNDEAD
-	faction = list(FACTION_UNDEAD)
+	set_faction(list(FACTION_UNDEAD))
 	var/turf/turf = get_turf(src)
 	if(SSterrain_generation.get_island_at_location(turf))
-		faction |= "islander"
+		add_faction("islander")
 	if(length(quirks))
 		clear_quirks()
 	if(dna?.species)
@@ -71,6 +71,7 @@
 	ADD_TRAIT(src, TRAIT_TOXIMMUNE, TRAIT_GENERIC)
 	ADD_TRAIT(src, TRAIT_LIMBATTACHMENT, TRAIT_GENERIC)
 	ADD_TRAIT(src, TRAIT_CRITICAL_WEAKNESS, TRAIT_GENERIC)
+	ADD_TRAIT(src, TRAIT_NO_ORGAN_PROCESS, TRAIT_GENERIC)
 	if(skel_outfit)
 		var/datum/outfit/OU = new skel_outfit
 		if(OU)

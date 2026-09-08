@@ -38,25 +38,27 @@
 	///Holds information about any movement loops currently running/waiting to run on the movable. Lazy, will be null if nothing's going on
 	var/datum/movement_packet/move_packet
 	/**
-	  * In case you have multiple types, you automatically use the most useful one.
-	  * IE: Skating on ice, flippers on water, flying over chasm/space, etc.
-	  * I reccomend you use the movetype_handler system and not modify this directly, especially for living mobs.
-	  */
+	* In case you have multiple types, you automatically use the most useful one.
+	* IE: Skating on ice, flippers on water, flying over chasm/space, etc.
+	* I reccomend you use the movetype_handler system and not modify this directly, especially for living mobs.
+	*/
 	var/movement_type = GROUND
 	var/atom/movable/pulling
 	var/atom_flags = NONE
 	var/grab_state = 0
 	var/throwforce = 0
 	var/datum/component/orbiter/orbiting
+	/// The active z-movement operation, used to keep nested movement callbacks from starting a competing move.
+	var/currently_z_moving
 	/// Either [EMISSIVE_BLOCK_NONE], [EMISSIVE_BLOCK_GENERIC], or [EMISSIVE_BLOCK_UNIQUE]
 	var/blocks_emissive = EMISSIVE_BLOCK_NONE
 	///Internal holder for emissive blocker object, do not use directly use blocks_emissive
 	var/atom/movable/emissive_blocker/em_block
 	/**
-	 * an associative lazylist of relevant nested contents by "channel", the list is of the form: list(channel = list(important nested contents of that type))
-	 * each channel has a specific purpose and is meant to replace potentially expensive nested contents iteration
-	 * do NOT add channels to this for little reason as it can add considerable memory usage.
-	 */
+	* an associative lazylist of relevant nested contents by "channel", the list is of the form: list(channel = list(important nested contents of that type))
+	* each channel has a specific purpose and is meant to replace potentially expensive nested contents iteration
+	* do NOT add channels to this for little reason as it can add considerable memory usage.
+	*/
 	var/list/important_recursive_contents
 	///contains every client mob corresponding to every client eye in this container. lazily updated by SSparallax and is sparse:
 	///only the last container of a client eye has this list assuming no movement since SSparallax's last fire
@@ -275,37 +277,118 @@
 
 	return !(movement_type & FLYING) && !throwing
 
-/atom/movable/proc/onZImpact(turf/T, levels)
-	var/atom/highest = T
-	for(var/atom/A as anything in T)
-		if(!A.density)
-			continue
-		if(isobj(A) || ismob(A))
-			if(A.layer > highest.layer)
-				highest = A
-//	INVOKE_ASYNC(src, PROC_REF(SpinAnimation), 5, 2)
-	throw_impact(highest)
+/atom/movable/proc/onZImpact(turf/impacted_turf, levels, impact_flags = NONE)
+	SHOULD_CALL_PARENT(TRUE)
+	if(!(impact_flags & ZIMPACT_NO_MESSAGE))
+		visible_message(
+			span_danger("[src] crashes into [impacted_turf]!"),
+			span_userdanger("You crash into [impacted_turf]!"),
+		)
+	if(!(impact_flags & ZIMPACT_NO_SPIN))
+		INVOKE_ASYNC(src, PROC_REF(do_spin_animation), 0.2 SECONDS, 1)
+	SEND_SIGNAL(src, COMSIG_ATOM_ON_Z_IMPACT, impacted_turf, levels)
 	return TRUE
 
-//For physical constraints to travelling up/down.
-/atom/movable/proc/can_zTravel(turf/destination, direction, override_source)
-	var/turf/T = get_turf(src)
-	if(override_source)
-		T = override_source
-	if(!T)
-		return FALSE
+/**
+ * Move src and the atoms which depend on it to another z-level.
+ *
+ * A supplied target is assumed to have already passed can_z_move(). When target is null,
+ * this proc resolves and validates it before moving anything.
+ */
+/atom/movable/proc/zMove(direction, turf/target, z_move_flags = ZMOVE_FLIGHT_FLAGS)
+	if(!target)
+		target = can_z_move(direction, get_turf(src), z_move_flags = z_move_flags)
+		if(!target)
+			set_currently_z_moving(FALSE, forced = TRUE)
+			return FALSE
+
+	var/list/affected_movables = get_z_move_affected(z_move_flags)
+	var/z_movement_state = currently_z_moving || CURRENTLY_Z_MOVING_GENERIC
+	for(var/atom/movable/state_movable as anything in affected_movables)
+		state_movable.currently_z_moving = z_movement_state
+	for(var/atom/movable/moving_movable as anything in affected_movables)
+		moving_movable.forceMove(target)
+	for(var/atom/movable/moved_movable as anything in affected_movables)
+		moved_movable.set_currently_z_moving(FALSE, forced = TRUE)
+
+	if(z_move_flags & ZMOVE_CHECK_PULLS)
+		for(var/atom/movable/pull_checked_movable as anything in affected_movables)
+			if((z_move_flags & ZMOVE_CHECK_PULLEDBY) && pull_checked_movable.pulledby && (pull_checked_movable.z != pull_checked_movable.pulledby.z || get_dist(pull_checked_movable, pull_checked_movable.pulledby) > 1))
+				pull_checked_movable.pulledby.stop_pulling()
+			if(z_move_flags & ZMOVE_CHECK_PULLING)
+				pull_checked_movable.check_pulling(only_pulling = TRUE)
+	return TRUE
+
+/// Return src and every buckled or requested pulled movable which must share its z-move.
+/atom/movable/proc/get_z_move_affected(z_move_flags)
+	var/list/affected_movables = list(src)
+	var/next_index = 1
+	while(next_index <= length(affected_movables))
+		var/atom/movable/current_movable = affected_movables[next_index]
+		next_index++
+
+		if(current_movable.buckled_mobs)
+			affected_movables |= current_movable.buckled_mobs
+		if((z_move_flags & ZMOVE_INCLUDE_PULLED) && current_movable.pulling)
+			affected_movables |= current_movable.pulling
+	return affected_movables
+
+/**
+ * Validate vertical movement and return its destination turf on success.
+ *
+ * The old zPassIn/zPassOut argument contract is intentionally retained until the turf
+ * consumers are migrated. This keeps existing water, open-space, and trap overrides live.
+ */
+/atom/movable/proc/can_z_move(direction, turf/start, turf/destination, z_move_flags = ZMOVE_FLIGHT_FLAGS, mob/living/rider)
+	SHOULD_CALL_PARENT(TRUE)
+
+	if(!start)
+		start = get_turf(src)
+		if(!start)
+			return FALSE
 	if(!direction)
 		if(!destination)
 			return FALSE
-		direction = get_dir(T, destination)
+		direction = get_dir_multiz(start, destination)
 	if(direction != UP && direction != DOWN)
 		return FALSE
 	if(!destination)
-		destination = get_step_multiz(T, direction)
+		destination = get_step_multiz(start, direction)
 		if(!destination)
+			if(z_move_flags & ZMOVE_FEEDBACK)
+				to_chat(rider || src, span_warning("There's nowhere to go in that direction!"))
 			return FALSE
-	if(T.zPassOut(src, direction, destination) && destination.zPassIn(src, direction, T))
+
+	if(HAS_TRAIT(src, TRAIT_I_AM_INVISIBLE_ON_A_BOAT))
+		return FALSE
+	if(SEND_SIGNAL(src, COMSIG_CAN_Z_MOVE, start, destination) & COMPONENT_CANT_Z_MOVE)
+		return FALSE
+	if((z_move_flags & ZMOVE_FALL_CHECKS) && !can_zFall(start, 1, destination, direction))
+		return FALSE
+	if((z_move_flags & ZMOVE_WATER_CHECKS) && !istype(destination, /turf/open/water))
+		return FALSE
+	if((z_move_flags & ZMOVE_CAN_FLY_CHECKS) && !(movement_type & FLYING))
+		if(z_move_flags & ZMOVE_FEEDBACK)
+			to_chat(rider || src, span_warning("I'm incapable of flight."))
+		return FALSE
+	if(!(z_move_flags & ZMOVE_IGNORE_OBSTACLES) && !(start.zPassOut(src, direction, destination) && destination.zPassIn(src, direction, start)))
+		if(z_move_flags & ZMOVE_FEEDBACK)
+			to_chat(rider || src, span_warning("I can't move there!"))
+		return FALSE
+	if(!(z_move_flags & ZMOVE_ALLOW_ANCHORED) && anchored)
+		if(z_move_flags & ZMOVE_FEEDBACK)
+			to_chat(rider || src, span_warning("I can't move there!"))
+		return FALSE
+	return destination
+
+/// Raise the active z-movement state by priority, or replace it when forced.
+/atom/movable/proc/set_currently_z_moving(new_z_moving_value, forced = FALSE)
+	if(forced)
+		currently_z_moving = new_z_moving_value
 		return TRUE
+	var/old_z_moving_value = currently_z_moving
+	currently_z_moving = max(currently_z_moving, new_z_moving_value)
+	return currently_z_moving > old_z_moving_value
 
 /atom/movable/vv_edit_var(var_name, var_value)
 	var/static/list/banned_edits = list("step_x" = TRUE, "step_y" = TRUE, "step_size" = TRUE, "bounds" = TRUE)
@@ -420,9 +503,6 @@
 	var/turf/post_turf = get_turf(pulling)
 	if(pre_turf.snow && !post_turf.snow)
 		SEND_SIGNAL(pre_turf.snow, COMSIG_MOB_OVERLAY_FORCE_REMOVE, pulling)
-		if(ismob(src))
-			var/mob/source = src
-			source.update_vision_cone()
 	return TRUE
 
 /atom/movable/proc/after_being_moved_by_pull(atom/movable/puller)
@@ -435,10 +515,10 @@
 	var/mob/living/L = A
 	set_pull_offsets(L, grab_state)
 
-/atom/movable/proc/check_pulling()
+/atom/movable/proc/check_pulling(only_pulling = FALSE, z_allowed = FALSE)
 	if(pulling)
 		var/atom/movable/pullee = pulling
-		if(pullee && get_dist(src, pullee) > 1)
+		if(pullee && (get_dist(src, pullee) > 1 || (z != pullee.z && !z_allowed)))
 			stop_pulling()
 			return
 		if(!isturf(loc))
@@ -451,7 +531,7 @@
 		if(pulling.anchored || pulling.move_resist > move_force)
 			stop_pulling()
 			return
-	if(pulledby && moving_diagonally != FIRST_DIAG_STEP && get_dist(src, pulledby) > 1)		//separated from our puller and not in the middle of a diagonal move.
+	if(!only_pulling && pulledby && moving_diagonally != FIRST_DIAG_STEP && (get_dist(src, pulledby) > 1 || (z != pulledby.z && !z_allowed)))		//separated from our puller and not in the middle of a diagonal move.
 		pulledby.stop_pulling()
 
 /atom/movable/proc/set_glide_size(target = 0)
@@ -463,7 +543,7 @@
 // Here's where we rewrite how byond handles movement except slightly different
 // To be removed on step_ conversion
 // All this work to prevent a second bump
-/atom/movable/Move(atom/newloc, direct=0, glide_size_override = 0, update_dir = TRUE)
+/atom/movable/proc/CardinalMove(atom/newloc, direct = 0, glide_size_override = 0, update_dir = TRUE)
 	. = FALSE
 	if(!newloc || newloc == loc)
 		return
@@ -529,7 +609,7 @@
 	if(loc != newloc)
 		if (!(direct & (direct - 1))) //Cardinal move
 			lastcardinal = direct
-			. = ..()
+			. = CardinalMove(newloc, direct, glide_size_override, update_dir)
 		else //Diagonal move, split it into cardinal moves
 			if(HAS_TRAIT(src, TRAIT_BLOCKED_DIAGONAL))
 				if (direct & NORTH)
@@ -643,6 +723,7 @@
 
 	if(!loc || (loc == oldloc && oldloc != newloc))
 		last_move = 0
+		set_currently_z_moving(FALSE, forced = TRUE)
 		return
 
 	if(.)
@@ -667,7 +748,7 @@
 
 	//glide_size strangely enough can change mid movement animation and update correctly while the animation is playing
 	//This means that if you don't override it late like this, it will just be set back by the movement update that's called when you move turfs.
-	if(glide_size_override)
+	if(glide_size_override && glide_size != glide_size_override)
 		set_glide_size(glide_size_override)
 
 	last_move = direct
@@ -675,7 +756,16 @@
 	if(!(atom_flags & NO_DIR_CHANGE_ON_MOVE) && !throwing && update_dir)
 		setDir(direction_to_move)
 	if(. && has_buckled_mobs() && !handle_buckled_mob_movement(loc,direct, glide_size_override)) //movement failed due to buckled mob(s)
+		set_currently_z_moving(FALSE, forced = TRUE)
 		return FALSE
+	if(. && pulledby && moving_diagonally != FIRST_DIAG_STEP)
+		pulledby.check_pulling(only_pulling = TRUE, z_allowed = TRUE)
+	if(currently_z_moving)
+		if(loc == newloc)
+			var/turf/pitfall = get_turf(src)
+			pitfall.zFall(src, falling_from_move = TRUE)
+		else
+			set_currently_z_moving(FALSE, forced = TRUE)
 	return TRUE
 
 //Called after a successful Move(). By this point, we've already moved
@@ -835,7 +925,7 @@
 	var/atom/oldloc = loc
 
 	if(destination)
-		if(pulledby)
+		if(pulledby && !currently_z_moving)
 			pulledby.stop_pulling()
 
 		var/same_loc = oldloc == destination
@@ -923,16 +1013,16 @@
 		pulledby.stop_pulling()
 
 	//They are moving! Wouldn't it be cool if we calculated their momentum and added it to the throw?
-	if (thrower && thrower.last_move && thrower.client && thrower.client.move_delay >= world.time + world.tick_lag*2)
+	if (ismob(thrower) && !QDELETED(thrower) && thrower.last_move && thrower.client && thrower.client.move_delay >= world.time + world.tick_lag*2)
 		var/user_momentum = thrower.cached_multiplicative_slowdown
-		if (!user_momentum) //no movement_delay, this means they move once per byond tick, lets calculate from that instead.
+		if(user_momentum <= 0) // Zero or negative slowdown still cannot move faster than one step per tick.
 			user_momentum = world.tick_lag
 
 		user_momentum = 1 / user_momentum // convert from ds to the tiles per ds that throw_at uses.
 
-		if (get_dir(thrower, target) & last_move)
+		if (get_dir(thrower, target) & thrower.last_move)
 			user_momentum = user_momentum //basically a noop, but needed
-		else if (get_dir(target, thrower) & last_move)
+		else if (get_dir(target, thrower) & thrower.last_move)
 			user_momentum = -user_momentum //we are moving away from the target, lets slowdown the throw accordingly
 		else
 			user_momentum = 0
@@ -951,9 +1041,11 @@
 	var/target_zone
 	if(QDELETED(thrower))
 		thrower = null //Let's not pass a qdeleting reference if any.
-	else
+	else if(ismob(thrower))
 		target_zone = thrower.zone_selected
 
+	// Replacing a throw must also release its signals and processing entry.
+	QDEL_NULL(throwing)
 	var/datum/thrownthing/TT = new(src, target, get_dir(src, target), range, speed, thrower, diagonals_first, force, gentle, callback, target_zone)
 
 	var/dist_x = abs(target.x - src.x)
@@ -992,6 +1084,8 @@
 		SpinAnimation(5, 1)
 
 	SEND_SIGNAL(src, COMSIG_MOVABLE_POST_THROW, TT, spin)
+	if(QDELETED(src) || QDELETED(TT) || throwing != TT)
+		return
 	SSthrowing.processing[src] = TT
 	if (SSthrowing.state == SS_PAUSED && length(SSthrowing.currentrun))
 		SSthrowing.currentrun[src] = TT
@@ -1065,7 +1159,7 @@
  * @param {datum} used_intent - Intent used to determine animation_type of swing animation
  * @param {bool} atom_bounce - Whether the src bounces when doing an attack animation
  */
-/atom/movable/proc/do_attack_animation(atom/attacked_atom, visual_effect_icon, obj/item/used_item, no_effect, item_animation_override = null, datum/intent/used_intent, atom_bounce)
+/atom/movable/proc/do_attack_animation(atom/attacked_atom, visual_effect_icon, obj/item/used_item, no_effect, item_animation_override = null, datum/intent/used_intent, atom_bounce, fov_effect = TRUE)
 	if(!no_effect && (visual_effect_icon || used_item))
 		var/animation_type = item_animation_override || used_intent?.get_attack_animation_type()
 		do_item_attack_animation(attacked_atom, visual_effect_icon, used_item, animation_type = animation_type)
@@ -1090,6 +1184,9 @@
 	else if(direction & WEST)
 		pixel_x_diff = -ATTACK_ANIMATION_PIXEL_DIFF
 		turn_dir = -1
+
+	if(fov_effect)
+		play_fov_effect(attacked_atom, 5, "attack")
 
 	var/matrix/initial_transform = matrix(transform)
 	var/matrix/rotated_transform = transform.Turn(15 * turn_dir)
@@ -1497,3 +1594,11 @@
 
 #undef ATTACK_ANIMATION_PIXEL_DIFF
 #undef ATTACK_ANIMATION_TIME
+
+/atom/movable/proc/set_anchored(new_value)
+	SHOULD_CALL_PARENT(TRUE)
+	if(anchored == new_value)
+		return
+	. = anchored
+	anchored = new_value
+	SEND_SIGNAL(src, COMSIG_MOVABLE_SET_ANCHORED, new_value)

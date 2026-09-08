@@ -1,10 +1,13 @@
 /mob/living
 	see_invisible = SEE_INVISIBLE_LIVING
-	sight = 0
+	sight = SEE_SELF
 	see_in_dark = 8
 	hud_possible = list(ANTAG_HUD)
 
 	var/resize = 1 //Badminnery resize
+	/// Player-selected presentation for the mob's assigned job.
+	var/job_title_override
+	var/job_honorary_override
 	var/lastattacker = null
 	var/lastattackerckey = null
 	var/datum/weakref/lastattacker_weakref = null
@@ -69,6 +72,26 @@
 	var/lying_prev = 0
 
 	var/last_special = 0 //Used by the resist verb, likely used to prevent players from bypassing next_move by logging in/out.
+	/// How much threat aggressive AI assigns to whoever grabs it.
+	var/hostile_grab_retarget_threat = 30
+	/// Chance for aggressive AI to try breaking out of a grab each scheduled check.
+	var/hostile_grab_resist_chance = 25
+	/// Minimum delay between aggressive AI grab-resist checks.
+	var/hostile_grab_resist_min_delay = 2 SECONDS
+	/// Maximum delay between aggressive AI grab-resist checks.
+	var/hostile_grab_resist_max_delay = 5 SECONDS
+	/// Timer id for the current aggressive AI grab-resist check.
+	var/hostile_grab_resist_timer
+	/// How long a horny-valid grabber can hold aggressive AI before becoming a hostile target.
+	var/hostile_grab_horny_hostility_delay = 2 MINUTES
+	/// Timer id for the current horny-valid grab hold hostility check.
+	var/hostile_grab_horny_hostility_timer
+	/// When TRUE on a clientless mob, the horny-defeat mechanic can knock it out (mob-KO path, not the
+	/// player defeat flow). Set lazily when a clientless mob gains an arousal component. Players ignore it.
+	var/mob_horny_defeat_enabled = FALSE
+	/// Optional exact per-type climax threshold for creature content. Zero uses the deterministic
+	/// immutable base-stat fallback; player bodies normally leave this unset.
+	var/horny_defeat_threshold_override = 0
 	var/timeofdeath = 0
 
 	//Allows mobs to move through dense areas without restriction. For instance, in space or out of holder objects.
@@ -140,18 +163,30 @@
 
 	var/parrying_penalty = 0
 	var/parrying_penalty_timer = null
+	/// Whether a client is holding the key that temporarily disables passive parrying.
+	var/parry_suppressed = FALSE
 	var/dodging_penalty = 0
 	var/dodging_penalty_timer = null
+	/// Charges available for player-controlled dodges.
+	var/dodge_charges = DODGE_CHARGE_MAX
+	/// Stoppable timer restoring the next player dodge charge.
+	var/dodge_charge_timer = null
+	/// The current player dodge can avoid one direct hit until this world time.
+	var/dodge_grace_until = 0
+	/// Whether the current player dodge grace still has its one-hit protection.
+	var/dodge_grace_available = FALSE
 
 	//Speech
 	var/stuttering = 0
 	var/slurring = 0
+	var/aroused_slurring = 0
 	var/cultslurring = 0
 	var/derpspeech = 0
 
 	var/list/implants = null
 
-	var/datum/riding/riding_datum
+	/// May this mob be buckled and unbuckled without forcing it?
+	var/can_buckle_to = TRUE
 
 	var/datum/language/selected_default_language
 
@@ -167,10 +202,33 @@
 	var/list/ownedSoullinks //soullinks we are the owner of
 	var/list/sharedSoullinks //soullinks we are a/the sharer of
 
+	/// List of fatigue modifiers applying to this mob
+	var/list/fatigue_modification //Lazy list, see fatigue_modifier.dm
+	/// List of fatigue modifiers ignored by this mob. List -> List (id) -> List (sources)
+	var/list/fatigue_mod_immunities //Lazy list, see fatigue_modifier.dm
+
+	/// List of stamina modifiers applying to this mob
+	var/list/stamina_modification //Lazy list, see stamina_modifier.dm
+	/// List of stamina modifiers ignored by this mob. List -> List (id) -> List (sources)
+	var/list/stamina_mod_immunities //Lazy list, see stamina_modifier.dm
+
+	// ~WEIGHT SYSTEM
+	/// Maximum weight we can carry, this point and beyond means maximum encumbrance
+	var/maximum_carry_weight = 72
+	/// Weight we are currently carrying
+	var/carry_weight = 0
+	/// State of encumbrance we are in, cheaper to store this than keeping calling update_carry_weight()
+	var/encumbrance = ENCUMBRANCE_NONE
+
 	var/max_energy = 1000
-	var/maximum_stamina = 100
 	var/energy = 1000
+	var/base_max_energy = 1000
+
+	var/maximum_stamina = 100
 	var/stamina = 0
+	var/base_max_stamina = 100
+	/// Session auto-clench state. Null means follow the saved ERP preference.
+	var/auto_clench_override = null
 
 	var/last_fatigued = 0
 	var/last_ps = 0
@@ -188,7 +246,6 @@
 
 	var/defprob = 50 //base chance to defend against this mob's attacks, for simple mob combat
 	var/defdrain = 5
-	var/encumbrance = 0
 
 	/// If the mob's eyes are closed, blinded
 	var/eyesclosed = FALSE
@@ -226,10 +283,11 @@
 	///are we skinned?
 	var/skinned = FALSE
 
-	///our reflection child
+	///half of the reflection gate, flipped directly by things like vampirism. See casts_reflection().
 	var/has_reflection = TRUE
 
-	var/mutable_appearance/reflective_icon
+	///the stencil backend's flipped copy of us, null whenever we cast no reflection
+	var/obj/effect/overlay/reflection/reflective_icon
 
 	var/list/mob_offsets = list()
 
@@ -260,16 +318,29 @@
 
 	var/datum/blood_type/animal_type
 
+	/// Pain (pain not taking other damage types into account) damage, generally a side effect of other types of damage
+	var/painloss = 0
+	/// Shock (pain taking into account other types of damage) damage
+	var/traumatic_shock = 0
+	/// Shock stage, as in how much our crit has progressed
+	var/shock_stage = 0
+	/// Last pain related message we have received - Used to prevent spam
+	var/last_pain_message = ""
+	/// Next time we are able to trigger custom_pain()
+	var/next_pain_time = 0
+	/// Next time we are able to send a custom_pain() chat message
+	var/next_pain_message_time = 0
+
 	/// cooldown for the next time this person can offer
 	COOLDOWN_DECLARE(offer_cooldown)
-	/// cooldown between vertical swim actions
+	/// Prevents concurrent vertical swim attempts during the swim action.
 	COOLDOWN_DECLARE(cd_zswim)
 
 	var/list/roundstart_quirks
 
 	//all mobs get organs
 	var/list/internal_organs		= list()	//List of /obj/item/organ in the mob. They don't go in the contents for some reason I don't want to know.
-	var/list/internal_organs_slot= list() //Same as above, but stores "slot ID" - "organ" pairs for easy access.
+	var/list/internal_organs_slot= list() //Same as above, but stores "slot ID" - list of organs for easy access.
 
 	//Handcuffs and Legcuffs
 	var/obj/item/handcuffed = null //Whether or not the mob is handcuffed

@@ -3,6 +3,7 @@
 #define TRAIT_GENERIC "generic"
 #define UNCONSCIOUS_TRAIT "unconscious"
 #define EYE_DAMAGE "eye_damage"
+#define NO_EARS "no_ears"
 #define OBESITY_TRAIT "obesity"
 /// Granted by spells
 #define MAGIC_TRAIT "magic"
@@ -11,6 +12,8 @@
 #define SPECIES_TRAIT "species"
 #define ORGAN_TRAIT "organ"
 #define CRIT_TRAIT "crit"
+#define ASYSTOLE_TRAIT "no_pulse"
+#define GERM_LEVEL_TRAIT "germ_level"
 /// Set on roundstart, not removed unless via admins
 #define ROUNDSTART_TRAIT "roundstart"
 #define JOB_TRAIT "job"

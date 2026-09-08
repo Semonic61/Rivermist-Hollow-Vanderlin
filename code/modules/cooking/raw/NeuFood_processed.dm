@@ -7,52 +7,69 @@
 
 // -------------- FAT -----------------
 /obj/item/reagent_containers/food/snacks/fat
+	item_weight = 230 GRAMS
 	name = "fat"
-	desc = ""
+	desc = "A slab of raw animal fat, greasy to the touch."
 	icon_state = "fat"
 	eat_effect = /datum/status_effect/debuff/uncookedfood
-	possible_item_intents = list(/datum/intent/food, /datum/intent/splash, /datum/intent/use)
+	possible_item_intents = list(/datum/intent/use)
 	nutrition = FAT_NUTRITION
 
-/obj/item/reagent_containers/food/snacks/fat/attack(mob/living/M, mob/user, list/modifiers)
-	if(user.used_intent.type == /datum/intent/food)
+/obj/item/reagent_containers/food/snacks/fat/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isliving(interacting_with))
+		return NONE
+
+	if(interacting_with != user)
 		return ..()
 
-	if(!isliving(M) || (M != user))
+	if(user.zone_selected == BODY_ZONE_PRECISE_MOUTH)
 		return ..()
 
-	user.visible_message("[user] starts to oil up [M]", "You start to oil up [M]")
+	var/mob/living/M = interacting_with
+
+	user.visible_message(
+		span_warning("[user] starts to oil [user.p_them()]self up."),
+		span_warning("I start oiling myself up."),
+	)
+
 	if(!do_after(user, 5 SECONDS, M))
-		return
+		return ITEM_INTERACT_ANY_BLOCKER
+
 	M.apply_status_effect(/datum/status_effect/buff/oiled)
 
-/obj/item/reagent_containers/food/snacks/fat/attackby(obj/item/I, mob/living/user, list/modifiers)
-	var/found_table = locate(/obj/structure/table) in (loc)
-	var/obj/item/reagent_containers/glass/R = I
-	if(user.mind)
-		long_cooktime = (90 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*15))
-	if(isturf(loc)&& (found_table))
-		if(!istype(R))
-			return ..()
-		if(!R.reagents.has_reagent(/datum/reagent/consumable/sugar, 30))
-			to_chat(user, span_notice("Needs more sugar to work it."))
-			return TRUE
-		if(GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking) <= 3) // cooks with less than 3 skill don´t know this recipe
-			to_chat(user, span_warning("Gelatine is much too strange for you."))
-			return
-		to_chat(user, span_notice("Congealing the sugar..."))
-		playsound(user, 'sound/foley/splishy.ogg', 100, TRUE, -1)
-		if(do_after(user, long_cooktime, src))
-			new /obj/item/reagent_containers/food/snacks/jellycake_base(loc)
-			user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
-			qdel(src)
-			R.reagents.remove_reagent(/datum/reagent/consumable/sugar, 30)
-			user.nobles_seen_servant_work()
-	else
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/reagent_containers/food/snacks/fat/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/reagent_containers/glass))
+		return ..()
+
+	if(!isturf(loc) || !(locate(/obj/structure/table) in loc))
 		to_chat(user, span_warning("You need to put [src] on a table to work on it."))
+		return ITEM_INTERACT_BLOCKING
+
+	if(!tool.reagents.has_reagent(/datum/reagent/consumable/sugar, 30))
+		to_chat(user, span_notice("Needs more sugar to work it."))
+		return ITEM_INTERACT_BLOCKING
+
+	if(GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking) <= 3) // cooks with less than 3 skill don´t know this recipe
+		to_chat(user, span_warning("Gelatine is much too strange for you."))
+		return ITEM_INTERACT_BLOCKING
+
+	long_cooktime = (90 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 15))
+	to_chat(user, span_notice("Congealing the sugar..."))
+	playsound(user, 'sound/foley/splishy.ogg', 100, TRUE, -1)
+	if(do_after(user, long_cooktime, src))
+		new /obj/item/reagent_containers/food/snacks/jellycake_base(loc)
+		user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/confectionery, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+		qdel(src)
+		tool.reagents.remove_reagent(/datum/reagent/consumable/sugar, 30)
+		user.nobles_seen_servant_work()
+
+	return ITEM_INTERACT_SUCCESS
 
 // TALLOW is used as an intermediate crafting ingredient for other recipes.
 /obj/item/reagent_containers/food/snacks/tallow
+	item_weight = 270 GRAMS
 	name = "tallow"
 	desc = "Fatty tissue is harvested from slain creachurs and rendered of its membraneous sinew to produce a hard shelf-stable \
 	grease."
@@ -87,7 +104,9 @@
 
 // -------------- SPIDER HONEY -----------------
 /obj/item/reagent_containers/food/snacks/spiderhoney
+	item_weight = 30 GRAMS
 	name = "spider honey"
+	desc = "A sticky lump of honey harvested from a giant spider's web. Sweet, if you can get past where it came from."
 	icon_state = "spiderhoney"
 	bitesize = 3
 	nutrition = HONEY_NUTRITION
@@ -98,6 +117,7 @@
 
 // -------------- TIEFLING SUGAR -----------------
 /obj/item/reagent_containers/food/snacks/tiefsugar
+	item_weight = 150 GRAMS
 	name = "Tiefling Sugar"
 	desc ="Originating from underdark, Tiefling blood that has been expertly dried and mixed into a sugar base, sweetens when boiled."
 	icon = 'icons/roguetown/items/produce.dmi'
@@ -110,6 +130,7 @@
 
 // -------------- CHOCOLATE -----------------
 /obj/item/reagent_containers/food/snacks/chocolate
+	item_weight = 225 GRAMS
 	name = "chocolate bar"
 	desc = "Unbelievably fancy chocolate, imported all the way from distant Darkhold"
 	icon_state = "chocolate"
@@ -124,6 +145,7 @@
 
 // -------------- SALUMOI (dwarven smoked sausage) -----------------
 /obj/item/reagent_containers/food/snacks/meat/salami
+	item_weight = 325 GRAMS
 	name = "salumoi"
 	desc = "Traveling food invented by dwarves. Said to last for ten yils before spoiling"
 	icon_state = "salumoi5"
@@ -160,6 +182,7 @@
 				changefood(slice_path, eater)
 
 /obj/item/reagent_containers/food/snacks/meat/salami/slice
+	item_weight = 55 GRAMS
 	eat_effect = null
 	slices_num = 0
 	name = "salumoi"
@@ -172,6 +195,7 @@
 
 // -------------- COPPIETTE (dried meat) -----------------
 /obj/item/reagent_containers/food/snacks/cooked/coppiette
+	item_weight = 175 GRAMS
 	name = "coppiette"
 	desc = "Dried meat sticks."
 	icon_state = "coppiette"
@@ -187,6 +211,7 @@
 
 // -------------- SALTFISH -----------------
 /obj/item/reagent_containers/food/snacks/saltfish
+	item_weight = 175 GRAMS
 	name = "saltfish"
 	desc = "Dried fish."
 	icon = 'icons/roguetown/misc/fish.dmi'
@@ -209,6 +234,7 @@
 // -------------- SALO (salted fat) -----------------
 /obj/item/reagent_containers/food/snacks/fat/salo
 	name = "salo"
+	desc = "A slab of cured pork fat, salted and firm. Cut off a piece as you need it."
 	icon_state = "salo4"
 	bitesize = 4
 	nutrition = FAT_NUTRITION*2*DRIED_MOD
@@ -238,7 +264,9 @@
 			changefood(slice_path, eater)
 
 /obj/item/reagent_containers/food/snacks/fat/salo/slice
+	item_weight = 30 GRAMS
 	name = "salo"
+	desc = "A thin slice of cured, salted pork fat."
 	icon_state = "saloslice"
 	bitesize = 2
 	slices_num = FALSE
@@ -252,7 +280,9 @@
 
 // -------------- RAISINS -----------------
 /obj/item/reagent_containers/food/snacks/raisins
+	item_weight = 5 GRAMS
 	name = "raisins"
+	desc = "A handful of sun-dried grapes, wrinkled and sweet."
 	icon = 'icons/roguetown/items/produce.dmi'
 	icon_state = "raisins"
 	base_icon_state = "raisins"
@@ -279,7 +309,9 @@
 // -------------- STRAWBERRY -----------------
 
 /obj/item/reagent_containers/food/snacks/strawberry_dried
+	item_weight = 6 GRAMS
 	name = "dried strawberry"
+	desc = "A dried strawberry, shrunken and chewy but still sweet."
 	icon_state = "driedstrawberry"
 	dropshrink = 0.8
 	bitesize = 3
@@ -292,7 +324,9 @@
 // -------------- TANGERINE -----------------
 
 /obj/item/reagent_containers/food/snacks/tangerine_dried
+	item_weight = 44 GRAMS
 	name = "dried tangerine"
+	desc = "A dried tangerine, its peel leathery and its flesh chewy."
 	icon_state = "driedtangerine"
 	dropshrink = 0.8
 	bitesize = 3
@@ -305,7 +339,9 @@
 // -------------- PLUM -----------------
 
 /obj/item/reagent_containers/food/snacks/plum_dried
+	item_weight = 33 GRAMS
 	name = "dried plum"
+	desc = "A dried plum, wrinkled and sticky-sweet."
 	icon_state = "driedplum"
 	dropshrink = 0.8
 	bitesize = 3
@@ -318,7 +354,9 @@
 // -------------- APPLE -----------------
 
 /obj/item/reagent_containers/food/snacks/apple_dried
+	item_weight = 91 GRAMS
 	name = "dried apple"
+	desc = "A ring of dried apple, leathery and concentrated in sweetness."
 	icon_state = "driedapple"
 	dropshrink = 0.8
 	bitesize = 3
@@ -331,7 +369,9 @@
 // -------------- PEAR -----------------
 
 /obj/item/reagent_containers/food/snacks/pear_dried
+	item_weight = 86 GRAMS
 	name = "dried pear"
+	desc = "A dried pear, leathery and concentrated in sweetness."
 	icon_state = "driedpear"
 	dropshrink = 0.8
 	bitesize = 3
@@ -344,6 +384,7 @@
 /***************** Mushrooms *****************/
 
 /obj/item/reagent_containers/food/snacks/waddle_dried
+	item_weight = 7 GRAMS
 	name = "dried waddle"
 	desc = "A waddle mushroom that has been dried for use in tea. Not pleasant to eat in this state."
 	icon_state = "driedwaddle"
@@ -372,20 +413,18 @@
 	name = "salted milk"
 	taste_description = "salty milk"
 
-
-
 /*-------\
 | Butter |
 \-------*/
 
 /*	............   Churning butter   ................ */
-/obj/item/reagent_containers/glass/bucket/wooden/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(user.mind)
+/obj/item/reagent_containers/glass/bucket/wooden/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, /obj/item/kitchen/spoon))
 		long_cooktime = (200 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*22))
-	if(istype(I, /obj/item/kitchen/spoon))
 		if(!reagents.has_reagent(/datum/reagent/consumable/milk/salted, 15) && !reagents.has_reagent(/datum/reagent/consumable/milk/salted_gote, 15))
-			to_chat(user, span_warning(">Not enough salted milk."))
-			return
+			to_chat(user, span_warning("Not enough salted milk."))
+			return ITEM_INTERACT_BLOCKING
+
 		user.adjust_stamina(40) // forgot stamina is our lovely stamloss proc here
 		user.visible_message("<span class='info'>[user] churns butter...</span>")
 		playsound(user, 'sound/foley/butterchurn.ogg', 100, TRUE, -1)
@@ -396,15 +435,40 @@
 			if(reagents.has_reagent(/datum/reagent/consumable/milk/salted_gote, 15))
 				reagents.remove_reagent(/datum/reagent/consumable/milk/salted_gote, 15)
 			new /obj/item/reagent_containers/food/snacks/butter(drop_location())
-			user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)))
+			user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/cheesemaking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)))
 			user.nobles_seen_servant_work()
-		return
-	..()
+		return ITEM_INTERACT_SUCCESS
+
+	if(istype(tool, /obj/item/natural/cloth) && (user.used_intent.type == INTENT_USE || user.used_intent.type == INTENT_SOAK))
+		long_cooktime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 12))
+		var/milk = null
+		var/cheese = null
+		if(reagents.has_reagent(/datum/reagent/consumable/milk/salted, 5))
+			milk = /datum/reagent/consumable/milk/salted
+			cheese = /obj/item/reagent_containers/food/snacks/cheese
+		if(reagents.has_reagent(/datum/reagent/consumable/milk/salted_gote, 5))
+			milk = /datum/reagent/consumable/milk/salted_gote
+			cheese = /obj/item/reagent_containers/food/snacks/cheese
+		if(milk)
+			if(tool.reagents.total_volume > 0)
+				to_chat(user, span_warning("The [tool.name] is still soaked with something."))
+			else
+				user.visible_message("<span class='info'>[user] strains fresh cheese...</span>")
+				playsound(src, pick('sound/foley/waterwash (1).ogg','sound/foley/waterwash (2).ogg'), 100, FALSE)
+				if(do_after(user, long_cooktime, src))
+					reagents.remove_reagent(milk, 5)
+					new cheese(drop_location())
+					user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/cheesemaking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)))
+				user.nobles_seen_servant_work()
+			return ITEM_INTERACT_SUCCESS
+
+	return ..()
 
 // -------------- BUTTER -----------------
 /obj/item/reagent_containers/food/snacks/butter
+	item_weight = 150 GRAMS
 	name = "stick of butter"
-	desc = ""
+	desc = "A stick of pale yellow butter, softening in the hand."
 	icon_state = "butter6"
 	nutrition = BUTTER_NUTRITION
 	foodtype = DAIRY
@@ -440,8 +504,10 @@
 				changefood(slice_path, eater)
 
 /obj/item/reagent_containers/food/snacks/butterslice
+	item_weight = 25 GRAMS
 	icon_state = "butter_slice"
 	name = "butter"
+	desc = "A pat of butter, cut from a larger stick."
 	foodtype = DAIRY
 	eat_effect = /datum/status_effect/debuff/uncookedfood
 	nutrition = BUTTER_NUTRITION * SLICED_MOD
@@ -452,6 +518,7 @@
 /*	............   Pestran Stick   ................ */
 
 /obj/item/reagent_containers/food/snacks/pestranstick
+	item_weight = 240 GRAMS
 	name = "pestran stick"
 	desc = "An unappetizing snack adored by devout Pestrans, somehow doesn't taste half bad."
 	icon_state = "pestranstick"
@@ -462,141 +529,11 @@
 	bitesize = 3
 	faretype = FARE_POOR
 
-/*-------\
-| Cheese |
-\-------*/
-
-/*	............   Making fresh cheese   ................ */
-/obj/item/reagent_containers/glass/bucket/wooden/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(user.mind)
-		long_cooktime = (100 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*12))
-	if(istype(I, /obj/item/natural/cloth) && (user.used_intent.type == INTENT_USE || user.used_intent.type == INTENT_SOAK))
-		var/milk = null
-		var/cheese = null
-		if(reagents.has_reagent(/datum/reagent/consumable/milk/salted, 5))
-			milk = /datum/reagent/consumable/milk/salted
-			cheese = /obj/item/reagent_containers/food/snacks/cheese
-		if(reagents.has_reagent(/datum/reagent/consumable/milk/salted_gote, 5))
-			milk = /datum/reagent/consumable/milk/salted_gote
-			cheese = /obj/item/reagent_containers/food/snacks/cheese
-		if(milk)
-			if(I.reagents.total_volume > 0)
-				to_chat(user, span_warning("The [I.name] is still soaked with something."))
-			else
-				user.visible_message("<span class='info'>[user] strains fresh cheese...</span>")
-				playsound(src, pick('sound/foley/waterwash (1).ogg','sound/foley/waterwash (2).ogg'), 100, FALSE)
-				if(do_after(user, long_cooktime, src))
-					reagents.remove_reagent(milk, 5)
-					new cheese(drop_location())
-					user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)))
-				user.nobles_seen_servant_work()
-			return
-	..()
-
-/*	............   Making cheese wheel   ................ */
-/obj/item/natural/cloth/attackby(obj/item/I, mob/living/user, list/modifiers)
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(istype(I, /obj/item/reagent_containers/food/snacks/cheese))
-		if(isturf(loc)&& (found_table))
-			user.visible_message("<span class='info'>[user] starts packing the cloth with fresh cheese...</span>")
-			playsound(user, 'sound/foley/dropsound/food_drop.ogg', 30, TRUE, -1)
-			if(do_after(user,3 SECONDS, src))
-				new /obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start(loc)
-				user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
-				qdel(I)
-				qdel(src)
-				user.nobles_seen_servant_work()
-			return
-		else
-			to_chat(user, span_warning("You need to put [src] on a table to work on it."))
-	..()
-
-/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start
-	name = "unfinished cheese wheel"
-	icon_state = "cheesewheel_1"
-	w_class = WEIGHT_CLASS_BULKY
-	do_random_pixel_offset = FALSE
-	grid_height = 32
-	grid_width = 96
-
-/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start/attackby(obj/item/I, mob/living/user, list/modifiers)
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(user.mind)
-		short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
-	if(istype(I, /obj/item/reagent_containers/food/snacks/cheese))
-		if(isturf(loc)&& (found_table))
-			playsound(user, 'sound/foley/dropsound/food_drop.ogg', 30, TRUE, -1)
-			if(do_after(user, short_cooktime, src))
-				new /obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_two(loc)
-				qdel(I)
-				qdel(src)
-		else
-			to_chat(user, span_warning("You need to put [src] on a table to work on it."))
-	else
-		return ..()
-
-/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_two
-	name = "unfinished cheese wheel"
-	icon_state = "cheesewheel_2"
-	w_class = WEIGHT_CLASS_BULKY
-	do_random_pixel_offset = FALSE
-	grid_height = 32
-	grid_width = 96
-
-/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_two/attackby(obj/item/I, mob/user, list/modifiers)
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(user.mind)
-		short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
-	if(istype(I, /obj/item/reagent_containers/food/snacks/cheese))
-		if(isturf(loc)&& (found_table))
-			playsound(user, 'sound/foley/dropsound/food_drop.ogg', 30, TRUE, -1)
-			if(do_after(user, short_cooktime, src))
-				new /obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_three(loc)
-				qdel(I)
-				qdel(src)
-		else
-			to_chat(user, span_warning("You need to put [src] on a table to work on it."))
-	else
-		return ..()
-
-/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_three
-	name = "unfinished cheese wheel"
-	icon_state = "cheesewheel_3"
-	w_class = WEIGHT_CLASS_BULKY
-	do_random_pixel_offset = FALSE
-	grid_height = 32
-	grid_width = 96
-
-/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_three/attackby(obj/item/I, mob/living/user, list/modifiers)
-	var/found_table = locate(/obj/structure/table) in (loc)
-	if(user.mind)
-		short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
-	if(istype(I, /obj/item/reagent_containers/food/snacks/cheese) && icon_state != "cheesewheel_end")
-		if(isturf(loc)&& (found_table))
-			playsound(user, 'sound/foley/dropsound/food_drop.ogg', 30, TRUE, -1)
-			user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
-			if(do_after(user, short_cooktime, src))
-				qdel(I)
-				name = "maturing cheese wheel"
-				icon_state = "cheesewheel_end"
-				desc = "Slowly solidifying, best left alone a bit longer."
-				addtimer(CALLBACK(src, PROC_REF(maturing_done)), 5 MINUTES)
-				user.nobles_seen_servant_work()
-		else
-			to_chat(user, span_warning("You need to put [src] on a table to work on it."))
-	else
-		return ..()
-
-/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_three/proc/maturing_done()
-	playsound(src, 'sound/foley/rustle2.ogg', 100, TRUE, -1)
-	new /obj/item/reagent_containers/food/snacks/cheddar(get_turf(src))
-	new /obj/item/natural/cloth(get_turf(src))
-	qdel(src)
-
-
 // -------------- CHEESE -----------------
 /obj/item/reagent_containers/food/snacks/cheese
+	item_weight = 224 GRAMS
 	name = "fresh cheese"
+	desc = "A soft lump of fresh cheese, strained from curdled milk."
 	icon_state = "freshcheese"
 	bitesize = 1
 	nutrition = CHEESE_NUTRITION
@@ -609,11 +546,103 @@
 	slice_path = null
 	faretype = FARE_POOR
 
+/obj/item/reagent_containers/food/snacks/cheese/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!istype(interacting_with, /obj/item/natural/cloth))
+		return ..()
+
+	if(!isturf(interacting_with.loc) || !(locate(/obj/structure/table) in interacting_with.loc))
+		to_chat(user, span_warning("You need to put [interacting_with] on a table to work on it."))
+		return ITEM_INTERACT_BLOCKING
+
+	user.visible_message("<span class='info'>[user] starts packing the cloth with fresh cheese...</span>")
+
+	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 30, TRUE, -1)
+	if(do_after(user, 3 SECONDS, interacting_with))
+		new /obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start(interacting_with.loc)
+		user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/cheesemaking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+		qdel(interacting_with)
+		qdel(src)
+		user.nobles_seen_servant_work()
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start
+	name = "unfinished cheese wheel"
+	desc = "A loose curd pressed into a rough wheel, still soft and unfinished."
+	icon_state = "cheesewheel_1"
+	w_class = WEIGHT_CLASS_BULKY
+	do_random_pixel_offset = FALSE
+	grid_height = 32
+	grid_width = 96
+	item_weight = 2.2 KILOGRAMS
+
+	var/cheese_added = 0
+
+/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/reagent_containers/food/snacks/cheese))
+		return ..()
+
+	short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 8))
+
+	if(!isturf(loc) || !(locate(/obj/structure/table) in (loc)))
+		to_chat(user, span_warning("You need to put [src] on a table to work on it."))
+		return ITEM_INTERACT_BLOCKING
+
+	if(cheese_added >= 3)
+		to_chat(user, span_warning("The cheese is maturing!"))
+		return ITEM_INTERACT_BLOCKING
+
+	playsound(user, 'sound/foley/dropsound/food_drop.ogg', 30, TRUE, -1)
+
+	if(do_after(user, short_cooktime, src))
+		item_weight += 0.2 KILOGRAMS
+		cheese_added++
+		if(cheese_added == 3)
+			addtimer(CALLBACK(src, PROC_REF(maturing_done)), 5 MINUTES)
+		qdel(tool)
+		update_appearance(UPDATE_ICON_STATE | UPDATE_NAME | UPDATE_DESC)
+
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start/proc/maturing_done()
+	if(QDELETED(src))
+		return
+
+	playsound(src, 'sound/foley/rustle2.ogg', 100, TRUE, -1)
+	new /obj/item/reagent_containers/food/snacks/cheddar(get_turf(src))
+	new /obj/item/natural/cloth(get_turf(src))
+	qdel(src)
+
+/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start/update_icon_state()
+	. = ..()
+
+	if(cheese_added == 3)
+		icon_state = "cheesewheel_end"
+	else if(cheese_added)
+		icon_state = "cheesewheel_[cheese_added + 1]"
+
+/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start/update_name(updates)
+	. = ..()
+	if(cheese_added == 3)
+		name = "maturing cheese wheel"
+
+/obj/item/reagent_containers/food/snacks/foodbase/cheesewheel_start/update_desc(updates)
+	. = ..()
+	switch(cheese_added)
+		if(1)
+			desc = "A cheese wheel packed firmer with another round of curds, still unfinished."
+		if(2)
+			desc = "A dense, nearly-full cheese wheel, needing one more round of curds before it's ready to press."
+		if(3)
+			desc = "Slowly solidifying, best left alone a bit longer."
+
 /obj/item/reagent_containers/food/snacks/cheese/gote
 	name = "fresh gote cheese"
+	desc = "A soft lump of fresh cheese, strained from goat's milk."
 
 /obj/item/reagent_containers/food/snacks/cheddar
+	item_weight = 3 KILOGRAMS
 	name = "wheel of cheese"
+	desc = "A whole wheel of pressed cheese, waxed and firm."
 	icon_state = "cheesewheel"
 	dropshrink = 0.8
 	bitesize = 6
@@ -632,7 +661,9 @@
 	foodtype = DAIRY
 
 /obj/item/reagent_containers/food/snacks/cheddar/aged
+	item_weight = 3 KILOGRAMS
 	name = "wheel of aged cheese"
+	desc = "A wheel of cheese left to age, its rind veined with blue mould."
 	icon_state = "blue_cheese"
 	slice_path = /obj/item/reagent_containers/food/snacks/cheese_wedge/aged
 	become_rot_type = null
@@ -641,7 +672,9 @@
 	faretype = FARE_FINE
 
 /obj/item/reagent_containers/food/snacks/cheese_wedge
+	item_weight = 500 GRAMS
 	name = "wedge of cheese"
+	desc = "A wedge cut from a whole wheel of cheese."
 	icon_state = "cheese_wedge"
 	dropshrink = 0.8
 	nutrition = CHEESE_NUTRITION
@@ -662,6 +695,7 @@
 
 /obj/item/reagent_containers/food/snacks/cheese_wedge/aged
 	name = "wedge of aged cheese"
+	desc = "A wedge of cheese aged until it's veined with blue mould."
 	icon_state = "blue_cheese_wedge"
 	slice_path = /obj/item/reagent_containers/food/snacks/cheddarslice/aged
 	become_rot_type = null
@@ -670,7 +704,9 @@
 	faretype = FARE_FINE
 
 /obj/item/reagent_containers/food/snacks/cheddarslice
+	item_weight = 155 GRAMS
 	name = "slice of cheese"
+	desc = "A thin slice cut from a wedge of cheese."
 	icon_state = "cheese_slice"
 	bitesize = 1
 	dropshrink = 0.8
@@ -692,6 +728,7 @@
 
 /obj/item/reagent_containers/food/snacks/cheddarslice/aged
 	name = "slice of aged cheese"
+	desc = "A thin slice of cheese, veined through with blue mould."
 	icon_state = "blue_cheese_slice"
 	become_rot_type = null
 	rotprocess = null
@@ -704,6 +741,7 @@
 // -------------- Gelatine Base -----------------
 
 /obj/item/reagent_containers/food/snacks/jellycake_base
+	item_weight = 950 GRAMS
 	name = "plain gelatie cake"
 	desc = "A mildly unappetising desert, fittingly considered a delicacy by orcs. Though it is traditionally made plain, chefs often mercifully flavor it with fruit."
 	icon_state = "basegelatinecake"
@@ -722,7 +760,9 @@
 	faretype = FARE_POOR
 
 /obj/item/reagent_containers/food/snacks/jellyslice_base
+	item_weight = 950 GRAMS
 	name = "plain gelatine slice"
+	desc = "A wobbling slice of unflavoured gelatine."
 	icon_state = "basegelatinslice"
 	dropshrink = 0.8
 	slices_num = 0
@@ -739,6 +779,7 @@
 // -------------- Apple Gelatine -----------------
 
 /obj/item/reagent_containers/food/snacks/jellycake_apple
+	item_weight = 1 KILOGRAMS
 	name = "apple gelatine cake"
 	desc = "A mildly unappetising desert, fittingly considered a delicacy by orcs. This one is colored blood(apple)-red."
 	icon_state = "applegelatinecake"
@@ -757,7 +798,9 @@
 	faretype = FARE_FINE
 
 /obj/item/reagent_containers/food/snacks/jellyslice_apple
+	item_weight = 250 GRAMS
 	name = "apple gelatine slice"
+	desc = "A wobbling slice of gelatine, sweetened with apple."
 	icon_state = "applegelatineslice"
 	dropshrink = 0.8
 	slices_num = 0
@@ -772,6 +815,7 @@
 // -------------- Tangeringe Gelatine -----------------
 
 /obj/item/reagent_containers/food/snacks/jellycake_tangerine
+	item_weight = 1 KILOGRAMS
 	name = "tangerine gelatine cake"
 	desc = "A mildly unappetising desert, fittingly considered a delicacy by orcs. This one is bittersweet, like the triumph of battle."
 	icon_state = "tangerinegelatinecake"
@@ -790,7 +834,9 @@
 	faretype = FARE_FINE
 
 /obj/item/reagent_containers/food/snacks/jellyslice_tangerine
+	item_weight = 250 GRAMS
 	name = "tangerine gelatine slice"
+	desc = "A wobbling slice of gelatine, sweetened with tangerine."
 	icon_state = "tangerinegelatineslice"
 	dropshrink = 0.8
 	slices_num = 0
@@ -806,6 +852,7 @@
 // -------------- Plum Gelatine -----------------
 
 /obj/item/reagent_containers/food/snacks/jellycake_plum
+	item_weight = 1 KILOGRAMS
 	name = "plum gelatine cake"
 	desc = "A mildly unappetising desert, fittingly considered a delicacy by orcs. Like the plum this treat is made from, orcs persevere against all."
 	icon_state = "plumgelatinecake"
@@ -824,7 +871,9 @@
 	faretype = FARE_FINE
 
 /obj/item/reagent_containers/food/snacks/jellyslice_plum
+	item_weight = 250 GRAMS
 	name = "plum gelatine slice"
+	desc = "A wobbling slice of gelatine, sweetened with plum."
 	icon_state = "plumgelatineslice"
 	dropshrink = 0.8
 	slices_num = 0
@@ -839,6 +888,7 @@
 // -------------- Lime Gelatine -----------------
 
 /obj/item/reagent_containers/food/snacks/jellycake_lime
+	item_weight = 1 KILOGRAMS
 	name = "lime gelatine cake"
 	desc = "A mildly unappetising desert, fittingly considered a delicacy by orcs. This one is green, naturally."
 	icon_state = "limegelatinecake"
@@ -857,7 +907,9 @@
 	faretype = FARE_FINE
 
 /obj/item/reagent_containers/food/snacks/jellyslice_lime
+	item_weight = 250 GRAMS
 	name = "lime gelatine slice"
+	desc = "A wobbling slice of gelatine, tart with lime."
 	icon_state = "limegelatineslice"
 	dropshrink = 0.8
 	slices_num = 0
@@ -872,6 +924,7 @@
 // -------------- Pear Gelatine -----------------
 
 /obj/item/reagent_containers/food/snacks/jellycake_pear
+	item_weight = 1 KILOGRAMS
 	name = "pear gelatine cake"
 	desc = "A mildly unappetising dessert, fittingly considered a delicacy by orcs. This flavor is a strange fusion of Zakhara and Orcish cuisines."
 	icon_state = "peargelatinecake"
@@ -890,7 +943,9 @@
 	faretype = FARE_FINE
 
 /obj/item/reagent_containers/food/snacks/jellyslice_pear
+	item_weight = 250 GRAMS
 	name = "pear gelatine slice"
+	desc = "A wobbling slice of gelatine, sweetened with pear."
 	icon_state = "peargelatineslice"
 	dropshrink = 0.8
 	slices_num = 0

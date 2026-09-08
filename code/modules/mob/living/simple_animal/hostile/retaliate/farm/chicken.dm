@@ -1,5 +1,6 @@
 
 /mob/living/simple_animal/hostile/retaliate/chicken
+	living_flags = MOVES_ON_ITS_OWN|CAN_BE_FIREMANNED
 	name = "\improper chicken"
 	desc = "A fat and mostly flightless bird. They produce eggs, or 'cackleberries'."
 	icon = 'icons/roguetown/mob/monster/chicken.dmi'
@@ -61,6 +62,7 @@
 	base_strength = 1
 	base_speed = 5
 	tame = TRUE
+	indexed = TRUE
 
 	var/production = 0
 

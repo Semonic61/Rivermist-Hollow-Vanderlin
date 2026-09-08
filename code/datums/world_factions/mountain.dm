@@ -32,16 +32,16 @@
 	)
 	common_pool = list(
 		// Armor - Heavy focus on practical protective gear
-		/datum/supply_pack/armor/light/skullcap,
+		/datum/supply_pack/armor/iron/skullcap,
 		/datum/supply_pack/apparel/minershelm,
-		/datum/supply_pack/armor/light/poth,
+		/datum/supply_pack/armor/iron/poth,
 		/datum/supply_pack/armor/steel/nasalh,
-		/datum/supply_pack/armor/light/chaincoif_iron,
-		/datum/supply_pack/armor/light/bracers,
-		/datum/supply_pack/armor/light/chain_gloves_iron,
-		/datum/supply_pack/armor/light/chainlegs_iron,
-		/datum/supply_pack/armor/light/chainkilt_iron,
-		/datum/supply_pack/armor/light/light_armor_boots,
+		/datum/supply_pack/armor/iron/chaincoif_iron,
+		/datum/supply_pack/armor/iron/bracers,
+		/datum/supply_pack/armor/iron/chain_gloves_iron,
+		/datum/supply_pack/armor/iron/chainlegs_iron,
+		/datum/supply_pack/armor/iron/chainkilt_iron,
+		/datum/supply_pack/armor/iron/light_armor_boots,
 		// Apparel
 		/datum/supply_pack/apparel/hatfur,
 		/datum/supply_pack/apparel/leather_boots,
@@ -63,6 +63,10 @@
 		/datum/supply_pack/tools/thresher,
 		/datum/supply_pack/tools/plough,
 		/datum/supply_pack/tools/bucket,
+		/datum/supply_pack/tools/poor_armorkit,
+		/datum/supply_pack/tools/repair_kit,
+		/datum/supply_pack/tools/poor_sewingkit,
+		/datum/supply_pack/tools/sewingkit,
 		///Weapon (Singular)
 		/datum/supply_pack/weapons/iron/bayonet,
 		// Food - Hearty dwarven fare
@@ -77,21 +81,23 @@
 		/datum/supply_pack/rawmats/tin,
 		/datum/supply_pack/rawmats/lumber,
 		/datum/supply_pack/rawmats/blocks,
-		/datum/supply_pack/rawmats/ash
+		/datum/supply_pack/rawmats/ash,
+		// Camp shelter
+		/datum/supply_pack/tools/camp_tent
 	)
 	uncommon_pool = list(
 		// Better armor
-		/datum/supply_pack/armor/light/ifull_plate,
-		/datum/supply_pack/armor/light/chainmail_iron,
+		/datum/supply_pack/armor/iron/ifull_plate,
+		/datum/supply_pack/armor/iron/chainmail_iron,
 		/datum/supply_pack/armor/steel/chaincoif_steel,
 		/datum/supply_pack/armor/steel/chainlegs_steel,
 		/datum/supply_pack/armor/steel/chainkilt_steel,
-		/datum/supply_pack/armor/light/ihalf_plate,
+		/datum/supply_pack/armor/iron/ihalf_plate,
 		/datum/supply_pack/armor/light/heavy_gloves,
 		/datum/supply_pack/armor/steel/steel_boots,
 		/datum/supply_pack/armor/steel/pegasushelm,
 		/datum/supply_pack/apparel/tabardP,
-		/datum/supply_pack/armor/light/icuirass,
+		/datum/supply_pack/armor/iron/icuirass,
 		/datum/supply_pack/armor/light/shamaniccoat,
 		// Apparel
 		/datum/supply_pack/apparel/leather_vest_random,
@@ -140,7 +146,7 @@
 		/datum/supply_pack/armor/steel/sallet,
 		/datum/supply_pack/armor/steel/bracers,
 		/datum/supply_pack/armor/steel/hounskull,
-		/datum/supply_pack/armor/light/ifull_plate,
+		/datum/supply_pack/armor/iron/ifull_plate,
 		/datum/supply_pack/armor/steel/elvenhelm,
 		/datum/supply_pack/armor/steel/elvenplate,
 		// Apparel
@@ -172,7 +178,18 @@
 		// Food & Luxury
 		/datum/supply_pack/food/drinks/voddena,
 		/datum/supply_pack/jewelry/circlet,
-		/datum/supply_pack/luxury/silver_plaque_belt
+		/datum/supply_pack/luxury/chess,
+		/datum/supply_pack/luxury/silver_plaque_belt,
+		/datum/supply_pack/narcotics/perfume/random,
+		/datum/supply_pack/narcotics/perfume/lavender,
+		/datum/supply_pack/narcotics/perfume/cherry,
+		/datum/supply_pack/narcotics/perfume/rose,
+		/datum/supply_pack/narcotics/perfume/jasmine,
+		/datum/supply_pack/narcotics/perfume/mint,
+		/datum/supply_pack/narcotics/perfume/vanilla,
+		/datum/supply_pack/narcotics/perfume/pear,
+		/datum/supply_pack/narcotics/perfume/strawberry,
+		/datum/supply_pack/medicine/antipregpot
 	)
 	exotic_pool = list(
 		/datum/supply_pack/armor/steel/coatofplates,

@@ -179,13 +179,12 @@
 
 /obj/item/reagent_containers/glass/bowl/examine(mob/user)
 	. = ..()
-	desc = initial(desc)
 	if(dirty)
-		desc += span_boldwarning("\nThis bowl is filthy... absolutely disgusting.")
+		. += span_boldwarning("This bowl is filthy... absolutely disgusting.")
 	else if(cleaned)
-		desc += span_notice("\nThis bowl was cleaned recently!")
+		. += span_notice("This bowl was cleaned recently!")
 	else
-		desc += "\nThis bowl looks properly stored and clean enough."
+		. += "This bowl looks properly stored and clean enough."
 
 /obj/item/reagent_containers/glass/bowl/update_overlays()
 	. = ..()
@@ -214,60 +213,86 @@
 		. += filling
 		. += mutable_appearance(icon, "steam")
 
-/obj/item/reagent_containers/glass/bowl/attackby(obj/item/I, mob/user, list/modifiers) // lets you eat with a spoon from a bowl
-	if(reagents.total_volume == 0 && istype(I, /obj/item/natural/cloth) && user?.used_intent?.type == INTENT_USE)
-		if(dirty)
-			var/obj/item/natural/cloth/cloth_check = I
-			if(cloth_check.reagents.total_volume < 0.1)
-				to_chat(user, span_warning("[cloth_check] is too dry to clean with!"))
-				return
-			var/dirtywater = cloth_check.reagents.get_reagent_amount(/datum/reagent/water/gross)
-			if(dirtywater)
-				to_chat(user, span_warning("[cloth_check] water is too dirty to clean anything with it!"))
-				return
-			to_chat(user, ("You start cleaning the [src] with the [cloth_check]"))
-			if(do_after(user, 2 SECONDS, src))
-				cloth_check.reagents.remove_all(1)
-				dirty = FALSE
-				update_appearance(UPDATE_OVERLAYS)
-				AddComponent(/datum/component/particle_spewer/sparkle)
-				user.nobles_seen_servant_work()
-				usages = 0
-				cleaned = TRUE
-				to_chat(user, ("You cleaned the [src]"))
-				return
-		else
+/obj/item/reagent_containers/glass/bowl/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!reagents.total_volume && istype(tool, /obj/item/natural/cloth) && user?.used_intent?.type == INTENT_USE)
+		if(!dirty)
 			to_chat(user, span_notice("This platter is already clean."))
-			return
-	if(reagents.total_volume > 0 && istype(I, /obj/item/natural/cloth) && user?.used_intent?.type == INTENT_USE)
+			return ITEM_INTERACT_SUCCESS
+
+		var/obj/item/natural/cloth/cloth_check = tool
+		if(cloth_check.reagents.total_volume < 0.1)
+			to_chat(user, span_warning("[cloth_check] is too dry to clean with!"))
+			return ITEM_INTERACT_BLOCKING
+
+		var/dirtywater = cloth_check.reagents.get_reagent_amount(/datum/reagent/water/gross)
+		if(dirtywater)
+			to_chat(user, span_warning("[cloth_check] water is too dirty to clean anything with it!"))
+			return ITEM_INTERACT_BLOCKING
+
+		to_chat(user, ("You start cleaning the [src] with the [cloth_check]"))
+		if(do_after(user, 2 SECONDS, src))
+			cloth_check.reagents.remove_all(1)
+			dirty = FALSE
+			update_appearance(UPDATE_OVERLAYS)
+			AddComponent(/datum/component/particle_spewer/sparkle)
+			user.nobles_seen_servant_work()
+			usages = 0
+			cleaned = TRUE
+			to_chat(user, ("You cleaned the [src]"))
+		return ITEM_INTERACT_SUCCESS
+
+	if(!reagents.total_volume&& istype(tool, /obj/item/reagent_containers/food/snacks/veg/cabbage_sliced))
+		to_chat(user, span_warning("Tossing up a salad..."))
+		short_cooktime = (50 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
+		playsound(get_turf(user), 'sound/foley/dropsound/food_drop.ogg', 40, TRUE, -1)
+		if(do_after(user, short_cooktime, src))
+			var/obj/item/reagent_containers/food/snacks/salad/salad = new /obj/item/reagent_containers/food/snacks/salad(get_turf(src))
+			salad.set_quality(recipe_quality)
+			salad.icon_state = src.icon_state
+			salad.trash = src.type
+			salad.drop_sound = src.drop_sound
+			salad.add_overlay("salad_base")
+			user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+			user.nobles_seen_servant_work()
+			qdel(tool)
+			qdel(src)
+		return ITEM_INTERACT_SUCCESS
+
+	if(reagents.total_volume && istype(tool, /obj/item/natural/cloth) && user?.used_intent?.type == INTENT_USE)
 		to_chat(user, span_warning("You can't clean the [src] while it has something inside of it!"))
-		return
-	if(!istype(I, /obj/item/kitchen/spoon))
-		return ..()
-	if(!reagents || !reagents.total_volume)
+		return ITEM_INTERACT_BLOCKING
+
+	if(!istype(tool, /obj/item/kitchen/spoon))
+		return NONE
+
+	if(!reagents?.total_volume)
 		to_chat(user, span_warning("[src] is empty!"))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
 	if(!do_after(user, 1 SECONDS, src))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
 	if(dirty)
 		user.add_stress(/datum/stress_event/dirty_bowl)
 	else
 		if(istype(reagents, /datum/reagent/consumable/soup))
 			var/datum/reagent/consumable/soup/soup_check = reagents
 			soup_check.taste_mult +=1
-	if(reagents.get_reagent_amount(/datum/reagent/water) != reagents.total_volume)
-		usages +=1
-	if(usages >= max_usages && !dirty)
-		dirty = TRUE
-		var/datum/component/particle_spewer = GetComponent(/datum/component/particle_spewer/sparkle)
-		if(particle_spewer)
-			qdel(particle_spewer)
-		update_appearance(UPDATE_OVERLAYS)
+	// Only count a usage once the bowl is fully emptied (this gulp finishes it), and only for actual food (not plain water).
+	if(reagents.total_volume <= amount_per_transfer_from_this && reagents.get_reagent_amount(/datum/reagent/water) != reagents.total_volume)
+		usages += 1
+		if(usages >= max_usages && !dirty)
+			dirty = TRUE
+			var/datum/component/particle_spewer = GetComponent(/datum/component/particle_spewer/sparkle)
+			if(particle_spewer)
+				qdel(particle_spewer)
+			update_appearance(UPDATE_OVERLAYS)
 	playsound(src, 'sound/misc/eat.ogg', rand(30, 60), TRUE)
 	user.visible_message(span_info("[user] eats from [src]."), \
 			span_notice("I swallow a gulp of [src]."))
 	addtimer(CALLBACK(reagents, TYPE_PROC_REF(/datum/reagents, trans_to), user, min(amount_per_transfer_from_this, 5), TRUE, TRUE, FALSE, user, FALSE, INGEST), 5 DECISECONDS)
-	return TRUE
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/reagent_containers/glass/bowl/throw_impact(atom/hit_atom, datum/thrownthing/thrownthing)
 	if(reagents.total_volume > 5)
@@ -414,13 +439,19 @@
 	name = "soup"
 	var/hydration = 5
 
-/datum/reagent/consumable/soup/on_mob_life(mob/living/carbon/M)
+/datum/reagent/consumable/soup/on_mob_metabolize(mob/living/L)
+	. = ..()
+	L.add_chem_effect(CE_BLOODRESTORE, 1, "[type]")
+
+/datum/reagent/consumable/soup/on_mob_end_metabolize(mob/living/L)
+	. = ..()
+	L.remove_chem_effect(CE_BLOODRESTORE, "[type]")
+
+/datum/reagent/consumable/soup/on_mob_life(mob/living/carbon/M, efficiency)
 	if(ishuman(M))
 		var/mob/living/carbon/human/H = M
 		if(!HAS_TRAIT(H, TRAIT_NOHUNGER))
-			H.adjust_hydration(hydration)
-		if(M.blood_volume < BLOOD_VOLUME_NORMAL)
-			M.blood_volume = min(M.blood_volume+6, BLOOD_VOLUME_NORMAL)
+			H.adjust_hydration(hydration * efficiency)
 	..()
 
 /datum/reagent/consumable/soup/oatmeal
@@ -516,18 +547,23 @@
 	taste_description = "something gross"
 	metabolization_rate = 0.3
 
-/datum/reagent/consumable/soup/stew/gross/on_mob_life(mob/living/carbon/M)
+/datum/reagent/consumable/soup/stew/gross/on_mob_life(mob/living/carbon/M, efficiency)
+	if(M.job == "Beggar" || M.mind?.assigned_role?.title == "Beggar") // beggars gets revitalized, a little
+		M.adjustBruteLoss(-0.1 * efficiency)
+		M.adjustFireLoss(-0.1 * efficiency)
+		M.adjust_energy(2 * efficiency)
+		return
 	if(HAS_TRAIT(M, TRAIT_NASTY_EATER))
 		return
-	if(prob(8))
+	if(prob(8 * efficiency))
 		to_chat(M, span_danger(pick(
 			"I feel bile rising...", \
 			"I feel nauseous...", \
 			"My breath smells terrible...", \
 			"My stomach churns...")))
-	if(prob(8))
+	if(prob(8 * efficiency))
 		M.emote("gag")
-		M.add_nausea(9)
+		M.add_nausea(9 * efficiency)
 	..()
 	. = TRUE
 
@@ -538,22 +574,20 @@
 	taste_description = "something truly vile"
 	metabolization_rate = 0.2
 
-/datum/reagent/yuck/cursed_soup/on_mob_life(mob/living/carbon/M)
+/datum/reagent/yuck/cursed_soup/on_mob_life(mob/living/carbon/M, efficiency)
 	if(HAS_TRAIT(M, TRAIT_NASTY_EATER ))
-		if(M.blood_volume < BLOOD_VOLUME_NORMAL)
-			M.blood_volume = min(M.blood_volume+2, BLOOD_VOLUME_NORMAL)
-		M.adjustBruteLoss(-0.2, 0)
-		M.adjustFireLoss(-0.2, 0)
-		M.adjust_energy(5)
+		M.adjustBruteLoss(-0.2 * efficiency, 0)
+		M.adjustFireLoss(-0.2 * efficiency, 0)
+		M.adjust_energy(5 * efficiency)
 		return
 	else
-		if(prob(12))
+		if(prob(12 * efficiency))
 			M.emote("gag")
-			M.add_nausea(9)
+			M.add_nausea(9 * efficiency)
 			if(HAS_TRAIT(M, TRAIT_POISON_RESILIENCE))
-				M.adjustToxLoss(2)
+				M.adjustToxLoss(2 * efficiency)
 			else
-				M.adjustToxLoss(5)
+				M.adjustToxLoss(5 * efficiency)
 	..()
 	. = TRUE
 
@@ -572,16 +606,16 @@
 	list_reagents = list(/datum/reagent/flour = 1)
 	volume = 1
 	sellprice = 0
-	var/water_added
+	var/water_added = FALSE
 
 /datum/reagent/flour
 	name = "flour"
 	description = ""
 	color = "#FFFFFF" // rgb: 96, 165, 132
 
-/datum/reagent/flour/on_mob_life(mob/living/carbon/M)
-	if(prob(30))
-		M.adjust_confusion(6 SECONDS)
+/datum/reagent/flour/on_mob_life(mob/living/carbon/M, efficiency)
+	if(prob(30 * efficiency))
+		M.adjust_confusion(6 SECONDS * efficiency)
 	M.emote(pick("cough"))
 	..()
 
@@ -590,41 +624,109 @@
 	..()
 	qdel(src)
 
-/obj/item/reagent_containers/powder/flour/attackby(obj/item/I, mob/living/user, list/modifiers)
-	. = ..()
-	var/found_table = locate(/obj/structure/table) in (loc)
-	var/obj/item/reagent_containers/glass/R = I
-	if(isturf(loc)&& (found_table))
-		if(!istype(R) || (water_added))
-			return ..()
-		if(!R.reagents.has_reagent(/datum/reagent/water, 10))
-			to_chat(user, span_notice("Needs more water to work it."))
-			return TRUE
-		to_chat(user, span_notice("Adding water, now it's time to knead it..."))
-		playsound(get_turf(user), 'sound/foley/splishy.ogg', 100, TRUE, -1)
-		if(do_after(user, 1.5 SECONDS, src))
-			name = "wet flour"
-			desc = "Destined for greatness, at your hands."
-			R.reagents.remove_reagent(/datum/reagent/water, 10)
-			water_added = TRUE
-			color = "#d9d0cb"
-	else
+/obj/item/reagent_containers/powder/flour/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(user.cmode)
+		return NONE
+
+	if(water_added)
+		return NONE
+
+	if(!istype(tool, /obj/item/reagent_containers/glass))
+		return NONE
+
+	if(!isturf(loc))
+		return NONE
+
+	if(!(locate(/obj/structure/table) in (loc)))
 		to_chat(user, span_warning("Put [src] on a table before working it!"))
+		return ITEM_INTERACT_BLOCKING
+
+	if(!tool.reagents.has_reagent(/datum/reagent/water, 10))
+		to_chat(user, span_notice("Needs more water to work it."))
+		return ITEM_INTERACT_BLOCKING
+
+	to_chat(user, span_notice("Adding water, now it's time to knead it..."))
+	playsound(user, 'sound/foley/splishy.ogg', 100, TRUE, -1)
+
+	if(!do_after(user, 1.5 SECONDS, src))
+		return ITEM_INTERACT_BLOCKING
+
+	name = "wet flour"
+	desc = "Destined for greatness, at your hands."
+	tool.reagents.remove_reagent(/datum/reagent/water, 10)
+	water_added = TRUE
+	color = "#d9d0cb"
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/reagent_containers/powder/flour/attack_hand(mob/living/user)
+	if(!water_added)
+		return ..()
+
+	short_cooktime = (40 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking)) * 5))
+	playsound(user, 'sound/foley/kneading_alt.ogg', 90, TRUE, -1)
+	if(do_after(user, short_cooktime, src))
+		var/obj/item/reagent_containers/food/snacks/dough_base/base = new /obj/item/reagent_containers/food/snacks/dough_base(get_turf(src))
+		base.set_quality(recipe_quality)
+		user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking/baking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
+		user.nobles_seen_servant_work()
+		qdel(src)
+
+/obj/item/reagent_containers/powder/sunreed_flour
+	var/water_added = FALSE
+
+/obj/item/reagent_containers/powder/sunreed_flour/throw_impact(atom/hit_atom, datum/thrownthing/thrownthing)
+	new /obj/effect/decal/cleanable/food/flour(get_turf(src))
+	..()
+	qdel(src)
+
+/obj/item/reagent_containers/powder/sunreed_flour/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(user.cmode)
+		return NONE
+
+	if(!istype(tool, /obj/item/reagent_containers/glass))
+		return NONE
+
 	if(water_added)
-		short_cooktime = (40 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*5))
+		return NONE
+
+	if(!isturf(loc))
+		return NONE
+
+	if(!(locate(/obj/structure/table) in (loc)))
+		to_chat(user, span_warning("Put [src] on a table before working it!"))
+		return ITEM_INTERACT_BLOCKING
+
+	if(!tool.reagents.has_reagent(/datum/reagent/water, 10))
+		to_chat(user, span_notice("Needs more water to work it."))
+		return ITEM_INTERACT_BLOCKING
+
+	to_chat(user, span_notice("Adding water, now it's time to knead it..."))
+	playsound(user, 'sound/foley/splishy.ogg', 100, TRUE, -1)
+
+	if(!do_after(user, 1.5 SECONDS, src))
+		return ITEM_INTERACT_BLOCKING
+
+	name = "wet sunreed powder"
+	desc = "All that's left is to invent."
+	tool.reagents.remove_reagent(/datum/reagent/water, 10)
+	water_added = TRUE
+	icon_state = "maize_flour_wet"
+
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/reagent_containers/powder/sunreed_flour/attack_hand(mob/living/user)
+	if(water_added)
+		short_cooktime = (40 - ((GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking))*8))
 		playsound(get_turf(user), 'sound/foley/kneading_alt.ogg', 90, TRUE, -1)
 		if(do_after(user, short_cooktime, src))
-			var/obj/item/reagent_containers/food/snacks/dough_base/base = new /obj/item/reagent_containers/food/snacks/dough_base(get_turf(src))
+			var/obj/item/reagent_containers/food/snacks/masa_base/base = new /obj/item/reagent_containers/food/snacks/masa_base(get_turf(src))
 			base.set_quality(recipe_quality)
 			user.mind.add_sleep_experience(/datum/attribute/skill/craft/cooking, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE)*0.5))
 			user.nobles_seen_servant_work()
 			qdel(src)
 	else
 		..()
-
-
 
 // -------------- SALT -----------------
 /obj/item/reagent_containers/powder/salt

@@ -9,10 +9,12 @@
 	obj_flags = CAN_BE_HIT
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	blade_dulling = DULLING_CUT
+	grid_width = 32
+	grid_height = 32
 	max_integrity = 100
 	integrity_failure = 0.1
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 	salvage_result = /obj/item/natural/cloth
 	slot_flags = ITEM_SLOT_MOUTH | ITEM_SLOT_SOCKS
 	muteinmouth = TRUE

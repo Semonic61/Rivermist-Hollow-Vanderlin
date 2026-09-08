@@ -13,7 +13,7 @@
 	base_strength = 13
 	base_speed = 9
 	maxHealth = DEEPONE_HEALTH
-	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat = 5, /obj/item/alch/viscera = 2)
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat/triton = 5, /obj/item/alch/viscera = 2)
 	health = DEEPONE_HEALTH
 	harm_intent_damage = 20
 	melee_damage_lower = 10
@@ -34,7 +34,7 @@
 	speak_emote = list("burbles")
 	faction = list("deepone")
 	footstep_type = FOOTSTEP_MOB_BAREFOOT
-
+	animal_type = /datum/blood_type/human/triton
 
 
 

@@ -222,6 +222,14 @@
 	if(!skip_reciprocal && !(src in parent.children))
 		parent.AddChild(src, TRUE) // TRUE = skip reciprocal call
 
+	if(parent.person?.mind && person?.mind)
+		link_parent_child(parent.person.mind, person.mind, adoption_status)
+		for(var/datum/family_member/sibling in parent.children)
+			if(sibling == src || !sibling.person?.mind)
+				continue
+			link_family(person.mind, sibling.person.mind, FAMILY_MEMBER_SIBLING, adoption_status || sibling.adoption_status)
+			link_family(sibling.person.mind, person.mind, FAMILY_MEMBER_SIBLING, adoption_status || sibling.adoption_status)
+
 	RecalculateGeneration()
 	return TRUE
 
@@ -229,11 +237,22 @@
 	if(!parent || !(parent in parents))
 		return FALSE
 
+	var/list/former_siblings = parent.children.Copy()
+	former_siblings -= src
 	parents -= parent
 
 	// Only remove reciprocal relationship if not already doing so
 	if(!skip_reciprocal && (src in parent.children))
 		parent.RemoveChild(src, TRUE) // TRUE = skip reciprocal call
+
+	if(parent.person?.mind && person?.mind)
+		unlink_family(parent.person.mind, person.mind, FAMILY_MEMBER_PARENT)
+		unlink_family(person.mind, parent.person.mind, FAMILY_MEMBER_CHILD)
+		for(var/datum/family_member/former_sibling in former_siblings)
+			if(!former_sibling.person?.mind || AreSiblings(former_sibling))
+				continue
+			unlink_family(person.mind, former_sibling.person.mind, FAMILY_MEMBER_SIBLING)
+			unlink_family(former_sibling.person.mind, person.mind, FAMILY_MEMBER_SIBLING)
 
 	RecalculateGeneration()
 	return TRUE
@@ -279,6 +298,10 @@
 	if(!skip_reciprocal && !(src in spouse.spouses))
 		spouse.AddSpouse(src, TRUE) // TRUE = skip reciprocal call
 
+	if(person?.mind && spouse.person?.mind)
+		link_family(person.mind, spouse.person.mind, FAMILY_MEMBER_SPOUSE)
+		link_family(spouse.person.mind, person.mind, FAMILY_MEMBER_SPOUSE)
+
 	// Handle biological children when both parents are present
 	HandleBiologicalChildren(spouse)
 	return TRUE
@@ -292,6 +315,14 @@
 	// Only remove reciprocal relationship if not already doing so
 	if(!skip_reciprocal && (src in spouse.spouses))
 		spouse.RemoveSpouse(src, divorce, TRUE) // TRUE = skip reciprocal call
+
+	if(person?.spouse_mob == spouse.person)
+		person.spouse_mob = null
+	if(spouse.person?.spouse_mob == person)
+		spouse.person.spouse_mob = null
+	if(person?.mind && spouse.person?.mind)
+		unlink_family(person.mind, spouse.person.mind, FAMILY_MEMBER_SPOUSE, divorce)
+		unlink_family(spouse.person.mind, person.mind, FAMILY_MEMBER_SPOUSE, divorce)
 
 	if(divorce)
 		if(!(spouse in former_spouses))
@@ -581,6 +612,12 @@
 			person?.MixDNA(parent1.person, parent2.person, override = TRUE)
 		else if(!confirmed_biological)
 			new_member.adoption_status = TRUE
+
+	// Species checks can turn an initially biological bond into adoption after
+	// AddParent() ran, so refresh the social view with the final result.
+	for(var/datum/family_member/parent in new_member.parents)
+		if(parent.person?.mind && person?.mind)
+			link_parent_child(parent.person.mind, person.mind, new_member.adoption_status)
 
 	AddFamilyIcon(person)
 	to_chat(person, span_notice("You have been added to the [housename] family."))

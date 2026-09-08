@@ -1,4 +1,5 @@
 /obj/item/natural/brick
+	item_weight = 1.1 KILOGRAMS
 	name = "brick"
 	desc = "A cooked red brick."
 	icon = 'icons/roguetown/items/cooking.dmi'	//It's because these are cooked via clay. Don't ask questions.
@@ -15,11 +16,6 @@
 	experimental_inhand = FALSE
 	hitsound = list('sound/combat/hits/blunt/brick.ogg')
 	bundletype = /obj/item/natural/bundle/brick
-
-/obj/item/natural/brick/attackby(obj/item, mob/living/user, list/modifiers)
-	if(item_flags & IN_STORAGE)
-		return
-	. = ..()
 
 /obj/item/natural/bundle/brick
 	name = "stack of bricks"

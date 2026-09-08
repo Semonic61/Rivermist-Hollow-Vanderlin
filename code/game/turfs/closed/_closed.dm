@@ -66,7 +66,10 @@
 		return
 	user.wallpressed = dir2wall
 	user.update_wallpress_slowdown()
-	user.visible_message("<span class='info'>[user] leans against [src].</span>")
+	if(user.m_intent == MOVE_INTENT_SNEAK)
+		to_chat(user, span_info("You press yourself against [src]."))
+	else
+		user.visible_message(span_info("[user] leans against [src]."))
 	switch(dir2wall)
 		if(NORTH)
 			user.setDir(SOUTH)
@@ -108,17 +111,26 @@
 /mob/living/proc/update_wallpress_slowdown()
 	if(wallpressed)
 		add_movespeed_modifier("wallpress", TRUE, 100, override = TRUE, multiplicative_slowdown = 3)
+		if(m_intent == MOVE_INTENT_SNEAK)
+			ADD_TRAIT(src, TRAIT_SPELLBLOCK, TRAIT_GENERIC) // spell restrictions don't seem to be working well so I'm doing it this way for now
+			var/lean_alpha = get_wallpress_alpha()
+			if(src.alpha != 0 && lean_alpha < src.alpha)
+				var/used_time = 50
+				used_time = max(used_time - (GET_MOB_SKILL_VALUE_OLD(src, /datum/attribute/skill/misc/sneaking) * 8), 10)
+				animate(src, alpha = lean_alpha, time = used_time)
 	else
 		remove_movespeed_modifier("wallpress")
+		animate(src, alpha = 255, time = 10)
+		REMOVE_TRAIT(src, TRAIT_SPELLBLOCK, TRAIT_GENERIC)
 
 /turf/closed/Bumped(atom/movable/AM)
 	..()
 	if(density)
 		if(ishuman(AM))
 			var/mob/living/carbon/human/H = AM
-			if(H.dir == get_dir(H,src) && H.m_intent == MOVE_INTENT_RUN && H.body_position != LYING_DOWN)
+			if(H.dir == get_dir(H,src) && (H.m_intent == MOVE_INTENT_RUN || HAS_TRAIT(H, TRAIT_STUMBLE)) && H.body_position != LYING_DOWN)
 				H.Immobilize(10)
-				H.apply_damage(15, BRUTE, "head", H.run_armor_check("head", "blunt", damage = 15))
+				H.apply_damage(15, BRUTE, BODY_ZONE_HEAD, H.run_armor_check("head", "blunt", damage = 15), damage_type = BCLASS_BLUNT)
 				H.toggle_rogmove_intent(MOVE_INTENT_WALK, TRUE)
 				playsound(src, "genblunt", 100, TRUE)
 				H.visible_message("<span class='warning'>[H] runs into [src]!</span>", "<span class='warning'>I run into [src]!</span>")
@@ -164,7 +176,7 @@
 			if(!istype(target, /turf/open/openspace))
 				to_chat(user, "<span class='warning'>I can't climb here.</span>")
 				return
-			if(!L.can_zTravel(target, UP))
+			if(!L.can_z_move(UP, user_turf, target, Z_MOVE_CLIMBING_FLAGS | ZMOVE_FEEDBACK))
 				to_chat(user, "<span class='warning'>I can't climb there.</span>")
 				return
 			target = GET_TURF_ABOVE(src)
@@ -205,11 +217,11 @@
 				playsound(user, climbsound, 100, TRUE)
 			user.visible_message("<span class='warning'>[user] starts to climb [src].</span>", "<span class='warning'>I start to climb [src]...</span>")
 			if(do_after(L, used_time, src))
-				var/pulling = user.pulling
-				if(ismob(pulling))
-					user.pulling.forceMove(target)
-				user.forceMove(target)
-				user.start_pulling(pulling,suppress_message = TRUE)
+				if(!L.can_z_move(UP, get_turf(L), target, Z_MOVE_CLIMBING_FLAGS | ZMOVE_FEEDBACK))
+					return
+				L.set_currently_z_moving(CURRENTLY_Z_ASCENDING)
+				if(!L.zMove(UP, target, Z_MOVE_CLIMBING_FLAGS))
+					return
 				if(user.m_intent != MOVE_INTENT_SNEAK)
 					playsound(user, 'sound/foley/climb.ogg', 100, TRUE)
 				if(L.mind)
@@ -234,8 +246,9 @@
 	if(!istype(target, /turf/open/openspace))
 		to_chat(user, "<span class='warning'>I can't go there.</span>")
 		return
-	user.forceMove(target)
-	to_chat(user, "<span class='warning'>I crawl up the wall.</span>")
+	if(user.can_z_move(UP, get_turf(user), target, ZMOVE_IGNORE_OBSTACLES | ZMOVE_FEEDBACK))
+		user.zMove(UP, target, ZMOVE_IGNORE_OBSTACLES)
+		to_chat(user, "<span class='warning'>I crawl up the wall.</span>")
 	. = ..()
 
 /turf/closed/get_smooth_underlay_icon(mutable_appearance/underlay_appearance, turf/asking_turf, adjacency_dir)

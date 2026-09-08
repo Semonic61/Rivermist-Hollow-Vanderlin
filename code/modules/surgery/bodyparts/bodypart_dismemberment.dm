@@ -76,9 +76,9 @@
 				if(stress2give == /datum/stress_event/viewdismember)
 					if(HAS_TRAIT(CA, TRAIT_STEELHEARTED))
 						continue
-					if(CA.has_quirk(/datum/quirk/vice/maniac))
+					if(CA.has_quirk(/datum/quirk/vice/addiction/sadist))
 						CA.add_stress(/datum/stress_event/viewdismembermaniac)
-						CA.sate_addiction(/datum/quirk/vice/maniac)
+						CA.sate_addiction(/datum/quirk/vice/addiction/sadist)
 						continue
 					if(CA.gender == FEMALE)
 						CA.add_stress(/datum/stress_event/fviewdismember)
@@ -93,6 +93,10 @@
 		return TRUE
 
 	var/turf/location = C.loc
+	for(var/atom/movable/item as anything in cavity_items)
+		item.forceMove(location)
+		cavity_items -= item
+
 	if(istype(location))
 		C.add_splatter_floor(location)
 	var/direction = pick(GLOB.cardinals)
@@ -132,11 +136,10 @@
 			O.add_mob_blood(C)
 			. += O
 		organ_spilled = 1
-	if(cavity_item)
-		cavity_item.forceMove(T)
-		. += cavity_item
-		cavity_item = null
-		organ_spilled = 1
+	for(var/atom/movable/item as anything in cavity_items)
+		item.forceMove(T)
+		cavity_items -= item
+	organ_spilled = 1
 
 	if(organ_spilled)
 		C.visible_message("<span class='danger'><B>[C] spills [C.p_their()] guts!</B></span>")
@@ -148,6 +151,7 @@
 		return FALSE
 	var/atom/drop_location = owner.drop_location()
 	var/mob/living/carbon/was_owner = owner
+	remove_chronic()
 	update_limb(TRUE, owner)
 
 	if(length(wounds))
@@ -166,6 +170,10 @@
 		was_owner.surgeries -= body_zone
 	for(var/obj/item/embedded in embedded_objects)
 		remove_embedded_object(embedded)
+
+	for(var/datum/injury/injury as anything in injuries)
+		injury.remove_from_mob()
+
 	if(bandage)
 		if(drop_location)
 			bandage.forceMove(drop_location)
@@ -188,6 +196,9 @@
 	update_icon_dropped()
 	was_owner.update_health_hud() //update the healthdoll
 	was_owner.update_body()
+
+	if(CHECK_BITFIELD(limb_flags, BODYPART_VITAL))
+		was_owner.death()
 
 	// drop_location = null happens when a "dummy human" used for rendering icons on prefs screen gets its limbs replaced.
 	if(!drop_location)
@@ -217,7 +228,10 @@
 
 /obj/item/organ/eyes/transfer_to_limb(obj/item/bodypart/head/LB, mob/living/carbon/human/C)
 	if(istype(LB))
-		LB.eyes = src
+		if(side == RIGHT_SIDE)
+			LB.eyes_right = src
+		if(side == LEFT_SIDE)
+			LB.eyes_left = src
 	return ..()
 
 /obj/item/organ/ears/transfer_to_limb(obj/item/bodypart/head/LB, mob/living/carbon/human/C)
@@ -250,8 +264,9 @@
 				R.update_appearance(UPDATE_OVERLAYS)
 		if(C.gloves && (C.num_hands < 1))
 			C.dropItemToGround(C.gloves, force = TRUE)
-		C.update_inv_gloves() //to remove the bloody hands overlay
-		C.update_inv_armor()
+		if(!(C?.status_flags & BUILDING_ORGANS))
+			C.update_inv_gloves() //to remove the bloody hands overlay
+			C.update_inv_armor()
 
 
 /obj/item/bodypart/l_arm/drop_limb(special)
@@ -262,15 +277,17 @@
 			C.handcuffed.forceMove(drop_location())
 			C.handcuffed.dropped(C)
 			C.set_handcuffed(null)
-			C.update_handcuffed()
+			if(!(C.status_flags & BUILDING_ORGANS))
+				C.update_handcuffed()
 		if(C.hud_used)
 			var/atom/movable/screen/inventory/hand/L = C.hud_used.hand_slots["[held_index]"]
 			if(L)
 				L.update_appearance(UPDATE_OVERLAYS)
 		if(C.gloves && (C.num_hands < 1))
 			C.dropItemToGround(C.gloves, force = TRUE)
-		C.update_inv_gloves() //to remove the bloody hands overlay
-		C.update_inv_armor()
+		if(!(C.status_flags & BUILDING_ORGANS))
+			C.update_inv_gloves() //to remove the bloody hands overlay
+			C.update_inv_armor()
 
 /obj/item/bodypart/r_leg/drop_limb(special)
 	var/mob/living/carbon/C = owner
@@ -280,12 +297,14 @@
 			C.legcuffed.forceMove(C.drop_location()) //At this point bodypart is still in nullspace
 			C.legcuffed.dropped(C)
 			C.legcuffed = null
-			C.remove_movespeed_modifier(MOVESPEED_ID_LEGCUFF_SLOWDOWN, TRUE)
-			C.update_inv_legcuffed()
+			if(!(C.status_flags & BUILDING_ORGANS))
+				C.remove_movespeed_modifier(MOVESPEED_ID_LEGCUFF_SLOWDOWN, TRUE)
+				C.update_inv_legcuffed()
 		if(C.shoes && (C.num_legs < 1))
 			C.dropItemToGround(C.shoes, force = TRUE)
-		C.update_inv_shoes()
-		C.update_inv_pants()
+		if(!(C.status_flags & BUILDING_ORGANS))
+			C.update_inv_shoes()
+			C.update_inv_pants()
 
 /obj/item/bodypart/l_leg/drop_limb(special) //copypasta
 	var/mob/living/carbon/C = owner
@@ -295,12 +314,14 @@
 			C.legcuffed.forceMove(C.drop_location())
 			C.legcuffed.dropped(C)
 			C.legcuffed = null
-			C.remove_movespeed_modifier(MOVESPEED_ID_LEGCUFF_SLOWDOWN, TRUE)
-			C.update_inv_legcuffed()
+			if(!(C.status_flags & BUILDING_ORGANS))
+				C.remove_movespeed_modifier(MOVESPEED_ID_LEGCUFF_SLOWDOWN, TRUE)
+				C.update_inv_legcuffed()
 		if(C.shoes && (C.num_legs < 1))
 			C.dropItemToGround(C.shoes, force = TRUE)
-		C.update_inv_shoes()
-		C.update_inv_pants()
+		if(!(C.status_flags & BUILDING_ORGANS))
+			C.update_inv_shoes()
+			C.update_inv_pants()
 
 /obj/item/bodypart/taur/drop_limb(special) //copypasta
 	var/mob/living/carbon/C = owner
@@ -356,6 +377,8 @@
 /obj/item/bodypart/proc/attach_limb(mob/living/carbon/C, special)
 	moveToNullspace()
 	set_owner(C)
+	update_chronic()
+
 	C.add_bodypart(src)
 	if(src.body_zone == BODY_ZONE_TAUR)
 		ADD_TRAIT(C, TRAIT_PONYGIRL_RIDEABLE, BODY_ZONE_TAUR)
@@ -369,7 +392,8 @@
 			var/atom/movable/screen/inventory/hand/hand = C.hud_used.hand_slots["[held_index]"]
 			if(hand)
 				hand.update_appearance(UPDATE_OVERLAYS)
-		C.update_inv_gloves()
+		if(!(C.status_flags & BUILDING_ORGANS))
+			C.update_inv_gloves()
 
 	if(special) //non conventional limb attachment
 		//if we had an ongoing surgery to attach a new limb, we stop it.
@@ -378,12 +402,17 @@
 				continue
 			C.surgeries -= body_zone
 
-	for(var/obj/item/organ/stored_organ as anything in src)
+	for(var/obj/item/organ/stored_organ in src)
 		stored_organ.Insert(C)
 
 	for(var/datum/wound/wound as anything in wounds)
 		wounds -= wound
 		wound.apply_to_bodypart(src, silent = TRUE, crit_message = FALSE)
+
+	//Add injuries to the owner's injury list
+	for(var/datum/injury/injury as anything in injuries)
+		injury.parent_mob = C
+		LAZYADD(C.all_injuries, injury)
 
 	var/obj/item/bodypart/affecting = C.get_bodypart(BODY_ZONE_CHEST)
 	if(affecting && dismember_wound)
@@ -391,9 +420,10 @@
 
 	update_bodypart_damage_state()
 
-	C.updatehealth()
-	C.update_body()
-	C.update_damage_overlays()
+	if(!(C.status_flags & BUILDING_ORGANS))
+		C.updatehealth()
+		C.update_body()
+		C.update_damage_overlays()
 
 /obj/item/bodypart/head/attach_limb(mob/living/carbon/C, special)
 	//Transfer some head appearance vars over
@@ -409,8 +439,10 @@
 		tongue = null
 	if(ears)
 		ears = null
-	if(eyes)
-		eyes = null
+	if(eyes_left)
+		eyes_left = null
+	if(eyes_right)
+		eyes_right = null
 
 	if(ishuman(C))
 		var/mob/living/carbon/human/H = C

@@ -3,6 +3,12 @@
 	/// Is this the last thing we do? (if we set a movement target, this will usually be yes)
 	var/end_planning = TRUE
 
+/datum/ai_behavior/basic_melee_attack/agile
+	sidesteps_after = TRUE
+
+/datum/ai_planning_subtree/basic_melee_attack_subtree/agile
+	melee_attack_behavior = /datum/ai_behavior/basic_melee_attack/agile
+
 /datum/ai_planning_subtree/basic_melee_attack_subtree/SelectBehaviors(datum/ai_controller/controller, delta_time)
 	. = ..()
 	var/atom/target = controller.blackboard[BB_BASIC_MOB_CURRENT_TARGET]
@@ -67,7 +73,7 @@
 /datum/ai_behavior/basic_melee_attack/gator_attack/proc/perform_death_roll(datum/ai_controller/controller, mob/living/simple_animal/hostile/retaliate/gator/gator_pawn, mob/living/target)
 	gator_pawn.visible_message("<span class='danger'>[gator_pawn] grabs [target] and performs a vicious death roll!</span>")
 
-	target.apply_damage(death_roll_damage, BRUTE, "chest")
+	target.apply_damage(death_roll_damage, BRUTE, BODY_ZONE_CHEST, damage_type = BCLASS_BITE)
 	target.Paralyze(3 SECONDS)
 	var/matrix/M = matrix()
 	for(var/i in 1 to 3)

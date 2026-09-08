@@ -15,6 +15,7 @@ GLOBAL_PROTECT(keep_positions)
 GLOBAL_LIST_INIT(townhall_positions, list(
 	/datum/job/burgmeister::title,
 	/datum/job/councilor::title,
+	/datum/job/navigator::title,
 	/datum/job/servant::title,
 ))
 GLOBAL_PROTECT(townhall_positions)
@@ -116,7 +117,9 @@ GLOBAL_LIST_INIT(adventurers_positions, list(
 GLOBAL_PROTECT(adventurers_positions)
 
 GLOBAL_LIST_INIT(villains_positions, list(
+	/datum/job/bandit::title,
 	/datum/job/werewolf::title,
+	/datum/job/succubus::title,
 ))
 GLOBAL_PROTECT(villains_positions)
 

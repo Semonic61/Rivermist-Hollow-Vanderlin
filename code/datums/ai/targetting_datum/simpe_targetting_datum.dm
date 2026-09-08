@@ -1,4 +1,23 @@
 ///Datum for basic mobs to define what they can attack.
+/proc/is_ai_disarmable_held_item(obj/item/held_item)
+	if(!held_item)
+		return FALSE
+	if(held_item.item_flags & (ABSTRACT | DROPDEL))
+		return FALSE
+	if(HAS_TRAIT(held_item, TRAIT_NODROP))
+		return FALSE
+	return TRUE
+
+/proc/mob_has_ai_disarmable_held_item(mob/living/living_target)
+	if(!living_target)
+		return FALSE
+
+	for(var/obj/item/held_item as anything in living_target.held_items)
+		if(is_ai_disarmable_held_item(held_item))
+			return TRUE
+
+	return FALSE
+
 /datum/targetting_datum
 
 ///Returns true or false depending on if the target can be attacked by the mob
@@ -18,6 +37,10 @@
 /datum/targetting_datum/proc/is_selected_horny_target(mob/living/living_mob, atom/target)
 	if(!should_prioritize_horny_targets(living_mob))
 		return FALSE
+	if(ishuman(target))
+		var/mob/living/carbon/human/human_target = target
+		if(!can_use_horny_ai_target(living_mob, human_target))
+			return FALSE
 	return is_horny_pref_target(living_mob, target)
 
 /datum/targetting_datum/proc/can_engage_target(mob/living/living_mob, atom/target)
@@ -47,20 +70,19 @@
 /datum/targetting_datum/proc/has_any_horny_mob_pref_enabled(mob/living/carbon/human/human_target)
 	return !!get_horny_mob_pref_flags(human_target)
 
-/datum/targetting_datum/proc/human_has_any_held_item(mob/living/carbon/human/human_target)
-	if(!human_target)
+/datum/targetting_datum/proc/can_use_horny_ai_target(mob/living/living_mob, mob/living/carbon/human/human_target)
+	if(!living_mob || !human_target)
 		return FALSE
-
-	for(var/obj/item/held_item as anything in human_target.held_items)
-		if(held_item)
-			return TRUE
-
-	return FALSE
+	return !!human_target.client
 
 /datum/targetting_datum/proc/should_use_nonlethal_mob_erp_handling(mob/living/living_mob, mob/living/carbon/human/human_target)
 	if(!living_mob || !human_target)
 		return FALSE
+	if(!can_use_horny_ai_target(living_mob, human_target))
+		return FALSE
 	if(!should_apply_mob_erp_target_pref(living_mob, human_target))
+		return FALSE
+	if(!human_target.get_cached_nonmatching_horny_mobs_are_nonlethal())
 		return FALSE
 	if(!has_any_horny_mob_pref_enabled(human_target))
 		return FALSE
@@ -84,13 +106,11 @@
 	if(!target_living)
 		return null
 
-	for(var/datum/sex_session/session as anything in return_sessions_with_user(target_living))
-		if(QDELETED(session))
-			continue
-		if(!session.current_action && !length(session.active_actions))
+	for(var/datum/sex_action/action as anything in target_living.sex_scene?.get_actions_involving(target_living))
+		if(QDELETED(action))
 			continue
 
-		var/mob/living/other_participant = session.user == target_living ? session.target : session.user
+		var/mob/living/other_participant = action.action_user == target_living ? action.action_target : action.action_user
 		if(!other_participant || QDELETED(other_participant))
 			continue
 		if(other_participant == target_living || other_participant == excluded_participant)
@@ -168,7 +188,7 @@
 		return FALSE
 	if(target_living.body_position == LYING_DOWN)
 		return TRUE
-	if(target_living.has_status_effect(/datum/status_effect/debuff/mob_fucked))
+	if(target_living.has_status_effect(/datum/status_effect/debuff/mob_fucked) || target_living.has_status_effect(/datum/status_effect/debuff/mob_fucked/male))
 		return TRUE
 	if(get_active_other_sex_participant(target_living, living_mob))
 		return TRUE
@@ -267,7 +287,7 @@
 		var/mob/living/carbon/human/human_target = living_target
 		if(human_target.handcuffed)
 			return FALSE
-		if((human_target.body_position == LYING_DOWN) && human_has_any_held_item(human_target) && human_target.ckey)
+		if((human_target.body_position == LYING_DOWN) && mob_has_ai_disarmable_held_item(human_target) && human_target.ckey)
 			return TRUE
 
 	if((living_target.body_position == LYING_DOWN) && !living_target.get_active_held_item() && living_target.ckey && !living_target.cmode)
@@ -331,6 +351,9 @@
 /datum/targetting_datum/basic/can_horny(mob/living/living_mob, atom/the_target)
 	if(isturf(the_target) || !the_target) // bail out on invalids
 		return FALSE
+	// A captive who has steeled themselves (the "Refuse Advances" opt-out) is off-limits to horny mobs.
+	if(HAS_TRAIT(the_target, TRAIT_DEFEAT_REFUSE_ADVANCES))
+		return FALSE
 	if(issimple(living_mob))
 		var/mob/living/simple_animal/attacker = living_mob
 		if(attacker.binded == TRUE)
@@ -340,6 +363,10 @@
 		if(M.status_flags & GODMODE)
 			return FALSE
 		if(M.stat == DEAD)
+			return FALSE
+	if(isliving(the_target))
+		var/mob/living/living_target = the_target
+		if(living_target.alpha <= 100 || living_target.rogue_sneaking)
 			return FALSE
 	if(living_mob.see_invisible < the_target.invisibility)//Target's invisible to us, forget it
 		return FALSE
@@ -371,9 +398,11 @@
 	return (((mobs_flags & HORNY_MOBS_TAG_MALES) && living_mob.gender == MALE) || ((mobs_flags & HORNY_MOBS_TAG_FEMALES) && living_mob.gender == FEMALE))
 
 /datum/targetting_datum/basic/proc/faction_check(mob/living/living_mob, mob/living/the_target)
+	if(!living_mob || !the_target)
+		return FALSE
 	if((living_mob in SSmatthios_mobs.matthios_mobs) && (the_target in SSmatthios_mobs.matthios_mobs))
 		return TRUE
-	return living_mob.faction_check_mob(the_target, exact_match = FALSE)
+	return living_mob.ai_targeting_ally_check(the_target)
 
 /// Subtype which doesn't care about faction
 /// Mobs which retaliate but don't otherwise target seek should just attack anything which annoys them
@@ -434,7 +463,7 @@
 				return can_nonlethally_subdue_mob_erp_target(living_mob, hum)
 			if(hum.handcuffed)
 				return FALSE
-		if((L.body_position == LYING_DOWN) && human_has_any_held_item(L) && L.ckey)
+		if((L.body_position == LYING_DOWN) && mob_has_ai_disarmable_held_item(L) && L.ckey)
 			return TRUE
 
 	return FALSE

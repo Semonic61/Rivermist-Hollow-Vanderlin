@@ -575,9 +575,6 @@ GLOBAL_LIST_EMPTY(active_lifts_by_type)
 		platform.horizontal_speed = 0.1
 		base_horizontal_speed = 0.1
 		horizontal_speed = 0.1
-		if(!platform.fake)
-			platform.obj_flags &= ~BLOCK_Z_OUT_DOWN
-			platform.alpha = 0
 		for(var/atom/movable/movable in platform.lift_load)
 			if(ismob(movable))
 				platform.RemoveItemFromLift(movable)
@@ -587,6 +584,10 @@ GLOBAL_LIST_EMPTY(active_lifts_by_type)
 			ADD_TRAIT(movable, TRAIT_I_AM_INVISIBLE_ON_A_BOAT, REF(src))
 			movable.density = FALSE
 			movable.alpha = 0
+
+		if(!platform.fake)
+			platform.obj_flags &= ~BLOCK_Z_OUT_DOWN
+			platform.alpha = 0
 
 		for(var/obj/structure/industrial_lift/tram/moving_platform in platform.moving_lifts)
 			if(moving_platform.fake)
@@ -604,18 +605,19 @@ GLOBAL_LIST_EMPTY(active_lifts_by_type)
 		if(!platform.fake)
 			platform.obj_flags |= BLOCK_Z_OUT_DOWN
 			platform.alpha = 255
-		for(var/atom/movable/movable in objects_pre_alpha)
-			movable.alpha = objects_pre_alpha[movable]
-			REMOVE_TRAIT(movable, TRAIT_I_AM_INVISIBLE_ON_A_BOAT, REF(src))
-			objects_pre_alpha -= movable
-			movable.density = initial(movable.density)
-
 		for(var/obj/structure/industrial_lift/tram/moving_platform in platform.moving_lifts)
 			if(moving_platform.fake)
 				continue
 			moving_platform.horizontal_speed = 4
 			moving_platform.obj_flags |= BLOCK_Z_OUT_DOWN
 			moving_platform.alpha = 255
+
+	// Restore every platform before removing the cargo's fall protection.
+	for(var/atom/movable/movable in objects_pre_alpha)
+		movable.alpha = objects_pre_alpha[movable]
+		REMOVE_TRAIT(movable, TRAIT_I_AM_INVISIBLE_ON_A_BOAT, REF(src))
+		objects_pre_alpha -= movable
+		movable.density = initial(movable.density)
 
 /datum/lift_master/tram/proc/try_process_order(fence = FALSE)
 	var/total_coin_value = 0
@@ -943,10 +945,12 @@ GLOBAL_LIST_EMPTY(active_lifts_by_type)
 
 			if(ismobholder(listed_atom))
 				var/obj/item/mob_holder/holder = listed_atom
-				for(var/obj/item/item in holder.held_mob.get_equipped_items())
-					item.forceMove(get_turf(holder))
-				to_chat(holder.held_mob, span_boldwarning("You have been sold."))
-				qdel(holder.held_mob) //so long my friend
+				var/mob/living/sold_mob = holder.held_mob
+				if(sold_mob)
+					for(var/obj/item/item in sold_mob.get_equipped_items())
+						item.forceMove(get_turf(holder))
+					to_chat(sold_mob, span_boldwarning("You have been sold."))
+					qdel(sold_mob) //so long my friend
 			qdel(listed_atom)
 
 		var/atom/location = spawn_coins(total_coin_value, platform) // try_process_order will eat these coins, so don't spawn a chest

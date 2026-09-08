@@ -38,6 +38,7 @@
 		TRAIT_NOPAINSTUN,
 		TRAIT_DUALWIELDER,
 		TRAIT_DEADNOSE,
+		TRAIT_BLINDFIGHTING,
 	)
 
 	spells = list(
@@ -91,7 +92,7 @@
 	backpack_contents = list(
 		/obj/item/weapon/knife/hunting = 1,
 		/obj/item/flashlight/flare/torch/lantern = 1,
-		/obj/item/storage/belt/pouch/coins/poor = 1,
+		/obj/item/storage/belt/pouch/cloth/coins/poor = 1,
 		/obj/item/rope/chain = 1,
 		/obj/item/weapon/scabbard/knife = 1,
 		/obj/item/reagent_containers/glass/bottle/stronghealthpot = 1

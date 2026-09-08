@@ -1,0 +1,167 @@
+/obj/item/organ/artery
+	name = "artery"
+	desc = "An artery is torn! Literally."
+	icon_state = "artery"
+	base_icon_state = "artery"
+	sellprice = 1
+
+	organ_flags = ORGAN_ORGANIC|ORGAN_LIMB_SUPPORTER|ORGAN_INDESTRUCTIBLE|ORGAN_NO_VIOLENT_DAMAGE
+	organ_efficiency = list(ORGAN_SLOT_ARTERY = 100)
+	needs_processing = TRUE
+
+	maxHealth = ARTERY_MAX_HEALTH
+	high_threshold = ARTERY_MAX_HEALTH * 0.8
+	low_threshold = ARTERY_MAX_HEALTH * 0.2
+	pain_multiplier = 0.05
+
+	organ_volume = 0.5
+	max_blood_storage = 100
+	current_blood = 100
+	oxygen_req = 0.25
+	nutriment_req = 0.01
+	hydration_req = 0.01
+
+	/// How much blood we gush when torn
+	var/blood_flow = ARTERIAL_BLOOD_FLOW
+	/// If torn, this is basically the time until we gush again
+	COOLDOWN_DECLARE(next_squirt)
+	/// Time until we knit ourselves shut on our own after being torn
+	COOLDOWN_DECLARE(self_heal)
+	/// Minimum time until we squirt again
+	var/squirt_delay_min_seconds = 4
+	/// Maximum time until we squirt again
+	var/squirt_delay_max_seconds = 10
+	///squirting sound
+	var/squirt_sound = list('sound/gore/artery1.ogg', 'sound/gore/artery2.ogg', 'sound/gore/artery3.ogg')
+
+/obj/item/organ/artery/can_heal(delta_time, times_fired, in_bleedout)
+	return FALSE
+
+/obj/item/organ/artery/proc/is_bleeding()
+	if(!iscarbon(owner))
+		return FALSE
+	var/mob/living/carbon/carbon_owner = owner
+	if(!is_bruised() || !carbon_owner.pulse || (carbon_owner.bodytemperature <= -15))
+		return FALSE
+	return TRUE
+
+/obj/item/organ/artery/on_life(delta_time, times_fired, in_bleedout, virus_immunity, antibiotics, immunity_weakness, passed_temp)
+	. = ..()
+	if(!iscarbon(owner))
+		return
+	var/mob/living/carbon/carbon_owner = owner
+	// Given enough time, a torn artery clots and knits itself shut on its own
+	if(damage > 0 && COOLDOWN_FINISHED(src, self_heal))
+		to_chat(carbon_owner, span_notice("The bleeding in my [name] finally stops."))
+		heal_bleeding()
+		return
+	// Dead, pulseless or cryosleep people do not pump blood
+	if(!(is_bruised() || is_failing()) || !carbon_owner.pulse || (carbon_owner.bodytemperature <= -15))
+		return
+	var/bleed_mod = 1 * (damage/maxHealth)
+	var/obj/item/bodypart/limb = carbon_owner.get_bodypart(current_zone)
+	for(var/obj/item/grabbing/grab in grabbedby)
+		bleed_mod *= grab.bleed_suppressing
+	if(limb.bandage)
+		bleed_mod *= limb.bandage.bandage_effectiveness
+	switch(carbon_owner.pulse)
+		if(PULSE_NONE)
+			bleed_mod *= 0
+		if(PULSE_SLOW)
+			bleed_mod *= 0.8
+		if(PULSE_FAST)
+			bleed_mod *= 1.25
+		if(PULSE_FASTER, PULSE_THREADY)
+			bleed_mod *= 1.5
+	if(ishuman(carbon_owner))
+		var/mob/living/carbon/human/human_owner = carbon_owner
+		if(human_owner.physiology)
+			bleed_mod *= human_owner.physiology.bleed_mod
+	var/final_bleed_rate = CEILING(blood_flow * bleed_mod, 0.1)
+	if(!final_bleed_rate)
+		return
+	if(COOLDOWN_FINISHED(src, next_squirt))
+		squirt(final_bleed_rate)
+	else
+		squirt_less(final_bleed_rate)
+	consider_processing(in_bleedout)
+
+/obj/item/organ/artery/handle_blood(delta_time, times_fired, in_bleedout)
+	var/arterial_efficiency = get_slot_efficiency(ORGAN_SLOT_ARTERY)
+	if(is_failing_without_bleedout() || in_bleedout)
+		return
+	current_blood = min(current_blood + 5 * (0.5 * delta_time) * (max(1, arterial_efficiency) / ORGAN_OPTIMAL_EFFICIENCY), max_blood_storage)
+
+/obj/item/organ/artery/tear()
+	if(!owner)
+		return
+	if(owner.stat < UNCONSCIOUS)
+		owner.emote("scream")
+	owner.bleed(blood_flow)
+	current_blood = 0
+	applyOrganDamage(maxHealth * 0.5)
+	var/cd_time = rand(squirt_delay_min_seconds, squirt_delay_max_seconds) SECONDS
+	COOLDOWN_START(src, next_squirt, cd_time)
+	COOLDOWN_START(src, self_heal, ARTERY_SELF_HEAL_TIME)
+
+/obj/item/organ/artery/dissect()
+	if(!owner)
+		return
+	if(owner.stat < UNCONSCIOUS)
+		owner.emote("scream")
+	owner.bleed(blood_flow)
+	current_blood = 0
+	applyOrganDamage(maxHealth)
+	var/cd_time = rand(squirt_delay_min_seconds, squirt_delay_max_seconds) SECONDS
+	COOLDOWN_START(src, next_squirt, cd_time)
+	COOLDOWN_START(src, self_heal, ARTERY_SELF_HEAL_TIME)
+
+/obj/item/organ/artery/applyOrganDamage(amount, maximum = maxHealth, silent = FALSE, required_organ_flag = NONE)
+	. = ..(amount, maximum, required_organ_flag)
+	if(damage <= 0)
+		mend()
+
+/// Fully repairs the tear, stopping the bleeding. Blood storage refills on its own afterwards.
+/obj/item/organ/artery/proc/heal_bleeding()
+	setOrganDamage(0)
+
+/obj/item/organ/artery/proc/squirt(amount = 1, force = FALSE)
+	if(!iscarbon(owner))
+		return
+	var/mob/living/carbon/carbon_owner = owner
+	var/obj/item/bodypart/limb = carbon_owner.get_bodypart(current_zone)
+	var/open_wound = FALSE
+	for(var/datum/wound/wound as anything in limb.wounds)
+		if(wound.bleed_rate)
+			open_wound = TRUE
+			break
+	/*
+	for(var/datum/injury/injury as anything in limb.injuries)
+		if(injury.is_bleeding())
+			open_wound = TRUE
+			break
+	*/
+	var/unrestricted_flow = TRUE
+	if(LAZYLEN(limb.grabbedby) || limb.bandage)
+		unrestricted_flow = FALSE
+	if(unrestricted_flow || force)
+		if(open_wound && (carbon_owner.get_blood_circulation() >= amount) || force)
+			playsound(carbon_owner, squirt_sound, 75, 0)
+			carbon_owner.bleed(amount)
+			//owner.do_arterygush()
+			COOLDOWN_START(src, next_squirt, rand(squirt_delay_min_seconds, squirt_delay_max_seconds) SECONDS)
+		else
+			COOLDOWN_START(src, next_squirt, rand(squirt_delay_min_seconds, squirt_delay_max_seconds) SECONDS)
+			return squirt_less(amount, open_wound)
+	else
+		return squirt_less(amount, open_wound)
+
+/obj/item/organ/artery/proc/squirt_less(amount = 1, open_wound = TRUE)
+	// Just bleed without being *too* dramatic
+	if(open_wound)
+		owner.bleed(amount)
+	// No open wound, even less drama
+	else
+		owner.adjust_bloodvolume(-amount)
+	current_blood = max(current_blood - amount, 0)
+	consider_processing()

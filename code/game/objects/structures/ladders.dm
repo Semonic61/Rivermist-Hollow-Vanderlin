@@ -69,9 +69,6 @@
 		icon_state = "ladder00"
 
 /obj/structure/ladder/proc/travel(going_up, mob/user, is_ghost, obj/structure/ladder/ladder)
-	if(is_ghost)
-		return
-
 	if(!is_ghost)
 		playsound(src, 'sound/foley/ladder.ogg', 100, FALSE)
 		if(!do_after(user, 3 SECONDS, src))
@@ -81,19 +78,22 @@
 		show_fluff_message(going_up, user)
 		ladder.add_fingerprint(user)
 	var/turf/T = get_turf(ladder)
-	if(isliving(user))
-		movable_travel_z_level(user, T)
-	else
-		user.forceMove(T)
+	movable_travel_z_level(user, T)
 
-/obj/structure/ladder/proc/use(mob/user, is_ghost=FALSE)
+/obj/structure/ladder/proc/use(mob/user, is_ghost = FALSE, going_up)
 	if(!in_range(src, user))
 		return
 
 	if(user.buckled)
 		return
 
-	if (up && down)
+	if(!isnull(going_up))
+		var/obj/structure/ladder/destination = going_up ? up : down
+		if(destination)
+			travel(going_up, user, is_ghost, destination)
+		else
+			to_chat(user, "<span class='warning'>[src] doesn't seem to lead any further [going_up ? "up" : "down"]!</span>")
+	else if(up && down)
 		var/result = alert("Go up or down [src]?", "Ladder", "Up", "Down", "Cancel")
 		if (!in_range(src, user))
 			return  // nice try
@@ -120,11 +120,22 @@
 		return
 	use(user)
 
-/obj/structure/ladder/attack_paw(mob/user)
-	return use(user)
+//Not be called when right clicking as a monkey. attack_hand_secondary() handles that.
+/obj/structure/ladder/attack_paw(mob/user, list/modifiers)
+	use(user)
+	return TRUE
 
-/obj/structure/ladder/attackby(obj/item/W, mob/user, list/modifiers)
-	return use(user)
+/obj/structure/ladder/attack_animal(mob/user, list/modifiers)
+	use(user)
+	return TRUE
+
+/obj/structure/ladder/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	use(user, going_up = TRUE)
+	return ITEM_INTERACT_SUCCESS
+
+/obj/structure/ladder/item_interaction_secondary(mob/living/user, obj/item/tool, list/modifiers)
+	use(user, going_up = FALSE)
+	return ITEM_INTERACT_SUCCESS
 
 //ATTACK GHOST IGNORING PARENT RETURN VALUE
 /obj/structure/ladder/attack_ghost(mob/dead/observer/user)

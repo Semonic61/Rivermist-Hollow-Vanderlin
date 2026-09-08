@@ -63,19 +63,20 @@
 				zombie_check()*/
 
 	stop_sound_channel(CHANNEL_HEARTBEAT)
-	var/obj/item/organ/heart/H = getorganslot(ORGAN_SLOT_HEART)
-	if(H)
-		H.beat = BEAT_NONE
+	pulse = PULSE_NONE
+	for(var/thing in getorganslotlist(ORGAN_SLOT_HEART))
+		var/obj/item/organ/heart/heart = thing
+		heart.Stop()
 
-	if(!MOBTIMER_EXISTS(src, MT_DEATHDIED))
-		MOBTIMER_SET(src, MT_DEATHDIED)
-		if(H in SStreasury.bank_accounts)
-			for(var/obj/structure/fake_machine/camera/C in view(7, src))
-				var/area_name = A.name
-				var/texty = "<CENTER><B>Death of a Living Being</B><br>---<br></CENTER>"
-				texty += "[real_name] perished in front of face #[C.number] ([area_name]) at [station_time_timestamp("hh:mm")]."
-				SSroguemachine.death_queue += texty
-				break
+		if(!MOBTIMER_EXISTS(src, MT_DEATHDIED))
+			MOBTIMER_SET(src, MT_DEATHDIED)
+			if(heart in SStreasury.bank_accounts)
+				for(var/obj/structure/fake_machine/camera/C in view(7, src))
+					var/area_name = A.name
+					var/texty = "<CENTER><B>Death of a Living Being</B><br>---<br></CENTER>"
+					texty += "[real_name] perished in front of face #[C.number] ([area_name]) at [station_time_timestamp("hh:mm")]."
+					SSroguemachine.death_queue += texty
+					break
 
 		var/yeae = TRUE //! TRUE if we were killed on a cross and socially rejected
 		if(buckled)
@@ -103,9 +104,9 @@
 						if(HU.dna?.species && dna?.species)
 							if(HU.dna.species.id == dna.species.id)
 								var/mob/living/carbon/D = HU
-								if(D.has_quirk(/datum/quirk/vice/maniac))
+								if(D.has_quirk(/datum/quirk/vice/addiction/sadist))
 									D.add_stress(/datum/stress_event/viewdeathmaniac)
-									D.sate_addiction(/datum/quirk/vice/maniac)
+									D.sate_addiction(/datum/quirk/vice/addiction/sadist)
 								else
 									D.add_stress(/datum/stress_event/viewdeath)
 
@@ -120,7 +121,7 @@
 /mob/living/carbon/human/proc/zombie_check()
 	if(!mind)
 		return
-	var/datum/antagonist/zombie = mind.has_antag_datum(/datum/antagonist/zombie)
+	var/datum/antagonist/zombie = IS_DEADITE(src)
 	if(zombie)
 		return zombie
 	if(mind.has_antag_datum(/datum/antagonist/vampire))
@@ -140,9 +141,9 @@
 			if(HAS_TRAIT(CA, TRAIT_STEELHEARTED))
 				continue
 			var/mob/living/carbon/V = CA
-			if(V.has_quirk(/datum/quirk/vice/maniac))
+			if(V.has_quirk(/datum/quirk/vice/addiction/sadist))
 				V.add_stress(/datum/stress_event/viewgibmaniac)
-				V.sate_addiction(/datum/quirk/vice/maniac)
+				V.sate_addiction(/datum/quirk/vice/addiction/sadist)
 				continue
 			V.add_stress(/datum/stress_event/viewgib)
 	. = ..()

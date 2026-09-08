@@ -2,7 +2,7 @@
  * This is the proc that handles the order of an item_attack.
  *
  * The order of procs called is:
- * * [/atom/proc/tool_act] on the target. If it returns TRUE, the chain will be stopped.
+ * * [/atom/proc/tool_act] on the target. If it returns ITEM_INTERACT_SUCCESS or ITEM_INTERACT_BLOCKING, the chain will be stopped.
  * * [/obj/item/proc/pre_attack] on src. If this returns TRUE, the chain will be stopped.
  * * [/atom/proc/attackby] on the target. If it returns TRUE, the chain will be stopped.
  * * [/obj/item/proc/afterattack]. The return value does not matter.
@@ -28,8 +28,11 @@
 
 	var/is_right_clicking = LAZYACCESS(modifiers, RIGHT_CLICK)
 
-	if(tool_behaviour && target.tool_act(user, src, tool_behaviour))
+	var/item_interact_result = target.base_item_interaction(user, src, modifiers)
+	if(item_interact_result & ITEM_INTERACT_SUCCESS)
 		return TRUE
+	if(item_interact_result & ITEM_INTERACT_BLOCKING)
+		return FALSE
 
 	var/pre_attack_result
 	if(is_right_clicking)
@@ -169,14 +172,14 @@
 
 	return SECONDARY_ATTACK_CALL_NORMAL
 
-/obj/attackby(obj/item/I, mob/living/user, list/modifiers)
-	if(!user.cmode)
-		if(user.try_recipes(src, I, user))
-			user.changeNext_move(CLICK_CD_FAST)
-			return TRUE
-	if(I.obj_flags_ignore)
-		return I.attack_atom(src, user)
-	return ..() || ((obj_flags & CAN_BE_HIT) && I.attack_atom(src, user))
+/obj/attackby(obj/item/attacking_item, mob/user, list/modifiers)
+	if(..())
+		return TRUE
+
+	if(!attacking_item.obj_flags_ignore && !(obj_flags & CAN_BE_HIT))
+		return FALSE
+
+	return attacking_item.attack_atom(src, user, modifiers)
 
 /turf/attackby(obj/item/I, mob/living/user, list/modifiers)
 	if(liquids && I.heat)
@@ -226,35 +229,6 @@
 
 		return result
 
-	if(weapon.item_flags & ABSTRACT)
-		return
-
-	. = SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
-
-	if(src == user)
-		if(offered_item_ref)
-			cancel_offering_item()
-		else
-			to_chat(user, span_warning("I can't offer myself an item!"))
-		return
-
-	var/obj/offered_item
-	if(user.offered_item_ref)
-		offered_item = user.offered_item_ref.resolve()
-		if(offered_item == weapon)
-			user.cancel_offering_item()
-			return
-		else
-			to_chat(user, span_notice("I'm already offering [offered_item]!"))
-			return
-
-	offered_item = user.get_active_held_item()
-
-	if(HAS_TRAIT(offered_item, TRAIT_NODROP))
-		to_chat(user, span_warning("I can't offer this."))
-		return
-	user.offer_item(src, offered_item)
-
 /**
  * Called from [/mob/living/proc/attackby]
  *
@@ -285,8 +259,18 @@
 		if(user.used_intent.no_attack) //BYE!!!
 			return TRUE
 
+	// Feed the defender's tempo: being attacked builds their defensive rhythm.
+	// Fires before the windup, so even cancelled swings pressure the target.
+	if(ishuman(M))
+		var/mob/living/carbon/human/tempo_target = M
+		tempo_target.process_tempo_attack(user)
+
 	var/datum/intent/cached_intent = user.used_intent
-	if(user.used_intent.swingdelay)
+	if(isliving(user))
+		var/mob/living/living_user = user
+		if(!living_user.do_swing_windup(cached_intent))
+			return
+	else if(user.used_intent.swingdelay)
 		sleep(user.used_intent.swingdelay)
 	if(user.a_intent != cached_intent)
 		return
@@ -301,13 +285,21 @@
 	if((M.body_position != LYING_DOWN))
 		if(M.checkmiss(user))
 			return
-	if(istype(user.rmb_intent, /datum/rmb_intent/strong))
-		user.adjust_stamina(10)
-	if(istype(user.rmb_intent, /datum/rmb_intent/swift))
-		user.adjust_stamina(10)
+	var/stamina_cost = user.used_intent.get_releasedrain()
+	if(istype(user.rmb_intent, /datum/rmb_intent/strong) || istype(user.rmb_intent, /datum/rmb_intent/swift))
+		stamina_cost += 10
+	if(stamina_cost)
+		if(!user.check_stamina(stamina_cost))
+			if(user.client)
+				to_chat(user, span_warning("I'm too tired to attack!"))
+			user.changeNext_move(CLICK_CD_EXHAUSTED)
+			return TRUE
+		if(!user.adjust_stamina(stamina_cost))
+			return TRUE
 	var/turf/turf_before = get_turf(M)
-	if(M.checkdefense(user.used_intent, user))
-		if(M.d_intent == INTENT_PARRY)
+	var/defense_result = M.checkdefense(user.used_intent, user)
+	if(defense_result)
+		if(defense_result & DEFENSE_PARRY)
 			if(!M.get_active_held_item() && !M.get_inactive_held_item()) //we parried with a bracer, redirect damage
 				if(M.active_hand_index == 1)
 					user.tempatarget = BODY_ZONE_L_ARM
@@ -322,7 +314,7 @@
 							playsound(M, "nodmg", get_clamped_volume(), FALSE, extrarange = stealthy_audio ? SILENCED_SOUND_EXTRARANGE : -1, falloff_distance = 0)
 				log_combat(user, M, "attacked", src.name, "(INTENT: [uppertext(user.used_intent.name)]) (DAMTYPE: [uppertext(damtype)])")
 				add_fingerprint(user)
-		if(M.d_intent == INTENT_DODGE)
+		if(defense_result & DEFENSE_DODGE)
 			// if(!user.used_intent.swingdelay)
 			if(get_dist(get_turf(user), get_turf(M)) <= user.used_intent.reach)
 				user.do_attack_animation(turf_before, visual_effect_icon = user.used_intent.animname, used_item = src, used_intent = user.used_intent)
@@ -389,8 +381,10 @@
 /obj/item/proc/attack_atom(atom/attacked_atom, mob/living/user)
 	if(SEND_SIGNAL(src, COMSIG_ITEM_ATTACK_OBJ, attacked_atom, user) & COMPONENT_CANCEL_ATTACK_CHAIN)
 		return TRUE
+
 	if(item_flags & NOBLUDGEON)
-		return TRUE
+		return FALSE
+
 	user.changeNext_move(CLICK_CD_MELEE)
 	if(attacked_atom.attacked_by(src, user) && !isopenturf(attacked_atom)) // this check is due to attack animations in /obj/item/proc/afterattack()
 		user.do_attack_animation(attacked_atom, used_item = src, used_intent = user.used_intent)
@@ -641,15 +635,26 @@
 
 /mob/living/attacked_by(obj/item/I, mob/living/user)
 	var/hitlim = simple_limb_hit(user.zone_selected)
+	var/from_behind = FALSE
+	if(user && (src.dir == turn(get_dir(src,user), 180)))
+		from_behind = TRUE
 	I.funny_attack_effects(src, user)
 	if(I.force)
 		var/newforce = get_complex_damage(I, user)
+		if(from_behind && user.mind && !HAS_TRAIT(src, TRAIT_BLINDFIGHTING) && !user.has_status_effect(/datum/status_effect/debuff/stealthcd))//Backstabs do increased damage; Sneak attacks have a higher crit chance. Combined, a stealthy backstab should be very damaging.
+			var/sneakmult = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/misc/sneaking)
+			newforce *= max(1,sneakmult)
+			newforce += 15
+			user.apply_status_effect(/datum/status_effect/debuff/stealthcd)
+			to_chat(src, span_userdanger("BACKSTAB!!! THE ATTACK DEALS GREATER DAMAGE!"))
+			to_chat(user, span_userdanger("BACKSTAB!!! MY ATTACK DOES GREATER DAMAGE!"))
+			user.adjust_experience(/datum/skill/misc/sneaking, user.STAINT * 5, TRUE)
 		apply_damage(newforce, I.damtype, def_zone = hitlim)
 		if(I.damtype == BRUTE)
 			next_attack_msg.Cut()
 			if(HAS_TRAIT(src, TRAIT_SIMPLE_WOUNDS))
 				var/datum/wound/crit_wound  = simple_woundcritroll(user.used_intent.blade_class, newforce, user, hitlim)
-				if(crit_wound?.should_embed(I))
+				if(istype(crit_wound) && crit_wound.should_embed(I))
 					// throw_alert("embeddedobject", /atom/movable/screen/alert/embeddedobject)
 					simple_add_embedded_object(I, silent = FALSE, crit_message = TRUE)
 					src.grabbedby(user, 1, item_override = I)
@@ -678,14 +683,45 @@
 	var/hitlim = simple_limb_hit(user.zone_selected)
 	I.funny_attack_effects(src, user)
 	var/newforce = get_complex_damage(I, user)
-	var/haha = user.used_intent.blade_class
-	var/armor = run_armor_check(null, haha, armor_penetration = I.armor_penetration, damage = newforce)
+	var/haha = user.used_intent?.item_damage_type || user.used_intent?.blade_class || BLUNT
+	var/armor_penetration = I.armor_penetration
+	if(user.used_intent?.penfactor)
+		armor_penetration += user.used_intent.penfactor
+	var/armor = run_armor_check(null, haha, armor_penetration = armor_penetration, damage = newforce, used_weapon = I, attacker = user, used_intent = user.used_intent)
 	var/nodmg = FALSE
 	next_attack_msg.Cut()
-	if(armor > 0)
+	var/from_behind = FALSE
+	if(user && (src.dir == turn(get_dir(src,user), 180)))
+		from_behind = TRUE
+	if(armor >= newforce && newforce > 0)
 		nodmg = TRUE
 		next_attack_msg += span_warning("Armor stops the damage.")
-	apply_damage(newforce, I.damtype, hitlim, armor)
+	else if(armor > 0)
+		next_attack_msg += span_warning("Armor softens the damage.")
+	if(user.used_intent)
+		var/tempsound = user.used_intent.hitsound
+		if(tempsound)
+			playsound(src, tempsound, I.get_clamped_volume(), FALSE, extrarange = I.stealthy_audio ? SILENCED_SOUND_EXTRARANGE : -1, falloff_distance = 0)
+		else
+			playsound(src, "nodmg", I.get_clamped_volume(), FALSE, extrarange = I.stealthy_audio ? SILENCED_SOUND_EXTRARANGE : -1, falloff_distance = 0)
+	if(I.force)
+		if(from_behind && user.mind && !HAS_TRAIT(src, TRAIT_BLINDFIGHTING) && !user.has_status_effect(/datum/status_effect/debuff/stealthcd))//Backstabs do a little bit increased damage.
+			newforce += 10
+			user.apply_status_effect(/datum/status_effect/debuff/stealthcd)
+			to_chat(src, span_userdanger("Backstabed!"))
+			to_chat(user, span_userdanger("Backstab!"))
+			user.adjust_experience(/datum/skill/misc/sneaking, user.STAINT * 2, TRUE)
+		if(from_behind && user.m_intent == MOVE_INTENT_SNEAK && user.alpha <= 15)//From Dreamkeep (no can_see_cone here cuz idk if it applies to simple mobs)
+			if(user.mind && !HAS_TRAIT(src, TRAIT_BLINDFIGHTING) && !user.has_status_effect(/datum/status_effect/debuff/stealthcd))
+				var/sneakmult = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/misc/sneaking)
+				newforce *= max(1, sneakmult)
+				newforce += 15
+				user.apply_status_effect(/datum/status_effect/debuff/stealthcd)
+				to_chat(src, span_userdanger("SNEAK ATTACK!!!"))
+				to_chat(user, span_userdanger("SNEAK ATTACK!!!"))
+				user.adjust_experience(/datum/skill/misc/sneaking, user.STAINT * 5, FALSE)
+	if(!apply_damage(newforce, I.damtype, hitlim, armor))
+		nodmg = TRUE
 	I.remove_bintegrity(1)
 	if(I.damtype == BRUTE && !nodmg)
 		if(HAS_TRAIT(src, TRAIT_SIMPLE_WOUNDS))
@@ -709,17 +745,17 @@
 	I.do_special_attack_effect(user, null, null, src, null)
 
 
-/mob/living/simple_animal/getarmor(def_zone, type, damage, armor_penetration, blade_dulling, peeldivisor, intdamfactor = 1, used_weapon)
+/mob/living/simple_animal/getarmor(def_zone, type, damage, armor_penetration, blade_dulling, intdamfactor = 1, used_weapon, mob/living/attacker)
 	if(!type)
 		return 0
 	var/armorval = 0
 	if(HAS_TRAIT(src, TRAIT_ANIMAL_NATURAL_ARMOR) && genetics)
 		var/natural = genetics.get_natural_armor_for_type(type)
 		if(natural)
-			armorval += max(0, natural - armor_penetration)
+			armorval += natural
 
 	if(bbarding && !bbarding.obj_broken)
-		armorval = bbarding.armor.getRating(type)
+		armorval = bbarding.get_armor_rating(type)
 		var/intdamage = damage
 		if(type != "blunt")
 			if((damage + armor_penetration) > armorval)

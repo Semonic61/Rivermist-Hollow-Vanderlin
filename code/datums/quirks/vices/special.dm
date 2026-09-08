@@ -1,10 +1,11 @@
 
 /datum/quirk/vice/wanted
 	name = "Wanted"
-	desc = "Something in my past has made me a target. I am marked as an outlaw in these lands. I'm always looking over my shoulder. And protecting my loins...	\
-	\nTHIS IS A DIFFICULT FLAW, YOU WILL BE HUNTED AND HAVE NON-CON AND RAPE ATTEMPTS MADE AGAINST YOU BY TOWN GUARDS. \
-	THIS DOES NOT GIVE YOU A LICENSE TO GRIEF OR PERFORM CRIMINAL ACTS WITH IMPUNITY, \
-	THIS IS A ROLEPLAY FLAW TO MAKE YOU A 'TARGET' - PLAY AT YOUR OWN RISK."
+	desc = "Something in my past has made me a target. I am marked as an outlaw in these lands. I'm always looking over my shoulder. And protecting my loins..."
+	desc_hint = "THIS IS A DIFFICULT FLAW - play at your own risk. \
+	<br>You will be hunted and have non-con and rape attempts made against you by town guards. \
+	This does not give you a license to grief or perform criminal acts with impunity, \
+	this is a roleplay flaw to make you a 'target'"
 	point_value = 3
 	customization_type = QUIRK_TEXT
 	customization_label = "Why are you being hunted?"
@@ -30,6 +31,7 @@
 	if(HAS_TRAIT(user, TRAIT_RECOGNIZE_ADDICTS))
 		LAZYADDASSOCLIST(examine_contents, EXAMINE_SECT_PREGEAR, span_info("A wanted person..."))
 
+/* THIS QUIRK ISN'T LIABLE FOR RIVERMIST HOLLOW BUILD
 /datum/quirk/vice/luxless
 	name = "Lux-less"
 	desc = "Through some grand misfortune, or heroic sacrifice - you have given up your link to Psydon, and with it - your soul. A putrid, horrid thing, you consign yourself to an eternity of nil after death. EXPECT A DIFFICULT, MECHANICALLY UNFAIR EXPERIENCE. (Rakshari, Hollowkin and Kobolds cannot take this - they already have no lux.)"
@@ -53,6 +55,7 @@
 		return
 	var/mob/living/carbon/human/H = owner
 	H.apply_status_effect(/datum/status_effect/debuff/flaw_lux_taken)
+*/
 
 /datum/quirk/vice/pacifist
 	name = "Pacifist"
@@ -88,41 +91,11 @@
 	if(!ishuman(owner))
 		return
 	var/mob/living/carbon/human/H = owner
-	for(var/obj/item/bodypart/BP in H.bodyparts)
-		if(BP.body_zone == BODY_ZONE_HEAD)
-			BP.chronic_pain = rand(17.5, 27.5)
-			BP.chronic_pain_type = CHRONIC_NERVE_DAMAGE
-			break
+	var/obj/item/bodypart/BP = H.get_bodypart(BODY_ZONE_HEAD)
+	BP?.add_pain(rand(17.5, 27.5))
+	BP?.limb_flags |= BODYPART_CHRONIC_MIGRAINE
+	BP?.update_chronic()
 	to_chat(H, span_warning("You feel the familiar pressure building behind your eyes."))
-
-/datum/quirk/vice/chronic_migraine/on_life(mob/living/user)
-	if(!ishuman(user))
-		return
-	var/mob/living/carbon/human/H = user
-
-	if(prob(2))
-		for(var/obj/item/bodypart/BP in H.bodyparts)
-			if(BP.body_zone == BODY_ZONE_HEAD)
-				BP.lingering_pain += rand(25, 40)
-				break
-
-		if(prob(30))
-			H.set_eye_blur_if_lower(rand(6 SECONDS, 12 SECONDS))
-			to_chat(H, span_boldwarning("A severe migraine strikes! Your vision blurs and your head pounds!"))
-		else
-			to_chat(H, span_warning("A migraine headache begins to build."))
-
-	if(prob(1))
-		var/obj/item/bodypart/head = null
-		for(var/obj/item/bodypart/BP in H.bodyparts)
-			if(BP.body_zone == BODY_ZONE_HEAD)
-				head = BP
-				break
-
-		if(head && head.lingering_pain > 20 && H.loc && H.loc.luminosity > 2)
-			head.lingering_pain += rand(5, 10)
-			to_chat(H, span_warning("The flickering flames make your migraine worse!"))
-
 
 /datum/quirk/vice/skill_issue
 	name = "Skill Issue"
@@ -256,69 +229,10 @@
 	stress_change = 4
 	timer = 5 MINUTES
 
-/datum/quirk/vice/hardcore
-	name = "Hardcore"
-	desc = "ONE CHANCE. When you die, you have no place in the underworld. You will be reincarnated as a rat, unable to do anything."
-	point_value = 3
-	random_exempt = TRUE
-	var/turning = FALSE
-
-/datum/quirk/vice/hardcore/on_spawn()
-	if(!ishuman(owner))
-		return
-	RegisterSignal(owner, COMSIG_LIVING_DEATH, PROC_REF(on_death))
-	RegisterSignal(owner, COMSIG_LIVING_TRY_ENTER_AFTERLIFE, PROC_REF(on_death))
-	to_chat(owner, span_boldwarning("You have chosen HARDCORE mode. If you die, you will become a rat. There are no second chances."))
-
-/datum/quirk/vice/hardcore/on_remove()
-	if(!ishuman(owner))
-		return
-	UnregisterSignal(owner, COMSIG_LIVING_DEATH)
-	UnregisterSignal(owner, COMSIG_LIVING_TRY_ENTER_AFTERLIFE)
-
-/datum/quirk/vice/hardcore/proc/on_death(mob/living/source)
-	if(turning)
-		return TRUE
-	if(!ishuman(source))
-		return
-
-	addtimer(CALLBACK(src, PROC_REF(transform_to_rat), source), 3 SECONDS)
-	turning = TRUE
-	return TRUE
-
-/datum/quirk/vice/hardcore/proc/transform_to_rat(mob/living/carbon/human/H)
-	turning = FALSE
-
-	if(!H.mind)
-		return
-
-	var/turf/T
-	if(!H || QDELETED(H))
-		T = get_turf(pick(SSjob.latejoin_trackers))
-	else
-		T = get_turf(H)
-	if(!T)
-		return
-
-	var/mob/living/simple_animal/hostile/retaliate/smallrat/new_rat = new(T)
-
-	if(H.mind)
-		H.mind.transfer_to(new_rat)
-
-	to_chat(new_rat, span_userdanger("You have been reincarnated as a rat. Your adventure ends here."))
-
-	// Make the rat unable to do much
-	ADD_TRAIT(new_rat, TRAIT_PACIFISM, QUIRK_TRAIT)
-	ADD_TRAIT(new_rat, TRAIT_MUTE, QUIRK_TRAIT)
-	new_rat.melee_damage_lower = 0
-	new_rat.melee_damage_upper = 0
-	new_rat.obj_damage = 0
-	new_rat.status_flags |= GODMODE
-	ADD_TRAIT(new_rat, TRAIT_NOFIRE, QUIRK_TRAIT)
-
 /datum/quirk/vice/weak_heart
 	name = "Weak Heart"
-	desc = "You were born with a weak heart. You can't handle stressful situations for fear of your heart giving out (Half threshold for heart attacks and heart attack from being overly stressed)."
+	desc = "You were born with a weak heart. You can't handle stressful situations for fear of your heart giving out."
+	desc_hint = "Half threshold for heart attacks and heart attack from being overly stressed"
 	point_value = 6
 	incompatible_quirks = list(
 		/datum/quirk/boon/iron_will
@@ -432,7 +346,7 @@
 		return
 	var/mob/living/carbon/human/H = owner
 	H.visible_message(span_warning("[H]'s hands continue to tremble."), \
-					  span_warning("Your hands continue to shake..."))
+					span_warning("Your hands continue to shake..."))
 
 /atom/movable/screen/alert/status_effect/tremor_grip_loss
 	name = "Trembling Hands"

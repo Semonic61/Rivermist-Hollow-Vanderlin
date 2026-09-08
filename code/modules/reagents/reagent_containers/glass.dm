@@ -13,35 +13,112 @@
 	. = ..()
 	AddComponent(/datum/component/liquids_interaction, TYPE_PROC_REF(/obj/item/reagent_containers/glass, attack_on_liquids_turf))
 
+/obj/item/reagent_containers/glass/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!ishuman(interacting_with) || user.used_intent?.type != INTENT_FILL)
+		return ..()
+
+	var/mob/living/carbon/human/human_target = interacting_with
+	switch(user.zone_selected)
+		if(BODY_ZONE_CHEST)
+			if(human_target.wear_shirt && ((human_target.wear_shirt.flags_inv & HIDEBOOB) || !human_target.wear_shirt.genital_access))
+				to_chat(user, span_warning("[human_target]'s chest must be exposed before I can milk [human_target.p_them()]!"))
+				return ITEM_INTERACT_BLOCKING
+
+			var/obj/item/organ/genitals/filling_organ/breasts/breasts = human_target.getorganslot(ORGAN_SLOT_BREASTS)
+			if(!breasts)
+				to_chat(user, span_warning("[human_target] cannot be milked!"))
+				return ITEM_INTERACT_BLOCKING
+			if(!breasts.reagents?.total_volume)
+				to_chat(user, span_warning("[human_target] is out of milk!"))
+				return ITEM_INTERACT_BLOCKING
+			if(reagents.holder_full())
+				to_chat(user, span_warning("[src] is full."))
+				return ITEM_INTERACT_BLOCKING
+
+			user.visible_message(span_notice("[user] starts to gently massage [human_target]'s breasts, trying to fill [src] with milk..."), span_notice("I start to gently massage [human_target]'s breasts, trying to fill [src] with milk..."))
+			if(!do_after(user, 2 SECONDS, target = human_target))
+				return ITEM_INTERACT_BLOCKING
+
+			var/milk_to_take = CLAMP(breasts.reagents.maximum_volume / 6, 1, min(breasts.reagents.total_volume, reagents.maximum_volume - reagents.total_volume))
+			breasts.reagents.trans_to(src, milk_to_take, transfered_by = user)
+			user.visible_message(span_notice("[user] milks [human_target] into [src]."), span_notice("I milk [human_target] into [src]."))
+			return ITEM_INTERACT_SUCCESS
+
+		if(BODY_ZONE_PRECISE_GROIN)
+			if(human_target.wear_pants && ((human_target.wear_pants.flags_inv & HIDECROTCH) || !human_target.wear_pants.genital_access))
+				to_chat(user, span_warning("[human_target]'s groin must be exposed before I can collect [human_target.p_their()] fluids!"))
+				return ITEM_INTERACT_BLOCKING
+
+			var/obj/item/organ/genitals/filling_organ/vagina/vagina = human_target.getorganslot(ORGAN_SLOT_VAGINA)
+			if(!vagina)
+				to_chat(user, span_warning("[human_target] has nothing to collect from!"))
+				return ITEM_INTERACT_BLOCKING
+			if(!vagina.reagents?.total_volume)
+				to_chat(user, span_warning("[human_target]'s loins are empty!"))
+				return ITEM_INTERACT_BLOCKING
+			if(reagents.holder_full())
+				to_chat(user, span_warning("[src] is full."))
+				return ITEM_INTERACT_BLOCKING
+
+			user.visible_message(span_notice("[user] positions [src] under [human_target]'s loins and waits..."), span_notice("I position [src] under [human_target]'s loins..."))
+			if(!do_after(user, 4 SECONDS, target = human_target))
+				return ITEM_INTERACT_BLOCKING
+
+			var/fluid_to_take = CLAMP(vagina.reagents.maximum_volume / 2, 1, min(vagina.reagents.total_volume, reagents.maximum_volume - reagents.total_volume))
+			vagina.reagents.trans_to(src, fluid_to_take, transfered_by = user)
+			user.visible_message(span_notice("[user] collects fluid from [human_target]'s loins into [src]."), span_notice("I collect fluid from [human_target]'s loins into [src]."))
+			return ITEM_INTERACT_SUCCESS
+
+	return ITEM_INTERACT_BLOCKING
+
+/obj/item/reagent_containers/glass/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/reagent_containers/food/snacks/egg))
+		return ..()
+
+	if(reagents.holder_full())
+		to_chat(user, span_notice("[src] is full."))
+		return ITEM_INTERACT_BLOCKING
+
+	var/obj/item/reagent_containers/food/snacks/egg/egg = tool
+	to_chat(user, span_notice("I break [egg] into [src]."))
+	egg.reagents.trans_to(src, egg.reagents.total_volume, transfered_by = user)
+	qdel(egg)
+	return ITEM_INTERACT_SUCCESS
+
 /obj/item/reagent_containers/glass/proc/attack_on_liquids_turf(obj/item/reagent_containers/my_beaker, turf/T, mob/living/user, obj/effect/abstract/liquid_turf/liquids)
 	if(user.used_intent != /datum/intent/fill)
-		return
-	if(!user.Adjacent(T))
 		return FALSE
+
 	if(!my_beaker.spillable)
 		return FALSE
-	if(!user.Adjacent(T))
+
+	if(user.cmode)
 		return FALSE
-	if((user.cmode))
-		return FALSE
+
 	if(liquids.fire_state) //Use an extinguisher first
 		to_chat(user, span_danger("You can't scoop up anything while it's on fire!"))
-		return TRUE
+		return FALSE
+
 	if(liquids.liquid_group.expected_turf_height == 1)
 		to_chat(user, span_danger("The puddle is too shallow to scoop anything up!"))
-		return TRUE
+		return FALSE
+
 	var/free_space = my_beaker.reagents.maximum_volume - my_beaker.reagents.total_volume
 	if(free_space <= 0)
 		to_chat(user, span_danger("You can't fit any more liquids inside [my_beaker]!"))
-		return TRUE
+		return FALSE
+
 	var/desired_transfer = my_beaker.amount_per_transfer_from_this
 	if(desired_transfer > free_space)
 		desired_transfer = free_space
+
 	if(desired_transfer > liquids.liquid_group.reagents_per_turf)
 		desired_transfer = liquids.liquid_group.reagents_per_turf
+
 	liquids.liquid_group.trans_to_seperate_group(my_beaker.reagents, desired_transfer, liquids)
 	to_chat(user, span_notice("You scoop up around [UNIT_FORM_STRING(round(desired_transfer))] of liquids with [my_beaker]."))
 	user.changeNext_move(CLICK_CD_MELEE)
+
 	return TRUE
 
 /datum/intent/fill
@@ -84,215 +161,3 @@
 	noaa = TRUE
 	candodge = FALSE
 	misscost = 0
-
-/obj/item/reagent_containers/glass/attack(mob/living/M, mob/living/user, list/modifiers)
-	if(!user.used_intent)
-		return
-	if(user.used_intent.type == INTENT_GENERIC)
-		return ..()
-	if(!spillable)
-		return
-	if(ishuman(M) && user.used_intent.type == INTENT_FILL)
-		var/mob/living/carbon/human/humanized = M
-		var/obj/item/organ/genitals/filling_organ/breasts/tiddies = humanized.getorganslot(ORGAN_SLOT_BREASTS) // tiddy hehe
-		switch(user.zone_selected)
-			if(BODY_ZONE_CHEST) //chest
-				if(humanized.wear_shirt && (humanized.wear_shirt.flags_inv & HIDEBOOB || !humanized.wear_shirt.genital_access))
-					to_chat(user, span_warning("[humanized]'s chest must be exposed before I can milk [humanized.p_them()]!"))
-					return TRUE
-				if(!tiddies)
-					to_chat(user, span_warning("[humanized] cannot be milked!"))
-					return TRUE
-				if(tiddies.reagents.total_volume <= 0)
-					to_chat(user, span_warning("[humanized] is out of milk!"))
-					return TRUE
-				if(reagents.total_volume >= volume)
-					to_chat(user, span_warning("[src] is full."))
-					return TRUE
-				user.visible_message(span_notice("[user] starts to gently massage [humanized]'s breasts, trying to fill the [src] with milk..."), span_notice("I start to gently massage [humanized]'s breasts, trying to fill the [src] with milk..."))
-				var/milk_to_take = CLAMP((tiddies.reagents.maximum_volume/6), 1, min(tiddies.reagents.total_volume, volume - reagents.total_volume))
-				if(do_after(user, 20, target = humanized))
-					tiddies.reagents.trans_to(src, milk_to_take, transfered_by = user)
-					user.visible_message(span_notice("[user] milks [humanized] into \the [src]."), span_notice("I milk [humanized] into \the [src]."))
-			if(BODY_ZONE_PRECISE_GROIN) //groin
-				if(humanized.wear_pants && (humanized.wear_pants.flags_inv & HIDECROTCH || !humanized.wear_pants.genital_access))
-					to_chat(user, span_warning("[humanized]'s groin must be exposed before I can collect [humanized.p_them()] fluids!"))
-					return TRUE
-				var/obj/item/organ/genitals/filling_organ/vagina/vag = humanized.getorganslot(ORGAN_SLOT_VAGINA)
-				if(!vag)
-					to_chat(user, span_warning("[humanized] has nothing to colect from!"))
-					return TRUE
-				if(vag.reagents.total_volume <= 0)
-					to_chat(user, span_warning("[humanized]'s loins are ampty!"))
-					return TRUE
-				if(reagents.total_volume >= volume)
-					to_chat(user, span_warning("[src] is full."))
-					return TRUE
-				user.visible_message(span_notice("[user] positions the [src] right under [humanized]'s loin and waits..."), span_notice("I position the [src] right under [humanized]'s loin..."))
-				if(do_after(user, 40, target = humanized))
-					var/reag_to_take = CLAMP((vag.reagents.maximum_volume/2), 1, min(vag.reagents.total_volume, volume - reagents.total_volume))
-					vag.reagents.trans_to(src, reag_to_take, transfered_by = user)
-					user.visible_message(span_notice("[user] collects some of the fluids from [humanized]'s loin into \the [src]."), span_notice("I collect fluids from [humanized]'s loin into \the [src]."))
-		return
-	if(!reagents?.total_volume)
-		to_chat(user, span_danger("[src] is empty!"))
-		return
-	if(user.used_intent.type == INTENT_SPLASH)
-		var/R
-		M.visible_message(span_danger("[user] splashes the contents of [src] onto [M]!"), \
-						span_danger("[user] splashes the contents of [src] onto you!"))
-		if(reagents)
-			for(var/datum/reagent/A as anything in reagents.reagent_list)
-				R += "[A] ([num2text(A.volume)]),"
-
-		if(reagents?.reagent_list && user)
-			log_combat(user, M, "splashed (thrown) [english_list(reagents.reagent_list)]")
-			message_admins("[ADMIN_LOOKUPFLW(user)] splashed (thrown) [english_list(reagents.reagent_list)] on [M] at [ADMIN_VERBOSEJMP(M)].")
-
-		SEND_SIGNAL(user, COMSIG_SPLASHED_MOB, M, reagents.reagent_list)
-		reagents.reaction(M, TOUCH, 1, 1, user.zone_selected)
-		chem_splash(M.loc, 2, list(reagents))
-		playsound(M, pick('sound/foley/water_land1.ogg','sound/foley/water_land2.ogg', 'sound/foley/water_land3.ogg'), 100, FALSE)
-		log_combat(user, M, "splashed", R)
-		return
-	if(user.used_intent.type == INTENT_POUR)
-		if(!canconsume(M, user))
-			return
-		if(M != user)
-			M.visible_message(span_danger("[user] attempts to feed [M] something."), \
-						span_danger("[user] attempts to feed you something."))
-			if(!do_after(user, 3 SECONDS, M))
-				return
-			if(!reagents?.total_volume)
-				return // The drink might be empty after the delay, such as by spam-feeding
-			M.visible_message(span_danger("[user] feeds [M] something."), \
-						span_danger("[user] feeds you something."))
-			log_combat(user, M, "fed", reagents.log_list())
-		else
-			// check to see if we're a noble drinking soup
-			if(ishuman(user) && istype(src, /obj/item/reagent_containers/glass/bowl))
-				var/mob/living/carbon/human/human_user = user
-				var/obj/item/reagent_containers/glass/bowl/bowl_check = src
-				if(bowl_check.dirty)
-					human_user.add_stress(/datum/stress_event/dirty_bowl)
-				else if(istype(bowl_check.reagents, /datum/reagent/consumable/soup))
-					var/datum/reagent/consumable/soup/soup_check = bowl_check.reagents
-					soup_check.taste_mult +=1
-				if(bowl_check.reagents.get_reagent_amount(/datum/reagent/water) != bowl_check.reagents.total_volume)
-					bowl_check.usages += 1
-				if(bowl_check.usages >= bowl_check.max_usages && !bowl_check.dirty)
-					bowl_check.dirty = TRUE
-					var/datum/component/particle_spewer = bowl_check.GetComponent(/datum/component/particle_spewer/sparkle)
-					if(particle_spewer)
-						qdel(particle_spewer)
-					bowl_check.update_appearance(UPDATE_OVERLAYS)
-				if(human_user.is_noble()) // egads we're an unmannered SLOB
-					human_user.add_stress(/datum/stress_event/noble_bad_manners)
-					if(prob(25))
-						to_chat(human_user, span_red("I've got better manners than this..."))
-			to_chat(user, span_notice("I swallow a gulp of [src]."))
-		addtimer(CALLBACK(reagents, TYPE_PROC_REF(/datum/reagents, trans_to), M, min(amount_per_transfer_from_this,5), TRUE, TRUE, FALSE, user, FALSE, INGEST), 5)
-		playsound(M, pick(drinksounds), 100, TRUE)
-
-/obj/item/reagent_containers/glass/attack_atom(atom/attacked_atom, mob/living/user)
-	if(user.used_intent.type == INTENT_GENERIC)
-		return ..()
-
-	if(!spillable)
-		return ..()
-
-	var/stealthy = (user.m_intent == MOVE_INTENT_SNEAK)
-	if(attacked_atom.is_refillable() && (user.used_intent.type == INTENT_POUR)) //Something like a glass. Player probably wants to transfer TO it.
-		if(!reagents.total_volume)
-			to_chat(user, span_danger("[src] is empty!"))
-			return
-
-		if(attacked_atom.reagents.holder_full())
-			to_chat(user, span_danger("[attacked_atom] is full."))
-			return
-		if(stealthy)
-			to_chat(user, span_notice("I pour [src] into [attacked_atom]."))
-		else
-			user.visible_message(span_notice("[user] pours [src] into [attacked_atom]."), \
-							span_notice("I pour [src] into [attacked_atom]."))
-		if(!stealthy && poursounds)
-			playsound(user, pick(poursounds), 100, TRUE)
-		for(var/i in 1 to 22)
-			if(do_after(user, 8 DECISECONDS, attacked_atom, hidden = stealthy))
-				if(!reagents.total_volume)
-					break
-				if(attacked_atom.reagents.holder_full())
-					break
-				if(!reagents.trans_to(attacked_atom, amount_per_transfer_from_this, transfered_by = user))
-					reagents.reaction(attacked_atom, TOUCH, amount_per_transfer_from_this)
-			else
-				break
-		return
-
-	if(attacked_atom.is_drainable() && (user.used_intent.type == INTENT_FILL)) //A dispenser. Transfer FROM it TO us.
-		if(!attacked_atom.reagents.total_volume)
-			to_chat(user, span_danger("[attacked_atom] is empty!"))
-			return
-
-		if(reagents.holder_full())
-			to_chat(user, span_danger("[src] is full."))
-			return
-		if(stealthy)
-			to_chat(user, span_notice("I fill [src] with [attacked_atom]."))
-		else
-			user.visible_message(span_notice("[user] fills [src] with [attacked_atom]."), \
-						span_notice("I fill [src] with [attacked_atom]."))
-		if(!stealthy && fillsounds)
-			playsound(user, pick(fillsounds), 100, TRUE)
-		for(var/i in 1 to 22)
-			if(do_after(user, 8 DECISECONDS, attacked_atom, hidden = stealthy))
-				if(reagents.holder_full())
-					break
-				if(!attacked_atom.reagents.total_volume)
-					break
-				attacked_atom.reagents.trans_to(src, amount_per_transfer_from_this, transfered_by = user)
-			else
-				break
-		return
-
-	if(reagents.total_volume && user.used_intent.type == INTENT_SPLASH)
-		var/turf/newT = get_turf(attacked_atom)
-		while(istype(newT, /turf/closed) && newT != user.loc) //catch for walls
-			newT = get_step(newT, get_dir(newT, user.loc))
-		reagents.reaction(newT, TOUCH)
-		chem_splash(newT, 2, list(reagents))
-		playsound(newT, pick('sound/foley/water_land1.ogg','sound/foley/water_land2.ogg', 'sound/foley/water_land3.ogg'), 100, FALSE)
-		if(stealthy)
-			to_chat(user, span_notice("I splash the contents of [src] onto \the [newT]."))
-		else
-			user.visible_message(span_notice("[user] splashes the contents of [src] onto \the [newT]!"), \
-									span_notice("I splash the contents of [src] onto \the [newT]."))
-
-/obj/item/reagent_containers/glass/afterattack(obj/target, mob/user, proximity, list/modifiers)
-	SEND_SIGNAL(src, COMSIG_ITEM_AFTERATTACK, target, user)
-	if(user.used_intent.type == INTENT_GENERIC)
-		return ..()
-
-	if((!proximity) || !check_allowed_items(target,target_self=1))
-		return ..()
-
-	if(!spillable)
-		return
-
-/obj/item/reagent_containers/glass/attackby(obj/item/I, mob/user, list/modifiers)
-	var/hotness = I.get_temperature()
-	if(hotness && reagents)
-		reagents.expose_temperature(hotness)
-		to_chat(user, span_notice("I heat [name] with [I]!"))
-
-	if(istype(I, /obj/item/reagent_containers/food/snacks/egg)) //breaking eggs
-		var/obj/item/reagent_containers/food/snacks/egg/E = I
-		if(reagents)
-			if(reagents.total_volume >= reagents.maximum_volume)
-				to_chat(user, span_notice("[src] is full."))
-			else
-				to_chat(user, span_notice("I break [E] in [src]."))
-				E.reagents.trans_to(src, E.reagents.total_volume, transfered_by = user)
-				qdel(E)
-			return
-	..()

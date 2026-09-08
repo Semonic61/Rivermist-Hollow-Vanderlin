@@ -1,4 +1,5 @@
 /obj/item/key
+	item_weight = 20 GRAMS
 	name = "old key"
 	desc = "A simple key of simple uses."
 	icon_state = "brownkey"
@@ -8,10 +9,11 @@
 	throwforce = 0
 	drop_sound = 'sound/items/gems (1).ogg'
 	slot_flags = ITEM_SLOT_HIP|ITEM_SLOT_MOUTH|ITEM_SLOT_NECK|ITEM_SLOT_RING
-	grid_height = 64
+	grid_height = 32
 	grid_width = 32
 
 /obj/item/lockpick
+	item_weight = 10 GRAMS
 	name = "lockpick"
 	desc = "A small, sharp piece of metal to aid opening locks in the absence of a key."
 	icon_state = "lockpick"
@@ -20,11 +22,36 @@
 	dropshrink = 0.75
 	throwforce = 0
 	max_integrity = 10
+	uses_integrity = TRUE
 	var/picklvl = 1
 	slot_flags = ITEM_SLOT_HIP|ITEM_SLOT_MOUTH|ITEM_SLOT_NECK
 	destroy_sound = 'sound/items/pickbreak.ogg'
 	grid_width = 32
-	grid_height = 64
+	grid_height = 32
+
+/obj/item/lockpick/hairpinsilver
+	item_weight = 10 GRAMS
+	name = "Silver Hairpin"
+	desc = "A silver hair clip, beautiful and popular with the church and the minor nobility"
+	icon_state = "silverpin"
+	icon = 'icons/roguetown/clothing/head.dmi'
+	w_class = WEIGHT_CLASS_TINY
+	dropshrink = 0.75
+	throwforce = 0
+	max_integrity = 100
+	anvilrepair = /datum/attribute/skill/craft/traps
+	slot_flags = ITEM_SLOT_HEAD|ITEM_SLOT_MASK
+	destroy_sound = 'sound/items/pickbreak.ogg'
+	grid_width = 32
+	grid_height = 32
+
+/obj/item/lockpick/hairpinsilver/hairpingold
+	item_weight = 15 GRAMS
+	name = "Gold Hairpin"
+	desc = "The golden hairpin is popular among the upper nobility and merchants"
+	icon_state = "goldpin"
+	icon = 'icons/roguetown/clothing/head.dmi'
+	max_integrity = 200
 
 //custom key
 /obj/item/key/custom
@@ -55,43 +82,55 @@
 	if(access2add)
 		. += span_info("It has been marked with [access2add[1]], but has not been finished.")
 
-/obj/item/key/custom/attackby(obj/item/I, mob/user, list/modifiers)
-	if(!istype(I, /obj/item/weapon/hammer))
-		return ..()
+/obj/item/key/custom/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(user.cmode)
+		return NONE
+
+	if(!istype(tool, /obj/item/weapon/hammer))
+		return NONE
+
 	if(lockids)
 		var/input = (input(user, "What would you name this key?", "", "") as text)
 		if(!input)
-			return
+			return ITEM_INTERACT_BLOCKING
 		name = input + " key"
 		to_chat(user, span_notice("You rename the key to [name]."))
-		return
+		return ITEM_INTERACT_SUCCESS
+
 	var/input = input(user, "What would you like to set the key ID to?", "", 0) as num
 	input = abs(input)
 	if(!input)
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	to_chat(user, span_notice("You set the key ID to [input]."))
 	access2add = list("[input]")
 
-/obj/item/key/custom/attackby_secondary(obj/item/I, mob/user, list/modifiers)
-	. = ..()
-	if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
-		return
-	. = SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/key/custom/item_interaction_secondary(mob/living/user, obj/item/tool, list/modifiers)
+	if(user.cmode)
+		return NONE
+
 	if(lockids)
 		to_chat(user, span_warning("[src] has been finished, it cannot be adjusted again!"))
-		return
-	if(istype(I, /obj/item/weapon/hammer))
+		return ITEM_INTERACT_BLOCKING
+
+	if(istype(tool, /obj/item/weapon/hammer))
 		if(!access2add)
 			to_chat(user, span_warning("[src] is not ready, its teeth are not set!"))
-			return
+			return ITEM_INTERACT_BLOCKING
 		lockids = access2add
 		access2add = null
 		to_chat(user, span_notice("You finish [src]."))
-		return
-	if(!copy_access(I))
-		to_chat(user, span_warning("I cannot forge a key from [I]!"))
-		return
-	to_chat(user, span_notice("I forge the key based on the workings of [I]."))
+		return ITEM_INTERACT_SUCCESS
+
+	if(!copy_access(tool))
+		to_chat(user, span_warning("I cannot forge a key from [tool]!"))
+		return ITEM_INTERACT_BLOCKING
+
+	to_chat(user, span_notice("I forge the key based on the workings of [tool]."))
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/key/lord
 	name = "master key"
@@ -760,8 +799,10 @@
 	lockids = list("mansionvampire")
 
 /obj/item/key/bandit
+	name = "bandit camp key"
+	desc = "A dark iron key shared among the free company."
 	icon_state = "mazekey"
-	lockids = list("banditcamp")
+	lockids = list(ACCESS_BANDIT)
 
 
 ////// MINOR NOBLES

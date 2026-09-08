@@ -6,7 +6,7 @@
 	mob_overlay_icon = 'icons/roguetown/clothing/special/onmob/forest_guard.dmi'
 	icon_state = "foresthide"
 	prevent_crits = ALL_EXCEPT_STAB
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
 
 /obj/item/clothing/cloak/forrestercloak
 	name = "forrester's cloak"
@@ -20,14 +20,11 @@
 	sleevetype = "shirt"
 	nodismemsleeves = TRUE
 	inhand_mod = TRUE
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
+	has_storage = TRUE
 
 /obj/item/clothing/cloak/forrestercloak/snow
 	icon_state = "snowcloak"
-
-/obj/item/clothing/cloak/forrestercloak/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
 
 /obj/item/clothing/cloak/wardencloak
 	name = "warden's cloak"
@@ -40,12 +37,10 @@
 	sleeved = 'icons/roguetown/clothing/special/onmob/forest_guard.dmi'
 	sleevetype = "shirt"
 	nodismemsleeves = TRUE
-
-/obj/item/clothing/cloak/wardencloak/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
+	has_storage = TRUE
 
 /obj/item/clothing/head/helmet/visored/warden
+	item_weight = 3.25 KILOGRAMS
 	name = "wardens's helmet"
 	desc = "A strange helmet adorned with antlers worn by the warden of the forest."
 	icon = 'icons/roguetown/clothing/special/forest_guard.dmi'
@@ -72,6 +67,7 @@
 	abstract_type = /obj/item/clothing/head/helmet/medium/decorated
 
 /obj/item/clothing/head/helmet/medium/decorated/skullmet
+	item_weight = 1.45 KILOGRAMS
 	name = "skullmet"
 	desc = "A crude helmet constructed with the skull of various beasts of Silvanus."
 	icon = 'icons/roguetown/clothing/special/forest_guard.dmi'
@@ -95,6 +91,7 @@
 		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
 /obj/item/clothing/head/helmet/medium/decorated/rousskullmet
+	item_weight = 1.45 KILOGRAMS
 	name = "rous skullmet"
 	desc = "A crude helmet constructed with the skull of a rous, typically used by the problem children sent to the Foresters."
 	icon = 'icons/roguetown/clothing/special/forest_guard.dmi'

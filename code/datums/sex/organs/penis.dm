@@ -1,6 +1,5 @@
 /obj/item/organ/genitals/penis
 	name = "penis"
-	icon = 'modular_rmh/icons/eaglephntm/icons/obj/surgery.dmi'
 	icon_state = "penis"
 	visible_organ = TRUE
 	zone = BODY_ZONE_PRECISE_GROIN
@@ -19,8 +18,10 @@
 /obj/item/organ/genitals/penis/Initialize()
 	. = ..()
 
-/obj/item/organ/genitals/penis/Insert(mob/living/M, special, drop_if_replaced)
+/obj/item/organ/genitals/penis/Insert(mob/living/M, special, drop_if_replaced, new_zone = null)
 	. = ..()
+	if(!.)
+		return FALSE
 	RegisterSignal(M, COMSIG_SEX_AROUSAL_CHANGED, PROC_REF(on_arousal_changed), TRUE)
 	RegisterSignal(M, COMSIG_SET_ERECT_STATE, PROC_REF(set_hard), TRUE)
 	if(penis_type in list(PENIS_TYPE_KNOTTED, PENIS_TYPE_TAPERED_DOUBLE_KNOTTED, PENIS_TYPE_BARBED_KNOTTED))
@@ -47,6 +48,8 @@
 			return C.gender == MALE
 
 /obj/item/organ/genitals/penis/proc/on_arousal_changed()
+	if(!owner)
+		return
 	var/list/arousal_data = list()
 	SEND_SIGNAL(owner, COMSIG_SEX_GET_AROUSAL, arousal_data)
 	var/max_arousal = ACTIVE_EJAC_THRESHOLD || 120
@@ -68,12 +71,14 @@
 	on_arousal_changed()
 
 /obj/item/organ/genitals/penis/proc/update_erect_state(new_state = ERECT_STATE_NONE)
+	if(!owner)
+		return
 	var/oldstate = erect_state
 	if(owner.mind)
 		var/datum/antagonist/werewolf/W = owner.mind.has_antag_datum(/datum/antagonist/werewolf/)
 		if(W && W.transformed == TRUE)
 			owner.regenerate_icons()
-	if(!LAZYLEN(return_sessions_with_user(owner)))
+	if(!length(owner.sex_scene?.controllers))
 		always_hard = FALSE
 	if(always_hard)
 		erect_state = ERECT_STATE_HARD
@@ -128,6 +133,9 @@
 	if(!user?.ckey)
 		return FALSE
 	return user.ckey == original_owner_ckey
+
+/obj/item/penis_fake/can_random_body_storage_layer_swap()
+	return FALSE
 
 
 /obj/item/organ/genitals/penis/knotted

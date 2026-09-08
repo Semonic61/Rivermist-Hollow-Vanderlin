@@ -36,6 +36,10 @@
 
 /obj/machinery/light/fueled/seton(s)
 	. = ..()
+	// BUGFIX (fuel): re-add ourselves to SSmachines whenever the fire is turned on,
+	// otherwise fueluse stops draining after the first burn_out()
+	if(on)
+		START_PROCESSING(SSmachines, src)
 	if(temperature_change)
 		propagate_temp_change(temperature_change, temperature_weight, temperature_falloff)
 
@@ -95,10 +99,12 @@
 	if(!on && ((fueluse > 0) || (initial(fueluse) == 0)))
 		playsound(src, 'sound/items/firelight.ogg', 100)
 		on = TRUE
+		START_PROCESSING(SSmachines, src) // BUGFIX (fuel): resume draining fueluse after a relight
 		update()
 		update_appearance(UPDATE_ICON_STATE)
 		if(soundloop)
 			soundloop.start()
+		SEND_SIGNAL(src, COMSIG_ATOM_HEAT_SOURCE_LIT)
 		return TRUE
 
 /obj/machinery/light/fueled/Crossed(atom/movable/AM, oldLoc)
@@ -132,7 +138,7 @@
 					var/list/possible_recipes = list()
 					for(var/recipe_type in subtypesof(/datum/container_craft/pan))
 						var/datum/container_craft/recipe = new recipe_type
-						if(recipe.used_skill != /datum/attribute/skill/craft/cooking)
+						if(!ispath(recipe.used_skill, /datum/attribute/skill/craft/cooking))
 							continue // Only want cooking recipes
 
 						// Check if our food item matches any recipe requirement
@@ -177,7 +183,7 @@
 							if(prob(prob2spoil))
 								var/obj/item/reagent_containers/food/snacks/S = W
 								user.visible_message("<span class='warning'>[user] burns [S].</span>")
-								if(user.client?.prefs.showrolls)
+								if(user.client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 									to_chat(user, "<span class='warning'>Critfail... [prob2spoil]%.</span>")
 								result = S.cooking(1000, null)
 							else if(chosen_recipe.output)
@@ -212,7 +218,7 @@
 							var/obj/item/C
 							if(prob(prob2spoil))
 								user.visible_message("<span class='warning'>[user] burns [S].</span>")
-								if(user.client?.prefs.showrolls)
+								if(user.client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 									to_chat(user, "<span class='warning'>Critfail... [prob2spoil]%.</span>")
 								C = S.cooking(1000, null)
 							else
@@ -247,7 +253,7 @@
 		return
 	else
 		if(on)
-			if(istype(W, /obj/item/natural/dirtclod))
+			if(istype(W, /obj/item/natural/clod))
 				if(!user.temporarilyRemoveItemFromInventory(W))
 					return
 				on = FALSE

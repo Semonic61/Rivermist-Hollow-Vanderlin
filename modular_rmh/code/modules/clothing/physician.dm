@@ -110,14 +110,14 @@
 	sleeved = 'modular_rmh/icons/clothing/onmob/helpers/physician_sleeves.dmi'
 	detail_tag = "_detail"
 	detail_color = CLOTHING_RED
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/rmh/gloves/court_physician
 	resistance_flags = null
 	blocksound = SOFTHIT
 	blade_dulling = DULLING_BASHCHOP
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
 	anvilrepair = null
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 	salvage_result = /obj/item/natural/hide/cured
 	misc_flags = CRAFTING_TEST_EXCLUDE
 

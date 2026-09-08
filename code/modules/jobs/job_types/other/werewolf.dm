@@ -67,9 +67,7 @@
 		if(!disguise_job.outfit && !disguise_job.outfit_female)
 			continue
 
-		var/disguise_title = disguise_job.title
-		if(disguise_job.f_title && spawned.pronouns == SHE_HER)
-			disguise_title = disguise_job.f_title
+		var/disguise_title = disguise_job.get_gendered_title(spawned.gender, spawned.pronouns)
 
 		disguise_choices[disguise_title] = disguise_job
 
@@ -117,7 +115,7 @@
 	backr = /obj/item/storage/backpack/satchel/cloth
 	backl = null
 	belt = /obj/item/storage/belt/leather/rope
-	beltl = /obj/item/storage/belt/pouch/coins/poor
+	beltl = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltr = /obj/item/clothing/armor/leather/vest
 	ring = null
 	l_hand = null

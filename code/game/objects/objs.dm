@@ -49,15 +49,22 @@
 	var/rarity_mod = 0
 
 	vis_flags = VIS_INHERIT_PLANE
+
+	/// The sound this obj makes when something is buckled to it
+	var/buckle_sound = null
+
+	/// The sound this obj makes when something is unbuckled from it
+	var/unbuckle_sound = null
+
 	uses_integrity = TRUE
 
 	// See /code/datums/locks
 	// Additional vars may be found in items.dm for things solely related to lock access
 
 	/**
-	 * A list of lockids for keys and locks
-	 * If something has a lock it's used to set access of the lock then nulled
-	 */
+	* A list of lockids for keys and locks
+	* If something has a lock it's used to set access of the lock then nulled
+	*/
 	var/list/lockids
 	/// A lock datum that handles access and lockpicking
 	var/datum/lock/lock
@@ -88,12 +95,6 @@
 	return ..()
 
 /obj/Initialize(mapload, ...)
-	if(islist(armor))
-		armor = getArmor(arglist(armor))
-	else if(!armor)
-		armor = getArmor()
-	else if(!istype(armor, /datum/armor))
-		stack_trace("Invalid type [armor.type] found in .armor during /obj Initialize()")
 	if(main_material)
 		set_material_information()
 	if(lockid)

@@ -99,13 +99,17 @@
 	set_patron(master.patron)
 	copy_known_languages_from(master, TRUE)
 	mob_biotypes = MOB_UNDEAD
-	faction = list(FACTION_UNDEAD)
+	set_faction(list(FACTION_UNDEAD))
 	ambushable = FALSE
 	candodge = FALSE
 
 	skeletonize(FALSE)
+
 	skele_look()
 	grant_undead_eyes()
+
+	for(var/obj/item/organ/organ as anything in internal_organs)
+		organ.setOrganDamage(0)
 
 	if(length(quirks))
 		clear_quirks()

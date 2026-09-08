@@ -137,10 +137,10 @@
 	// Register client who owns this message
 	owned_by = owner.client
 	RegisterSignal(owned_by, COMSIG_PARENT_QDELETING, PROC_REF(on_parent_qdel))
-	RegisterSignal(owner, COMSIG_MOB_APPLY_DAMGE, PROC_REF(on_parent_take_damage))
+	RegisterSignal(owner, COMSIG_MOB_APPLY_DAMAGE, PROC_REF(on_parent_take_damage))
 
 	// Clip message
-	var/maxlen = owned_by.prefs.max_chat_length
+	var/maxlen = owned_by.prefs.read_preference(/datum/preference/numeric/max_chat_length)
 	if (length_char(text) > maxlen)
 		text = copytext_char(text, 1, maxlen + 1) + "..." // BYOND index moment
 
@@ -450,6 +450,8 @@
  * * spans - Additional classes to be added to the message
  */
 /mob/proc/create_chat_message(atom/movable/speaker, datum/language/message_language, raw_message, list/spans)
+	if(QDELETED(src) || !client || QDELETED(speaker))
+		return
 	if(HAS_TRAIT(speaker, TRAIT_RUNECHAT_HIDDEN))
 		return
 	// Ensure the list we are using, if present, is a copy so we don't modify the list provided to us

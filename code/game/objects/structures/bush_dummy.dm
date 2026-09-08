@@ -18,7 +18,7 @@
 	RegisterSignal(src, COMSIG_ATOM_WAS_ATTACKED, PROC_REF(on_attacked))
 
 	if(M.buckled)
-		var/datum/component/riding/ride = M.buckled.GetComponent(/datum/component/riding)
+		var/datum/component/riding/creature/ride = M.buckled.GetComponent(/datum/component/riding/creature)
 		if(ride)
 			ride.force_dismount(M)
 		else

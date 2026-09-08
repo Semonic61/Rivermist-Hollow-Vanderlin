@@ -41,7 +41,7 @@
 	aggressive = 1
 	deathmessage = "collapses to the floor with a final roar, the impact rocking the ground."
 	footstep_type = FOOTSTEP_MOB_HEAVY
-	var/void_corruption = TRUE
+	var/void_corruption = FALSE
 	dendor_taming_chance = DENDOR_TAME_PROB_NONE
 	food_max = 0
 
@@ -263,7 +263,7 @@
 			visible_message(span_warning("[src] slams down on [L], crushing [L.p_them()]!"))
 			L.gib()
 		else
-			L.adjustBruteLoss(75)
+			L.adjustBruteLoss(75, damage_type = BCLASS_BLUNT)
 			if(L && !QDELETED(L)) // Some mobs are deleted on death
 				var/throw_dir = get_dir(src, L)
 				if(L.loc == loc)

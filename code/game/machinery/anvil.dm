@@ -24,92 +24,152 @@
 		if(hott)
 			. += "<span class='warning'>[hingot] is too hot to touch.</span>"
 
-/obj/machinery/anvil/attack_hand_secondary(mob/user, list/modifiers)
+/obj/machinery/anvil/attack_hand(mob/living/user, list/modifiers)
+	if(smithing)
+		to_chat(user, span_warning("[src] is currently being worked on!"))
+		return TRUE
 	if(hingot)
-		return hingot.attack_hand_secondary(user, modifiers)
-	. = ..()
+		return hingot.attack_hand(user, modifiers)
+	return ..()
 
-/obj/machinery/anvil/attackby(obj/item/W, mob/living/user, list/modifiers)
-	if(istype(W, /obj/item/weapon/tongs))
-		var/obj/item/weapon/tongs/T = W
+/obj/machinery/anvil/attack_hand_secondary(mob/user, list/modifiers)
+	if(hingot && !smithing)
+		return hingot.attack_hand_secondary(user, modifiers)
+	return ..()
+
+/obj/machinery/anvil/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, /obj/item/weapon/tongs))
+		var/obj/item/weapon/tongs/T = tool
 		if(smithing)
 			to_chat(user, "<span class='warning'>[src] is currently being worked on!</span>")
-			return
+			return ITEM_INTERACT_BLOCKING
 		if(hingot)
 			if(T.held_item && istype(T.held_item, /obj/item/ingot))
 				if(hingot.currecipe && hingot.currecipe.needed_item && istype(T.held_item, hingot.currecipe.needed_item))
 					hingot.currecipe.item_added(user)
 					qdel(T.held_item)
-					T.held_item = null
-					T.update_appearance(UPDATE_ICON_STATE)
+					T.set_held_item(null)
 					update_appearance(UPDATE_OVERLAYS)
-				return
+					return ITEM_INTERACT_SUCCESS
+				return ITEM_INTERACT_BLOCKING
 			else
-				hingot.forceMove(T)
-				T.held_item = hingot
+				T.set_held_item(hingot)
+				T.hott = hott
 				hingot = null
-				T.update_appearance(UPDATE_ICON_STATE)
 				update_appearance(UPDATE_OVERLAYS)
-				return
+				return ITEM_INTERACT_SUCCESS
 		else
 			if(T.held_item && istype(T.held_item, /obj/item/ingot))
-				T.held_item.forceMove(src)
-				hingot = T.held_item
-				T.held_item = null
+				var/obj/item/repair_target
+				for(var/obj/item/I in src.loc)
+					if(I.anvilrepair && I.max_integrity)
+						repair_target = I
+						break
+
+				if(repair_target && T.hott)
+					var/obj/item/ingot/used_ingot = T.held_item
+
+					var/skill_value = GET_MOB_SKILL_VALUE(user, repair_target.anvilrepair)
+					if(skill_value <= 0)
+						to_chat(user, span_warning("You don't know enough about this craft to restore [repair_target]."))
+						return ITEM_INTERACT_BLOCKING
+
+					var/expected_ingot_type
+					if(repair_target.melting_material)
+						var/datum/material/mat = GET_ATTRIBUTE_DATUM(repair_target.melting_material)
+						expected_ingot_type = mat?.ingot_type
+					else if(repair_target.smeltresult)
+						if(istype(repair_target.smeltresult, /obj/item/ingot))
+							expected_ingot_type = repair_target.smeltresult
+
+					if(!expected_ingot_type || !istype(used_ingot, expected_ingot_type))
+						to_chat(user, span_warning("This isn't the right material to restore [repair_target]."))
+						return ITEM_INTERACT_BLOCKING
+
+					var/restores_done = repair_target.integrity_restores
+					var/base_restore = (skill_value / SKILL_MASTER) * 0.20
+					var/diminish_factor = max(0.1, 1.0 - (restores_done * 0.30))
+					var/restore_amount = round(repair_target.max_integrity * base_restore * diminish_factor)
+					if(restore_amount <= 0)
+						to_chat(user, span_warning("[repair_target] has been restored too many times. The metal no longer accepts new material."))
+						return ITEM_INTERACT_BLOCKING
+
+					var/restore_cap = repair_target.max_integrity * (0.15 * diminish_factor)
+					restore_amount = min(restore_amount, restore_cap)
+					repair_target.max_integrity += restore_amount
+					repair_target.integrity_restores++
+
+					qdel(T.held_item)
+					T.set_held_item(null)
+					update_appearance(UPDATE_OVERLAYS)
+
+					var/datum/mind/smith_mind = user.mind
+					var/amt2raise = floor(GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) * 0.25)
+					smith_mind?.add_sleep_experience(repair_target.anvilrepair, amt2raise)
+
+					playsound(src, 'sound/items/bsmith3.ogg', 100, FALSE)
+					user.visible_message(span_info("[user] works new material into [repair_target], restoring some of its integrity."))
+					if(restores_done >= 2)
+						to_chat(user, span_warning("The metal is taking the new material less readily now. Further restorations will be less effective."))
+					return ITEM_INTERACT_SUCCESS
+
+				var/obj/item/ingot/placed_ingot = T.held_item
+				T.set_held_item(null)
+				placed_ingot.forceMove(src)
+				hingot = placed_ingot
 				hott = T.hott
 				if(hott)
 					START_PROCESSING(SSmachines, src)
-				T.update_appearance(UPDATE_ICON_STATE)
 				update_appearance(UPDATE_OVERLAYS)
-				return
+				return ITEM_INTERACT_SUCCESS
 
-	if(istype(W, /obj/item/ingot))
+	if(istype(tool, /obj/item/ingot))
 		if(!hingot)
-			W.forceMove(src)
-			hingot = W
+			tool.forceMove(src)
+			hingot = tool
 			hott = 0
 			update_appearance(UPDATE_OVERLAYS)
-			return
+			return ITEM_INTERACT_SUCCESS
 
-	if(istype(W, /obj/item/weapon/hammer))
-		var/obj/item/weapon/hammer/hammer = W
+	if(istype(tool, /obj/item/weapon/hammer))
+		var/obj/item/weapon/hammer/hammer = tool
 		user.changeNext_move(CLICK_CD_MELEE)
 		if(!hingot)
-			return
+			return NONE
 		if(!hott)
 			to_chat(user, "<span class='warning'>The bar has gone too cold to continue working on it.</span>")
-			return
+			return ITEM_INTERACT_BLOCKING
 		if(smithing)
 			to_chat(user, "<span class='warning'>Already working on this!</span>")
-			return
+			return ITEM_INTERACT_BLOCKING
 		if(!hingot.currecipe)
 			if(!choose_recipe(user))
-				return
+				return ITEM_INTERACT_BLOCKING
 		if(has_world_trait(/datum/world_trait/delver))
 			if(!has_recipe_unlocked(user.key, hingot.currecipe.type))
-				return
+				return ITEM_INTERACT_BLOCKING
 
-		// Start the minigame instead of direct hammering
 		start_minigame(user, hammer)
-		return
+		return ITEM_INTERACT_SUCCESS
 
-	if(hingot && hingot.currecipe && hingot.currecipe.needed_item && istype(W, hingot.currecipe.needed_item))
+	if(hingot && hingot.currecipe && hingot.currecipe.needed_item && istype(tool, hingot.currecipe.needed_item))
 		hingot.currecipe.item_added(user)
-		if(istype(W, /obj/item/ingot))
-			var/obj/item/ingot/I = W
+		if(istype(tool, /obj/item/ingot))
+			var/obj/item/ingot/I = tool
 			hingot.currecipe.material_quality += I.recipe_quality
 			previous_material_quality = I.recipe_quality
 		else
 			hingot.currecipe.material_quality += previous_material_quality
 		hingot.currecipe.num_of_materials += 1
-		qdel(W)
-		return
+		qdel(tool)
+		return ITEM_INTERACT_SUCCESS
 
-	if(W.anvilrepair)
-		user.visible_message("<span class='info'>[user] places \a [W] on the anvil.</span>")
-		W.forceMove(src.loc)
-		return
-	..()
+	if(tool.anvilrepair)
+		user.visible_message("<span class='info'>[user] places \a [tool] on the anvil.</span>")
+		tool.forceMove(loc)
+		return ITEM_INTERACT_SUCCESS
+
+	return NONE
 
 /obj/machinery/anvil/proc/start_minigame(mob/living/user, obj/item/weapon/hammer/hammer)
 	if(!hingot || !hingot.currecipe)

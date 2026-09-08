@@ -17,6 +17,9 @@
 /datum/ai_behavior/horny/simple_mob/spider
 	// Spider-family mobs can wrap prone targets in silk before starting.
 
+/datum/ai_behavior/horny/simple_mob/tentacle
+	// Tentacle mobs pin and resin-bind prone targets before starting.
+
 /datum/ai_behavior/horny/human
 	// Human-type mobs add prep work before the shared action flow.
 
@@ -70,7 +73,6 @@
 	if(picked_organ)
 		picked_organ.toggle_visibility("Show Above clothes")
 
-	basic_mob.start_sex_session(target_living)
 	if(QDELETED(target))
 		return FALSE
 	var/atom/interaction_anchor = get_horny_interaction_anchor(controller, basic_mob, target_living)
@@ -150,6 +152,9 @@
 	if(portal_light)
 		controller.set_blackboard_key(BB_HORNY_KNOCKDOWN_NEED, FALSE)
 		knockdown_need = FALSE
+	else if(target_living.buckled)
+		controller.set_blackboard_key(BB_HORNY_KNOCKDOWN_NEED, FALSE)
+		knockdown_need = FALSE
 	else if(target_living.body_position != LYING_DOWN)
 		controller.set_blackboard_key(BB_HORNY_KNOCKDOWN_NEED, TRUE)
 		knockdown_need = TRUE
@@ -165,17 +170,18 @@
 		horny_start_time = world.time
 		controller.set_blackboard_key(BB_HORNY_TIME_START, horny_start_time)
 
-	var/datum/sex_session/session = get_sex_session(basic_mob, target_living)
-	if(!session) //if we took too long and it's deleted
-		session = basic_mob.start_sex_session(target_living)
+	var/datum/sex_scene_controller/scene_controller = basic_mob.open_sex_scene(target_living, FALSE)
+	if(!scene_controller)
+		finish_action(controller, FALSE, target_key)
+		return
 
 	//check if we are sated
 	var/interaction_timed_out = horny_start_time + HORNY_INTERACTION_TIMEOUT <= world.time
 	if(last_orgasm_time > world.time - 10 SECONDS || interaction_timed_out)
-		if(interaction_timed_out && session && (session.current_action || length(session.active_actions)))
+		if(interaction_timed_out && length(scene_controller?.get_active_actions()))
 			offer_target_rune_escape(target_living)
-		if(session)
-			session.stop_current_action()
+		if(scene_controller)
+			scene_controller.stop_action()
 		finish_action(controller, TRUE, target_key)
 		return
 
@@ -190,10 +196,10 @@
 		return
 
 	if(portal_light)
-		if(handle_target_prep(controller, basic_mob, target_living, session))
+		if(handle_target_prep(controller, basic_mob, target_living, scene_controller))
 			controller.set_blackboard_key(BB_HORNY_ACTIONLESS_TICKS, 0)
 			return
-		start_horny_action(controller, basic_mob, target_living, session, target_key)
+		start_horny_action(controller, basic_mob, target_living, scene_controller, target_key)
 		return
 
 	if(try_pre_knockdown_disarm(controller, basic_mob, target_living))
@@ -205,20 +211,21 @@
 			controller.set_blackboard_key(BB_HORNY_ACTIONLESS_TICKS, 0)
 			return
 
-	if(handle_target_prep(controller, basic_mob, target_living, session))
+	if(handle_target_prep(controller, basic_mob, target_living, scene_controller))
 		controller.set_blackboard_key(BB_HORNY_ACTIONLESS_TICKS, 0)
 		return
 
-	start_horny_action(controller, basic_mob, target_living, session, target_key)
+	start_horny_action(controller, basic_mob, target_living, scene_controller, target_key)
 
 /datum/ai_behavior/horny/proc/stop_active_horny_actions(mob/living/basic_mob)
 	if(!basic_mob)
 		return
 
-	for(var/datum/sex_session/session as anything in return_sessions_with_user(basic_mob))
-		if(session.user != basic_mob)
+	var/list/actions_to_stop = basic_mob.sex_scene?.get_actions_involving(basic_mob)
+	for(var/datum/sex_action/action as anything in actions_to_stop)
+		if(action.action_user != basic_mob)
 			continue
-		session.stop_current_action()
+		basic_mob.sex_scene.stop_action(action)
 
 /datum/ai_behavior/horny/proc/offer_target_rune_escape(mob/living/target_living)
 	if(!ishuman(target_living))
@@ -246,7 +253,7 @@
 		var/mob/living/living_target = target
 		if(living_target.stat == DEAD)
 			return FALSE
-		if(living_target.rogue_sneaking)
+		if(living_target.alpha <= 100 || living_target.rogue_sneaking)
 			var/extra_chance = (basic_mob.health <= basic_mob.maxHealth * 0.5) ? 30 : 0
 			if(!basic_mob.npc_detect_sneak(living_target, extra_chance))
 				return FALSE
@@ -301,7 +308,7 @@
 		return portal_light
 	return target_living
 
-/datum/ai_behavior/horny/proc/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_session/session)
+/datum/ai_behavior/horny/proc/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_scene_controller/scene_controller)
 	// Override this in mob-specific subclasses when they need setup work before the sex action starts.
 	return FALSE
 
@@ -395,11 +402,11 @@
 
 	controller.set_blackboard_key(BB_HORNY_BLEED_HEAL_DONE, TRUE)
 
-/datum/ai_behavior/horny/proc/start_horny_action(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_session/session, target_key)
-	if(!session)
+/datum/ai_behavior/horny/proc/start_horny_action(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_scene_controller/scene_controller, target_key)
+	if(!scene_controller)
 		return
 
-	var/action_type = select_horny_ai_act(controller, basic_mob, target_living, session)
+	var/action_type = select_horny_ai_act(controller, basic_mob, target_living, scene_controller)
 	if(isnull(action_type))
 		var/actionless_ticks = controller.blackboard[BB_HORNY_ACTIONLESS_TICKS]
 		if(isnull(actionless_ticks))
@@ -411,18 +418,21 @@
 		return
 
 	controller.set_blackboard_key(BB_HORNY_ACTIONLESS_TICKS, 0)
-	if(isnull(session.current_action))
-		session.try_start_action(action_type)
+	if(!length(scene_controller.get_active_actions()))
+		scene_controller.try_start_action(action_type, "ai")
 		var/atom/interaction_anchor = get_horny_interaction_anchor(controller, basic_mob, target_living)
 		basic_mob.face_atom(interaction_anchor ? interaction_anchor : target_living)
 		var/force = rand(SEX_FORCE_MID, SEX_FORCE_MAX)
 		var/speed = rand(SEX_SPEED_MID, SEX_SPEED_MAX)
-		session.set_current_force(force)
-		session.set_current_speed(speed)
-		target_living.apply_status_effect(/datum/status_effect/debuff/mob_fucked)
-		if(!isnull(session.current_action))
+		scene_controller.set_current_force(force)
+		scene_controller.set_current_speed(speed)
+		if(target_living.gender == MALE)
+			target_living.apply_status_effect(/datum/status_effect/debuff/mob_fucked/male)
+		else
+			target_living.apply_status_effect(/datum/status_effect/debuff/mob_fucked)
+		if(length(scene_controller.get_active_actions()))
 			try_heal_horny_action_bleeding(controller, target_living)
-		if(isnull(session.current_action))
+		if(!length(scene_controller.get_active_actions()))
 			var/actionless_ticks = controller.blackboard[BB_HORNY_ACTIONLESS_TICKS]
 			if(isnull(actionless_ticks))
 				actionless_ticks = 0
@@ -432,59 +442,95 @@
 				controller.set_blackboard_key(BB_HORNY_WRONG_ACTION, TRUE)
 				finish_action(controller, FALSE, target_key)
 
-/datum/ai_behavior/horny/proc/add_weighted_action(list/weighted_actions, datum/sex_action/action_type, weight = 1)
+/proc/add_weighted_horny_ai_choice(list/weighted_choices, choice, weight = 1)
 	for(var/i in 1 to weight)
-		weighted_actions += action_type
+		weighted_choices += choice
 
-/datum/ai_behavior/horny/proc/add_local_horny_actions(list/weighted_actions, mob/living/basic_mob, mob/living/target_living)
+/proc/add_local_horny_ai_actions(list/weighted_actions, mob/living/basic_mob, mob/living/target_living)
 	var/has_penis = !!basic_mob.getorganslot(ORGAN_SLOT_PENIS)
 	var/has_vagina = !!basic_mob.getorganslot(ORGAN_SLOT_VAGINA)
 	var/target_has_penis = !!target_living.getorganslot(ORGAN_SLOT_PENIS)
 	var/target_has_vagina = !!target_living.getorganslot(ORGAN_SLOT_VAGINA)
+	if(basic_mob.ai_controller?.horny_pref_family_flag == HORNY_MOB_TYPE_TENTACLES)
+		if(has_penis)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_throat_sex/tentacle, 2)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_anal_sex/tentacle, 2)
+			if(target_has_vagina)
+				add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_vaginal_sex/tentacle, 3)
+		if(target_has_penis)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/tentacle_jerk, 2)
+		return
+	if(basic_mob.ai_controller?.horny_pref_family_flag == HORNY_MOB_TYPE_MANEATERS)
+		if(has_penis)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_throat_sex/tentacle/maneater, 2)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_anal_sex/tentacle/maneater, 2)
+			if(target_has_vagina)
+				add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_vaginal_sex/tentacle/maneater, 3)
+		if(target_has_penis)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/tentacle_jerk/maneater, 2)
+		return
 
 	if(has_penis)
-		add_weighted_action(weighted_actions, /datum/sex_action/npc/npc_throat_sex, 2)
-		add_weighted_action(weighted_actions, /datum/sex_action/npc/npc_anal_sex)
+		add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_throat_sex, 2)
+		add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_anal_sex)
 		if(target_has_vagina)
-			add_weighted_action(weighted_actions, /datum/sex_action/npc/npc_vaginal_sex, 3)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_vaginal_sex, 3)
+		add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_handjob)
 
 	if(has_vagina)
-		add_weighted_action(weighted_actions, /datum/sex_action/npc/npc_facesitting, 2)
+		add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_facesitting, 2)
 		if(target_has_penis)
-			add_weighted_action(weighted_actions, /datum/sex_action/npc/npc_vaginal_ride_sex, 3)
-			add_weighted_action(weighted_actions, /datum/sex_action/npc/npc_anal_ride_sex)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_vaginal_ride_sex, 3)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_anal_ride_sex)
 
-/datum/ai_behavior/horny/proc/add_portal_horny_actions(list/weighted_actions, mob/living/basic_mob, mob/living/target_living)
+	if(has_penis || has_vagina)
+		add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/npc/npc_body_rub)
+
+/proc/add_portal_horny_ai_actions(list/weighted_actions, mob/living/basic_mob, mob/living/target_living)
 	var/has_penis = !!basic_mob.getorganslot(ORGAN_SLOT_PENIS)
 	var/has_vagina = !!basic_mob.getorganslot(ORGAN_SLOT_VAGINA)
 
 	if(has_penis)
 		if(target_living.getorganslot(ORGAN_SLOT_VAGINA))
-			add_weighted_action(weighted_actions, /datum/sex_action/portal_base/portal_penis_vaginal, 3)
-		add_weighted_action(weighted_actions, /datum/sex_action/portal_base/portal_penis_anal, 2)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/portal_base/portal_penis_vaginal, 3)
+		add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/portal_base/portal_penis_anal, 2)
 
 	if(has_vagina)
 		if(target_living.getorganslot(ORGAN_SLOT_VAGINA))
-			add_weighted_action(weighted_actions, /datum/sex_action/portal_base/portal_vagina_vaginal, 3)
-		add_weighted_action(weighted_actions, /datum/sex_action/portal_base/portal_vagina_anal, 2)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/portal_base/portal_vagina_vaginal, 3)
+			add_weighted_horny_ai_choice(weighted_actions, /datum/sex_action/portal_base/portal_vagina_anal, 2)
 
-/datum/ai_behavior/horny/proc/select_horny_ai_act(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_session/session)
+/datum/ai_behavior/horny/proc/select_horny_ai_act(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_scene_controller/scene_controller)
 	var/list/weighted_actions = list()
 	if(get_target_portal_light(controller, basic_mob, target_living))
-		add_portal_horny_actions(weighted_actions, basic_mob, target_living)
+		add_portal_horny_ai_actions(weighted_actions, basic_mob, target_living)
 	else
-		add_local_horny_actions(weighted_actions, basic_mob, target_living)
+		add_local_horny_ai_actions(weighted_actions, basic_mob, target_living)
 
 	if(!length(weighted_actions))
 		return null
 
 	var/list/valid_actions = list()
 	for(var/datum/sex_action/action_type as anything in weighted_actions)
-		if(session.can_perform_action(action_type))
+		var/datum/sex_action_proposal/proposal = scene_controller.create_action_proposal(action_type, "ai")
+		var/can_start = proposal?.can_start()
+		qdel(proposal)
+		if(can_start)
 			valid_actions += action_type
 
 	if(!length(valid_actions))
 		return null
+
+	var/list/scored_action_types = list()
+	for(var/action_type as anything in valid_actions.Copy())
+		if(action_type in scored_action_types)
+			continue
+		scored_action_types += action_type
+		var/datum/sex_action_proposal/proposal = scene_controller.create_action_proposal(action_type, "ai")
+		var/pattern_desirability = proposal?.get_pattern_desirability()
+		qdel(proposal)
+		if(pattern_desirability > 0)
+			add_weighted_horny_ai_choice(valid_actions, action_type, pattern_desirability)
 
 	return pick(valid_actions)
 
@@ -506,6 +552,10 @@
 			return "[basic_mob] slams into [target_living] and pins [target_living.p_them()] in place!"
 		if(HORNY_MOB_TYPE_HUMANOIDS)
 			return "[basic_mob] wrestles [target_living] into a rough hold!"
+		if(HORNY_MOB_TYPE_TENTACLES)
+			return "[basic_mob] coils around [target_living]'s limbs and pins [target_living.p_them()] beneath its weight!"
+		if(HORNY_MOB_TYPE_MANEATERS)
+			return "[basic_mob] knots its thorny vines around [target_living] and pins [target_living.p_them()] against the loam!"
 	return "[basic_mob] clamps onto [target_living], holding [target_living.p_them()] in place!"
 
 /datum/ai_behavior/horny/simple_mob/proc/promote_existing_pull_to_hold(mob/living/basic_mob, mob/living/target_living)
@@ -559,7 +609,7 @@
 	return TRUE
 
 /datum/ai_behavior/horny/simple_mob/proc/wait_for_knockdown(mob/living/basic_mob, mob/living/target_living)
-	if(target_living.body_position == LYING_DOWN)
+	if(target_living.buckled || target_living.body_position == LYING_DOWN)
 		return FALSE
 
 	if(target_living.pulledby == basic_mob)
@@ -567,7 +617,7 @@
 
 	return TRUE
 
-/datum/ai_behavior/horny/simple_mob/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_session/session)
+/datum/ai_behavior/horny/simple_mob/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_scene_controller/scene_controller)
 	if(get_target_portal_light(controller, basic_mob, target_living))
 		return FALSE
 
@@ -580,7 +630,7 @@
 	if(ensure_target_hold(controller, basic_mob, target_living))
 		return TRUE
 
-	if(session.current_action)
+	if(length(scene_controller.get_active_actions()))
 		return FALSE
 
 	var/mob/living/carbon/human/human_target = target_living
@@ -589,7 +639,7 @@
 		if(pick_strip_target(basic_mob, human_target, allow_regular_clothes = TRUE))
 			return strip_human_target(basic_mob, human_target)
 
-	var/has_valid_action = !isnull(select_horny_ai_act(controller, basic_mob, target_living, session))
+	var/has_valid_action = !isnull(select_horny_ai_act(controller, basic_mob, target_living, scene_controller))
 	if(has_valid_action && !prob(35))
 		return FALSE
 
@@ -605,7 +655,7 @@
 /datum/ai_behavior/horny/simple_mob/disarm_human_target(mob/living/basic_mob, mob/living/carbon/human/human_target)
 	if(!human_target.Adjacent(basic_mob))
 		return FALSE
-	if(!human_target.get_active_held_item() && !human_target.get_inactive_held_item())
+	if(!mob_has_ai_disarmable_held_item(human_target))
 		return FALSE
 	var/datum/intent/disarm_intent = get_horny_disarm_intent()
 	var/datum/intent/cached_intent = basic_mob.used_intent
@@ -619,8 +669,14 @@
 				span_userdanger("[basic_mob] swats at my hands, but I keep hold of my weapon!"), span_hear("I hear a rough struggle over a weapon!"), COMBAT_MESSAGE_RANGE)
 		return TRUE
 
+	var/disarmed_anything = FALSE
 	for(var/obj/item/I in human_target.held_items)
-		human_target.dropItemToGround(I, force = FALSE, silent = FALSE)
+		if(!is_ai_disarmable_held_item(I))
+			continue
+		if(human_target.dropItemToGround(I, force = FALSE, silent = FALSE))
+			disarmed_anything = TRUE
+	if(!disarmed_anything)
+		return TRUE
 	human_target.Stun(5)
 	human_target.visible_message(span_danger("[basic_mob] bats at [human_target]'s hands and disarms them!"), \
 			span_userdanger("[basic_mob] bats at my hands and disarms me!"), span_hear("I hear someone getting disarmed!"), COMBAT_MESSAGE_RANGE)
@@ -715,7 +771,7 @@
 /datum/ai_behavior/horny/simple_mob/proc/strip_human_target(mob/living/basic_mob, mob/living/carbon/human/human_target)
 	return do_strip_human_target(basic_mob, human_target, rand(12, 20) DECISECONDS, 35, 0.15, allow_regular_clothes = TRUE)
 
-/datum/ai_behavior/horny/simple_mob/spider/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_session/session)
+/datum/ai_behavior/horny/simple_mob/spider/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_scene_controller/scene_controller)
 	if(get_target_portal_light(controller, basic_mob, target_living))
 		return FALSE
 
@@ -728,7 +784,7 @@
 	if(ensure_target_hold(controller, basic_mob, target_living))
 		return TRUE
 
-	if(session.current_action)
+	if(length(scene_controller.get_active_actions()))
 		return FALSE
 
 	var/mob/living/carbon/human/human_target = target_living
@@ -737,7 +793,7 @@
 		if(pick_strip_target(basic_mob, human_target, allow_regular_clothes = TRUE))
 			return strip_human_target(basic_mob, human_target)
 
-	var/has_valid_action = !isnull(select_horny_ai_act(controller, basic_mob, target_living, session))
+	var/has_valid_action = !isnull(select_horny_ai_act(controller, basic_mob, target_living, scene_controller))
 	if((!has_valid_action || prob(20)) && strip_human_target(basic_mob, human_target))
 		return TRUE
 
@@ -774,7 +830,60 @@
 	qdel(webbing)
 	return FALSE
 
-/datum/ai_behavior/horny/human/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_session/session)
+/datum/ai_behavior/horny/simple_mob/tentacle/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_scene_controller/scene_controller)
+	if(get_target_portal_light(controller, basic_mob, target_living))
+		return FALSE
+	if(!ishuman(target_living) || !basic_mob.Adjacent(target_living))
+		return FALSE
+	if(wait_for_knockdown(basic_mob, target_living))
+		return TRUE
+	if(ensure_target_hold(controller, basic_mob, target_living))
+		return TRUE
+	if(length(scene_controller.get_active_actions()))
+		return FALSE
+
+	var/mob/living/carbon/human/human_target = target_living
+	if(!controller.blackboard[BB_HORNY_INITIAL_STRIP_DONE])
+		controller.set_blackboard_key(BB_HORNY_INITIAL_STRIP_DONE, TRUE)
+		if(pick_strip_target(basic_mob, human_target, allow_regular_clothes = TRUE))
+			return strip_human_target(basic_mob, human_target)
+
+	var/has_valid_action = !isnull(select_horny_ai_act(controller, basic_mob, target_living, scene_controller))
+	if((!has_valid_action || prob(20)) && strip_human_target(basic_mob, human_target))
+		return TRUE
+	if(tie_human_target(basic_mob, human_target))
+		return TRUE
+	return FALSE
+
+/datum/ai_behavior/horny/simple_mob/tentacle/proc/tie_human_target(mob/living/basic_mob, mob/living/carbon/human/human_target)
+	if(human_target.body_position != LYING_DOWN || human_target.get_active_held_item())
+		return FALSE
+	if(!basic_mob.Adjacent(human_target) || human_target.get_num_arms(TRUE) <= 1 || human_target.handcuffed)
+		return FALSE
+
+	basic_mob.visible_message(
+		span_danger("[basic_mob] starts winding sticky resin around [human_target]'s wrists!"),
+		span_danger("[basic_mob] starts winding sticky resin around my wrists!"),
+		span_hear("I hear wet strands stretching tight."),
+	)
+	if(!do_after(basic_mob, 1 SECONDS, human_target))
+		return FALSE
+	if(QDELETED(human_target) || !basic_mob.Adjacent(human_target) || human_target.handcuffed || human_target.body_position != LYING_DOWN)
+		return FALSE
+
+	var/obj/item/rope/spider_silk/tentacle_resin/restraints = new
+	if(restraints.apply_cuffs(human_target))
+		human_target.visible_message(
+			span_danger("[basic_mob] binds [human_target]'s wrists in clinging resin!"),
+			span_userdanger("[basic_mob] binds my wrists in clinging resin!"),
+			span_hear("I hear resin tightening around someone's wrists."),
+		)
+		return TRUE
+
+	qdel(restraints)
+	return FALSE
+
+/datum/ai_behavior/horny/human/handle_target_prep(datum/ai_controller/controller, mob/living/basic_mob, mob/living/target_living, datum/sex_scene_controller/scene_controller)
 	if(!iscarbon(basic_mob))
 		return FALSE
 
@@ -787,10 +896,10 @@
 
 	var/mob/living/carbon/carbon_mob = basic_mob
 	ensure_target_grab(carbon_mob, target_living)
-	if(session.current_action)
+	if(length(scene_controller.get_active_actions()))
 		return FALSE
 
-	var/has_valid_action = !isnull(select_horny_ai_act(controller, basic_mob, target_living, session))
+	var/has_valid_action = !isnull(select_horny_ai_act(controller, basic_mob, target_living, scene_controller))
 	if(!has_valid_action && ishuman(basic_mob))
 		var/mob/living/carbon/human/human_basic_mob = basic_mob
 		if(pick_strip_target(basic_mob, human_basic_mob, FALSE))
@@ -868,7 +977,7 @@
 /datum/ai_behavior/horny/human/disarm_human_target(mob/living/basic_mob, mob/living/carbon/human/human_target)
 	if(!human_target.Adjacent(basic_mob))
 		return FALSE
-	if(!human_target.get_active_held_item() && !human_target.get_inactive_held_item())
+	if(!mob_has_ai_disarmable_held_item(human_target))
 		return FALSE
 	var/datum/intent/disarm_intent = get_horny_disarm_intent()
 	var/datum/intent/cached_intent = basic_mob.used_intent
@@ -882,8 +991,14 @@
 				span_userdanger("[basic_mob] lunges for my weapon, but I keep hold of it!"), span_hear("I hear a struggle over a weapon!"), COMBAT_MESSAGE_RANGE)
 		return TRUE
 
+	var/disarmed_anything = FALSE
 	for(var/obj/item/I in human_target.held_items)
-		human_target.dropItemToGround(I, force = FALSE, silent = FALSE)
+		if(!is_ai_disarmable_held_item(I))
+			continue
+		if(human_target.dropItemToGround(I, force = FALSE, silent = FALSE))
+			disarmed_anything = TRUE
+	if(!disarmed_anything)
+		return TRUE
 	human_target.Stun(5)
 	human_target.visible_message(span_danger("[basic_mob] disarms [human_target]!"), \
 			span_userdanger("[basic_mob] disarms me!"), span_hear("I hear someone getting punished!"), COMBAT_MESSAGE_RANGE)
@@ -992,8 +1107,11 @@
 	. = ..()
 	var/mob/living/basic_mob = controller.pawn
 	var/atom/finished_target = controller.blackboard[target_key]
+	var/datum/sex_scene_controller/scene_controller = basic_mob.sex_scene?.get_controller(basic_mob)
 
 	stop_active_horny_actions(basic_mob)
+	if(scene_controller && !QDELETED(scene_controller))
+		qdel(scene_controller)
 
 	UnregisterSignal(basic_mob, COMSIG_ATOM_WAS_ATTACKED)
 

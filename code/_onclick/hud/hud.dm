@@ -37,9 +37,8 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 	var/atom/movable/screen/mana_over
 	var/atom/movable/screen/quad_intents/quad_intents
 	var/atom/movable/screen/give_intent/give_intent
-	var/atom/movable/screen/def_intent/def_intent
-	var/atom/movable/screen/fov
-	var/atom/movable/screen/fov_blocker
+	var/atom/movable/screen/combat_utilities/combat_utilities
+	var/atom/movable/screen/fov_holder/fov_holder
 	var/atom/movable/screen/clock
 	var/atom/movable/screen/stress/stressies
 	var/atom/movable/screen/cmode_button
@@ -55,6 +54,9 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 	var/list/atom/movable/screen/plane_master/plane_masters = list() // see "appearance_flags" in the ref, assoc list of "[plane]" = object
 	///Assoc list of controller groups, associated with key string group name with value of the plane master controller ref
 	var/list/atom/movable/plane_master_controller/plane_master_controllers = list()
+
+
+	var/list/inventory_screens = list()
 
 	var/atom/movable/screen/button_palette/toggle_palette
 	var/atom/movable/screen/palette_scroll/down/palette_down
@@ -95,7 +97,7 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 
 	if (!ui_style)
 		// will fall back to the default if any of these are null
-		ui_style = ui_style2icon(owner.client && owner.client.prefs && owner.client.prefs.UI_style)
+		ui_style = ui_style2icon(owner.client && owner.client.prefs && owner.client.prefs.read_preference(/datum/preference/choiced/UI_style))
 
 	reads = new(null, src)
 	textr = new(null, src)
@@ -167,10 +169,13 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 			clear_hud_from_client_screen(observer)
 	if(mymob && mymob.hud_used == src)
 		mymob.hud_used = null
+	inventory_screens = null
 
 	QDEL_NULL(module_store_icon)
 	QDEL_NULL(scannies)
 	QDEL_LIST(static_inventory)
+
+	QDEL_NULL(fov_holder)
 
 	QDEL_NULL(reads)
 	QDEL_NULL(textl)
@@ -236,6 +241,7 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 
 	screenmob.client.screen = list()
 	screenmob.client.apply_clickcatcher()
+	screenmob.client.screen |= inventory_screens
 
 	var/display_hud_version = version
 	if(!display_hud_version)	//If 0 or blank, display the next hud version
@@ -313,7 +319,30 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 		viewmob.hud_used.plane_masters_update()
 		viewmob.show_other_mob_action_buttons(mymob)
 
+	if(fov_holder)
+		screenmob.client?.screen |= fov_holder
+
+
 	return TRUE
+
+/datum/hud/proc/update_chromatic_aberration(intensity = 0, \
+											time = 2 SECONDS, \
+											easing = LINEAR_EASING, \
+											loop = 0,
+											red_x = 0, \
+											red_y = 0, \
+											green_x = 0, \
+											green_y = 0, \
+											blue_x = 0, \
+											blue_y = 0)
+	var/atom/movable/screen/plane_master/rendering_plate/game_world_processing/game_world_processing = plane_masters["[RENDER_PLANE_GAME_PROCESSING]"]
+	if(!game_world_processing || (game_world_processing.chromatic_intensity == intensity))
+		return
+	game_world_processing.chromatic_intensity = intensity
+	game_world_processing.transition_filter("blue", time, list("x" = blue_x, "y" = blue_y), easing, loop)
+	game_world_processing.transition_filter("green", time, list("x" = green_x, "y" = green_y), easing, loop)
+	game_world_processing.transition_filter("red", time, list("x" = red_x, "y" = red_y), easing, loop)
+
 
 /datum/hud/proc/plane_masters_update()
 	// Plane masters are always shown to OUR mob, never to observers
@@ -409,6 +438,7 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 	QDEL_NULL(bloodpool)
 
 /datum/hud/proc/position_action(atom/movable/screen/movable/action_button/button, position)
+	var/was_at = button.screen_loc // hide_action clears this, but a re-float needs to land where it already was
 	if(button.location != SCRN_OBJ_DEFAULT)
 		hide_action(button)
 	switch(position)
@@ -420,7 +450,16 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 			listed_actions.insert_action(button)
 		if(SCRN_OBJ_IN_PALETTE)
 			palette_actions.insert_action(button)
+		if(SCRN_OBJ_FLOATING) // Floating with no coords of its own, so stay where we were
+			if(!was_at)
+				position_action(button, button.linked_action.default_button_position)
+				return
+			floating_actions += button
+			button.screen_loc = was_at
 		else // If we don't have it as a define, this is a screen_loc, and we should be floating
+			if(!position) // A blank position would strand the button with no screen_loc at all
+				position_action(button, button.linked_action.default_button_position)
+				return
 			floating_actions += button
 			button.screen_loc = position
 			position = SCRN_OBJ_FLOATING
@@ -436,20 +475,29 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 		if(SCRN_OBJ_IN_PALETTE)
 			palette_actions.insert_action(button, palette_actions.index_of(relative_to))
 		if(SCRN_OBJ_FLOATING) // If we don't have it as a define, this is a screen_loc, and we should be floating
-			floating_actions += button
 			var/client/our_client = mymob.client
 			if(!our_client)
 				position_action(button, button.linked_action.default_button_position)
 				return
-			button.screen_loc = get_valid_screen_location(relative_to.screen_loc, world.icon_size, our_client.view_size.getView()) // Asks for a location adjacent to our button that won't overflow the map
+			// Asks for a location adjacent to our button that won't overflow the map
+			var/adjacent_loc = get_valid_screen_location(relative_to.screen_loc, world.icon_size, our_client.view_size.getView())
+			if(!adjacent_loc) // Nothing adjacent fits, don't blank the button out
+				position_action(button, button.linked_action.default_button_position)
+				return
+			floating_actions += button
+			button.screen_loc = adjacent_loc
+		else // Our target was never placed anywhere, so we have nothing to be relative to
+			position_action(button, button.linked_action.default_button_position)
+			return
 
 	button.location = relative_to.location
 
 /// Removes the passed in action from its current position on the screen
 /datum/hud/proc/hide_action(atom/movable/screen/movable/action_button/button)
 	switch(button.location)
-		if(SCRN_OBJ_DEFAULT) // Invalid
-			CRASH("We just tried to hide an action buttion that somehow has the default position as its location, you done fucked up")
+		if(SCRN_OBJ_DEFAULT) // Invalid, but crashing here aborts our caller and leaks the button
+			stack_trace("Tried to hide an action button that still has the default position as its location")
+			return
 		if(SCRN_OBJ_FLOATING)
 			floating_actions -= button
 		if(SCRN_OBJ_IN_LIST)
@@ -710,4 +758,4 @@ GLOBAL_LIST_INIT(available_ui_styles, sortList(list(
 
 /datum/action_group/listed/refresh_actions()
 	. = ..()
-	owner.palette_actions.refresh_actions() // We effect them, so we gotta refresh em
+	owner?.palette_actions?.refresh_actions() // We affect them, so we gotta refresh em

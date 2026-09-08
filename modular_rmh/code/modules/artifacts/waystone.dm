@@ -157,7 +157,7 @@
 	if(!user.mind.known_waystones)
 		user.show_message("<span class='warning'>You don't know any waystone to teleport on them.</span>")
 		return
-	if(listclearnulls(user.mind.known_waystones))
+	if(list_clear_nulls(user.mind.known_waystones))
 		user.show_message("<span class='warning'>You feel that your thoughts about some waystones are confused and lost.</span>")
 
 	var/obj/structure/rmh_waystone/choosed_waystone = tgui_input_list(user, "Select a waystone:", "Waystone teleport", user.mind.known_waystones)
@@ -209,6 +209,7 @@
 /obj/item/natural/stone/attack_self_secondary(mob/user, list/modifiers)
 	. = ..()
 	if(user.mana_pool.amount <= STONE_TRANSFORMATION_MANA_COST)
+		user.show_message("<span class='notice'>You squeeze [src] in your hand but you lack the necessary mana.</span>")
 		return
 
 	user.show_message("<span class='notice'>You squeeze [src] in your hand and concentrate your mana on it.</span>")

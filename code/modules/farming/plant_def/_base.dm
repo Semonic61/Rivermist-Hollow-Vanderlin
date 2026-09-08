@@ -57,6 +57,26 @@
 	var/static/list/random_colors = list("#fffbf7", "#f3c877", "#5e533e", "#db7f62", "#f39945")
 	seed_color = pick(random_colors)
 
+/proc/is_harvestable_plant_def(datum/plant_def/plant_def_type)
+	if(!ispath(plant_def_type, /datum/plant_def))
+		return FALSE
+	if(plant_def_type == /datum/plant_def/alchemical || plant_def_type == /datum/plant_def/mushroom)
+		return FALSE
+	return ispath(initial(plant_def_type.produce_type), /atom)
+
+/proc/get_harvestable_plant_defs()
+	var/static/list/harvestable_plant_defs
+	if(harvestable_plant_defs)
+		return harvestable_plant_defs
+
+	harvestable_plant_defs = list()
+	for(var/datum/plant_def/plant_def_type as anything in subtypesof(/datum/plant_def))
+		if(!is_harvestable_plant_def(plant_def_type))
+			continue
+		harvestable_plant_defs += plant_def_type
+
+	return harvestable_plant_defs
+
 /datum/plant_def/proc/set_genetic_tendencies(datum/plant_genetics/base_genetics)
 	// Override this in subtypes to set species-specific traits
 	return
@@ -87,117 +107,6 @@
 		details += span_info("<b>Growth Time:</b> [minutes] minute\s")
 
 	return details
-
-/datum/plant_def/proc/show_menu(mob/user)
-	user << browse(generate_html(user),"window=recipe;size=500x810")
-
-/datum/plant_def/proc/generate_html(mob/user)
-	var/client/client = user
-	if(!istype(client))
-		client = user.client
-	SSassets.transport.send_assets(client, list("try4_border.png", "try4.png", "slop_menustyle2.css"))
-	user << browse_rsc('html/book.png')
-
-	var/produce_icon_html = ""
-	if(produce_type)
-		var/obj/item/produce_item = new produce_type
-		produce_icon_html = "<div class='recipe-card-icon'><img src='\ref[initial(produce_item.icon)]?state=[initial(produce_item.icon_state)]&dir=[initial(produce_item.dir)]'/></div>"
-		qdel(produce_item)
-
-	var/html = {"
-		<!DOCTYPE html>
-		<html lang="en">
-		<meta charset='UTF-8'>
-		<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'/>
-		<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'/>
-		<style>
-			@import url('https://fonts.googleapis.com/css2?family=Charm:wght@700&display=swap');
-			body {
-				font-family: "Charm", cursive;
-				font-size: 1.2em;
-				text-align: center;
-				margin: 20px;
-				background-color: #f4efe6;
-				color: #3e2723;
-				background-color: rgb(31, 20, 24);
-				background:
-					url('[SSassets.transport.get_asset_url("try4_border.png")]'),
-					url('book.png');
-				background-repeat: no-repeat;
-				background-attachment: fixed;
-				background-size: 100% 100%;
-			}
-			h1 {
-				text-align: center;
-				font-size: 2em;
-				border-bottom: 2px solid #3e2723;
-				padding-bottom: 10px;
-				margin-bottom: 10px;
-			}
-			.recipe-card-icon {
-				text-align: center;
-				margin: 20px 0;
-			}
-			.recipe-card-icon img {
-				width: 64px;
-				height: 64px;
-				image-rendering: pixelated;
-			}
-			.requirements {
-				margin-bottom: 20px;
-			}
-			.growth-info {
-				margin-top: 15px;
-			}
-		</style>
-		<body>
-			<div>
-				<h1>[name]</h1>
-				[produce_icon_html]
-				<div class="requirements">
-					<h2>Growth Requirements</h2>
-					<strong>Maturation Time:</strong> [maturation_time / (1 MINUTES)] minutes<br>
-					<strong>Produce Time:</strong> [produce_time / (1 MINUTES)] minutes<br>
-					<strong>Expected Yield:</strong> [produce_amount_min]-[produce_amount_max]<br>
-					<strong>Plant Type:</strong> [perennial ? "Perennial" : "Annual"]<br>
-	"}
-
-	// Add nutrient requirements
-	if(nitrogen_requirement > 0 || phosphorus_requirement > 0 || potassium_requirement > 0)
-		html += "<h2>Nutrient Requirements</h2>"
-		if(nitrogen_requirement > 0)
-			html += "<strong>Nitrogen:</strong> [nitrogen_requirement] units<br>"
-		if(phosphorus_requirement > 0)
-			html += "<strong>Phosphorus:</strong> [phosphorus_requirement] units<br>"
-		if(potassium_requirement > 0)
-			html += "<strong>Potassium:</strong> [potassium_requirement] units<br>"
-
-	// Add nutrient production
-	if(nitrogen_production > 0 || phosphorus_production > 0 || potassium_production > 0)
-		html += "<h2>Soil Enrichment</h2>"
-		if(nitrogen_production > 0)
-			html += "<strong>Nitrogen Production:</strong> +[nitrogen_production] units<br>"
-		if(phosphorus_production > 0)
-			html += "<strong>Phosphorus Production:</strong> +[phosphorus_production] units<br>"
-		if(potassium_production > 0)
-			html += "<strong>Potassium Production:</strong> +[potassium_production] units<br>"
-
-	// Add plant family and special properties
-	var/family_name = get_family_name()
-	html += {"
-				</div>
-				<div class='growth-info'>
-					<h2>Plant Information</h2>
-					<strong>Family:</strong> [family_name]<br>
-					<strong>Water Usage:</strong> [water_drain_rate * (1 MINUTES)] units/minute<br>
-					<strong>Weed Resistance:</strong> [weed_immune ? "Yes" : "No"]<br>
-					<strong>Underground Growth:</strong> [can_grow_underground ? "Yes" : "No"]<br>
-				</div>
-			</div>
-		</body>
-		</html>
-	"}
-	return html
 
 /datum/plant_def/proc/get_family_name()
 	switch(plant_family)

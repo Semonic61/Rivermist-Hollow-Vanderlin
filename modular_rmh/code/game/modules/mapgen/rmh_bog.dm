@@ -38,6 +38,7 @@
 							/obj/item/mana_battery/mana_crystal/small = 3,
 							/obj/item/grown/log/tree/stick = 16,
 							/obj/structure/closet/dirthole/closed/loot = 3,
+							/obj/structure/flora/grass/maneater/real = 4,
 							/obj/structure/flora/grass/swampweed = 10
 							)
 	spawnableTurfs = list(/turf/open/floor/dirt/road=2,
@@ -79,6 +80,6 @@
 						/obj/structure/flora/tree = 5,
 						/obj/structure/flora/tree/burnt = 5,
 						/obj/structure/chair/bench/ancientlog = 5,
-						/obj/item/restraints/legcuffs/beartrap/armed = 10,
+						// /obj/item/restraints/legcuffs/beartrap/armed/camouflage = 10,
 						/obj/item/grown/log/tree/stick = 30)
 	spawnableTurfs = list(/turf/open/water/swamp/deep = 5)

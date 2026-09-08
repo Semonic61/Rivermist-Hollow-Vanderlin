@@ -1,4 +1,5 @@
 /obj/item/storage/crucible
+	item_weight = 2 KILOGRAMS
 	name = "crucible"
 	desc = "A crucible in which metal items can be molten down."
 	layer = ABOVE_ALL_MOB_LAYER
@@ -85,10 +86,15 @@
 /obj/item/storage/crucible/get_temperature()
 	return crucible_temperature
 
-/obj/item/storage/crucible/tong_interaction(atom/target, mob/user)
-	if(istype(target, /obj/item/mould))
-		target.attackby(src, user)
-		return TRUE
+/obj/item/storage/crucible/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!istype(interacting_with, /obj/item/mould))
+		return NONE
+
+	var/obj/item/mould/mould = interacting_with
+
+	mould.try_filling(user, src)
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/storage/crucible/update_overlays()
 	. = ..()

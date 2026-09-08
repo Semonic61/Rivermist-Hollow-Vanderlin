@@ -6,11 +6,11 @@
 	blade_dulling = DULLING_BASHCHOP
 	resistance_flags = FLAMMABLE // Made of leather
 
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/gloves/leather/dueling
 	prevent_crits = ALL_EXCEPT_CHOP_AND_STAB
 	max_integrity = INTEGRITY_STANDARD
 	salvage_result = /obj/item/natural/fur
-	item_weight = 4
+	item_weight = 800 GRAMS
 
 /obj/item/clothing/gloves/angle/grenzel
 	name = "darkhold gloves"

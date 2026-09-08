@@ -31,3 +31,16 @@
 #define COMSIG_MOVETYPE_FLAG_ENABLED "movetype_flag_enabled"
 /// From base of datum/element/movetype_handler/on_movement_type_trait_loss: (flag, old_movement_type)
 #define COMSIG_MOVETYPE_FLAG_DISABLED "movetype_flag_disabled"
+
+/// After the rider's buckle state changes: (atom/movable/seat).
+#define COMSIG_MOB_BUCKLED "mob_buckle"
+#define COMSIG_MOB_UNBUCKLED "mob_unbuckle"
+/// From set_anchored(): (new_value).
+#define COMSIG_MOVABLE_SET_ANCHORED "movable_set_anchored"
+/// From set_density(): (new_value).
+#define COMSIG_ATOM_DENSITY_CHANGED "atom_density_change"
+/// From toggle_move_intent().
+#define COMSIG_MOVE_INTENT_TOGGLED "move_intent_toggled"
+/// Before starting a pull: (atom/movable/target, force).
+#define COMSIG_LIVING_TRY_PULL "living_try_pull"
+	#define COMSIG_LIVING_CANCEL_PULL (1<<0)

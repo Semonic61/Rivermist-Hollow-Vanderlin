@@ -31,6 +31,7 @@
 #define INSERT_FEEDBACK_ALMOST_FULL "feedback_almost"
 #define INSERT_FEEDBACK_STUFFED "feedback_stuffed"
 #define INSERT_FEEDBACK_TRY_FORCE "feedback_try_force"
+#define INSERT_FEEDBACK_BLOCKED "feedback_blocked"
 
 // Body storage default capacity tuning.
 #define OUTER_LAYER_DEFAULT_BULK 1
@@ -38,6 +39,9 @@
 #define DEEP_LAYER_DEFAULT_BULK 15
 
 #define HOLE_MAX_BULK_INSERT 10 //we want to have it possible that a sufficiently big insertible will trigger stretching on it's own
+
+// RMH object smoothing groups. S_OBJ(1-7) are occupied by core structures.
+#define SMOOTH_GROUP_TENTACLE_GROWTH S_OBJ(8)
 
 // Oviposition egg type identifiers.
 #define OVI_EGG_NORMAL "normal_ovi"
@@ -48,6 +52,9 @@
 #define OVI_EGG_BOG_BUG "bog_bug_ovi"
 #define OVI_EGG_HARPY "harpy_ovi"
 #define OVI_EGG_EMBRYO "embryo_ovi"
+#define OVI_EGG_LEECH "leech_ovi"
+#define OVI_EGG_TENTACLE "tentacle_ovi"
+#define OVI_EGG_MANEATER "maneater_ovi"
 
 // Oviposition customization and balance limits.
 #define OVI_EGG_MAX_CLUTCH 30
@@ -57,6 +64,8 @@
 #define OVI_EGG_MAX_CUSTOM_NAME_LENGTH 96
 #define OVI_EGG_MAX_CUSTOM_DESC_LENGTH 512
 #define OVI_EGG_STAGE_TIME 1 MINUTES
+#define OVIPOSITION_BIRTH_LIMIT 8
+#define OVIPOSITION_BIRTH_LIMIT_WINDOW (30 MINUTES)
 
 // Oviposition egg modifier flags.
 #define OVI_EGG_TRAIT_APHRODISIAC "aphrodisiac"

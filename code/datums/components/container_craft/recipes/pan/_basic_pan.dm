@@ -5,14 +5,7 @@
 	category = "Pan"
 
 	var/datum/pollutant/cooked_smell
-	cooking_sound = /datum/looping_sound/frying
-
-/datum/container_craft/pan/get_real_time(atom/host, mob/user, estimated_multiplier)
-	var/real_cooking_time = crafting_time * estimated_multiplier
-	if(user.mind)
-		real_cooking_time /= 1 + (GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking) * 0.2)
-		real_cooking_time = round(real_cooking_time)
-	return real_cooking_time
+	used_skill = /datum/attribute/skill/craft/cooking/grilling
 
 /datum/container_craft/pan/after_craft(atom/created_output, obj/item/crafter, mob/initiator, list/found_optional_requirements, list/found_optional_wildcards, list/found_optional_reagents, list/removing_items)
 	. = ..()
@@ -26,17 +19,23 @@
 	if(!istype(crafter.loc, /obj/machinery/light/fueled))
 		return FALSE
 	var/obj/machinery/light/fueled/fueled = crafter.loc
-	if(!fueled.fueluse)
+	if(!fueled.on)
 		return FALSE
 	. = ..()
 
 /datum/container_craft/pan/check_failure(obj/item/crafter, mob/user)
-	if(!istype(crafter.loc, /obj/machinery/light/fueled))
-		return TRUE
-	var/obj/machinery/light/fueled/fueled = crafter.loc
-	if(!fueled.fueluse)
-		return TRUE
 	return FALSE
+
+/**
+ * Frying only advances while the pan sits on a lit fire.
+ */
+/datum/container_craft/pan/can_progress(obj/item/crafter)
+	if(!istype(crafter.loc, /obj/machinery/light/fueled))
+		return FALSE
+	var/obj/machinery/light/fueled/fueled = crafter.loc
+	if(!fueled.on)
+		return FALSE
+	return TRUE
 
 
 /datum/container_craft/pan/fried_crow
@@ -225,30 +224,35 @@
 	requirements = list(/obj/item/reagent_containers/food/snacks/butterdough_slice = 1)
 	output = /obj/item/reagent_containers/food/snacks/frybread
 	cooked_smell = /datum/pollutant/food/pastry
+	used_skill = /datum/attribute/skill/craft/cooking/baking
 
 /datum/container_craft/pan/griddlecake
 	name = "Griddlecake"
 	requirements = list(/obj/item/reagent_containers/food/snacks/foodbase/griddlecake_raw = 1)
 	output = /obj/item/reagent_containers/food/snacks/griddlecake
 	cooked_smell = /datum/pollutant/food/griddlecake
+	used_skill = /datum/attribute/skill/craft/cooking/baking
 
 /datum/container_craft/pan/griddlecakelemon
 	name = "Lemon Griddlecake"
 	requirements = list(/obj/item/reagent_containers/food/snacks/foodbase/lemongriddlecake_raw = 1)
 	output = /obj/item/reagent_containers/food/snacks/griddlecake/lemon
 	cooked_smell = /datum/pollutant/food/griddlecake
+	used_skill = /datum/attribute/skill/craft/cooking/baking
 
 /datum/container_craft/pan/griddlecakeapple
 	name = "Apple Griddlecake"
 	requirements = list(/obj/item/reagent_containers/food/snacks/foodbase/applegriddlecake_raw = 1)
 	output = /obj/item/reagent_containers/food/snacks/griddlecake/apple
 	cooked_smell = /datum/pollutant/food/griddlecake
+	used_skill = /datum/attribute/skill/craft/cooking/baking
 
 /datum/container_craft/pan/griddlecakeberry
 	name = "Jacksberry Griddlecake"
 	requirements = list(/obj/item/reagent_containers/food/snacks/foodbase/berrygriddlecake_raw = 1)
 	output = /obj/item/reagent_containers/food/snacks/griddlecake/berry
 	cooked_smell = /datum/pollutant/food/griddlecake
+	used_skill = /datum/attribute/skill/craft/cooking/baking
 
 /datum/container_craft/pan/fried_messenger
 	name = "Fried Messenger"

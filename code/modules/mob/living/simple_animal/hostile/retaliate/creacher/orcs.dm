@@ -13,8 +13,8 @@
 	base_constitution = 9
 	base_strength = 14
 	base_speed = 13
-	maxHealth = 200
-	health = 200
+	maxHealth = 100
+	health = 100
 	harm_intent_damage = 15
 	melee_damage_lower = 25
 	melee_damage_upper = 30
@@ -29,6 +29,7 @@
 	attack_sound = 'sound/blank.ogg'
 	canparry = TRUE
 	d_intent = INTENT_PARRY
+	animal_type = /datum/blood_type/human/corrupted/orc
 	speak_emote = list("grunts")
 	speak = list("WAAAGH!", "KRUSH AND KILL!", "Never should have come here!", "Slaughter them all!", "Kill everything!", "Hahaha! Die!")
 	loot = list(/obj/effect/mob_spawn/human/orc/corpse/savageorc,
@@ -127,7 +128,7 @@
 	. = ..()
 	if(!target)
 		if(prob(3))
-			emote(pick("idle"), TRUE)
+			INVOKE_ASYNC(src, PROC_REF(emote), "idle")
 
 /mob/living/simple_animal/hostile/orc/taunted(mob/user)
 	emote("aggro")

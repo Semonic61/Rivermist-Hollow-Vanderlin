@@ -30,6 +30,8 @@
 	//For the bed and sheet buff
 	var/sheet_tucked = FALSE
 	var/sheet_on = FALSE
+	hidingspot = TRUE
+	var/mob/living/hiddenguy = null // So we can find them with fixed eye search
 
 /obj/structure/bed/Initialize(mapload, ...)
 	. = ..()
@@ -42,6 +44,14 @@
 		if(buildstacktype)
 			new buildstacktype(loc,buildstackamount)
 	..()
+
+/obj/structure/bed/wrench_act(mob/living/user, obj/item/tool)
+	if(flags_1 & NODECONSTRUCT_1)
+		return NONE
+
+	tool.play_tool_sound(src)
+	deconstruct(TRUE)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/structure/bed/attack_paw(mob/user)
 	return attack_hand(user)
@@ -56,13 +66,6 @@
 	else
 		desc += "\nThis bed has no sheet, at least it's still a bed."
 
-/obj/structure/bed/attackby(obj/item/W, mob/user, list/modifiers)
-	if(W.tool_behaviour == TOOL_WRENCH && !(flags_1 & NODECONSTRUCT_1))
-		W.play_tool_sound(src)
-		deconstruct(TRUE)
-	else
-		return ..()
-
 /obj/structure/bed/post_buckle_mob(mob/living/M)
 	. = ..()
 	M.update_cone_show()
@@ -70,3 +73,36 @@
 /obj/structure/bed/post_unbuckle_mob(mob/living/M)
 	. = ..()
 	M.update_cone_show()
+
+/obj/structure/bed/attack_hand(mob/living/user)
+	if(user.m_intent == MOVE_INTENT_SNEAK)
+		hideinside(user)
+		return
+
+/obj/structure/bed/proc/hideinside(mob/living/user)
+	var/sneak_level = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/misc/sneaking) || 0
+	var/sneaktime = max(10, 50 - (sneak_level * 10)) // Hard caps at 1 second at Expert and above.
+	if(user.loc == src)
+		unhide(user)
+		return
+	if(occupied)
+		to_chat(user, span_warning("Someone is already hiding under [src]!"))
+		return
+	if(!do_after(user, sneaktime, src))
+		return
+	user.forceMove(src)
+	occupied = TRUE
+	hiddenguy = user
+	to_chat(user, span_warning("I hide under [src]!"))
+
+/obj/structure/bed/proc/unhide(mob/living/user)
+	var/turf/T = get_turf(src)
+	if(!T) return
+	user.forceMove(T)
+	occupied = FALSE
+	hiddenguy = null
+	to_chat(user, span_warning("I come out from under [src]!"))
+
+/obj/structure/bed/relaymove(mob/user)
+	if(user.loc == src)
+		unhide(user)

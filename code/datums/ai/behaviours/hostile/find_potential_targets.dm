@@ -57,7 +57,7 @@ GLOBAL_LIST_INIT(target_interested_atoms, typecacheof(list(/mob)))
 		if(living_target.stat == DEAD)
 			filtered_targets -= living_target
 			continue
-		if(!living_target.rogue_sneaking)
+		if(!(living_target.alpha <= 100 || living_target.rogue_sneaking))
 			continue
 		var/extra_chance = (living_mob.health <= living_mob.maxHealth * 50) ? 30 : 0 // if we're below half health, we're way more alert
 		if (!living_mob.npc_detect_sneak(living_target, extra_chance))
@@ -167,6 +167,9 @@ GLOBAL_LIST_INIT(target_interested_atoms, typecacheof(list(/mob)))
 		qdel(field) // autoclears so it's fine
 		controller.CancelActions() // On retarget cancel any further queued actions so that they will setup again with new target
 		controller.modify_cooldown(src, world.time + get_cooldown(controller))
+		// Just acquired a target (via scan or the detection field firing on FOV entry). Wake now so we
+		// engage at full planning speed instead of idling until the next slow idle plan.
+		controller.recalculate_idle()
 
 /// Returns the desired final target from the filtered list of targets
 /datum/ai_behavior/find_potential_targets/proc/pick_final_target(datum/ai_controller/controller, list/filtered_targets)

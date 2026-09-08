@@ -43,5 +43,9 @@ map hsector
 	votable
 endmap
 
+map rmh_calim
+	votable
+endmap
+
 map roguetest
 endmap

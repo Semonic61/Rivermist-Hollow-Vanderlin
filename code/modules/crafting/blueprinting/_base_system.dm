@@ -27,37 +27,37 @@
 	create_buttons()
 	holder.screen += buttons
 	holder.click_intercept = src
-	init_blueprint_recipes()
 	registered_mob = holder.mob
 	if(registered_mob)
 		RegisterSignal(registered_mob, COMSIG_USER_MOUSE_ENTERED, PROC_REF(on_mouse_moved))
 		RegisterSignal(registered_mob, COMSIG_ATOM_MOUSE_ENTERED, PROC_REF(on_mouse_moved_pre))
+		RegisterSignal(registered_mob, COMSIG_MOB_LOGOUT, PROC_REF(on_mob_logout))
+	// Destroy() drops these images, so entering blueprint mode has to put them back or every
+	// blueprint placed before this session stays invisible and unclickable for the rest of the round.
+	SSblueprints.add_viewer_to_all(registered_mob)
 
 /datum/blueprint_system/proc/quit()
-	if(holder)
-		holder.screen -= buttons
-		if(holder.click_intercept == src)
-			holder.click_intercept = null
-	clear_preview()
-	clear_pixel_positioning_dummy()
-	if(recipe_browser)
-		recipe_browser.close()
-		recipe_browser = null
-	unregister_mouse_signals()
 	qdel(src)
 
 /datum/blueprint_system/proc/unregister_mouse_signals()
 	if(!registered_mob)
 		return
-	UnregisterSignal(registered_mob, COMSIG_USER_MOUSE_ENTERED)
-	UnregisterSignal(registered_mob, COMSIG_ATOM_MOUSE_ENTERED)
+	UnregisterSignal(registered_mob, list(COMSIG_USER_MOUSE_ENTERED, COMSIG_ATOM_MOUSE_ENTERED, COMSIG_MOB_LOGOUT))
 	registered_mob = null
 
+/datum/blueprint_system/proc/on_mob_logout(mob/source)
+	SIGNAL_HANDLER
+	source.exit_blueprint()
+
 /datum/blueprint_system/Destroy()
+	if(registered_mob?.blueprints == src)
+		registered_mob.blueprints = null
+		REMOVE_TRAIT(registered_mob, TRAIT_BLUEPRINT_VISION, TRAIT_GENERIC)
 	if(holder)
 		holder.screen -= buttons
 		if(holder.click_intercept == src)
 			holder.click_intercept = null
+		SSblueprints.remove_viewer_from_all(holder)
 	unregister_mouse_signals()
 	holder?.player_details?.post_login_callbacks -= li_cb
 	li_cb = null
@@ -668,12 +668,14 @@
 		if(right_click)
 			if(istype(object, /obj/structure/blueprint))
 				var/obj/structure/blueprint/print = object
-				if(!print.creator)
+				// An unowned blueprint stays removable, otherwise a blueprint whose placer is gone
+				// would sit on the turf forever with nobody able to clear it.
+				if(print.creator_ckey && print.creator_ckey != user.ckey && world.time < print.time_when_placed + 3 MINUTES)
+					to_chat(user, span_warning("[print.name] was placed too recently by someone else."))
 					return TRUE
-				if(print.creator != user && world.time < print.time_when_placed + 3 MINUTES)
-					return TRUE
-				to_chat(user, span_red("[object.name] removed."))
-				qdel(object)
+				to_chat(user, span_red("[print.name] removed."))
+				qdel(print)
+				return TRUE
 	return FALSE
 
 // Modified blueprint system proc to handle wall fixture placement
@@ -685,7 +687,7 @@
 
 	var/atom/selected_output = selected_recipe.result_type
 
-	if(ispath(selected_output, /turf/closed) && (istype(get_area(final_location), /area/overlord_lair) && !("overlord" in user.faction)))
+	if(ispath(selected_output, /turf/closed) && (istype(get_area(final_location), /area/overlord_lair) && !user.has_faction("overlord")))
 		return
 
 	// Handle wall fixtures - place blueprint on adjacent floor when clicking on wall
@@ -722,7 +724,7 @@
 
 	var/obj/structure/blueprint/B = new(final_location)
 	B.recipe = selected_recipe
-	B.creator = user
+	B.creator_ckey = user.ckey
 	B.blueprint_dir = build_dir
 	B.time_when_placed = world.time
 
@@ -777,11 +779,21 @@
 	return best_dir
 
 /datum/blueprint_system/proc/can_place_at(turf/location)
-	for(var/obj/structure/blueprint/print in location)
-		if(print.recipe.floor_object && selected_recipe.floor_object)
-			return FALSE
+	return can_place_blueprint_at(location, selected_recipe)
+
+/// TRUE if a blueprint for this recipe can be dropped on this turf.
+/// A blueprint with no recipe must not be dereferenced here: the runtime aborts the proc, which
+/// reads as FALSE and permanently walls off the turf for everyone.
+/proc/can_place_blueprint_at(turf/location, datum/blueprint_recipe/recipe)
+	if(!location || !recipe)
+		return FALSE
 	if(location.density)
 		return FALSE
+	if(!recipe.floor_object)
+		return TRUE
+	for(var/obj/structure/blueprint/print in location)
+		if(print.recipe?.floor_object)
+			return FALSE
 	return TRUE
 
 /datum/blueprint_system/proc/clear_selection()

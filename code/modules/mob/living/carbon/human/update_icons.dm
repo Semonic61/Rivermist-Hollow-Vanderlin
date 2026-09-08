@@ -61,8 +61,10 @@ GLOBAL_PROTECT(no_child_icons)
 
 
 /mob/living/carbon/human/update_body()
+	if(status_flags & BUILDING_ORGANS)
+		return
 	dna?.species?.handle_body(src) //create destroy moment
-	..()
+	return ..()
 
 /mob/living/carbon/human/proc/update_organ_colors()
 	var/list/colors = color_key_source_list_from_carbon(src)
@@ -161,6 +163,8 @@ GLOBAL_PROTECT(no_child_icons)
 				if(!wound.mob_overlay)
 					continue
 				wound_overlays |= wound.mob_overlay
+			if(BP.is_artery_torn())
+				wound_overlays |= "s1"
 			for(var/wound_overlay in wound_overlays)
 				var/mutable_appearance/damage_overlay = mutable_appearance(limb_icon, "[BP.body_zone]_[wound_overlay]", -DAMAGE_LAYER)
 				damage_overlays += damage_overlay
@@ -2121,15 +2125,10 @@ generate/load female uniform sprites matching all previously decided variables
 /mob/living/carbon/human/generate_icon_render_key()
 	. = list(dna.species.limbs_id)
 
-	if(dna.species.use_skintones)
+	var/body_color = dna.species.get_body_color(src)
+	if(body_color)
 		. += "coloured"
-		. += skin_tone
-	else if(dna.species.fixed_mut_color)
-		. += "coloured"
-		. += dna.species.fixed_mut_color
-	else if(dna.features["mcolor"])
-		. += "coloured"
-		. += dna.features["mcolor"]
+		. += body_color
 	else
 		. += "not_coloured"
 
@@ -2138,11 +2137,20 @@ generate/load female uniform sprites matching all previously decided variables
 
 	for(var/obj/item/bodypart/BP as anything in bodyparts)
 		. += BP.body_zone
+		// Taur bodies share the global static limb_icon_cache with everyone else,
+		// but different taur types use different sprites and body_offset_y shifts
+		// every other limb's pixel_y. Without these in the key, a jdeer
+		// (body_offset_y = 17) can load limbs cached by an offset-less taur and
+		// its head/arms render 17px low, hidden inside the taur body (and vice versa).
+		if(BP.body_zone == BODY_ZONE_TAUR)
+			var/obj/item/bodypart/taur/taur_part = BP
+			. += "taur[taur_part.taur_icon_state]"
+			. += "tauroffset[taur_part.body_offset_y]"
 		if(BP.status == BODYPART_ORGANIC)
 			. += "organic"
 		else
 			. += "robotic"
-		if(BP.rotted)
+		if(HAS_TRAIT(BP, TRAIT_ROTTEN))
 			. += "rotted"
 		if(BP.skeletonized)
 			. += "skeletonized"
@@ -2155,6 +2163,12 @@ generate/load female uniform sprites matching all previously decided variables
 
 	if(HAS_TRAIT(src, TRAIT_HUSK))
 		. += "husk"
+
+	for(var/obj/item/organ/ears/ears in getorganslotlist(ORGAN_SLOT_EARS))
+		if(ears.is_flicking)
+			. += "earflick"
+			break
+
 	return jointext(., "-")
 
 /mob/living/carbon/human/load_limb_from_cache()

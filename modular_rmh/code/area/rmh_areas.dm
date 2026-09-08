@@ -1,5 +1,10 @@
 //MAIN MAP AREAS//
 
+/area/indoors/succubus_lair
+	name = "lair (Succubus)"
+	first_time_text = "THE INFERNAL BOUDOIR"
+	ceiling_protected = TRUE
+
 
 /area/outdoors/exposed/rmh
 	icon_state = "exposed"
@@ -32,13 +37,35 @@
 	background_track_night = 'modular_rmh/sound/music/area/field_night.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/field_dawn.ogg'
 	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
+	ambient_index = AMBIENCE_BIRDS
+
+/area/outdoors/rmh_field/oldmill
+	name = "Ruined windmill"
+	first_time_text = "RUINED WINDMILL"
+	icon = 'modular_rmh/icons/turf/areas.dmi'
+	background_track = 'modular_rmh/sound/music/area/windmill.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/windmill.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/windmill.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/windmill.ogg'
+	icon_state = "woods_n"
 
 /area/outdoors/rmh_field/north
 	name = "North Forest"
 	first_time_text = "NORTH FOREST"
 	icon = 'modular_rmh/icons/turf/areas.dmi'
 	icon_state = "woods_n"
+	soundenv = 19
+	ambush_times = list("night","dawn","dusk","day")
+	ambush_types = list(
+				/turf/open/floor/grass,
+				/turf/open/floor/dirt)
+	ambush_mobs = list(
+				/mob/living/simple_animal/hostile/retaliate/wolf = 60,
+				/mob/living/simple_animal/hostile/retaliate/fox = 50,
+				/mob/living/simple_animal/hostile/retaliate/bobcat = 50,
+				/mob/living/simple_animal/hostile/retaliate/bigrat = 30,
+				/mob/living/simple_animal/hostile/retaliate/fae/sprite = 20)
+	threat_region = THREAT_REGION_RMH_NORTH_DANGER
 
 /area/outdoors/rmh_field/west
 	name = "West Forest"
@@ -108,13 +135,36 @@
 	ambient_index = AMBIENCE_CAVE
 	ambient_index_night = AMBIENCE_GENERIC
 
+/area/outdoors/rmh_field/basinruin
+	name = "Ruined Fort"
+	first_time_text = "RUINED FORT"
+	icon = 'modular_rmh/icons/turf/areas.dmi'
+	background_track_dusk = 'modular_rmh/sound/music/area/basinruins.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/basinruins.ogg'
+	icon_state = "rfort"
+	soundenv = 19
+	ambush_times = list("night","dawn","dusk","day")
+	ambush_types = list(
+				/turf/open/floor/grass,
+				/turf/open/floor/grass/healthy,
+				/turf/open/floor/dirt/road,
+				/turf/open/floor/dirt,
+				/turf/open/floor/cobble/alt,
+				/turf/open/floor/cobble,
+				/turf/open/floor/cobblerock)
+	ambush_mobs = list(
+				/mob/living/simple_animal/hostile/retaliate/wolf = 60,
+				/mob/living/carbon/human/species/goblin/npc/ambush/cave = 50,
+				/mob/living/carbon/human/species/goblin/npc/ambush = 50,
+				/mob/living/simple_animal/hostile/retaliate/direbear = 20)
+	converted_type = /area/indoors/shelter/rmh_field
+	threat_region = THREAT_REGION_RMH_BASIN_RUINS
 // - - - - - -
 //MOUNTAINS
 // - - - - - -
 /area/outdoors/mountains/rmh_mountains
 	name = "Dusk Spire Mountains Pass"
 	icon_state = "decap"
-	ambush_mobs = null
 	background_track = 'sound/music/area/decap.ogg'
 	background_track_dusk = 'sound/music/area/decap.ogg'
 	background_track_night = 'sound/music/area/decap.ogg'
@@ -128,6 +178,23 @@
 	first_time_text = "NORTHERN MOUNTAINS BASIN"
 	icon = 'modular_rmh/icons/turf/areas.dmi'
 	icon_state = "n_basin"
+	soundenv = 19
+	ambush_times = list("night","dawn","dusk","day")
+	ambush_types = list(
+				/turf/open/floor/grass,
+				/turf/open/floor/grass/healthy,
+				/turf/open/floor/dirt/road,
+				/turf/open/floor/dirt,
+				/turf/open/floor/cobble/alt,
+				/turf/open/floor/cobble,
+				/turf/open/floor/cobblerock)
+	ambush_mobs = list(
+				/mob/living/simple_animal/hostile/retaliate/wolf = 60,
+				/mob/living/carbon/human/species/goblin/npc/ambush/cave = 50,
+				/mob/living/carbon/human/species/goblin/npc/ambush = 50,
+				/mob/living/simple_animal/hostile/retaliate/direbear = 20)
+	converted_type = /area/indoors/shelter/rmh_field
+	threat_region = THREAT_REGION_RMH_NORTH_DANGER
 
 /area/indoors/shelter/mountains/rmh_mountains
 	icon = 'modular_rmh/icons/turf/areas.dmi'
@@ -198,11 +265,22 @@
 	ambient_index = AMBIENCE_BIRDS
 	converted_type = /area/indoors/shelter/town/rmh
 
+/area/outdoors/town/rmh/ruinedzone
+	name = "Town's Ruin"
+	icon_state = "town"
+	first_time_text = "RUINS"
+	background_track = 'modular_rmh/sound/music/area/ruintown.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/town_dawn.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/town_dusk.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/town_night.ogg'
+	ambient_index = AMBIENCE_BIRDS
+	converted_type = /area/indoors/shelter/town/rmh
+
 /area/outdoors/town/rmh/roofs
 	name = "Rivermist Hollow Rooftops"
 	icon_state = "roofs"
 	droning_index = DRONING_MOUNTAIN
-	ambient_index = AMBIENCE_GENERIC
+	ambient_index = AMBIENCE_BIRDS
 	//spookysounds = SPOOKY_GEN
 	//spookynight = SPOOKY_GEN
 	background_track = 'modular_rmh/sound/music/area/town_day.ogg'
@@ -211,6 +289,20 @@
 	background_track_night = 'modular_rmh/sound/music/area/town_night.ogg'
 	soundenv = 17
 	converted_type = /area/indoors/shelter/town/rmh/roofs
+
+/area/outdoors/town/rmh/livingquart
+	name = "Living Outskirts"
+	icon_state = "camp"
+	icon = 'modular_rmh/icons/turf/areas.dmi'
+	soundenv = 19
+//	ambush_mobs = null
+	first_time_text = "LIVING OUTSKIRTS"
+	background_track = 'modular_rmh/sound/music/area/field_day.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/field_dusk.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/field_night.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/field_dawn.ogg'
+	ambient_index = AMBIENCE_BIRDS
+	converted_type = /area/indoors/shelter/town/rmh
 
 /area/outdoors/rmh_platz
 	name = "platz"
@@ -230,7 +322,7 @@
 	background_track_dusk = 'modular_rmh/sound/music/area/town_dusk.ogg'
 	background_track_night = 'modular_rmh/sound/music/area/town_night.ogg'
 	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
+	ambient_index = AMBIENCE_BIRDS
 	converted_type = /area/outdoors/exposed/town/rmh
 	//deathsight_message = "the town of Rivermist Hollow and all its bustling souls"
 
@@ -252,8 +344,6 @@
 	droning_index_night = DRONING_BASEMENT
 	ambient_index = AMBIENCE_DUNGEON
 	ambient_index_night = AMBIENCE_DUNGEON
-	//spookysounds = SPOOKY_DUNGEON
-	//spookynight = SPOOKY_DUNGEON
 	background_track = 'sound/music/area/catacombs.ogg'
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
@@ -269,8 +359,6 @@
 	droning_index_night = DRONING_BASEMENT
 	ambient_index = AMBIENCE_DUNGEON
 	ambient_index_night = AMBIENCE_DUNGEON
-	//spookysounds = SPOOKY_DUNGEON
-	//spookynight = SPOOKY_DUNGEON
 	background_track = 'sound/music/area/catacombs.ogg'
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
@@ -304,6 +392,34 @@
 	converted_type = /area/outdoors/exposed/town/rmh
 	cell_area = TRUE
 
+/area/indoors/town/rmh/windmill
+	name = "Old Windmill"
+	first_time_text = "WINDMILL"
+	icon_state = "cell"
+	//spookysounds = SPOOKY_DUNGEON
+	//spookynight = SPOOKY_DUNGEON
+	background_track = 'modular_rmh/sound/music/area/windmill.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/windmill.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/windmill.ogg'
+	converted_type = /area/outdoors/exposed/town/rmh
+	cell_area = TRUE
+
+/area/under/town/rmh/sewer
+	name = "Rivermist Hollow Sewers"
+	first_time_text = "RIVERMIST HOLLOW SEWERS"
+	icon_state = "sewer"
+	droning_index = DRONING_RAIN_SEWER
+	ambient_index = AMBIENCE_CAVE
+	//spookysounds = SPOOKY_RATS
+	//spookynight = SPOOKY_RATS
+	background_track = 'modular_rmh/sound/music/area/sewers1.ogg'
+	background_track_dawn = 'modular_rmh/sound/music/area/sewers2.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/sewers3.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/sewers4.ogg'
+	//ambientrain = RAIN_SEWER
+	soundenv = 21
+	converted_type = /area/outdoors/exposed/under/rmh/sewer
+
 /area/under/town/rmh/sewer
 	name = "Rivermist Hollow Sewers"
 	first_time_text = "RIVERMIST HOLLOW SEWERS"
@@ -318,7 +434,6 @@
 	//ambientrain = RAIN_SEWER
 	soundenv = 21
 	converted_type = /area/outdoors/exposed/under/rmh/sewer
-	ceiling_protected = TRUE
 
 /area/outdoors/exposed/under/rmh/sewer
 	name = "Rivermist Hollow Sewers"
@@ -427,7 +542,7 @@
 	icon = 'modular_rmh/icons/turf/areas.dmi'
 	icon_state = "tavern"
 	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
+	ambient_index = DRONING_INDOORS
 	ambient_index_night = DRONING_INDOORS
 	background_track = 'sound/silence.ogg'
 	background_track_dusk = 'sound/silence.ogg'
@@ -477,7 +592,7 @@
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
 	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
+	ambient_index = DRONING_INDOORS
 
 /area/indoors/town/rmh/craft/artificer
 	name = "artificer's indoors"
@@ -485,8 +600,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 
 /area/indoors/town/rmh/craft/blacksmith
@@ -495,8 +608,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 
 /area/indoors/town/rmh/craft/tailor
@@ -505,8 +616,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/craft/clinic
 	name = "clinic's indoors"
@@ -514,8 +623,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/craft/apothecary
 	name = "apothecary's indoors"
@@ -523,8 +630,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/greenhouse
 	name = "greenhouse"
@@ -532,8 +637,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 
 /area/indoors/town/rmh/loudmouth
@@ -542,8 +645,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 
 /area/indoors/town/rmh/farm
@@ -553,7 +654,7 @@
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
 	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
+	ambient_index = DRONING_INDOORS
 
 /area/indoors/town/rmh/farm
 	name = "farm's zones"
@@ -561,8 +662,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/farm/house
 	name = "farm's house"
@@ -570,8 +669,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/farm/ambar
 	name = "ambar"
@@ -579,8 +676,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/farm/henhouse
 	name = "henhouse"
@@ -588,8 +683,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/farm/stall
 	name = "stall"
@@ -597,8 +690,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/farm/goat_rue
 	name = "goat's rue"
@@ -606,8 +697,6 @@
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
 
 /area/indoors/town/rmh/magician
 	name = "Mage's Guild"
@@ -629,18 +718,11 @@
 	icon = 'modular_rmh/icons/turf/areas.dmi'
 	icon_state = "indoors"
 	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/townindoor_day.ogg'
 	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/ruintown.ogg'
 	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
-
-/area/indoors/town/rmh/living/cer
-	name = "tower"
-	icon = 'modular_rmh/icons/turf/areas.dmi'
-	icon_state = "indoors"
-	background_track = 'modular_rmh/sound/music/area/townindoor_day.ogg'
-	background_track_dawn = 'modular_rmh/sound/music/area/townindoor_dawn.ogg'
-	droning_index = DRONING_INDOORS
-	ambient_index = AMBIENCE_GENERIC
+	ambient_index = DRONING_INDOORS
 
 /area/outdoors/exposed/town/rmh
 	name = "Rivermist Hollow"
@@ -718,7 +800,6 @@
 	background_track = 'sound/music/area/dungeon2.ogg'
 	background_track_dusk = 'sound/music/area/dungeon2.ogg'
 	background_track_night = 'sound/music/area/dungeon2.ogg'
-	ceiling_protected = TRUE
 
 /area/under/rmh_dungeon/jergal
 	name = "jergal dungeon"
@@ -745,7 +826,6 @@
 	background_track = 'sound/music/area/dungeon2.ogg'
 	background_track_dusk = 'sound/music/area/dungeon2.ogg'
 	background_track_night = 'sound/music/area/dungeon2.ogg'
-	ceiling_protected = TRUE
 
 /area/under/rmh_dungeon/catacombs_town
 	name = "town's catacombs"
@@ -754,7 +834,6 @@
 	background_track = 'sound/music/area/dungeon2.ogg'
 	background_track_dusk = 'sound/music/area/dungeon2.ogg'
 	background_track_night = 'sound/music/area/dungeon2.ogg'
-	ceiling_protected = TRUE
 
 // - - - - - -
 //CAVES
@@ -765,6 +844,14 @@
 	icon_state = "cave"
 	droning_index = DRONING_CAVE_GENERIC
 	ambient_index = AMBIENCE_CAVE
+	ambush_times = list("night","dusk")
+	ambush_types = list(
+				/turf/open/floor/cobblerock,
+				/turf/open/floor/dirt,
+				/turf/open/floor/naturalstone)
+	ambush_mobs = list(
+				/mob/living/carbon/human/species/goblin/npc/ambush/cave = 50,
+				/mob/living/carbon/human/species/goblin/npc/ambush = 50)
 	soundenv = 8
 	//deathsight_message = "a dark cave"
 	converted_type = /area/outdoors/caves
@@ -774,14 +861,22 @@
 	first_time_text = "ABANDONED MINES"
 	icon = 'modular_rmh/icons/turf/areas.dmi'
 	icon_state = "mine"
-	//deathsight_message = "a dark mine"
-	ceiling_protected = TRUE
 
 /area/indoors/cave/rmh_cave/to_underdark
 	name = "UNDERDARK DESCENT"
 	first_time_text = "UNDERDARK DESCENT"
 	icon_state = "underworld"
-	ceiling_protected = TRUE
+
+/area/indoors/cave/rmh_cave/safezone
+	name = "Safe zone - Mine"
+	first_time_text = "CALM PLACE"
+	background_track_dawn = 'modular_rmh/sound/music/area/safe_zone_mines.ogg'
+	background_track = 'modular_rmh/sound/music/area/safe_zone_mines.ogg'
+	background_track_dusk = 'modular_rmh/sound/music/area/safe_zone_mines.ogg'
+	background_track_night = 'modular_rmh/sound/music/area/safe_zone_mines.ogg'
+	ambush_times = null
+	ambush_types = null
+	ambush_mobs = null
 
 /area/outdoors/beach/rmh_beach
 	name = "Misty Lake"
@@ -798,6 +893,9 @@
 	background_track = 'sound/music/area/caves.ogg'
 	background_track_dusk = 'sound/music/area/caves.ogg'
 	background_track_night = 'sound/music/area/caves.ogg'
+	ambush_times = null
+	ambush_types = null
+	ambush_mobs = null
 	//deathsight_message = "wet caverns"
 
 /area/indoors/cave/rmh_cave/wet/lake
@@ -808,42 +906,146 @@
 /area/indoors/cave/rmh_cave/west
 	name = "Western Caves"
 	first_time_text = "Western Caves"
-	ceiling_protected = TRUE
 
 /area/indoors/cave/rmh_cave/east
 	name = "Eastern Caves"
 	first_time_text = "Eastern Caves"
-	ceiling_protected = TRUE
 
 /area/indoors/cave/rmh_cave/central
 	name = "Central Caves"
 	first_time_text = "Central Caves"
-	ceiling_protected = TRUE
 
 /area/indoors/cave/rmh_cave/northern
 	name = "Northern Caves"
 	first_time_text = "Northern Caves"
-	ceiling_protected = TRUE
 
 /area/indoors/cave/rmh_cave/southern
 	name = "Southern Caves"
 	first_time_text = "Southern Caves"
-	ceiling_protected = TRUE
 
-/area/indoors/cave/rmh_cave/southern
-	name = "Southern Caves"
-	first_time_text = "Southern Caves"
-	ceiling_protected = TRUE
+/area/indoors/cave/rmh_cave/west/wild
+	map_generator = /datum/map_generator/caves/mixed
+	ambush_times = list("night","dawn","dusk","day")
+	ambush_types = list(
+				/turf/open/floor/naturalstone,
+				/turf/open/floor/dirt,
+				/turf/open/floor/cobblerock)
+	ambush_mobs = list(
+				/mob/living/carbon/human/species/goblin/npc/ambush/cave = 45,
+				/mob/living/carbon/human/species/goblin/npc/ambush = 25,
+				/datum/ambush_config/goblin_ambush_party = 15,
+				/mob/living/simple_animal/hostile/retaliate/bigrat = 15)
+
+/area/indoors/cave/rmh_cave/west/wild/warren
+	map_generator = /datum/map_generator/caves/warren
+
+/area/indoors/cave/rmh_cave/west/wild/cavern
+	map_generator = /datum/map_generator/caves/cavern
+
+/area/indoors/cave/rmh_cave/west/wild/deep
+	map_generator = /datum/map_generator/caves/deep
+
+/area/indoors/cave/rmh_cave/east/wild
+	map_generator = /datum/map_generator/caves/mixed
+	ambush_times = list("night","dawn","dusk","day")
+	ambush_types = list(
+				/turf/open/floor/naturalstone,
+				/turf/open/floor/dirt,
+				/turf/open/floor/cobblerock)
+	ambush_mobs = list(
+				/mob/living/simple_animal/hostile/retaliate/bigrat = 40,
+				/mob/living/simple_animal/hostile/retaliate/mole = 25,
+				/datum/ambush_config/mole_pack = 15,
+				/mob/living/carbon/human/species/goblin/npc/ambush/cave = 20)
+
+/area/indoors/cave/rmh_cave/east/wild/warren
+	map_generator = /datum/map_generator/caves/warren
+
+/area/indoors/cave/rmh_cave/east/wild/cavern
+	map_generator = /datum/map_generator/caves/cavern
+
+/area/indoors/cave/rmh_cave/east/wild/deep
+	map_generator = /datum/map_generator/caves/deep
+
+/area/indoors/cave/rmh_cave/central/wild
+	map_generator = /datum/map_generator/caves/mixed
+	ambush_times = list("night","dawn","dusk","day")
+	ambush_types = list(
+				/turf/open/floor/naturalstone,
+				/turf/open/floor/dirt,
+				/turf/open/floor/cobblerock)
+	ambush_mobs = list(
+				/mob/living/simple_animal/hostile/retaliate/spider = 35,
+				/mob/living/simple_animal/hostile/retaliate/spider/mutated = 20,
+				/mob/living/carbon/human/species/goblin/npc/ambush/cave = 30,
+				/mob/living/simple_animal/hostile/retaliate/bigrat = 15)
+
+/area/indoors/cave/rmh_cave/central/wild/warren
+	map_generator = /datum/map_generator/caves/warren
+
+/area/indoors/cave/rmh_cave/central/wild/cavern
+	map_generator = /datum/map_generator/caves/cavern
+
+/area/indoors/cave/rmh_cave/central/wild/deep
+	map_generator = /datum/map_generator/caves/deep
+
+/area/indoors/cave/rmh_cave/northern/wild
+	map_generator = /datum/map_generator/caves/mixed
+	ambush_times = list("night","dawn","dusk","day")
+	ambush_types = list(
+				/turf/open/floor/naturalstone,
+				/turf/open/floor/dirt,
+				/turf/open/floor/cobblerock)
+	ambush_mobs = list(
+				/mob/living/carbon/human/species/skeleton/npc/ambush = 40,
+				/datum/ambush_config/medium_skeleton_party = 15,
+				/mob/living/carbon/human/species/goblin/npc/ambush/cave = 25,
+				/mob/living/simple_animal/hostile/retaliate/bigrat = 20)
+
+/area/indoors/cave/rmh_cave/northern/wild/warren
+	map_generator = /datum/map_generator/caves/warren
+
+/area/indoors/cave/rmh_cave/northern/wild/cavern
+	map_generator = /datum/map_generator/caves/cavern
+
+/area/indoors/cave/rmh_cave/northern/wild/deep
+	map_generator = /datum/map_generator/caves/deep
+
+/area/indoors/cave/rmh_cave/southern/wild
+	map_generator = /datum/map_generator/caves/mixed
+	ambush_times = list("night","dawn","dusk","day")
+	ambush_types = list(
+				/turf/open/floor/naturalstone,
+				/turf/open/floor/dirt,
+				/turf/open/floor/cobblerock)
+	ambush_mobs = list(
+				/mob/living/simple_animal/hostile/retaliate/troll/cave = 25,
+				/mob/living/simple_animal/hostile/retaliate/elemental/crawler = 25,
+				/mob/living/carbon/human/species/goblin/npc/ambush/cave = 30,
+				/mob/living/simple_animal/hostile/retaliate/bigrat = 20)
+
+/area/indoors/cave/rmh_cave/southern/wild/warren
+	map_generator = /datum/map_generator/caves/warren
+
+/area/indoors/cave/rmh_cave/southern/wild/cavern
+	map_generator = /datum/map_generator/caves/cavern
+
+/area/indoors/cave/rmh_cave/southern/wild/deep
+	map_generator = /datum/map_generator/caves/deep
 
 /area/indoors/cave/rmh_cave/cave_druid
 	name = "Druid's Caves"
 	first_time_text = "Druid's Caves"
-	ceiling_protected = TRUE
+	ambush_times = null
+	ambush_types = null
+	ambush_mobs = null
 
 /area/indoors/cave/rmh_cave/cave_leshiy
 	name = "Warrior's Caves"
 	first_time_text = "Hidden Cave"
-	ceiling_protected = TRUE
+	ambush_times = null
+	ambush_types = null
+	ambush_mobs = null
 
 // - - - - - -
 //BASEMENTS
@@ -862,7 +1064,6 @@
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
 	converted_type = /area/outdoors/exposed/rmh/under/basement
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/mages
 	name = "mage's basement"
@@ -875,7 +1076,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/tavern
 	name = "tavern's basement"
@@ -888,7 +1088,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/merchant
 	name = "shop's basement"
@@ -901,7 +1100,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/bank
 	name = "banks's basement"
@@ -914,7 +1112,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/church
 	name = "church's basement"
@@ -927,7 +1124,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/townhall
 	name = "townhall's basement"
@@ -940,7 +1136,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/artificer
 	name = "artificer's basement"
@@ -953,7 +1148,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/blacksmith
 	name = "blacksmith's basement"
@@ -966,7 +1160,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/farm
 	name = "farm's basement"
@@ -979,7 +1172,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/bdsm
 	name = "bdsm's dungeon"
@@ -992,7 +1184,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/basement
 	name = "basement"
@@ -1005,7 +1196,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/pump
 	name = "water pump"
@@ -1018,7 +1208,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/lab
 	name = "clinic's lab"
@@ -1031,7 +1220,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/indoors/town/rmh/chapel/basement
 	name = "The Ancient Crypt"

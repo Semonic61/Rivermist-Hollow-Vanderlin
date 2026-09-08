@@ -39,10 +39,12 @@
 	var/target_anchor_y = 0
 	var/target_anchor_z = 0
 
-	/// Distance bonus multiplier (0.0 to QUEST_DISTANCE_BONUS_MAX_MULT), calculated once at quest creation
+	/// Distance bonus multiplier applied on top of payout, calculated once at quest creation
 	var/distance_bonus_mult = 0
 	/// Map reward modifier from quest_map_config, set once at generation
 	var/map_reward_modifier = 1.0
+	/// Unscaled map reward modifier, kept for reward formulas that need their own curve
+	var/map_reward_base_modifier = 1.0
 	/// Map difficulty modifier from quest_map_config, set once at generation
 	var/map_difficulty_modifier = 1.0
 
@@ -243,7 +245,7 @@
 	var/turf/best_turf
 	var/best_score = INFINITY
 
-	for(var/obj/effect/decal/marker_export/marker in world)
+	for(var/obj/effect/decal/marker_export/marker as anything in GLOB.quest_turn_in_markers)
 		var/turf/marker_turf = get_turf(marker)
 		if(!marker_turf)
 			continue
@@ -467,18 +469,27 @@
 	var/datum/quest_map_config/config = get_quest_map_config_for_turf(landmark_turf)
 	if(!config)
 		return
-	map_reward_modifier = config.reward_modifier
+	map_reward_base_modifier = config.reward_modifier
+	map_reward_modifier = config.reward_modifier * QUEST_MAP_REWARD_SCALE
 	map_difficulty_modifier = config.difficulty_modifier
 
 /// Calculate distance bonus multiplier based on distance from ledger to spawn point.
 /// Measured once at quest creation. Independent of map modifiers.
-/// distance_from_ledger: raw tile distance between contract ledger and quest landmark.
-/datum/quest/proc/calculate_distance_bonus(distance_from_ledger)
+/// ledger_turf: turf hosting the issuing ledger.
+/// landmark_turf: turf chosen for the quest target or spawn point.
+/datum/quest/proc/calculate_distance_bonus(turf/ledger_turf, turf/landmark_turf)
+	if(!ledger_turf || !landmark_turf)
+		distance_bonus_mult = 0
+		return
+	var/distance_from_ledger = get_dist(ledger_turf, landmark_turf)
 	if(!distance_from_ledger || distance_from_ledger <= 0)
 		distance_bonus_mult = 0
 		return
 	var/clamped = clamp(distance_from_ledger, 0, QUEST_DISTANCE_BONUS_MAX_RANGE)
-	distance_bonus_mult = (clamped / QUEST_DISTANCE_BONUS_MAX_RANGE) * QUEST_DISTANCE_BONUS_MAX_MULT
+	var/base_bonus = (clamped / QUEST_DISTANCE_BONUS_MAX_RANGE) * QUEST_DISTANCE_BONUS_MAX_MULT
+	distance_bonus_mult = base_bonus * QUEST_DISTANCE_BONUS_SCALE
+	if(ledger_turf.z != landmark_turf.z)
+		distance_bonus_mult *= QUEST_DISTANCE_BONUS_CROSS_Z_SCALE
 
 /// Try to set up a quest ambush on one of the tracked quest mobs.
 /// Chance scales with map difficulty: clamp(QUEST_AMBUSH_BASE_CHANCE * difficulty, MIN, MAX)
@@ -578,6 +589,16 @@
 	// Apply map reward modifier
 	base_total *= map_reward_modifier
 	// Apply distance bonus (up to QUEST_DISTANCE_BONUS_MAX_MULT extra)
+	base_total *= (1 + distance_bonus_mult)
+	return max(0, ROUND_UP(base_total))
+
+/datum/quest/proc/calculate_errand_reward(turf/target_turf)
+	var/risk_score = max(1, ROUND_UP(get_risk_score(target_turf)))
+	var/workload_reward = max(0, ROUND_UP(get_workload_reward(target_turf)))
+	threat_tier = get_tier_from_risk_score(risk_score)
+	var/base_total = get_base_reward() + (risk_score * QUEST_ERRAND_REWARD_PER_RISK_POINT) + (workload_reward * QUEST_ERRAND_WORKLOAD_REWARD_MULT)
+	var/map_curve = map_reward_base_modifier * map_reward_base_modifier
+	base_total *= map_curve
 	base_total *= (1 + distance_bonus_mult)
 	return max(0, ROUND_UP(base_total))
 

@@ -1,5 +1,8 @@
 /datum/job/acolyte
 	title = "Chapel Acolyte"
+	unique_alt_honorary = TRUE
+	alt_honorary = list("Brother")
+	alt_honorary_female = list("Sister")
 	tutorial = "You are a humble servant of the gods. \
 	This chapel welcomes many faiths, and your duty is simple service, learning, and aid. \
 	ALLOWED PATRONS: Garl Glittergold, Helm, Mystra, Oghma, Tempus, Tymora, Silvanus, Jergal, Bahamut, Corellon Larethian, \
@@ -148,7 +151,7 @@
 	backr = /obj/item/storage/backpack/satchel
 	backl = null
 	belt = /obj/item/storage/belt/leather/rope
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltl = /obj/item/storage/keyring/town_chapel
 	ring = null
 	l_hand = null
@@ -226,7 +229,7 @@
 	backr = /obj/item/storage/backpack/satchel
 	backl = null
 	belt = /obj/item/storage/belt/leather/rope
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltl = /obj/item/storage/keyring/town_chapel
 	ring = null
 	l_hand = null
@@ -309,7 +312,7 @@
 	backr = /obj/item/storage/backpack/satchel
 	backl = null
 	belt = /obj/item/storage/belt/leather/rope
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltl = /obj/item/storage/keyring/town_chapel
 	ring = null
 	l_hand = null
@@ -389,7 +392,7 @@
 	backr = /obj/item/storage/backpack/satchel
 	backl = null
 	belt = /obj/item/storage/belt/leather/rope
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltl = /obj/item/storage/keyring/town_chapel
 	ring = null
 	l_hand = null
@@ -469,7 +472,7 @@
 	backr = /obj/item/storage/backpack/satchel
 	backl = null
 	belt = /obj/item/storage/belt/leather/rope
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltl = /obj/item/storage/keyring/town_chapel
 	ring = null
 	l_hand = null
@@ -551,7 +554,7 @@
 	backr = /obj/item/storage/backpack/satchel
 	backl = null
 	belt = /obj/item/storage/belt/leather/rope
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltl = /obj/item/storage/keyring/town_chapel
 	ring = null
 	l_hand = null
@@ -642,7 +645,7 @@
 	backr = /obj/item/storage/backpack/satchel
 	backl = null
 	belt = /obj/item/storage/belt/leather/cloth
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltl = /obj/item/storage/keyring/town_chapel
 	ring = null
 	l_hand = null

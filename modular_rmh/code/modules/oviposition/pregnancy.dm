@@ -212,13 +212,14 @@
 /datum/component/pregnancy/proc/get_container_location_name()
 	return container?.get_oviposition_location_name() || "body"
 
-/datum/component/pregnancy/proc/format_container_message(message)
+/// Callers that already detached the egg pass their own snapshot, since ours is gone by then.
+/datum/component/pregnancy/proc/format_container_message(message, location_name, mob/living/message_carrier)
 	if(!message)
 		return null
 
-	var/formatted_message = replacetext(message, "%CONTAINER%", get_container_location_name())
+	var/formatted_message = replacetext(message, "%CONTAINER%", location_name || get_container_location_name())
 	formatted_message = replacetext(formatted_message, "%EGG%", "[egg]")
-	formatted_message = replacetext(formatted_message, "%CARRIER%", "[carrier]")
+	formatted_message = replacetext(formatted_message, "%CARRIER%", "[message_carrier || carrier]")
 	return formatted_message
 
 /datum/component/pregnancy/proc/update_egg_storage_bulk()
@@ -245,21 +246,26 @@
 	if(laid || !carrier || !container || stage < max_stage)
 		return FALSE
 
+	// remove_from_host() relocates the egg, and our own COMSIG_MOVABLE_MOVED handler clears both of
+	// these on the way through. Everything past that point has to work off the snapshot.
+	var/mob/living/laying_carrier = carrier
+	var/obj/item/organ/laying_container = container
+
 	if(!location)
-		location = get_turf(carrier)
+		location = get_turf(laying_carrier)
 	if(!location)
 		return FALSE
 	if(!remove_from_host(BODYSTORAGE_REMOVE_INTERNAL))
 		return FALSE
 
-	carrier.visible_message(
-		span_notice("[carrier] [container.get_oviposition_lay_verb()] an egg!"),
-		span_love(container.get_oviposition_lay_self_message())
+	laying_carrier.visible_message(
+		span_notice("[laying_carrier] [laying_container.get_oviposition_lay_verb()] an egg!"),
+		span_love(laying_container.get_oviposition_lay_self_message())
 	)
-	playsound(carrier, 'sound/effects/wounds/splatter.ogg', 70, TRUE)
-	carrier.Knockdown(60, TRUE, TRUE)
-	carrier.Stun(60, TRUE, TRUE)
-	carrier.adjust_stamina(forced ? 120 : 80)
+	playsound(laying_carrier, 'sound/effects/wounds/splatter.ogg', 70, TRUE)
+	laying_carrier.Knockdown(60, TRUE, TRUE)
+	laying_carrier.Stun(60, TRUE, TRUE)
+	laying_carrier.adjust_stamina(forced ? 120 : 80)
 
 	laid = TRUE
 	egg.forceMove(location)
@@ -330,6 +336,10 @@
 		finalize_living_hatch(player, hatchling)
 		return hatch_living_inside_host(hatchling)
 
+	if(isitem(hatch_result))
+		var/obj/item/hatch_item = hatch_result
+		return hatch_item_inside_host(hatch_item)
+
 	qdel(hatch_result)
 	return FALSE
 
@@ -394,6 +404,12 @@
 		qdel(hatchling)
 		return FALSE
 
+	// remove_from_host() relocates the egg, and our own COMSIG_MOVABLE_MOVED handler clears both of
+	// these on the way through. Everything past that point has to work off the snapshot.
+	var/mob/living/hatch_carrier = carrier
+	var/obj/item/organ/hatch_container = container
+	var/location_name = get_container_location_name()
+
 	if(!remove_from_host(BODYSTORAGE_REMOVE_INTERNAL))
 		qdel(hatchling)
 		return FALSE
@@ -402,26 +418,68 @@
 	if(!ispath(holder_type, /obj/item/mob_holder/internal_womb))
 		holder_type = /obj/item/mob_holder/internal_womb
 
-	var/obj/item/mob_holder/internal_womb/holder = new holder_type(get_turf(carrier))
+	var/obj/item/mob_holder/internal_womb/holder = new holder_type(get_turf(hatch_carrier))
 	if(!holder.deposit(hatchling))
-		SEND_SIGNAL(container, COMSIG_BODYSTORAGE_FORCE_INSERT, egg, STORAGE_LAYER_DEEP)
+		SEND_SIGNAL(hatch_container, COMSIG_BODYSTORAGE_FORCE_INSERT, egg, STORAGE_LAYER_DEEP)
 		qdel(holder)
 		return FALSE
 
 	holder.set_internal_bulk(egg.internal_hatch_holder_bulk)
 
-	var/datum/component/body_storage/storage = container.GetComponent(/datum/component/body_storage)
+	var/datum/component/body_storage/storage = hatch_container.GetComponent(/datum/component/body_storage)
 	var/holder_layer = egg.internal_hatch_layer
 	if(!storage?.available_layers[holder_layer])
 		holder_layer = STORAGE_LAYER_DEEP
 
-	SEND_SIGNAL(container, COMSIG_BODYSTORAGE_FORCE_INSERT, holder, holder_layer)
-	holder.AddComponent(/datum/component/internal_womb_hatchling, container, carrier, get_container_location_name(), egg.internal_hatch_triggers_contractions, egg.internal_hatch_auto_birth, egg.internal_hatch_birth_delay, egg.internal_contraction_message, egg.internal_birth_message)
+	SEND_SIGNAL(hatch_container, COMSIG_BODYSTORAGE_FORCE_INSERT, holder, holder_layer)
+	holder.AddComponent(/datum/component/internal_womb_hatchling, hatch_container, hatch_carrier, location_name, egg.internal_hatch_triggers_contractions, egg.internal_hatch_auto_birth, egg.internal_hatch_birth_delay, egg.internal_contraction_message, egg.internal_birth_message)
 
 	var/hatch_message = egg.internal_hatch_message || egg.get_hatch_message()
 	if(hatch_message)
-		to_chat(carrier, span_warning(format_container_message(hatch_message)))
-	playsound(carrier, 'sound/effects/wounds/splatter.ogg', 70, TRUE)
+		to_chat(hatch_carrier, span_warning(format_container_message(hatch_message, location_name, hatch_carrier)))
+	playsound(hatch_carrier, 'sound/effects/wounds/splatter.ogg', 70, TRUE)
+	qdel(egg)
+	return TRUE
+
+/datum/component/pregnancy/proc/hatch_item_inside_host(obj/item/hatch_item)
+	if(!egg || !container || !carrier || !hatch_item)
+		qdel(hatch_item)
+		return FALSE
+
+	// remove_from_host() relocates the egg, and our own COMSIG_MOVABLE_MOVED handler clears both of
+	// these on the way through. Everything past that point has to work off the snapshot.
+	var/mob/living/hatch_carrier = carrier
+	var/obj/item/organ/hatch_container = container
+	var/location_name = get_container_location_name()
+
+	var/target_layer = egg.internal_hatch_layer
+	var/datum/component/body_storage/storage = hatch_container.GetComponent(/datum/component/body_storage)
+	if(!storage?.available_layers[target_layer])
+		target_layer = STORAGE_LAYER_DEEP
+
+	var/hatch_message = egg.internal_hatch_message || egg.get_hatch_message()
+	if(!remove_from_host(BODYSTORAGE_REMOVE_INTERNAL))
+		qdel(hatch_item)
+		return FALSE
+
+	var/fit_result = SEND_SIGNAL(hatch_container, COMSIG_BODYSTORAGE_TRY_INSERT, hatch_item, target_layer, TRUE)
+	switch(fit_result)
+		if(INSERT_FEEDBACK_OK, INSERT_FEEDBACK_OK_FORCE, INSERT_FEEDBACK_OK_OVERRIDE, INSERT_FEEDBACK_ALMOST_FULL)
+			if(hatch_message)
+				to_chat(hatch_carrier, span_warning(format_container_message(hatch_message, location_name, hatch_carrier)))
+			if(istype(hatch_item, /obj/item/natural/worms/leech/erotic))
+				var/obj/item/natural/worms/leech/erotic/leech = hatch_item
+				leech.on_hatched_inside_host(hatch_container, hatch_carrier, target_layer)
+			playsound(hatch_carrier, 'sound/effects/wounds/splatter.ogg', 70, TRUE)
+			qdel(egg)
+			return TRUE
+
+	var/turf/drop_location = get_turf(hatch_carrier)
+	if(drop_location)
+		hatch_item.forceMove(drop_location)
+		to_chat(hatch_carrier, span_warning("[hatch_item] hatches from [egg], but there is no room for it inside my [location_name]."))
+	else
+		qdel(hatch_item)
 	qdel(egg)
 	return TRUE
 
@@ -680,11 +738,11 @@
 		to_chat(carrier, span_warning(message))
 
 	if(auto_birth && birth_delay > 0 && world.time >= hatch_time + birth_delay)
-		birth_hatchling()
+		INVOKE_ASYNC(src, PROC_REF(birth_hatchling))
 
 /datum/component/internal_womb_hatchling/proc/handle_death(datum/source)
 	SIGNAL_HANDLER
-	release_hatchling(TRUE)
+	INVOKE_ASYNC(src, PROC_REF(release_hatchling), TRUE)
 
 /datum/component/internal_womb_hatchling/proc/birth_hatchling()
 	return release_hatchling(FALSE)
@@ -728,5 +786,10 @@
 		carrier.Stun(40, TRUE, TRUE)
 		carrier.adjust_stamina(90)
 
-	holder.release(TRUE)
+	if(!holder.release(FALSE))
+		return FALSE
+	if(!silent && iscarbon(carrier))
+		var/mob/living/carbon/birth_carrier = carrier
+		birth_carrier.record_oviposition_birth()
+	qdel(holder)
 	return TRUE

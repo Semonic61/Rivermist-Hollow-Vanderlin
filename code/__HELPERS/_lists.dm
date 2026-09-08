@@ -227,23 +227,47 @@ if (length(L) < I) { \
 		return TRUE
 	return FALSE
 
-//Checks for specific types in a list
-/proc/is_type_in_list(atom/A, list/L)
-	if(!LAZYLEN(L) || !A)
+/**
+ * Checks for specific types in a list.
+ *
+ * If using zebra mode the list should be an assoc list with truthy/falsey values.
+ * The check short circuits so earlier entries in the input list will take priority.
+ * Ergo, subtypes should come before parent types.
+ * Notice that this is the opposite priority of [/proc/typecacheof].
+ *
+ * Arguments:
+ * - [type_to_check][/datum]: An instance to check.
+ * - [list_to_check][/list]: A list of typepaths to check the type_to_check against.
+ * - zebra: Whether to use the value of the matching type in the list instead of just returning true when a match is found.
+ */
+/proc/is_type_in_list(datum/type_to_check, list/list_to_check, zebra = FALSE)
+	if(!LAZYLEN(list_to_check) || !type_to_check)
 		return FALSE
-	for(var/type in L)
-		if(istype(A, type))
-			return TRUE
+	for(var/type in list_to_check)
+		if(istype(type_to_check, type))
+			return !zebra || list_to_check[type] // Subtypes must come first in zebra lists.
 	return FALSE
 
-/proc/is_path_in_list(path_to_check, list/L)
-	if(!path_to_check || !length(L))
+/**
+ * Checks for specific paths in a list.
+ *
+ * If using zebra mode the list should be an assoc list with truthy/falsey values.
+ * The check short circuits so earlier entries in the input list will take priority.
+ * Ergo, subpaths should come before parent paths.
+ * Notice that this is the opposite priority of [/proc/typecacheof].
+ *
+ * Arguments:
+ * - path_to_check: A typepath to check.
+ * - [list_to_check][/list]: A list of typepaths to check the path_to_check against.
+ * - zebra: Whether to use the value of the mathing path in the list instead of just returning true when a match is found.
+ */
+/proc/is_path_in_list(path_to_check, list/list_to_check, zebra = FALSE)
+	if(!LAZYLEN(list_to_check) || !path_to_check)
 		return FALSE
-	for(var/type in L)
-		if(ispath(path_to_check, type))
-			return TRUE
+	for(var/path in list_to_check)
+		if(ispath(path_to_check, path))
+			return !zebra || list_to_check[path]
 	return FALSE
-
 
 //Checks for specific types in specifically structured (Assoc "type" = TRUE) lists ('typecaches')
 #define is_type_in_typecache(A, L) (A && length(L) && L[(ispath(A) ? A : A:type)])
@@ -323,13 +347,12 @@ if (length(L) < I) { \
 		list.len = 0
 	return
 
-//Removes any null entries from the list
-//Returns TRUE if the list had nulls, FALSE otherwise
-/proc/listclearnulls(list/L)
-	var/start_len = L.len
-	var/list/N = new(start_len)
-	L -= N
-	return L.len < start_len
+/**
+ * Removes any null entries from the list
+ * Returns TRUE if the list had nulls, FALSE otherwise
+**/
+/proc/list_clear_nulls(list/list_to_clear)
+	return (list_to_clear.RemoveAll(null) > 0)
 
 /*
  * Returns list containing all the entries from first list that are not present in second.
@@ -505,13 +528,13 @@ if (length(L) < I) { \
 		L.Swap(i,rand(i,L.len))
 
 //Return a list with no duplicate entries
-/proc/uniqueList(list/L)
+/proc/unique_list(list/L)
 	. = list()
 	for(var/i in L)
 		. |= i
 
 //same, but returns nothing and acts on list in place (also handles associated values properly)
-/proc/uniqueList_inplace(list/L)
+/proc/unique_list_inplace(list/L)
 	var/temp = L.Copy()
 	L.len = 0
 	for(var/key in temp)

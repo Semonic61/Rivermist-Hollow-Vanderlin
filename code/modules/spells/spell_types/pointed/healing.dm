@@ -222,7 +222,9 @@
 	SEND_SIGNAL(owner, COMSIG_LIVING_HEALED_OTHER, amount_healed)
 	cast_on.adjustToxLoss(-amount_healed)
 	cast_on.adjustOxyLoss(-amount_healed)
-	cast_on.blood_volume = max(cast_on.blood_volume, min(cast_on.blood_volume + blood_restoration + situational_blood, BLOOD_VOLUME_NORMAL))
+	cast_on.adjust_bloodvolume(blood_restoration + situational_blood, BLOOD_VOLUME_NORMAL)
+	var/mob/living/healing_owner = owner
+	cast_on.defeat_try_prepared_recovery(healing_owner, "healing miracle", src)
 	if(!iscarbon(cast_on))
 		cast_on.adjustBruteLoss(-amount_healed)
 		cast_on.adjustFireLoss(-amount_healed)
@@ -233,7 +235,23 @@
 	if(affecting)
 		affecting.heal_damage(amount_healed, amount_healed)
 		affecting.heal_wounds(amount_healed * wound_modifier)
+		for(var/datum/injury/injury as anything in affecting.injuries)
+			if(injury.damage_type == WOUND_DIVINE)
+				continue
+			injury.heal_damage(amount_healed)
 		C.update_damage_overlays()
+
+	for(var/obj/item/organ/possible_organ as anything in affecting.getorganlist(/obj/item/organ))
+		if(ORGAN_SLOT_ARTERY in possible_organ.organ_efficiency)
+			possible_organ.applyOrganDamage(-amount_healed * wound_modifier)
+			continue
+		if(possible_organ.scarred_below(40))
+			continue
+		if(possible_organ.organ_flags & ORGAN_DESTROYED)
+			possible_organ.organ_flags &= ~ORGAN_DESTROYED //I am having pity on people here at this point I won't force you to get new organs unless they fully necrose.
+			possible_organ.scar_organ(20, 40)
+		if(possible_organ.damage > possible_organ.medium_threshold)
+			possible_organ.applyOrganDamage(-amount_healed * wound_modifier)
 
 /datum/action/cooldown/spell/healing/profane
 	name = "Corrupt Lesser Miracle"
@@ -262,3 +280,38 @@
 	required_items = null
 	stun_undead = FALSE
 	is_profane = TRUE
+
+/datum/action/cooldown/spell/defeat_absolution
+	name = "Merciful Absolution"
+	desc = "Call on your patron to lift one lingering defeat trauma from yourself or another."
+	button_icon_state = "lesserheal"
+	sound = 'sound/magic/heal.ogg'
+	charge_sound = 'sound/magic/holycharging.ogg'
+	cast_range = 1
+	spell_type = SPELL_MIRACLE
+	antimagic_flags = MAGIC_RESISTANCE_HOLY
+	associated_skill = /datum/attribute/skill/magic/holy
+	charge_required = TRUE
+	charge_time = 2 SECONDS
+	cooldown_time = 2 MINUTES
+	spell_cost = 100
+	self_cast_possible = TRUE
+
+/datum/action/cooldown/spell/defeat_absolution/is_valid_target(atom/cast_on)
+	. = ..()
+	if(!.)
+		return FALSE
+	return isliving(cast_on)
+
+/datum/action/cooldown/spell/defeat_absolution/cast(mob/living/cast_on)
+	. = ..()
+	var/mob/living/caster = owner
+	if(!cast_on.has_any_defeat_trauma())
+		to_chat(caster, span_warning("[cast_on] has no defeat trauma I can absolve."))
+		return FALSE
+	if(!cast_on.defeat_treat_trauma(caster, DEFEAT_TREATMENT_UNIVERSAL))
+		to_chat(caster, span_warning("The trauma resists my absolution."))
+		return FALSE
+	caster.visible_message(span_notice("[caster] absolves a lingering defeat trauma from [cast_on]."), span_notice("I absolve one lingering defeat trauma from [cast_on]."))
+	to_chat(cast_on, span_notice("A lingering defeat trauma loosens its hold on you."))
+	return TRUE

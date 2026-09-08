@@ -9,6 +9,7 @@ GLOBAL_PROTECT(admin_verbs_default)
 	/client/proc/spawn_pollution,
 	/client/proc/adjust_personal_see_leylines,
 	/client/proc/spawn_liquid,
+	/datum/admins/proc/anoint_priest,
 	/client/proc/spawn_faction_trader,
 	/client/proc/crop_nutrient_debug,
 	/client/proc/remove_liquid,
@@ -140,6 +141,7 @@ GLOBAL_PROTECT(admin_verbs_ban)
 GLOBAL_LIST_INIT(admin_verbs_sounds, list(/client/proc/play_local_sound, /client/proc/play_sound, /client/proc/set_round_end_sound))
 GLOBAL_PROTECT(admin_verbs_sounds)
 GLOBAL_LIST_INIT(admin_verbs_fun, list(
+	/client/proc/search_important_items, // RMH ITEM TRACKER
 	/client/proc/cmd_admin_dress,
 	/client/proc/cmd_admin_gib_self,
 	/client/proc/drop_bomb,
@@ -188,12 +190,13 @@ GLOBAL_PROTECT(admin_verbs_debug)
 /world/proc/AVerbsDebug()
 	return list(
 	/client/proc/restart_controller,
+	/client/proc/view_armor_compare,
 	/client/proc/cmd_admin_list_open_jobs,
 	/client/proc/Debug2,
 	/client/proc/cmd_debug_mob_lists,
 	/client/proc/cmd_admin_delete,
 	/client/proc/cmd_debug_del_all,
-	/client/proc/restart_controller,
+	/client/proc/cmd_controller_view_ui,
 	/client/proc/enable_debug_verbs,
 	/client/proc/callproc,
 	/client/proc/callproc_datum,
@@ -231,6 +234,8 @@ GLOBAL_PROTECT(admin_verbs_debug)
 	/client/proc/cmd_regenerate_asset_cache,
 	/client/proc/cmd_clear_smart_asset_cache,
 	/client/proc/select_job_pack_debug,
+	/client/proc/dungeon_run_debug,
+	/client/proc/dungeon_meta_debug,
 )
 GLOBAL_LIST_INIT(admin_verbs_possess, list(/proc/possess, GLOBAL_PROC_REF(release)))
 GLOBAL_PROTECT(admin_verbs_possess)
@@ -257,6 +262,7 @@ GLOBAL_LIST_INIT(admin_verbs_hideable, list(
 	/client/proc/cmd_admin_direct_narrate,
 	/client/proc/cmd_admin_world_narrate,
 	/client/proc/cmd_admin_local_narrate,
+	/client/proc/cmd_controller_view_ui,
 	/client/proc/play_local_sound,
 	/client/proc/play_sound,
 	/client/proc/set_round_end_sound,
@@ -277,6 +283,7 @@ GLOBAL_LIST_INIT(admin_verbs_hideable, list(
 	/client/proc/everyone_random,
 	/datum/admins/proc/toggleAI,
 	/client/proc/restart_controller,
+	/client/proc/view_armor_compare,
 	/client/proc/cmd_admin_list_open_jobs,
 	/client/proc/callproc,
 	/client/proc/callproc_datum,
@@ -786,8 +793,8 @@ GLOBAL_PROTECT(admin_verbs_hideable)
 
 	// Ensure the admin stops hearing ghosts like a mortal
 	if(prefs)
-		prefs.chat_toggles &= ~CHAT_GHOSTEARS   // Explicitly remove ghost hearing
-		prefs.chat_toggles &= ~CHAT_GHOSTWHISPER // Explicitly remove ghost whispers
+		prefs.preference_clear_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTEARS)   // Explicitly remove ghost hearing
+		prefs.preference_clear_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTWHISPER) // Explicitly remove ghost whispers
 		prefs.save_preferences()
 		to_chat(src, span_info("I will hear like a mortal."))
 
@@ -937,30 +944,33 @@ GLOBAL_PROTECT(admin_verbs_hideable)
 	dat += "<th style='padding: 10px 15px; text-align: left; color: #c72222;'>Delete</th>"
 	dat += "</tr>"
 
-	if(SSpaintings?.paintings && length(SSpaintings.paintings))
-		for(var/encoded_title in SSpaintings.paintings)
-			var/list/painting = SSpaintings.paintings[encoded_title]
-			if(!painting || !islist(painting))
-				continue
+	var/listed = 0
+	for(var/painting_id in SSpaintings?.paintings)
+		var/list/painting = SSpaintings.paintings[painting_id]
+		if(!islist(painting))
+			continue
 
-			var/raw_title = painting["painting_title"]
-			var/author = painting["author_ckey"]
-			var/disk_filename = SSpaintings.get_painting_filename(raw_title)
+		var/disk_filename = SSpaintings.get_painting_filename(painting_id)
+		if(!fexists(disk_filename))
+			continue
 
-			if(fexists(disk_filename))
-				var/icon/painting_icon = icon(disk_filename)
-				if(painting_icon)
-					var/res_name = "painting_[md5(raw_title)].png"
-					src << browse_rsc(painting_icon, res_name)
-					dat += "<tr>"
-					dat += "<td style='padding: 12px 15px;'><img src='[res_name]' height=64 width=64 style='display: block; margin: 0 auto;'></td>"
-					dat += "<td style='padding: 12px 15px;'>[raw_title]</td>"
-					dat += "<td style='padding: 12px 15px;'>[author]</td>"
-					dat += "<td style='padding: 12px 15px;'>"
-					dat += "<a href='?src=[REF(src)];delete_painting=1;id=[url_encode(raw_title)]'>Delete</a>"
-					dat += "</td>"
-					dat += "</tr>"
-	else
+		var/icon/painting_icon = icon(disk_filename)
+		if(!painting_icon)
+			continue
+
+		var/res_name = "painting_[painting_id].png"
+		src << browse_rsc(painting_icon, res_name)
+		dat += "<tr>"
+		dat += "<td style='padding: 12px 15px;'><img src='[res_name]' height=64 width=64 style='display: block; margin: 0 auto;'></td>"
+		dat += "<td style='padding: 12px 15px;'>[html_encode(painting["painting_title"])]</td>"
+		dat += "<td style='padding: 12px 15px;'>[html_encode(painting["author"])] ([painting["author_ckey"]])</td>"
+		dat += "<td style='padding: 12px 15px;'>"
+		dat += "<a href='?src=[REF(src)];delete_painting=1;id=[url_encode(painting_id)]'>Delete</a>"
+		dat += "</td>"
+		dat += "</tr>"
+		listed++
+
+	if(!listed)
 		dat += "<tr><td colspan='4' style='padding: 20px; text-align: center;'>No paintings found</td></tr>"
 
 	dat += "</table>"
@@ -1008,30 +1018,27 @@ GLOBAL_PROTECT(admin_verbs_hideable)
 	if(!check_rights_for(src, R_DEBUG))
 		return
 #ifndef OPENDREAM
-	if(GLOB.tracy_initialized)
+	if(Tracy.enabled)
 		to_chat(src, span_warning("byond-tracy is already running!"))
 		return
-	else if(GLOB.tracy_init_error)
-		to_chat(src, span_danger("byond-tracy failed to initialize during an earlier attempt: [GLOB.tracy_init_error]"))
+	else if(Tracy.error)
+		to_chat(src, span_danger("byond-tracy failed to initialize during an earlier attempt: [Tracy.error]"))
 		return
 	else if(!fexists(TRACY_DLL_PATH))
 		to_chat(src, span_danger("byond-tracy library ([TRACY_DLL_PATH]) not present!"))
 		return
 	message_admins(span_adminnotice("[key_name_admin(src)] is trying to start the byond-tracy profiler."))
 	log_admin("[key_name(src)] is trying to start the byond-tracy profiler.")
-	GLOB.tracy_initialized = FALSE
-	GLOB.tracy_init_reason = "[ckey]"
-	world.init_byond_tracy()
-	if(GLOB.tracy_init_error)
-		to_chat(src, span_danger("byond-tracy failed to initialize: [GLOB.tracy_init_error]"))
-		message_admins(span_adminnotice("[key_name_admin(src)] tried to start the byond-tracy profiler, but it failed to initialize ([GLOB.tracy_init_error])"))
-		log_admin("[key_name(src)] tried to start the byond-tracy profiler, but it failed to initialize ([GLOB.tracy_init_error])")
+	if(!Tracy.enable("[ckey]"))
+		to_chat(src, span_danger("byond-tracy failed to initialize: [Tracy.error]"))
+		message_admins(span_adminnotice("[key_name_admin(src)] tried to start the byond-tracy profiler, but it failed to initialize ([Tracy.error])"))
+		log_admin("[key_name(src)] tried to start the byond-tracy profiler, but it failed to initialize ([Tracy.error])")
 		return
 	to_chat(src, span_notice("byond-tracy successfully started!"))
 	message_admins(span_adminnotice("[key_name_admin(src)] started the byond-tracy profiler."))
 	log_admin("[key_name(src)] started the byond-tracy profiler.")
-	if(GLOB.tracy_log)
-		rustg_file_write("[GLOB.tracy_log]", "[GLOB.log_directory]/tracy.loc")
+	if(Tracy.trace_path)
+		rustg_file_write("[Tracy.trace_path]", "[GLOB.log_directory]/tracy.loc")
 #else
 	to_chat(src, span_danger("byond-tracy is not supported on OpenDream, sorry!"))
 #endif

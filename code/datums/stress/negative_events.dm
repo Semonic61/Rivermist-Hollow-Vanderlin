@@ -90,7 +90,7 @@
 	desc = list("<span class='red'>I think I'm bleeding.</span>","<span class='red'>I'm bleeding.</span>")
 
 /datum/stress_event/bleeding/can_apply(mob/living/user)
-	if(user.has_quirk(/datum/quirk/vice/masochist))
+	if(user.has_quirk(/datum/quirk/vice/addiction/masochist))
 		return FALSE
 	return TRUE
 
@@ -100,7 +100,7 @@
 	desc = "<span class='red'>THE PAIN!</span>"
 
 /datum/stress_event/painmax/can_apply(mob/living/user)
-	if(user.has_quirk(/datum/quirk/vice/masochist))
+	if(user.has_quirk(/datum/quirk/vice/addiction/masochist))
 		return FALSE
 	return TRUE
 
@@ -301,7 +301,7 @@
 /datum/stress_event/coldhead
 	timer = 60 SECONDS
 	stress_change = 1
-//	desc = "<span class='red'>My head is cold and ugly.</span>"
+	desc = span_red("My head is cold and ugly.")
 
 /datum/stress_event/sleepytime
 	timer = 0

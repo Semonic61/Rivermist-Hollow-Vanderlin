@@ -31,9 +31,11 @@
 	traits = list(
 		TRAIT_BREADY,
 		TRAIT_DODGEEXPERT,
+		TRAIT_DODGE_THROUGH_MOBS,
 		TRAIT_STEELHEARTED,
 		TRAIT_CRITICAL_RESISTANCE,
-		TRAIT_NUTCRACKER
+		TRAIT_NUTCRACKER,
+		TRAIT_BLINDFIGHTING,
 	)
 
 	spells = list(
@@ -58,7 +60,7 @@
 	backr = /obj/item/weapon/polearm/woodstaff
 	backl = /obj/item/storage/backpack/backpack
 	belt = /obj/item/storage/belt/leather/rope/adventurers_subclasses
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltr = null
 	ring = null
 	l_hand = /obj/item/weapon/knuckles

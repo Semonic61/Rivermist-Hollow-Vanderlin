@@ -11,8 +11,13 @@
 	sellprice = 0
 	static_price = FALSE
 	experimental_inhand = FALSE
+	item_weight = 15 GRAMS
 	///For Mappers; gem_path = weight
 	var/list/valid_gems = list()
+	/// Magical charge contributed when this gem is used as a spellbook catalyst.
+	var/arcyne_potency = 20
+	/// The mana attunement carried by this gem.
+	var/datum/attunement/attuned
 
 	var/quality = GEM_REGULAR
 	var/datum/gem_effect/effect_template
@@ -47,9 +52,16 @@
 
 /obj/item/gem/on_consume(mob/living/eater)
 	. = ..()
+	eater.extra_mob_weight += get_carry_weight(eater)
 	if(attuned)
 		//eater.adjust_spell_points(0.5)
 		eater.mana_pool.adjust_attunement(attuned, 0.1)
+
+/obj/item/gem/on_anti_consume(mob/living/eater)
+	eater.extra_mob_weight -= get_carry_weight(eater)
+	if(attuned)
+		//eater.adjust_spell_points(0.5)
+		eater.mana_pool.adjust_attunement(attuned, -0.1)
 
 ///This is a switch incase anyone would like to add more...
 /obj/item/gem/update_icon_state()
@@ -168,6 +180,7 @@
 	dropshrink = 0.4
 	attuned = /datum/attunement/earth
 	effect_template = /datum/gem_effect/gemerald
+	item_weight = 24 GRAMS
 
 /obj/item/gem/blue
 	name = "blortz"
@@ -178,6 +191,7 @@
 	dropshrink = 0.4
 	attuned = /datum/attunement/ice
 	effect_template = /datum/gem_effect/blortz
+	item_weight = 18 GRAMS
 
 /obj/item/gem/yellow
 	name = "toper"
@@ -188,6 +202,7 @@
 	dropshrink = 0.4
 	attuned = /datum/attunement/electric
 	effect_template = /datum/gem_effect/toper
+	item_weight = 21 GRAMS
 
 /obj/item/gem/violet
 	name = "saffira"
@@ -198,6 +213,7 @@
 	dropshrink = 0.4
 	attuned = /datum/attunement/arcyne
 	effect_template = /datum/gem_effect/saffira
+	item_weight = 21 GRAMS
 
 /obj/item/gem/diamond
 	name = "dorpel"
@@ -208,6 +224,7 @@
 	dropshrink = 0.4
 	attuned = /datum/attunement/light
 	effect_template = /datum/gem_effect/dorpel
+	item_weight = 15 GRAMS
 
 /obj/item/gem/red
 	name = "rontz"
@@ -217,6 +234,7 @@
 	sellprice = 100
 	attuned = /datum/attunement/fire
 	effect_template = /datum/gem_effect/rubor
+	item_weight = 24 GRAMS
 
 /obj/item/gem/onyxa
 	name = "raw onyxa"
@@ -224,6 +242,7 @@
 	icon = 'icons/roguetown/gems/gem_onyxa.dmi'
 	icon_state = "raw_onyxa"
 	sellprice = 30
+	item_weight = 45 GRAMS
 
 /obj/item/gem/jade
 	name = "raw joapstone"
@@ -231,6 +250,7 @@
 	icon = 'icons/roguetown/gems/gem_jade.dmi'
 	icon_state = "raw_jade"
 	sellprice = 50
+	item_weight = 60 GRAMS
 
 /obj/item/gem/oyster
 	name = "fossilized clam"
@@ -238,6 +258,7 @@
 	icon = 'icons/roguetown/gems/gem_shell.dmi'
 	icon_state = "oyster_closed"
 	sellprice = 5
+	item_weight = 75 GRAMS
 
 /obj/item/gem/coral
 	name = "raw aoetal"
@@ -245,6 +266,7 @@
 	icon = 'icons/roguetown/gems/gem_coral.dmi'
 	icon_state = "raw_coral"
 	sellprice = 60
+	item_weight = 54 GRAMS
 
 /obj/item/gem/turq
 	name = "raw ceruleabaster"
@@ -252,6 +274,7 @@
 	icon = 'icons/roguetown/gems/gem_turq.dmi'
 	icon_state = "raw_turq"
 	sellprice = 75
+	item_weight = 66 GRAMS
 
 /obj/item/gem/amber
 	name = "raw petriamber"
@@ -259,6 +282,7 @@
 	icon = 'icons/roguetown/gems/gem_amber.dmi'
 	icon_state = "raw_amber"
 	sellprice = 50
+	item_weight = 36 GRAMS
 
 /obj/item/gem/opal
 	name = "raw opaloise"
@@ -266,6 +290,7 @@
 	icon = 'icons/roguetown/gems/gem_opal.dmi'
 	icon_state = "raw_opal"
 	sellprice = 80
+	item_weight = 30 GRAMS
 
 
 /obj/item/gem/random
@@ -296,6 +321,7 @@
 	dropshrink = 0.4
 	drop_sound = 'sound/items/gem.ogg'
 	sellprice = 454
+	item_weight = 4.9 KILOGRAMS
 
 /obj/item/riddleofsteel/Initialize()
 	. = ..()

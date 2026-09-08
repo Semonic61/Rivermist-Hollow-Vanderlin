@@ -48,8 +48,7 @@
 		QDEL_NULL(H.wear_mask)
 		H.put_in_hands(new type(get_turf(H)))
 	H.equip_to_slot_or_del(new /obj/item/clothing/face/eyepatch(H), ITEM_SLOT_MASK)
-	var/obj/item/bodypart/head/head = H.get_bodypart(BODY_ZONE_HEAD)
-	head?.add_wound(/datum/wound/facial/eyes/right/permanent)
+	ADD_TRAIT(H, TRAIT_CYCLOPS_RIGHT, QUIRK_TRAIT)
 	H.update_fov_angles()
 
 /datum/quirk/vice/cyclops_left
@@ -66,13 +65,13 @@
 		QDEL_NULL(H.wear_mask)
 		H.put_in_hands(new type(get_turf(H)))
 	H.equip_to_slot_or_del(new /obj/item/clothing/face/eyepatch/left(H), ITEM_SLOT_MASK)
-	var/obj/item/bodypart/head/head = H.get_bodypart(BODY_ZONE_HEAD)
-	head?.add_wound(/datum/wound/facial/eyes/left/permanent)
+	ADD_TRAIT(H, TRAIT_CYCLOPS_LEFT, QUIRK_TRAIT)
 	H.update_fov_angles()
 
 /datum/quirk/vice/tongueless
 	name = "Tongueless"
-	desc = "I said one word too many to a noble, they cut out my tongue. (Being mute is not an excuse to forego roleplay. Use of custom emotes is recommended.)"
+	desc = "I said one word too many to a noble, they cut out my tongue."
+	desc_hint = "Being mute is not an excuse to forego roleplay. Use of custom emotes is recommended"
 	point_value = 4
 
 /datum/quirk/vice/tongueless/on_spawn()
@@ -85,6 +84,12 @@
 /datum/quirk/vice/wooden_arm_right
 	name = "Wooden Arm (R)"
 	desc = "I lost my right arm long ago, but the wooden arm doesn't bleed as much."
+	incompatible_quirks = list(
+		/datum/quirk/boon/iron_arm_right,
+		/datum/quirk/boon/steel_arm_right,
+		/datum/quirk/boon/gold_arm_right,
+		/datum/quirk/boon/bronze_arm_right,
+	)
 	point_value = 3
 
 /datum/quirk/vice/wooden_arm_right/on_spawn()
@@ -101,6 +106,12 @@
 /datum/quirk/vice/wooden_arm_left
 	name = "Wooden Arm (L)"
 	desc = "I lost my left arm long ago, but the wooden arm doesn't bleed as much."
+	incompatible_quirks = list(
+		/datum/quirk/boon/iron_arm_left,
+		/datum/quirk/boon/steel_arm_left,
+		/datum/quirk/boon/gold_arm_left,
+		/datum/quirk/boon/bronze_arm_left,
+	)
 	point_value = 3
 
 /datum/quirk/vice/wooden_arm_left/on_spawn()
@@ -113,6 +124,55 @@
 		qdel(O)
 	var/obj/item/bodypart/l_arm/prosthetic/wood/L = new()
 	L.attach_limb(H)
+
+/datum/quirk/vice/wooden_leg_right
+	name = "Wooden Leg (R)"
+	desc = "I lost my right leg long ago, but the wooden leg doesn't bleed as much."
+	point_value = 3
+	incompatible_quirks = list(
+		/datum/quirk/boon/iron_leg_right,
+		/datum/quirk/boon/steel_leg_right,
+		/datum/quirk/boon/gold_leg_right,
+		/*
+		/datum/quirk/boon/bronze_leg_right,
+		*/
+	)
+
+/datum/quirk/vice/wooden_leg_right/on_spawn()
+	if(!ishuman(owner))
+		return
+	var/mob/living/carbon/human/H = owner
+	var/obj/item/bodypart/O = H.get_bodypart(BODY_ZONE_R_LEG)
+	if(O)
+		O.drop_limb()
+		qdel(O)
+	var/obj/item/bodypart/r_leg/prosthetic/wood/L = new()
+	L.attach_limb(H)
+
+/datum/quirk/vice/wooden_leg_left
+	name = "Wooden Leg (L)"
+	desc = "I lost my left leg long ago, but the wooden leg doesn't bleed as much."
+	incompatible_quirks = list(
+		/datum/quirk/boon/iron_leg_left,
+		/datum/quirk/boon/steel_leg_left,
+		/datum/quirk/boon/gold_leg_left,
+		/*
+		/datum/quirk/boon/bronze_leg_left,
+		*/
+	)
+	point_value = 3
+
+/datum/quirk/vice/wooden_leg_left/on_spawn()
+	if(!ishuman(owner))
+		return
+	var/mob/living/carbon/human/H = owner
+	var/obj/item/bodypart/O = H.get_bodypart(BODY_ZONE_L_LEG)
+	if(O)
+		O.drop_limb()
+		qdel(O)
+	var/obj/item/bodypart/l_leg/prosthetic/wood/L = new()
+	L.attach_limb(H)
+
 
 /datum/quirk/vice/leprosy
 	name = "Leprosy"
@@ -154,6 +214,14 @@
 	incompatible_quirks = list(
 		/datum/quirk/vice/wooden_arm_right,
 		/datum/quirk/vice/wooden_arm_left,
+		/datum/quirk/boon/iron_arm_right,
+		/datum/quirk/boon/iron_arm_left,
+		/datum/quirk/boon/steel_arm_right,
+		/datum/quirk/boon/steel_arm_left,
+		/datum/quirk/boon/gold_arm_right,
+		/datum/quirk/boon/gold_arm_left,
+		/datum/quirk/boon/bronze_arm_right,
+		/datum/quirk/boon/bronze_arm_left,
 	)
 	customization_options = list(
 		BODY_ZONE_L_ARM,
@@ -192,6 +260,20 @@
 	desc = "You're missing a leg. It was lost in an accident or battle, and the stump is too damaged for anything but prosthetics."
 	point_value = 5
 	customization_label = "Choose Missing Leg"
+	incompatible_quirks = list(
+		/datum/quirk/vice/wooden_leg_right,
+		/datum/quirk/vice/wooden_leg_left,
+		/datum/quirk/boon/iron_leg_right,
+		/datum/quirk/boon/iron_leg_left,
+		/datum/quirk/boon/steel_leg_right,
+		/datum/quirk/boon/steel_leg_left,
+		/datum/quirk/boon/gold_leg_right,
+		/datum/quirk/boon/gold_leg_left,
+		/*
+		/datum/quirk/boon/bronze_leg_right,
+		/datum/quirk/boon/bronze_leg_left,
+		*/
+	)
 	customization_options = list(
 		BODY_ZONE_L_LEG,
 		BODY_ZONE_R_LEG
@@ -269,7 +351,8 @@
 	if(H.reagents)
 		H.reagents.add_reagent(/datum/reagent/drug/space_drugs, 15)
 
-	H.adjustBruteLoss(40)
+	for(var/i = 1 to 4)
+		H.adjustBruteLoss(rand(9, 14), damage_type = BCLASS_BLUNT)
 	var/obj/item/bodypart/l_leg/left = H.get_bodypart(BODY_ZONE_L_LEG)
 	var/obj/item/bodypart/r_leg/right = H.get_bodypart(BODY_ZONE_R_LEG)
 
@@ -439,12 +522,18 @@
 
 /datum/quirk/vice/nopouch
 	name = "No Pouch"
-	desc = "I lost my pouch recently, I'm without a zenny.."
+	desc = "I lost my pouch recently, I'm without an amna.."
 	point_value = 1
 
-/datum/quirk/vice/nopouch/on_spawn()
+/datum/quirk/vice/nopouch/after_job_spawn(datum/job/job)
 	var/mob/living/carbon/human/H = owner
-	var/obj/item/pouch = locate(/obj/item/storage/belt/pouch) in H
+	var/pouch = find_pouch(H)
+
+	if(!pouch)
+		penalize_points(span_warning("No pouch found! Amaunator removed some of your traits to compensate."))
+		return
+
+	// Pouch deletion if found
 	if(H.wear_neck == pouch)
 		H.wear_neck = null
 	if(H.beltl == pouch)
@@ -452,6 +541,17 @@
 	if(H.beltr == pouch)
 		H.beltr = null
 	qdel(pouch)
+	to_chat(H, span_warning("I've lost my pouch... Damn it..."))
+
+/// Proc to find pouch in inventory, including slots and containers like satchels
+/datum/quirk/vice/nopouch/proc/find_pouch(mob/living/carbon/human/H)
+	var/obj/item/storage/belt/pouch/inventory_pouch
+	for(inventory_pouch in H.contents)
+		return inventory_pouch
+	for(var/obj/item/storage/storages in H.contents)
+		for(inventory_pouch in storages.contents)
+			return inventory_pouch
+	return null
 
 /datum/quirk/vice/wild_night
 	name = "Wild Night"
@@ -471,6 +571,7 @@
 	name = "Atrophy"
 	desc = "When growing up I could barely feed myself. This has left my body weak and fragile."
 	point_value = 6
+	defeat_threshold_mult = 0.6
 
 /datum/quirk/vice/atrophy/on_spawn()
 	var/mob/living/carbon/human/H = owner
@@ -554,6 +655,7 @@
 	name = "Frail"
 	desc = "My bones are like sticks."
 	point_value = 4
+	defeat_threshold_mult = 0.6
 	gain_text = span_danger("I feel frail.")
 	lose_text = span_notice("I feel sturdy again.")
 
@@ -623,3 +725,54 @@
 		return
 	var/mob/living/carbon/human/H = owner
 	ADD_TRAIT(H, TRAIT_POOR_AIM, "[type]")
+
+/datum/quirk/vice/missing_teeth
+	name = "Missing Teeth"
+	desc = "Years of brawling, bad luck, or bad hygiene have cost you several teeth. You lisp noticeably."
+	point_value = 2
+	incompatible_quirks = list(
+		/datum/quirk/vice/toothless,
+	)
+
+/datum/quirk/vice/missing_teeth/on_spawn()
+	if(!ishuman(owner))
+		return
+	var/mob/living/carbon/human/H = owner
+	var/obj/item/bodypart/mouth/jaw = H.get_bodypart(BODY_ZONE_PRECISE_MOUTH)
+	if(!jaw)
+		return
+	var/to_remove = rand(6, 8)
+	jaw.remove_teeth(to_remove)
+	to_chat(H, span_warning("You run your tongue across the gaps where your teeth used to be."))
+
+/datum/quirk/vice/no_dental
+	name = "No Dental"
+	desc = "My teeth are loose, brittle, or terribly neglected. A hard blow can send them flying."
+	point_value = 2
+	incompatible_quirks = list(
+		/datum/quirk/vice/toothless,
+	)
+
+/datum/quirk/vice/no_dental/on_spawn()
+	if(!ishuman(owner))
+		return
+	to_chat(owner, span_warning("My teeth feel worryingly loose."))
+
+/datum/quirk/vice/toothless
+	name = "Toothless"
+	desc = "I have no teeth left at all. My speech and bite suffer for it."
+	point_value = 3
+	incompatible_quirks = list(
+		/datum/quirk/vice/missing_teeth,
+		/datum/quirk/vice/no_dental,
+	)
+
+/datum/quirk/vice/toothless/on_spawn()
+	if(!ishuman(owner))
+		return
+	var/mob/living/carbon/human/H = owner
+	var/obj/item/bodypart/mouth/jaw = H.get_bodypart(BODY_ZONE_PRECISE_MOUTH)
+	if(!jaw)
+		return
+	jaw.remove_teeth(jaw.get_teeth_amount())
+	to_chat(H, span_warning("My mouth is completely bare of teeth."))

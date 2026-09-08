@@ -13,12 +13,20 @@
 	///the amount we pollute
 	var/pollute_amount = 600
 	///our required_baking temperature
-	var/required_chem_temp = 374
+	var/required_chem_temp = 350
+	/// Does this recipe require the container to sit on a lit fire to start cooking?
+	var/requires_fire = TRUE
 	///what we add for optionals ie chunks of
 	var/wording_choice = "chunks of"
 	cooking_sound = /datum/looping_sound/boiling
 
 /datum/container_craft/cooking/try_craft(obj/item/crafter, list/pathed_items, mob/initiator, datum/callback/on_craft_start, datum/callback/on_craft_failed)
+	if(requires_fire)
+		if(!istype(crafter.loc, /obj/machinery/light/fueled))
+			return FALSE
+		var/obj/machinery/light/fueled/fueled = crafter.loc
+		if(!fueled.on)
+			return FALSE
 	if(crafter.reagents.chem_temp < required_chem_temp)
 		return FALSE
 	. = ..()
@@ -28,12 +36,12 @@
 		return TRUE
 	return FALSE
 
-/datum/container_craft/cooking/get_real_time(atom/host, mob/user, estimated_multiplier)
-	var/real_cooking_time = crafting_time * estimated_multiplier
-	if(user.mind)
-		real_cooking_time /= 1 + (GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking) * 0.5)
-		real_cooking_time = round(real_cooking_time)
-	return real_cooking_time
+/datum/container_craft/cooking/can_progress(obj/item/crafter)
+	if(length(reagent_requirements))
+		for(var/reagent_path in reagent_requirements)
+			if(!crafter.reagents.has_reagent(reagent_path, reagent_requirements[reagent_path], check_subtypes = subtype_reagents_allowed))
+				return FALSE
+	return TRUE
 
 /datum/container_craft/cooking/create_item(obj/item/crafter, mob/initiator, list/found_optional_requirements, list/found_optional_wildcards, list/found_optional_reagents, list/removing_items)
 	if(created_reagent)
@@ -56,7 +64,7 @@
 			after_craft(null, crafter, initiator, found_optional_requirements, found_optional_wildcards, found_optional_reagents, removing_items)
 			if(finished_smell)
 				pot_turf.pollute_turf(finished_smell, pollute_amount)
-			initiator.nobles_seen_servant_work()
+			initiator?.nobles_seen_servant_work()
 		playsound(pot_turf, "bubbles", 30, TRUE)
 	else
 		..()
@@ -74,6 +82,7 @@
 	var/total_freshness = 0
 	var/ingredient_count = 0
 	var/highest_food_quality = 0
+	var/highest_herbal_quality = 0
 	var/highest_input_reagent_quality = 0
 	var/total_reagent_volume = 0
 
@@ -94,6 +103,10 @@
 						total_reagent_volume += R.volume
 						highest_input_reagent_quality = max(highest_input_reagent_quality, R.recipe_quality)
 
+	// Dried herbs retain their existing recipe behavior while contributing better material quality.
+	for(var/obj/item/alch/herb/herb in removing_items)
+		highest_herbal_quality = max(highest_herbal_quality, herb.herbal_preparation_quality)
+
 	// Check reagent qualities already in the crafter container (like the water)
 	if(crafter.reagents && crafter.reagents.reagent_list)
 		for(var/datum/reagent/R in crafter.reagents.reagent_list)
@@ -105,12 +118,14 @@
 	var/average_freshness = (ingredient_count > 0) ? (total_freshness / ingredient_count) : 0
 
 	// Get the initiator's cooking skill
-	var/cooking_skill = GET_MOB_SKILL_VALUE_OLD(initiator, /datum/attribute/skill/craft/cooking) + initiator.get_inspirational_bonus()
+	var/cooking_skill = 0
+	if(initiator)
+		cooking_skill = GET_MOB_SKILL_VALUE_OLD(initiator, used_skill) + initiator.get_inspirational_bonus()
 
 	// Use the quality calculator to determine final quality
 	var/datum/quality_calculator/cooking/cook_calc = new(
 		base_qual = 0,
-		mat_qual = max(highest_food_quality, highest_input_reagent_quality), // Use the higher of food or reagent quality
+		mat_qual = max(highest_food_quality, highest_input_reagent_quality, highest_herbal_quality), // Use the best prepared material
 		skill_qual = cooking_skill,
 		perf_qual = 0,
 		diff_mod = 0,
@@ -131,10 +146,12 @@
 	if(!found_product)
 		return
 
-	// Update reagent name with optional ingredients
+	found_product.name = initial(found_product.name)
+	found_product.taste_description = initial(found_product.taste_description)
+
 	if(length(found_optional_wildcards))
 		var/extra_string = " with [wording_choice] "
-		var/extra_taste = "with hints of "
+		var/extra_taste = " with hints of "
 		var/first_ingredient = TRUE
 		var/list/all_used_ingredients = list()
 		for(var/wildcard_type in found_optional_wildcards)
@@ -151,36 +168,42 @@
 				extra_taste += " and [ingredient.name]"
 		found_product.name += extra_string
 		found_product.taste_description += extra_taste
-		found_product.add_data("custom_name", found_product.name)
-		found_product.add_data("custom_tastes", found_product.taste_description)
+
+	if(!found_product.data)
+		found_product.data = list()
+	found_product.data["custom_name"] = found_product.name
+	found_product.data["custom_tastes"] = found_product.taste_description
 
 	// Optionally modify reagent properties based on quality
-	apply_quality_effects_to_reagent(found_product)
+	apply_quality_effects_to_reagent(found_product, initiator)
 
 /**
  * Applies quality-based effects to the created reagent
  *
  * @param datum/reagent/reagent The reagent to modify
  */
-/datum/container_craft/cooking/proc/apply_quality_effects_to_reagent(datum/reagent/reagent)
+/datum/container_craft/cooking/proc/apply_quality_effects_to_reagent(datum/reagent/reagent, mob/initiator)
 	if(!reagent)
 		return
 
-	// Modify reagent properties based on quality
+	var/quality_mult = 1.0
 	switch(reagent.recipe_quality)
-		if(1) // Poor quality
-			reagent.metabolization_rate *= 1.2 // Metabolizes faster (less effective)
+		if(1) // Poor quality - metabolizes faster (less effective)
+			quality_mult = 1.2
+		if(3) // High quality - metabolizes slower (more effective)
+			quality_mult = 0.9
+		if(4) // Premium quality - metabolizes much slower (very effective)
+			quality_mult = 0.75
 
-		if(2) // Standard quality
-			EMPTY_BLOCK_GUARD // No modifications - baseline
+	var/skill_mult = 1.0
+	if(initiator && initiator.mind)
+		var/skill_factor = min(GET_MOB_SKILL_VALUE_OLD(initiator, used_skill), 6) / 6
+		skill_mult = 1 - (skill_factor * 0.15)
 
-		if(3) // High quality
-			// High quality is more effective
-			reagent.metabolization_rate *= 0.9 // Metabolizes slower (more effective)
-
-		if(4) // Premium quality
-			// Premium quality is much more effective
-			reagent.metabolization_rate *= 0.75 // Metabolizes much slower (very effective)
+	// Store the multiplier in data so it survives being poured out, and apply it
+	// through the shared helper so pot / cup / stomach all agree.
+	LAZYSET(reagent.data, "metabolization_mult", quality_mult * skill_mult)
+	reagent.apply_stored_metabolization_mult()
 
 	// Update description to reflect quality
 	var/quality_desc = reagent.get_recipe_quality_desc()
@@ -195,3 +218,34 @@
 		result_amount = CEILING((result_amount * water_conversion), 1)
 	html += "[UNIT_FORM_STRING(result_amount)] of [initial(created_reagent.name)]<br>"
 	return html
+
+/**
+ * A cooking-pot recipe for exact alchemical inputs and a fixed-volume result.
+ * It reuses normal container crafting, heat checks, quality, and experience.
+ */
+/datum/container_craft/cooking/alchemical_refinement
+	abstract_type = /datum/container_craft/cooking/alchemical_refinement
+	category = "Alchemy"
+	craft_verb = "refining "
+	used_skill = /datum/attribute/skill/craft/alchemy
+	required_chem_temp = 300
+	crafting_time = 20 SECONDS
+	pollute_amount = 100
+	wording_choice = "traces of"
+	complete_message = "The refinement settles into a stable draught."
+	var/created_volume = 10
+
+/datum/container_craft/cooking/alchemical_refinement/create_item(obj/item/crafter, mob/initiator, list/found_optional_requirements, list/found_optional_wildcards, list/found_optional_reagents, list/removing_items)
+	var/calculated_quality = calculate_reagent_quality(crafter, initiator, removing_items)
+	var/list/quality_data = list("quality" = calculated_quality)
+	crafter.reagents.add_reagent(created_reagent, created_volume, quality_data)
+	after_craft(null, crafter, initiator, found_optional_requirements, found_optional_wildcards, found_optional_reagents, removing_items)
+
+	var/turf/pot_turf = get_turf(crafter)
+	if(finished_smell)
+		pot_turf?.pollute_turf(finished_smell, pollute_amount)
+	initiator.nobles_seen_servant_work()
+	playsound(pot_turf, "bubbles", 30, TRUE)
+
+/datum/container_craft/cooking/alchemical_refinement/extra_html()
+	return "[UNIT_FORM_STRING(created_volume)] of [initial(created_reagent.name)]<br>"

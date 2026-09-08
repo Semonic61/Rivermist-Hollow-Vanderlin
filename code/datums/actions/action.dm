@@ -46,6 +46,9 @@
 	/// This is the icon state for any FOREGROUND overlay icons on the button (such as borders)
 	var/overlay_icon_state
 
+	/// Can this action be shared with our rider?
+	var/can_be_shared = FALSE
+
 /datum/action/New(Target)
 	link_to(Target)
 
@@ -328,7 +331,7 @@
 		if(action == src) // This could be us, which is dumb
 			continue
 		var/atom/movable/screen/movable/action_button/button = action.viewers[owner.hud_used]
-		if(action.name == name && button.id)
+		if(action.name == name && button?.id)
 			bitfield |= button.id
 
 	bitfield = ~bitfield // Flip our possible ids, so we can check if we've found a unique one

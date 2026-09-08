@@ -1,4 +1,5 @@
 /obj/item/storage/fancy/pilltin
+	item_weight = 55 GRAMS
 	name = "pill tin"
 	desc = "A tin for all your pill needs."
 	icon = 'icons/obj/medical.dmi'
@@ -14,9 +15,9 @@
 	if(is_open)
 		if(length(contents) == 0)
 			icon_state = "pilltin_empty"
-		else if(istype(contents[1], /obj/item/reagent_containers/pill/devour))
+		else if(istype(contents[1], /obj/item/reagent_containers/pill/charcoal) || istype(contents[1], /obj/item/reagent_containers/pill/devour))
 			icon_state = "pilltinwake_open"
-		else if(istype(contents[1], /obj/item/reagent_containers/pill/sate))
+		else if(istype(contents[1], /obj/item/reagent_containers/pill/atropine) || istype(contents[1], /obj/item/reagent_containers/pill/sate))
 			icon_state = "pilltinpink_open"
 		else
 			icon_state = "pilltincustom_open"
@@ -28,12 +29,22 @@
 	update_appearance(UPDATE_ICON_STATE)
 	to_chat(user, span_notice("[src] is now [is_open ? "open" : "closed"]."))
 
-/obj/item/storage/fancy/pilltin/sate
-	name = "pill tin (SATE)"
-	desc = "A tin labelled 'SATE', staves off the loss of thaumiel blood."
-	spawn_type = /obj/item/reagent_containers/pill/sate
+/obj/item/storage/fancy/pilltin/atropine
+	name = "pill tin (Nightshade Mercy)"
+	desc = "A tin of measured nightshade rescue doses for critical situations."
+	spawn_type = /obj/item/reagent_containers/pill/atropine
+
+/obj/item/storage/fancy/pilltin/charcoal
+	name = "pill tin (Black Draught)"
+	desc = "A tin of pressed charcoal tablets for rapid toxin and reagent purging."
+	spawn_type = /obj/item/reagent_containers/pill/charcoal
 
 /obj/item/storage/fancy/pilltin/devour
 	name = "pill tin (DEVOUR)"
 	desc = "A tin labelled 'DEVOUR', devours thaumiel blood to forcibly induce the triggering of chimeric organs."
 	spawn_type = /obj/item/reagent_containers/pill/devour
+
+/obj/item/storage/fancy/pilltin/sate
+	name = "pill tin (SATE)"
+	desc = "A tin labelled 'SATE', staves off the loss of thaumiel blood."
+	spawn_type = /obj/item/reagent_containers/pill/sate

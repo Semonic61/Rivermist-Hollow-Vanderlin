@@ -5,7 +5,7 @@
 	gender = PLURAL
 	icon_state = "plate_legs"
 	item_state = "plate_legs"
-	sewrepair = FALSE
+	sewrepair = null
 	blocksound = PLATEHIT
 	equip_delay_self = 30
 	unequip_delay_self = 30
@@ -15,7 +15,7 @@
 	drop_sound = 'sound/foley/dropsound/armor_drop.ogg'
 	pickup_sound = "rustle"
 	break_sound = 'sound/foley/breaksound.ogg'
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	melt_amount = 75
 	melting_material = /datum/material/steel
 	r_sleeve_status = SLEEVE_NOMOD
@@ -23,10 +23,10 @@
 	clothing_flags = CANT_SLEEP_IN
 
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/pants/plate
 	max_integrity = INTEGRITY_STRONGEST
 	prevent_crits = ALL_EXCEPT_BLUNT
-	item_weight = 9 * STEEL_MULTIPLIER
+	item_weight = 3.95 KILOGRAMS
 
 	material_category = ARMOR_MAT_PLATE
 
@@ -42,9 +42,9 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/pants/plate/bad
 	max_integrity = INTEGRITY_STRONG
-	item_weight = 9 * IRON_MULTIPLIER
+	item_weight = 3.95 KILOGRAMS
 
 /obj/item/clothing/pants/platelegs/captain
 	name = "captain's chausses"
@@ -65,7 +65,7 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/pants/plate/bad
 	max_integrity = INTEGRITY_STANDARD
 
 /obj/item/clothing/pants/platelegs/blk
@@ -79,8 +79,8 @@
 	smeltresult = /obj/item/ingot/blacksteel
 	melting_material = /datum/material/blacksteel
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PLATE_GOOD
-	item_weight = 9 * BLACKSTEEL_MULTIPLIER
+	armor_type = /datum/armor/pants/plate/good
+	item_weight = 4.95 KILOGRAMS
 	sellprice = VALUE_SILVER_ITEM * 2
 
 //............... Evil Pants ............... //
@@ -119,10 +119,10 @@
 	desc = "A finely forged pair of silver plate leggings, offering additional protection against blunt force."
 	icon_state = "silverlegs"
 	allowed_ages = ALL_AGES_LIST //placeholder until younglings have onmob sprites for this item
-	armor = ARMOR_PLATE_SILVER
+	armor_type = /datum/armor/pants/plate/silver
 	smeltresult = /obj/item/ingot/silver
 	melting_material = /datum/material/silver
-	item_weight = 9 * SILVER_MULTIPLIER
+	item_weight = 5.42 KILOGRAMS
 	sellprice = VALUE_SILVER_ARMOR
 
 /obj/item/clothing/pants/platelegs/silver/Initialize(mapload)

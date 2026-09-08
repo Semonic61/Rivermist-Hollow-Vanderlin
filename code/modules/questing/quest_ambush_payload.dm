@@ -47,7 +47,7 @@
 		for(var/i in 1 to count)
 			var/turf/spawn_turf = find_ambush_spawn_turf(death_turf)
 			var/mob/living/ambush_mob = new mob_type(spawn_turf)
-			ambush_mob.faction |= "quest_ambush"
+			ambush_mob.add_faction("quest_ambush")
 			spawned_mobs += ambush_mob
 
 	qdel(config)

@@ -47,7 +47,7 @@
 		QDEL_NULL(H.charflaw)
 	H.update_body()
 	H.mob_biotypes = MOB_UNDEAD
-	H.faction = list(FACTION_UNDEAD)
+	H.set_faction(list(FACTION_UNDEAD))
 	ADD_TRAIT(H, TRAIT_NOMOOD, TRAIT_GENERIC)
 	ADD_TRAIT(H, TRAIT_NOSTAMINA, TRAIT_GENERIC)
 	ADD_TRAIT(H, TRAIT_NOLIMBDISABLE, TRAIT_GENERIC)
@@ -80,7 +80,7 @@
 		spawned.clear_quirks()
 	spawned.update_body()
 	spawned.mob_biotypes = MOB_UNDEAD
-	spawned.faction = list(FACTION_UNDEAD)
+	spawned.set_faction(list(FACTION_UNDEAD))
 
 
 

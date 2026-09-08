@@ -35,6 +35,12 @@
 				if(direct == NORTH|SOUTH)
 					OffBalance(30)*/
 
+	if(buckled && buckled.loc != NewLoc)
+		var/datum/component/bellyriding/belly_comp = buckled.GetComponent(/datum/component/bellyriding)
+		if(belly_comp?.current_victim == src)
+			belly_comp.start_victim_escape(src)
+			return FALSE
+
 	. = ..()
 	if(loc == NewLoc)
 		if(wear_armor)
@@ -95,36 +101,14 @@
 
 // ===== MOUNTING PONIES =====
 
-/mob/living/carbon/human/buckle_mob(mob/living/M, force = FALSE, check_loc = TRUE)
-	if(!force && !HAS_TRAIT(src, TRAIT_PONYGIRL_RIDEABLE))
+/mob/living/carbon/human/relaymove(mob/user, direction)
+	var/datum/component/bellyriding/belly_comp = GetComponent(/datum/component/bellyriding)
+	if(belly_comp?.current_victim == user)
+		belly_comp.start_victim_escape(user)
 		return FALSE
 
-	if(..()) // call parent buckle
-		var/datum/component/riding/human/riding_datum = LoadComponent(/datum/component/riding/human)
-		riding_datum.vehicle_move_delay = 2
-		if(M.mind)
-			var/riding_skill = M.get_skill_level(/datum/skill/misc/riding)
-			if(riding_skill)
-				riding_datum.vehicle_move_delay = max(1, 2 - (riding_skill * 0.2))
-
-		riding_datum.set_riding_offsets(RIDING_OFFSET_ALL, list(
-			TEXT_NORTH = list(0, 6),
-			TEXT_SOUTH = list(0, 6),
-			TEXT_EAST = list(-6, 4),
-			TEXT_WEST = list(6, 4)
-		))
-		riding_datum.set_vehicle_dir_layer(SOUTH, ABOVE_MOB_LAYER)
-		riding_datum.set_vehicle_dir_layer(NORTH, OBJ_LAYER)
-		riding_datum.set_vehicle_dir_layer(EAST, OBJ_LAYER)
-		riding_datum.set_vehicle_dir_layer(WEST, OBJ_LAYER)
-		return TRUE
-	return FALSE
-
-/mob/living/carbon/human/relaymove(mob/user, direction)
 	if(HAS_TRAIT(src, TRAIT_PONYGIRL_RIDEABLE))
-		var/datum/component/riding/riding_datum = GetComponent(/datum/component/riding)
-		if(riding_datum)
-			return riding_datum.handle_ride(user, direction)
+		return relaydrive(user, direction)
 	return ..()
 
 /mob/living/carbon/human/Knockdown(amount, updating = TRUE)

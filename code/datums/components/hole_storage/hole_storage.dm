@@ -46,6 +46,16 @@
 
 	var/list/outer_overlays = list()
 
+/// Temporary record for moving stored items from an old organ to its regenerated replacement.
+/datum/body_storage_transfer_item
+	var/obj/item/stored_item
+	var/storage_layer
+
+/datum/body_storage_transfer_item/New(obj/item/new_stored_item, new_storage_layer)
+	. = ..()
+	stored_item = new_stored_item
+	storage_layer = new_storage_layer
+
 /datum/component/body_storage/Initialize(obj/item/organ/org, location, mob/living/organ_owner)
 	. = ..()
 	organ_storing = org
@@ -96,9 +106,17 @@
 	UnregisterSignal(parent, COMSIG_BODYSTORAGE_SWAP_LAYERS_RAND)
 
 /datum/component/body_storage/Destroy()
-	. = ..()
-	for (var/obj/item/I in outer_overlays)
+	for(var/obj/item/I as anything in outer_overlays)
 		remove_outer_overlay(I)
+	organ_storing = null
+	owner = null
+	applied_slot = null
+	outer_layer_contents.Cut()
+	inner_layer_contents.Cut()
+	deep_layer_contents.Cut()
+	all_layers.Cut()
+	outer_overlays.Cut()
+	return ..()
 /**
  * Tries to insert an item into a hole
  * @param incoming_item - The incoming item
@@ -120,22 +138,32 @@
  * @param target_layer - The storage layer where we should put the item in
 */
 /datum/component/body_storage/proc/insert_in_storage(datum/source, obj/item/incoming_item, target_layer)
+	// Usually the organ itself, but an item carrying a live mob hangs off the body instead - an
+	// inserted organ sits in nullspace, which would strand the passenger without a turf.
+	var/atom/destination = incoming_item.body_storage_destination(organ_storing, owner) || organ_storing
 	if(iscarbon(incoming_item.loc))
 		var/mob/living/carbon/M = incoming_item.loc
-		M.dropItemToGround(incoming_item, FALSE, TRUE)
-	if(!(organ_storing.contains(incoming_item)))
+		// Unequip straight to the destination. dropItemToGround() lands the item on a turf first and
+		// only then calls dropped(), which is enough for a mob_holder to decide it was dropped and
+		// qdel itself mid-insertion, spilling its occupant and leaving a dead holder in the hole.
+		M.transferItemToLoc(incoming_item, destination, FALSE, TRUE)
+	if(destination == organ_storing && !organ_storing.contains(incoming_item))
 		organ_storing.contents += incoming_item
-	incoming_item.forceMove(organ_storing)
+	incoming_item.forceMove(destination)
 	var/list/t_layer = all_layers[target_layer]
 	t_layer.Add(incoming_item)
 	layer_storage_cur_bulk[target_layer] += incoming_item.body_storage_bulk
+	organ_storing.on_body_storage_inserted(incoming_item, target_layer)
+	incoming_item.on_body_storage_entered(organ_storing, target_layer)
 	var/diff = layer_storage_cur_bulk[target_layer] - layer_storage_max_bulk[target_layer]
 	if(incoming_item.has_body_storage_overlay)
 		if(isnull(incoming_item.bstorage_visible_layer) || incoming_item.bstorage_visible_layer == target_layer)
 			apply_outer_overlay(incoming_item)
 	if(diff > 0)
 		handle_stretch(source, diff)
-	owner.encumbrance_to_speed()
+	if(iscarbon(owner))
+		var/mob/living/carbon/carbon_owner = owner
+		carbon_owner.update_carry_weight()
 	notify_storage_changed()
 
 /**
@@ -149,10 +177,16 @@
 	if(!available_layers[target_layer])
 		return FALSE
 
+	if(!incoming_item)
+		return FALSE
+
 	if(incoming_item.body_storage_bulk > max_insert_size)
 		return FALSE
 
 	var/list/t_layer = all_layers[target_layer]
+
+	if(!override && is_body_storage_insertion_blocked(incoming_item, target_layer))
+		return INSERT_FEEDBACK_BLOCKED
 
 	if(LAZYLEN(t_layer) >= layer_storage_max_num[target_layer]) //hard cap
 		return FALSE
@@ -172,6 +206,27 @@
 		if((layer_storage_max_bulk[target_layer] - layer_storage_cur_bulk[target_layer]) / layer_storage_max_bulk[target_layer] < 0.2)
 			return INSERT_FEEDBACK_ALMOST_FULL
 		return INSERT_FEEDBACK_OK
+
+/datum/component/body_storage/proc/is_body_storage_insertion_blocked(obj/item/incoming_item, target_layer)
+	return has_layer_insertion_blocker(incoming_item, target_layer) || has_equipped_insertion_blocker()
+
+/datum/component/body_storage/proc/has_layer_insertion_blocker(obj/item/incoming_item, target_layer)
+	for(var/blocker_layer in all_layers)
+		var/list/blocker_layer_contents = all_layers[blocker_layer]
+		for(var/obj/item/stored_item as anything in blocker_layer_contents)
+			if(stored_item == incoming_item)
+				continue
+			if(stored_item.blocks_body_storage_insertion(src, incoming_item, target_layer, blocker_layer))
+				return TRUE
+	return FALSE
+
+/datum/component/body_storage/proc/has_equipped_insertion_blocker()
+	if(!owner || !applied_slot)
+		return FALSE
+	for(var/obj/item/equipped_item as anything in owner.get_equipped_items())
+		if(equipped_item.blocks_body_storage_slot(applied_slot))
+			return TRUE
+	return FALSE
 
 /**
  * Tries to remove an item from a hole
@@ -197,13 +252,55 @@
 */
 /datum/component/body_storage/proc/remove_from_storage(datum/source, obj/item/removed_item, target_layer)
 	organ_storing.contents -= removed_item
+	// contents -= leaves the item in nullspace. Most callers relocate it a line later, but anything
+	// that reacts in between - a mob_holder being qdel'd, say - would have nowhere to put its
+	// occupant. Park it on the body's turf so the item is never homeless mid-removal.
+	if(isnull(removed_item.loc))
+		var/turf/fallback = get_turf(organ_storing) || get_turf(owner)
+		if(fallback)
+			removed_item.forceMove(fallback)
 	var/list/t_layer = all_layers[target_layer]
 	t_layer.Remove(removed_item)
 	layer_storage_cur_bulk[target_layer] -= removed_item.body_storage_bulk
 	if(removed_item.has_body_storage_overlay)
 		remove_outer_overlay(removed_item)
-	owner.encumbrance_to_speed()
+	removed_item.on_body_storage_exited(organ_storing)
+	if(iscarbon(owner))
+		var/mob/living/carbon/carbon_owner = owner
+		carbon_owner.update_carry_weight()
 	notify_storage_changed()
+
+/datum/component/body_storage/proc/extract_contents_for_organ_regeneration()
+	var/list/transfer_items = list()
+	for(var/storage_layer in all_layers)
+		var/list/layer_contents = all_layers[storage_layer]
+		if(!length(layer_contents))
+			continue
+		for(var/obj/item/stored_item as anything in layer_contents.Copy())
+			var/datum/body_storage_transfer_item/transfer_item = new(stored_item, storage_layer)
+			transfer_items += transfer_item
+			remove_from_storage(parent, stored_item, storage_layer)
+			// Anything that hangs off the body rather than sitting in the organ is carrying something
+			// that needs a turf, so parking it in nullspace here would strand that passenger.
+			if(stored_item.body_storage_destination(organ_storing, owner) == organ_storing)
+				stored_item.moveToNullspace()
+
+	return transfer_items
+
+/datum/component/body_storage/proc/restore_contents_after_organ_regeneration(list/transfer_items)
+	if(!length(transfer_items))
+		return null
+
+	var/list/unrestored_items = list()
+	for(var/datum/body_storage_transfer_item/transfer_item as anything in transfer_items)
+		if(!transfer_item?.stored_item || QDELETED(transfer_item.stored_item))
+			continue
+		if(!available_layers[transfer_item.storage_layer])
+			unrestored_items += transfer_item
+			continue
+		insert_in_storage(parent, transfer_item.stored_item, transfer_item.storage_layer)
+
+	return unrestored_items
 
 /**
  * Swaps a random item between two layers. Layers should be different
@@ -216,7 +313,7 @@
 		return FALSE
 	if(source_layer == new_layer)
 		return FALSE
-	var/obj/item/item_a = return_random_item_from_layer(source, source_layer, BODYSTORAGE_REMOVE_RANDOM)
+	var/obj/item/item_a = return_random_item_from_layer(source, source_layer, BODYSTORAGE_REMOVE_RANDOM, TRUE)
 	if(!item_a)
 		return FALSE
 	SEND_SIGNAL(parent, COMSIG_BODYSTORAGE_TRY_REMOVE, item_a, source_layer, BODYSTORAGE_REMOVE_RANDOM)
@@ -252,13 +349,15 @@
  * Returns the reference to a random irem from selected layer
  * @param target_layer - The target layer
 */
-/datum/component/body_storage/proc/return_random_item_from_layer(datum/source, target_layer, removal_reason = BODYSTORAGE_REMOVE_MANUAL)
+/datum/component/body_storage/proc/return_random_item_from_layer(datum/source, target_layer, removal_reason = BODYSTORAGE_REMOVE_MANUAL, require_random_layer_swap = FALSE)
 	var/list/t_layer = all_layers[target_layer]
 	if(!t_layer.len)
 		return null
 
 	var/list/removable_items = list()
 	for(var/obj/item/stored_item as anything in t_layer)
+		if(require_random_layer_swap && !stored_item.can_random_body_storage_layer_swap())
+			continue
 		if(stored_item.can_remove_from_body_storage(removal_reason))
 			removable_items += stored_item
 
@@ -406,6 +505,41 @@
 /obj/item/organ/proc/add_bodystorage(mob/living/the_mob, location = null, hole_type)
 	if(!GetComponent(hole_type))
 		AddComponent(hole_type, src, location, the_mob)
+		if(the_mob)
+			SEND_SIGNAL(the_mob, COMSIG_LIVING_ORGAN_CHANGED, src, location || slot, TRUE)
+
+/// TRUE if this organ carries a body-storage "hole" (genitals, guts, etc.). Such organs never take
+/// damage but DO hold items - plugs, oviposition eggs, pregnancy holders - so a heal must not
+/// regenerate them out from under their contents.
+/obj/item/organ/proc/is_body_storage_organ()
+	return !isnull(GetComponent(/datum/component/body_storage))
+
+/obj/item/organ/proc/extract_body_storage_contents_for_regeneration()
+	var/datum/component/body_storage/storage = GetComponent(/datum/component/body_storage)
+	if(!storage)
+		return null
+	return storage.extract_contents_for_organ_regeneration()
+
+/obj/item/organ/proc/restore_body_storage_contents_after_regeneration(list/transfer_items)
+	var/datum/component/body_storage/storage = GetComponent(/datum/component/body_storage)
+	if(!storage)
+		return transfer_items
+	return storage.restore_contents_after_organ_regeneration(transfer_items)
+
+/proc/release_body_storage_transfer_items(list/transfer_items, atom/release_location)
+	if(!length(transfer_items))
+		return
+
+	for(var/datum/body_storage_transfer_item/transfer_item as anything in transfer_items)
+		if(!transfer_item?.stored_item || QDELETED(transfer_item.stored_item))
+			continue
+		if(release_location)
+			transfer_item.stored_item.forceMove(release_location)
+		else
+			transfer_item.stored_item.moveToNullspace()
+
+/obj/item/organ/proc/on_body_storage_inserted(obj/item/inserted_item, target_layer)
+	return
 
 
 /mob/living/proc/get_organs_items()

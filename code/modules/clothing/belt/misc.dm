@@ -160,21 +160,21 @@
 	color = "#ff0000"
 
 /obj/item/storage/belt/potion_belt
-    name = "Belt for potion"
-    desc = "Belt with pockets and straps for potion bottles."
-    icon_state = "potion_belt"
-    item_state = "potion_belt"
-    strip_delay = 20
-    var/max_storage = 8
-    var/empty_when_dropped = FALSE
-    sewrepair = TRUE
-    component_type = /datum/component/storage/concrete/grid/potion_belt
+	name = "Belt for potion"
+	desc = "Belt with pockets and straps for potion bottles."
+	icon_state = "potion_belt"
+	item_state = "potion_belt"
+	strip_delay = 20
+	var/max_storage = 8
+	var/empty_when_dropped = FALSE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
+	component_type = /datum/component/storage/concrete/grid/potion_belt
 
 //Проверка на тип предмета, что вкладывают в пояс рукой
 /obj/item/storage/belt/potion_belt/attackby(obj/item/B, mob/living/user, params)
-    if (!istype(B, /obj/item/reagent_containers/glass/bottle))
-        to_chat(user, span_warning("This belt only holds bottles!"))
-        return FALSE
+	if (!istype(B, /obj/item/reagent_containers/glass/bottle))
+		to_chat(user, span_warning("This belt only holds bottles!"))
+		return FALSE
 
 /obj/item/storage/belt/pouch
 	name = "pouch"
@@ -193,19 +193,44 @@
 	grid_height = 64
 	grid_width = 32
 
-/obj/item/storage/belt/pouch/medicine
+/obj/item/storage/belt/pouch/update_icon_state()
+	. = ..()
+	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
+	var/list/things = STR.contents()
+	if(length(things))
+		icon_state = "pouch"
+	else
+		icon_state = "pouch_e"
+
+/obj/item/storage/belt/pouch/cloth
+	name = "cloth pouch"
+	desc = "Usually used for holding small amount of coins."
+	icon_state = "clothpouch"
+	salvage_result = /obj/item/natural/cloth
+	component_type = /datum/component/storage/concrete/grid/coin_pouch/cloth
+
+/obj/item/storage/belt/pouch/cloth/update_icon_state()
+	. = ..()
+	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
+	var/list/things = STR.contents()
+	if(length(things))
+		icon_state = "clothpouch"
+	else
+		icon_state = "clothpouch_e"
+
+/obj/item/storage/belt/pouch/cloth/medicine
 	populate_contents = list(
 		/obj/item/needle,
 		/obj/item/natural/bundle/cloth/bandage/full,
 		/obj/item/reagent_containers/glass/bottle/healthpot
 	)
 
-/obj/item/storage/belt/pouch/food
+/obj/item/storage/belt/pouch/cloth/food
 	populate_contents = list(
 		/obj/item/reagent_containers/food/snacks/hardtack,
 	)
 
-/obj/item/storage/belt/pouch/coins/mid/Initialize()
+/obj/item/storage/belt/pouch/cloth/coins/mid/Initialize()
 	. = ..()
 	var/obj/item/coin/silver/pile/H = new(loc)
 	if(istype(H))
@@ -216,7 +241,7 @@
 		if(!SEND_SIGNAL(src, COMSIG_TRY_STORAGE_INSERT, C, null, TRUE, TRUE))
 			qdel(C)
 
-/obj/item/storage/belt/pouch/coins/poor/Initialize()
+/obj/item/storage/belt/pouch/cloth/coins/poor/Initialize()
 	. = ..()
 	var/obj/item/coin/copper/pile/H = new(loc)
 	if(istype(H))
@@ -260,7 +285,7 @@
 			if(!SEND_SIGNAL(src, COMSIG_TRY_STORAGE_INSERT, H, null, TRUE, TRUE))
 				qdel(H)
 
-/obj/item/storage/belt/pouch/bullets
+/obj/item/storage/belt/pouch/cloth/bullets
 	populate_contents = list(
 		/obj/item/ammo_casing/caseless/bullet,
 		/obj/item/ammo_casing/caseless/bullet,
@@ -268,15 +293,8 @@
 		/obj/item/ammo_casing/caseless/bullet,
 	)
 
-/obj/item/storage/belt/pouch/cloth
-	name = "cloth pouch"
-	desc = "Usually used for holding small amount of coins."
-	icon_state = "clothpouch"
-	salvage_result = /obj/item/natural/cloth
-	component_type = /datum/component/storage/concrete/grid/coin_pouch/cloth
-
 //Poison darts pouch
-/obj/item/storage/belt/pouch/pdarts
+/obj/item/storage/belt/pouch/cloth/pdarts
 	populate_contents = list(
 		/obj/item/ammo_casing/caseless/dart/poison,
 		/obj/item/ammo_casing/caseless/dart/poison,
@@ -360,13 +378,13 @@
 	icon_state = "artibackpack"
 	item_state = "artibackpack"
 	resistance_flags = FIRE_PROOF
-	sewrepair = FALSE
+	sewrepair = null
 	//for those curious, yes the artibackpack preserves organs and food. Check _organ.dm and snacks.dm
 
 /obj/item/storage/backpack/backpack/artibackpack/porter
 	name = "humdrum"
 	desc = "A absurdly oversized backpack with complex bronze pipework coursing through it. It hums and vibrates constantly."
-	sewrepair = TRUE //Kobold thing, trust.
+	sewrepair = /datum/attribute/skill/craft/tanning/patching //Kobold thing, trust.
 	component_type = /datum/component/storage/concrete/grid/porter
 
 /obj/item/storage/backpack/satchel/surgbag
@@ -386,6 +404,7 @@
 		/obj/item/weapon/surgery/cautery,
 		/obj/item/natural/worms/leech/parasite,
 		/obj/item/weapon/surgery/hammer,
+		/obj/item/reagent_containers/syringe,
 	)
 	component_type = /datum/component/storage/concrete/grid/surgery_bag
 
@@ -424,7 +443,7 @@
 /obj/item/storage/backpack/satchel/musketeer
 	populate_contents = list(
 		/obj/item/weapon/knife/dagger/bayonet,
-		/obj/item/storage/belt/pouch/coins/poor,
+		/obj/item/storage/belt/pouch/cloth/coins/poor,
 		/obj/item/reagent_containers/glass/bottle/aflask
 	)
 
@@ -435,29 +454,28 @@
 	item_state = "knife"
 	strip_delay = 20
 	var/max_storage = 8
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
 	component_type = /datum/component/storage/concrete/grid/belt/knife_belt
 	empty_when_dropped = FALSE
 
-/obj/item/storage/belt/leather/knifebelt/attack_atom(atom/attacked_atom, mob/living/user)
-	if(!isturf(attacked_atom))
-		return ..()
-
-	. = TRUE
+/obj/item/storage/belt/leather/knifebelt/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isturf(interacting_with))
+		return NONE
 	if(length(contents) >= max_storage)
-		to_chat(user, span_warning("Your [src.name] is full!"))
-		return
-	var/turf/T = attacked_atom
-	to_chat(user, span_notice("You begin to gather the ammunition..."))
-	for(var/obj/item/weapon/knife/throwingknife/knife in T.contents)
-		if(do_after(user, 5 DECISECONDS))
-			if(!eat_knife(knife))
-				break
+		to_chat(user, span_warning("Your [name] is full!"))
+		return ITEM_INTERACT_BLOCKING
 
-/obj/item/storage/belt/leather/knifebelt/proc/eat_knife(obj/A)
-	if(A.type in typesof(/obj/item/weapon/knife/throwingknife))
-		if(length(contents) < max_storage)
-			return SEND_SIGNAL(src, COMSIG_TRY_STORAGE_INSERT, A, null, FALSE)
+	var/turf/target_turf = interacting_with
+	to_chat(user, span_notice("You begin to gather the ammunition..."))
+	for(var/obj/item/weapon/knife/throwingknife/knife in target_turf.contents)
+		if(!do_after(user, 0.5 SECONDS, target = target_turf))
+			break
+		if(length(contents) >= max_storage)
+			break
+		if(!SEND_SIGNAL(src, COMSIG_TRY_STORAGE_INSERT, knife, user, FALSE))
+			break
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/storage/belt/leather/knifebelt/attackby(obj/A, mob/living/user, list/modifiers)
 	if(A.type in typesof(/obj/item/weapon/knife/throwingknife))

@@ -1,4 +1,5 @@
 /obj/item/flashlight
+	item_weight = 125 GRAMS
 	name = "flashlight"
 	desc = ""
 	custom_price = 10
@@ -41,10 +42,6 @@
 		return SHAME
 	user.visible_message("<span class='suicide'>[user] is putting [src] close to [user.p_their()] eyes and turning it on! It looks like [user.p_theyre()] trying to commit suicide!</span>")
 	return (FIRELOSS)
-
-/obj/item/flashlight/attack(mob/living/carbon/M, mob/living/carbon/human/user, list/modifiers)
-	add_fingerprint(user)
-	return ..()
 
 // FLARES
 
@@ -261,6 +258,7 @@
 	spark_act()
 
 /obj/item/flashlight/flare/torch/lantern
+	item_weight = 400 GRAMS
 	name = "iron lamptern"
 	icon_state = "lamp"
 	desc = "A light to guide the way."
@@ -304,6 +302,7 @@
 				return list("shrink" = 0.3,"sx" = -2,"sy" = -5,"nx" = 4,"ny" = -5,"wx" = 0,"wy" = -5,"ex" = 2,"ey" = -5,"nturn" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0)
 
 /obj/item/flashlight/flare/torch/lantern/bronzelamptern
+	item_weight = 453 GRAMS
 	name = "bronze lamptern"
 	icon_state = "bronzelamp"
 	item_state = "bronzelamp"
@@ -317,6 +316,7 @@
 	melt_amount = 75
 
 /obj/item/flashlight/flare/torch/lantern/copper
+	item_weight = 375 GRAMS
 	name = "copper lamptern"
 	icon_state = "clamp"
 	desc = "A simple and cheap lamptern."

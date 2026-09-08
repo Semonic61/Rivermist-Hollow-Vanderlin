@@ -52,6 +52,9 @@
 	if(!(C.mob_biotypes & (MOB_ORGANIC|MOB_UNDEAD)))
 		qdel(src)
 		return
+	var/player_body = C.is_player_character()
+	var/limb_rot_time = player_body ? 90 MINUTES : 25 MINUTES
+	var/skeletonize_time = player_body ? 180 MINUTES : 45 MINUTES
 	if(amount > 2 MINUTES)
 		if(is_zombie)
 			var/datum/antagonist/zombie/Z = C.mind.has_antag_datum(/datum/antagonist/zombie)
@@ -66,14 +69,14 @@
 	var/shouldupdate = FALSE
 	for(var/obj/item/bodypart/B in C.bodyparts)
 		if(!B.skeletonized && B.is_organic_limb())
-			if(!B.rotted)
-				if(amount > 25 MINUTES)
-					B.rotted = TRUE
+			if(!HAS_TRAIT(B, TRAIT_ROTTEN))
+				if(amount > limb_rot_time)
+					B.kill_limb()
 					findonerotten = TRUE
 					shouldupdate = TRUE
 					C.change_stat(STAT_CONSTITUTION, -8)
 			else
-				if(amount > 45 MINUTES)
+				if(amount > skeletonize_time)
 					if(!is_zombie)
 						B.skeletonize()
 						if(C.dna && C.dna.species)
@@ -85,7 +88,7 @@
 	if(findonerotten)
 		var/turf/open/T = C.loc
 		var/is_matthios = FALSE
-		if(FACTION_MATTHIOS in C.faction)
+		if(C.has_faction(FACTION_MATTHIOS))
 			is_matthios = TRUE
 		if(istype(T) && amount < 16 MINUTES && !is_matthios)
 			T.pollute_turf(/datum/pollutant/rot, 9)
@@ -121,7 +124,7 @@
 			soundloop.start()
 		var/turf/open/T = get_turf(L)
 		var/is_matthios = FALSE
-		if(FACTION_MATTHIOS in L.faction)
+		if(L.has_faction(FACTION_MATTHIOS))
 			is_matthios = TRUE
 		if(istype(T)  && amount < 16 MINUTES && !is_matthios)
 			T.pollute_turf(/datum/pollutant/rot, 9)

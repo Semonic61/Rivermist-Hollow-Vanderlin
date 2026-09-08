@@ -33,9 +33,15 @@
 	traits = list(
 		TRAIT_DODGEEXPERT,
 		TRAIT_STEELHEARTED,
+		TRAIT_BLINDFIGHTING,
+		TRAIT_LIGHT_STEP,
 	)
 
 	languages = list(/datum/language/zalad)
+
+	spells = list(
+		/datum/action/cooldown/spell/undirected/rogue_vanish
+	)
 
 /datum/outfit/adventurer_rogue/calishite_assasin
 	name = "Calishite Assasin"
@@ -59,6 +65,6 @@
 	r_hand = null
 
 	backpack_contents = list(
-		/obj/item/storage/belt/pouch/coins/poor = 1,
+		/obj/item/storage/belt/pouch/cloth/coins/poor = 1,
 		/obj/item/lockpick = 1
 	)

@@ -140,6 +140,39 @@
 	soundloop = null
 	temperature_change = 0
 
+/obj/machinery/light/fueled/wallfire/candle/incense
+	name = "incense"
+	icon_state = "incense1"
+	base_state = "incense"
+	bulb_colour = "#ffa35c"
+	crossfire = FALSE
+	cookonme = FALSE
+	SET_BASE_PIXEL(0, 32)
+	soundloop = null
+	temperature_change = 0
+
+/obj/machinery/light/fueled/wallfire/candle/silver
+	name = "silver candle"
+	icon_state = "silvercandle1"
+	base_state = "silvercandle"
+	bulb_colour = "#ffa35c"
+	crossfire = FALSE
+	cookonme = FALSE
+	SET_BASE_PIXEL(0, 32)
+	soundloop = null
+	temperature_change = 0
+
+/obj/machinery/light/fueled/wallfire/candle/goldcandle
+	name = "gold candle"
+	icon_state = "goldcandle1"
+	base_state = "goldcandle"
+	bulb_colour = "#ffa35c"
+	crossfire = FALSE
+	cookonme = FALSE
+	SET_BASE_PIXEL(0, 32)
+	soundloop = null
+	temperature_change = 0
+
 /obj/machinery/light/fueled/wallfire/candle/OnCrafted(dirin, mob/user)
 	pixel_x = base_pixel_x
 	pixel_y = base_pixel_y
@@ -279,14 +312,19 @@
 	. = ..()
 
 /obj/machinery/light/fueled/torchholder/Destroy()
-	if(torchy)
+	if(istype(torchy))
 		QDEL_NULL(torchy)
+	else
+		torchy = null
 	return ..()
 
 /obj/machinery/light/fueled/torchholder/OnCrafted(dirin, user)
 	if(dir == SOUTH)
 		pixel_y = base_pixel_y + 32
-	QDEL_NULL(torchy)
+	if(istype(torchy))
+		QDEL_NULL(torchy)
+	else
+		torchy = null
 	. = ..()
 
 /obj/machinery/light/fueled/torchholder/process()
@@ -409,26 +447,29 @@
 	var/obj/item/reagent_containers/food/snacks/food = null
 	var/rawegg = FALSE
 
-/obj/machinery/light/fueled/hearth/Initialize()
-	. = ..()
+/obj/machinery/light/fueled/hearth/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(attachment)
+		tool.melee_attack_chain(user, attachment, modifiers)
+		return ITEM_INTERACT_SUCCESS
+	else if(istype(tool, /obj/item/cooking/pan) || istype(tool, /obj/item/reagent_containers/glass/bucket/pot) || istype(tool, /obj/item/reagent_containers/glass/carafe/teapot))
+		playsound(user, 'sound/foley/dropsound/shovel_drop.ogg', 40, TRUE, -1)
+
+		if(!user.transferItemToLoc(tool, src, silent = TRUE))
+			return ITEM_INTERACT_BLOCKING
+
+		attachment = tool
+		update_appearance(UPDATE_ICON_STATE | UPDATE_OVERLAYS)
+		return ITEM_INTERACT_SUCCESS
+
+	return ..()
 
 /obj/machinery/light/fueled/hearth/Destroy()
-	. = ..()
-
-/obj/machinery/light/fueled/hearth/attackby(obj/item/W, mob/living/user, list/modifiers)
-	if(!attachment)
-		if(istype(W, /obj/item/cooking/pan) || istype(W, /obj/item/reagent_containers/glass/bucket/pot) || istype(W, /obj/item/reagent_containers/glass/carafe/teapot))
-			playsound(user, 'sound/foley/dropsound/shovel_drop.ogg', 40, TRUE, -1)
-
-			if(user.transferItemToLoc(W, src, silent = TRUE))
-				attachment = W
-				update_appearance(UPDATE_ICON_STATE | UPDATE_OVERLAYS)
-			return
-
-	else
-		. = attachment.attackby(W, user, modifiers)
-		if(.)
-			return
+	if(attachment)
+		attachment.forceMove(loc)
+		attachment = null
+	if(food)
+		food.forceMove(loc)
+		food = null
 	. = ..()
 
 /obj/machinery/light/fueled/hearth/MouseDrop(mob/over, src_location, over_location, src_control, over_control, params)
@@ -443,6 +484,8 @@
 
 /obj/machinery/light/fueled/hearth/fire_act(added, maxstacks)
 	. = ..()
+	if(. && attachment)
+		SEND_SIGNAL(attachment, COMSIG_ATOM_HEAT_SOURCE_LIT)
 	if(food)
 		playsound(src, 'sound/misc/frying.ogg', 80, FALSE, extrarange = 2)
 
@@ -462,16 +505,31 @@
 		I.pixel_y = I.pixel_y
 		. += new /mutable_appearance(I)
 
+/// Hands the hung pan/pot back to the user, or drops it at their feet.
+/obj/machinery/light/fueled/hearth/proc/take_attachment(mob/user)
+	if(!attachment)
+		return FALSE
+	if(!user.put_in_active_hand(attachment))
+		attachment.forceMove(user.loc)
+	attachment = null
+	update_appearance(UPDATE_ICON_STATE | UPDATE_OVERLAYS)
+	return TRUE
+
+/obj/machinery/light/fueled/hearth/MiddleClick(mob/user, list/modifiers)
+	. = ..()
+	if(!attachment || !user.CanReach(src))
+		return
+	// Right-click fans the fire now, so opening a hung pot/pan lives here.
+	SEND_SIGNAL(attachment, COMSIG_TRY_STORAGE_SHOW, user, TRUE)
+
 /obj/machinery/light/fueled/hearth/attack_hand(mob/user)
 	. = ..()
 	if(.)
 		return
 
 	if(attachment)
-		if(!user.put_in_active_hand(attachment))
-			attachment.forceMove(user.loc)
-		attachment = null
-		update_appearance(UPDATE_ICON_STATE | UPDATE_OVERLAYS)
+		// Left-click lifts it off the fire; middle-click opens its contents.
+		take_attachment(user)
 	else
 		if(on)
 			var/mob/living/carbon/human/H = user
@@ -502,6 +560,15 @@
 		user.visible_message("<span class='warning'>[user] snuffs [src].</span>")
 		burn_out()
 
+/obj/machinery/light/fueled/hearth/magic //cookable so
+	name = "magical bonfire"
+	icon_state = "churchfire1"
+	base_state = "churchfire"
+	color = "#6ab2ee"
+	bulb_colour = "#6ab2ee"
+	max_integrity = 30
+	density = TRUE //cant be used as a mine
+
 /obj/machinery/light/fueled/campfire
 	name = "campfire"
 	icon_state = "badfire1"
@@ -517,6 +584,97 @@
 	soundloop = /datum/looping_sound/fireloop
 
 	temperature_change = 25
+	/// Only fires deliberately made by a player may provide Defeat recovery.
+	var/player_built = FALSE
+	/// Weak references to the small set of victims explicitly resting at this fire.
+	var/list/datum/weakref/defeat_recovery_channels
+
+/obj/machinery/light/fueled/campfire/OnCrafted(dirin, mob/user)
+	. = ..()
+	if(isliving(user) && (user.client || user.mind))
+		player_built = TRUE
+
+/obj/machinery/light/fueled/campfire/Destroy()
+	cancel_defeat_recovery_channels()
+	defeat_recovery_channels = null
+	return ..()
+
+/obj/machinery/light/fueled/campfire/burn_out()
+	. = ..()
+	cancel_defeat_recovery_channels()
+
+/obj/machinery/light/fueled/campfire/proc/register_defeat_recovery_channel(datum/defeat_recovery_channel/channel)
+	if(!channel)
+		return FALSE
+	LAZYINITLIST(defeat_recovery_channels)
+	for(var/datum/weakref/channel_ref as anything in defeat_recovery_channels)
+		if(channel_ref.resolve() == channel)
+			return FALSE
+	defeat_recovery_channels += WEAKREF(channel)
+	return TRUE
+
+/obj/machinery/light/fueled/campfire/proc/unregister_defeat_recovery_channel(datum/defeat_recovery_channel/channel)
+	for(var/datum/weakref/channel_ref as anything in defeat_recovery_channels)
+		var/datum/defeat_recovery_channel/registered_channel = channel_ref.resolve()
+		if(!registered_channel || registered_channel == channel)
+			defeat_recovery_channels -= channel_ref
+	if(!length(defeat_recovery_channels))
+		defeat_recovery_channels = null
+
+/obj/machinery/light/fueled/campfire/proc/cancel_defeat_recovery_channels()
+	for(var/datum/weakref/channel_ref as anything in defeat_recovery_channels?.Copy())
+		var/datum/defeat_recovery_channel/channel = channel_ref.resolve()
+		if(!channel)
+			continue
+		channel.cancel()
+		qdel(channel)
+	defeat_recovery_channels = null
+
+/obj/machinery/light/fueled/campfire/proc/begin_passive_defeat_recovery(mob/living/victim)
+	if(!victim || victim.defeat_recovery_channel)
+		return FALSE
+	return victim.defeat_begin_campfire_recovery(src)
+
+/obj/machinery/light/fueled/campfire/proc/begin_tended_defeat_recovery(mob/living/victim, mob/living/helper)
+	if(!victim || !helper)
+		return FALSE
+	var/datum/defeat_recovery_channel/old_channel = victim.defeat_recovery_channel
+	if(old_channel)
+		if(old_channel.resolve_source() != src || !istype(old_channel.profile, /datum/defeat_recovery_profile/campfire))
+			return FALSE
+	// Preflight the faster profile before touching the passive timer. An attacker or otherwise
+	// ineligible helper must not be able to repeatedly reset someone else's recovery progress.
+	var/datum/defeat_recovery_profile/campfire/tended/tended_profile = new
+	var/datum/defeat_recovery_channel/preflight_channel = new(tended_profile, victim, helper, "campfire tending", src)
+	var/can_tend = tended_profile.can_recover(preflight_channel)
+	qdel(preflight_channel)
+	if(!can_tend)
+		return FALSE
+	if(old_channel)
+		old_channel.cancel()
+		qdel(old_channel)
+	return victim.defeat_begin_campfire_recovery(src, helper)
+
+/obj/machinery/light/fueled/campfire/proc/tend_registered_defeat_target(mob/living/helper)
+	for(var/datum/weakref/channel_ref as anything in defeat_recovery_channels)
+		var/datum/defeat_recovery_channel/channel = channel_ref.resolve()
+		var/mob/living/victim = channel?.resolve_victim()
+		if(!victim || !helper.Adjacent(victim))
+			continue
+		helper.visible_message(span_notice("[helper] settles beside [victim], tending them by [src]."), span_notice("I settle beside [victim] and tend them by [src]."))
+		return begin_tended_defeat_recovery(victim, helper)
+	return FALSE
+
+/obj/machinery/light/fueled/campfire/MouseDrop_T(atom/movable/dropped, mob/user)
+	. = ..()
+	if(!isliving(dropped) || !isliving(user))
+		return
+	var/mob/living/victim = dropped
+	var/mob/living/helper = user
+	if(!helper.Adjacent(src) || !helper.Adjacent(victim) || !victim.Adjacent(src))
+		return
+	if(begin_passive_defeat_recovery(victim))
+		helper.visible_message(span_notice("[helper] settles [victim] beside [src] to recover."), span_notice("I settle [victim] beside [src] to recover."))
 
 /obj/machinery/light/fueled/campfire/process()
 	..()
@@ -540,6 +698,8 @@
 		var/mob/living/carbon/human/H = user
 
 		if(istype(H))
+			if(tend_registered_defeat_target(H))
+				return TRUE
 			H.visible_message("<span class='info'>[H] warms \his hand near the fire.</span>")
 
 			if(do_after(H, 10 SECONDS, src))

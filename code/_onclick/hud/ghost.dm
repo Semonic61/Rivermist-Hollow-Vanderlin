@@ -40,7 +40,7 @@
 
 	scannies = new /atom/movable/screen/scannies(null, src)
 	static_inventory += scannies
-	if(owner.client?.prefs?.crt == TRUE)
+	if(owner.client?.prefs?.read_preference(/datum/preference/toggle/crt))
 		scannies.alpha = 70
 
 	using = new /atom/movable/screen/ghost/orbit/rogue(null, src)
@@ -89,7 +89,7 @@
 	if(!.)
 		return
 	var/mob/screenmob = viewmob || mymob
-	if(!screenmob.client.prefs.ghost_hud)
+	if(!screenmob.client.prefs.read_preference(/datum/preference/toggle/ghost_hud))
 		screenmob.client.screen -= static_inventory
 	else
 		screenmob.client.screen += static_inventory
@@ -103,7 +103,7 @@
 
 	scannies = new /atom/movable/screen/scannies(null, src)
 	static_inventory += scannies
-	if(owner.client?.prefs?.crt == TRUE)
+	if(owner.client?.prefs?.read_preference(/datum/preference/toggle/crt))
 		scannies.alpha = 70
 
 /datum/hud/eye/show_hud(version = 0, mob/viewmob)
@@ -117,7 +117,7 @@
 	if(!.)
 		return
 	var/mob/screenmob = viewmob || mymob
-	if(!screenmob.client.prefs.ghost_hud)
+	if(!screenmob.client.prefs.read_preference(/datum/preference/toggle/ghost_hud))
 		screenmob.client.screen -= static_inventory
 	else
 		screenmob.client.screen += static_inventory
@@ -131,7 +131,7 @@
 
 	scannies = new /atom/movable/screen/scannies(null, src)
 	static_inventory += scannies
-	if(owner.client?.prefs?.crt == TRUE)
+	if(owner.client?.prefs?.read_preference(/datum/preference/toggle/crt))
 		scannies.alpha = 70
 
 

@@ -27,7 +27,7 @@
 #define UI_SCALE				(1<<22)
 #define AMBIENTOCCLUSION		(1<<23)
 
-#define TOGGLES_DEFAULT (SOUND_ADMINHELP|SOUND_MIDI|SOUND_AMBIENCE|SOUND_LOBBY|MIDROUND_ANTAG|SOUND_INSTRUMENTS|SOUND_SHIP_AMBIENCE|SOUND_PRAYERS|SOUND_ANNOUNCEMENTS|TOGGLE_FULLSCREEN)
+#define TOGGLES_DEFAULT (SOUND_ADMINHELP|SOUND_MIDI|SOUND_AMBIENCE|SOUND_LOBBY|MIDROUND_ANTAG|SOUND_INSTRUMENTS|SOUND_SHIP_AMBIENCE|SOUND_PRAYERS|SOUND_ANNOUNCEMENTS)
 
 //Chat toggles
 #define CHAT_OOC			(1<<0)
@@ -50,6 +50,9 @@
 #define DISABLE_BALLOON_ALERTS (1<<3)
 #define DISABLE_BALLOON_COMBAT (1<<4)
 #define DISABLE_BALLOON_EXP (1<<5)
+
+// Gameplay toggles
+#define DISABLE_SPLIT_PERSONALITY (1<<0)
 
 #define PARALLAX_INSANE -1 //for show offs
 #define PARALLAX_HIGH    0 //default.
@@ -146,15 +149,12 @@
 
 //Age ranges
 #define AGE_ADULT			"Adult"
-#define AGE_CHILD			"Child"
 #define AGE_MIDDLEAGED		"Middle-Aged"
 #define AGE_OLD				"Old"
 #define AGE_IMMORTAL		"Immortal"
 
 #define NORMAL_AGES_LIST			list(AGE_ADULT, AGE_MIDDLEAGED, AGE_OLD)
-#define NORMAL_AGES_LIST_CHILD		list(AGE_ADULT, AGE_MIDDLEAGED, AGE_OLD)
 #define ALL_AGES_LIST				list(AGE_ADULT, AGE_MIDDLEAGED, AGE_OLD, AGE_IMMORTAL)
-#define ALL_AGES_LIST_CHILD			list(AGE_ADULT, AGE_MIDDLEAGED, AGE_OLD, AGE_IMMORTAL)
 /* Noctra edit END */
 
 // Pronouns
@@ -177,6 +177,26 @@
 
 #define VOICE_TYPES_MASCANDRO list(VOICE_TYPE_MASC, VOICE_TYPE_ANDRO)
 #define VOICE_TYPES_FEMANDRO list(VOICE_TYPE_FEM, VOICE_TYPE_ANDRO)
+
+#define VOICE_PACK_DEFAULT	"Default"
+#define VOICE_PACK_MASC		"Masculine"
+#define VOICE_PACK_MASC_FOPPISH	"Foppish (Masc)"
+#define VOICE_PACK_MASC_KNIGHT	"Knightly (Masc)"
+#define VOICE_PACK_MASC_WARRIOR	"Warrior (Masc)"
+#define VOICE_PACK_FEM		"Feminine"
+#define VOICE_PACK_FEM_DAINTY	"Dainty (Fem)"
+#define VOICE_PACK_FEM_HAUGHTY	"Haughty (Fem)"
+
+GLOBAL_LIST_INIT(voice_packs_list, list(
+	VOICE_PACK_DEFAULT = null,
+	VOICE_PACK_MASC = /datum/voicepack/male,
+	VOICE_PACK_MASC_FOPPISH = /datum/voicepack/male/foppish,
+	VOICE_PACK_MASC_KNIGHT = /datum/voicepack/male/knight,
+	VOICE_PACK_MASC_WARRIOR = /datum/voicepack/male/warrior,
+	VOICE_PACK_FEM = /datum/voicepack/female,
+	VOICE_PACK_FEM_DAINTY = /datum/voicepack/female/dainty,
+	VOICE_PACK_FEM_HAUGHTY = /datum/voicepack/female/haughty,
+))
 
 // Moan types
 
@@ -227,3 +247,39 @@ DEFINE_BITFIELD(toggles_maptext, list(
 	//"Disable hover text" = DISABLE_HOVER_TEXT,
 	"Disable runechat" = DISABLE_RUNECHAT,
 ))
+
+DEFINE_BITFIELD(toggles_gameplay, list(
+	"Disable random split personality" = DISABLE_SPLIT_PERSONALITY,
+))
+
+/// Species applies first so external organs and bodyparts can reference it.
+#define PREF_PRIORITY_SPECIES 1
+/// Bodypart-related preferences apply after species.
+#define PREF_PRIORITY_BODYPARTS 2
+/// Gender is resolved before names so randomisation is sex-aware.
+#define PREF_PRIORITY_GENDER 3
+/// Body type follows gender so a "use gender" option can resolve correctly.
+#define PREF_PRIORITY_BODY_TYPE 4
+/// Names are resolved last among the core character identity preferences.
+#define PREF_PRIORITY_NAMES 5
+/// Modifications that adjust the selected name.
+#define PREF_PRIORITY_NAME_MODS 6
+/// Default preference priority. Keep this last.
+#define PREF_PRIORITY_DEFAULT 7
+#define MAX_PREF_PRIORITY PREF_PRIORITY_DEFAULT
+
+/// Stored below /character[N] in the player's savefile.
+#define PREF_CHARACTER "character"
+/// Stored at the player savefile root.
+#define PREF_PLAYER "player"
+
+#define ROLE_SETTING_LIST_PICK "picker"
+#define ROLE_SETTING_TEXT "freetext"
+
+#define MAX_RUMORS 5
+#define MAX_NOBLE_GOSSIP 5
+#define MAX_GOSSIP_LENGTH 250
+
+#define DEFAULT_SPRITE_LIST "default_sprites"
+#define MALE_SPRITE_LIST "male_sprites"
+#define FEMALE_SPRITE_LIST "female_sprites"

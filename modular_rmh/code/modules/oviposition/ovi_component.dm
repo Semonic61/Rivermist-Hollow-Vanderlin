@@ -140,41 +140,39 @@
 /datum/component/ovipositor/proc/sync_storage_capacity()
 	eggs_stored = min(eggs_stored, get_max_stored_eggs())
 
-/datum/component/ovipositor/proc/on_climax(datum/source)
+/datum/component/ovipositor/proc/on_climax(datum/source, datum/sex_action/action, mob/living/action_initiator, mob/living/action_target, mob/living/action_performer)
 	SIGNAL_HANDLER
 
 	if(!carrier || eggs_stored <= 0)
 		return FALSE
 
-	var/list/climax_context = get_climax_context()
+	var/list/climax_context = get_climax_context(action)
 	if(climax_context)
 		var/obj/item/organ/receiver = climax_context["receiver"]
 		var/force = climax_context["force"]
+		if(iscarbon(receiver.owner))
+			var/mob/living/carbon/receiver_owner = receiver.owner
+			if(!receiver_owner.can_receive_oviposition_implant(TRUE))
+				if(receiver_owner != carrier)
+					to_chat(carrier, span_warning("[receiver_owner]'s body is still recovering from too many recent births and rejects another implantation."))
+				return FALSE
 		if(lay_egg(receiver, force))
 			return TRUE
 
 	return lay_egg(get_turf(carrier))
 
-/datum/component/ovipositor/proc/get_climax_context()
-	if(!carrier)
+/datum/component/ovipositor/proc/get_climax_context(datum/sex_action/action)
+	if(!carrier || !action || QDELETED(action))
 		return null
 
-	var/list/sessions = return_sessions_with_user(carrier)
-	var/datum/sex_session/session = return_highest_priority_action(sessions, carrier)
-	if(!session)
-		return null
-
-	var/datum/sex_action/action = session.get_highest_priority_action_for(carrier)
-	if(!action)
-		return null
 	if(!action_allows_internal_oviposition(action))
 		return null
 
-	var/mob/living/insertor = action.get_storage_insertor(session.user, session.target)
+	var/mob/living/insertor = action.get_storage_insertor(action.action_user, action.action_target)
 	if(insertor != carrier)
 		return null
 
-	var/mob/living/receiver_owner = action.get_storage_receiver(session.user, session.target)
+	var/mob/living/receiver_owner = action.get_storage_receiver(action.action_user, action.action_target)
 	if(!receiver_owner)
 		return null
 	if(!target_allows_mob_erp_action(carrier, receiver_owner, /datum/erp_preference/boolean/allow_mob_oviposition))
@@ -186,7 +184,7 @@
 
 	return list(
 		"receiver" = receiver,
-		"force" = session.get_current_force() >= SEX_FORCE_HIGH,
+		"force" = action.force >= SEX_FORCE_HIGH,
 	)
 
 /datum/component/ovipositor/proc/action_allows_internal_oviposition(datum/sex_action/action)
@@ -238,22 +236,34 @@
 /datum/component/ovipositor/proc/try_place_egg_in_host(obj/item/organ/receiver, obj/item/oviposition_egg/egg, force = FALSE)
 	if(!receiver || !egg || !receiver.owner)
 		return FALSE
+	if(iscarbon(receiver.owner))
+		var/mob/living/carbon/receiver_owner = receiver.owner
+		if(!receiver_owner.can_receive_oviposition_implant(TRUE))
+			if(receiver_owner != carrier)
+				to_chat(carrier, span_warning("[receiver_owner]'s body is still recovering from too many recent births and rejects another implantation."))
+			return FALSE
 
 	var/fit_result = SEND_SIGNAL(receiver, COMSIG_BODYSTORAGE_TRY_INSERT, egg, STORAGE_LAYER_DEEP, force)
 	switch(fit_result)
 		if(INSERT_FEEDBACK_OK, INSERT_FEEDBACK_OK_FORCE, INSERT_FEEDBACK_OK_OVERRIDE, INSERT_FEEDBACK_ALMOST_FULL)
 			var/started_growing = receiver.start_oviposition_egg_growth(egg, carrier)
+			var/plants_maneater_seed = egg.egg_type == OVI_EGG_MANEATER
+			var/third_person_action = plants_maneater_seed ? "plants a seed in" : "lays an egg into"
+			var/first_person_action = plants_maneater_seed ? "plant a seed in" : "lay an egg into"
 			if(ishuman(receiver.owner))
 				var/mob/living/carbon/human/human_receiver = receiver.owner
 				human_receiver.grant_check_eggs_verb(TRUE)
 			carrier.visible_message(
-				span_love("[carrier] lays an egg into [receiver.owner]'s [receiver.get_oviposition_location_name()]!"),
-				span_love("I lai an egg into [receiver.owner]'s [receiver.get_oviposition_location_name()]!")
+				span_love("[carrier] [third_person_action] [receiver.owner]'s [receiver.get_oviposition_location_name()]!"),
+				span_love("I [first_person_action] [receiver.owner]'s [receiver.get_oviposition_location_name()]!")
 			)
 			if(receiver.owner != carrier)
-				to_chat(receiver.owner, span_love("[carrier] lays an egg into my [receiver.get_oviposition_location_name()]!"))
+				to_chat(receiver.owner, span_love("[carrier] [third_person_action] my [receiver.get_oviposition_location_name()]!"))
 			if(started_growing)
-				to_chat(receiver.owner, span_love("One of the eggs in my [receiver.get_oviposition_location_name()] immediately begins to grow."))
+				if(plants_maneater_seed)
+					to_chat(receiver.owner, span_love("The planted seed in my [receiver.get_oviposition_location_name()] immediately begins to grow."))
+				else
+					to_chat(receiver.owner, span_love("One of the eggs in my [receiver.get_oviposition_location_name()] immediately begins to grow."))
 			return TRUE
 
 	return FALSE
@@ -278,11 +288,14 @@
 	var/internal_laid = 0
 	var/external_laid = 0
 	var/warned_no_room = FALSE
+	var/plants_maneater_seeds = FALSE
 
 	for(var/i in 1 to clutch_size)
 		var/obj/item/oviposition_egg/egg = create_egg()
 		if(!egg)
 			break
+		if(egg.egg_type == OVI_EGG_MANEATER)
+			plants_maneater_seeds = TRUE
 
 		var/success = FALSE
 		if(receiver)
@@ -290,7 +303,8 @@
 			if(success)
 				internal_laid += 1
 			else if(!warned_no_room)
-				to_chat(carrier, span_warning("That [receiver.get_oviposition_location_name()] is too overfilled to lay an egg in."))
+				var/lay_action = plants_maneater_seeds ? "plant a seed" : "lay an egg"
+				to_chat(carrier, span_warning("That [receiver.get_oviposition_location_name()] is too overfilled to [lay_action] in."))
 				warned_no_room = TRUE
 
 		if(success)
@@ -310,8 +324,13 @@
 		return FALSE
 
 	if(external_laid)
-		var/laid_text = external_laid == 1 ? "an egg" : "[external_laid] eggs"
-		carrier.visible_message(span_notice("[carrier] lays [laid_text]!"), span_nicegreen("I lay [laid_text]!"))
+		var/laid_text
+		if(plants_maneater_seeds)
+			laid_text = external_laid == 1 ? "a seed" : "[external_laid] seeds"
+			carrier.visible_message(span_notice("[carrier] plants [laid_text]!"), span_nicegreen("I plant [laid_text]!"))
+		else
+			laid_text = external_laid == 1 ? "an egg" : "[external_laid] eggs"
+			carrier.visible_message(span_notice("[carrier] lays [laid_text]!"), span_nicegreen("I lay [laid_text]!"))
 
 	playsound(carrier, 'sound/effects/wounds/splatter.ogg', 70, TRUE)
 	eggs_stored = max(0, eggs_stored - eggs_laid)

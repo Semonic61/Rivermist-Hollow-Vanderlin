@@ -12,7 +12,11 @@
 
 		BB_HUMAN_NPC_ATTACK_ZONE_COUNTER = 0,  // how many times we've hit the same zone
 		BB_HUMAN_NPC_LAST_ATTACK_ZONE = null,  // last zone we attacked
-		BB_HUMAN_NPC_WEAKPOINT = null,         // cached weakpoint zone if we found one
+		BB_HUMAN_NPC_WEAKPOINT = null,         // cached weakpoint body zone
+		BB_HUMAN_NPC_WEAKPOINT_ARMOR_TYPE = null,
+		BB_HUMAN_NPC_WEAKPOINT_EXPIRES = 0,
+		BB_HUMAN_NPC_WEAKPOINT_SCAN_COOLDOWN = 0,
+		BB_HUMAN_NPC_WEAKPOINT_TARGET = null,
 		BB_HUMAN_NPC_JUMP_COOLDOWN = 0,        // world.time when we can next jump
 		BB_HUMAN_NPC_FLANK_ANGLE = null,       // our claimed flank direction (degrees, 0-359)
 		BB_HUMAN_NPC_FLANK_TARGET = null,      // the turf we're moving toward for flanking
@@ -20,6 +24,8 @@
 		BB_HUMAN_NPC_HARASS_RETREATING = FALSE,// TRUE when in the back-off phase of harass
 		BB_HUMAN_NPC_HARASS_COOLDOWN = 0,      // world.time before we can dart in again
 		BB_HUMAN_NPC_JUKE_COOLDOWN = 0,        // world.time before we can juke again
+		BB_HUMAN_NPC_COMMITTED_SWING_TOKEN = null, // token guarding delayed committed swings
+		BB_HUMAN_NPC_COMBAT_BARK_COOLDOWN = 0, // world.time before another combat state balloon
 	)
 	planning_subtrees = list(
 		/datum/ai_planning_subtree/pet_planning,
@@ -34,6 +40,7 @@
 		/datum/ai_planning_subtree/generic_resist,
 		/datum/ai_planning_subtree/generic_stand,
 		/datum/ai_planning_subtree/flee_target,
+		/datum/ai_planning_subtree/kidnap_defeated_prey,
 		/datum/ai_planning_subtree/simple_find_horny,
 		/datum/ai_planning_subtree/horny,
 
@@ -41,7 +48,9 @@
 		/datum/ai_planning_subtree/archer_base,
 		/datum/ai_planning_subtree/ranged_attack_subtree,
 		/datum/ai_planning_subtree/aggro_find_target,
+		/datum/ai_planning_subtree/wounded_harass,
 		/datum/ai_planning_subtree/squad_flank,
+		/datum/ai_planning_subtree/human_npc_gap_close,
 		/datum/ai_planning_subtree/basic_melee_attack_subtree/human_npc,
 		/datum/ai_planning_subtree/find_weapon,
 		/datum/ai_planning_subtree/equip_item,

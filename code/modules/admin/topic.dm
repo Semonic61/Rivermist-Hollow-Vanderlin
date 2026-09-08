@@ -194,8 +194,6 @@
 				var/mob/living/carbon/human/newmob = M.change_mob_type( /mob/living/carbon/human , null, null, delmob )
 				if(posttransformoutfit && istype(newmob))
 					newmob.equipOutfit(posttransformoutfit)
-			if("monkey")
-				M.change_mob_type( /mob/living/carbon/monkey , null, null, delmob )
 			if("cat")
 				M.change_mob_type( /mob/living/simple_animal/pet/cat , null, null, delmob )
 
@@ -417,32 +415,6 @@
 		message_admins("<span class='adminnotice'>[key_name_admin(usr)] set the forced secret mode as [GLOB.secret_force_mode].</span>")
 		Game() // updates the main game menu
 		HandleFSecret()
-
-	else if(href_list["monkeyone"])
-		if(!check_rights(R_SPAWN))
-			return
-
-		var/mob/living/carbon/human/H = locate(href_list["monkeyone"])
-		if(!istype(H))
-			to_chat(usr, "This can only be used on instances of type /mob/living/carbon/human.")
-			return
-
-		log_admin("[key_name_admin(usr)] attempting to monkeyize [key_name(H)].")
-		message_admins("<span class='adminnotice'>[key_name_admin(usr)] attempting to monkeyize [key_name_admin(H)].</span>")
-		H.monkeyize()
-
-	else if(href_list["humanone"])
-		if(!check_rights(R_SPAWN))
-			return
-
-		var/mob/living/carbon/monkey/Mo = locate(href_list["humanone"])
-		if(!istype(Mo))
-			to_chat(usr, "This can only be used on instances of type /mob/living/carbon/monkey.")
-			return
-
-		log_admin("[key_name_admin(usr)] attempting to humanize [key_name(Mo)].")
-		message_admins("<span class='adminnotice'>[key_name_admin(usr)] attempting to humanize [key_name_admin(Mo)].</span>")
-		Mo.humanize()
 
 	else if(href_list["forcespeech"])
 		if(!check_rights(R_FUN))
@@ -738,7 +710,7 @@
 
 		for(var/datum/job/job in SSjob.joinable_occupations)
 			if(job.title == Add)
-				job.total_positions += 1
+				job.set_total_positions(job.get_position_limit(TRUE) + 1)
 				break
 
 		src.manage_free_slots()
@@ -756,9 +728,9 @@
 				newtime = input(usr, "How many jebs do you want?", "Add wanted posters", "[newtime]") as num|null
 				if(!newtime)
 					to_chat(src.owner, "Setting to amount of positions filled for the job")
-					job.total_positions = job.current_positions
+					job.set_total_positions(job.get_position_count())
 					break
-				job.total_positions = newtime
+				job.set_total_positions(newtime)
 
 		src.manage_free_slots()
 
@@ -769,8 +741,8 @@
 		var/Remove = href_list["removejobslot"]
 
 		for(var/datum/job/job in SSjob.joinable_occupations)
-			if(job.title == Remove && job.total_positions - job.current_positions > 0)
-				job.total_positions -= 1
+			if(job.title == Remove && job.get_position_limit(TRUE) - job.get_position_count() > 0)
+				job.set_total_positions(job.get_position_limit(TRUE) - 1)
 				break
 
 		src.manage_free_slots()
@@ -783,7 +755,7 @@
 
 		for(var/datum/job/job in SSjob.joinable_occupations)
 			if(job.title == Unlimit)
-				job.total_positions = -1
+				job.set_total_positions(-1)
 				break
 
 		src.manage_free_slots()
@@ -796,7 +768,7 @@
 
 		for(var/datum/job/job in SSjob.joinable_occupations)
 			if(job.title == Limit)
-				job.total_positions = job.current_positions
+				job.set_total_positions(job.get_position_count())
 				break
 
 		src.manage_free_slots()

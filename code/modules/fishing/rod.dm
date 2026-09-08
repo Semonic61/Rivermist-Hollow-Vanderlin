@@ -1,4 +1,5 @@
 /obj/item/fishingrod
+	item_weight = 350 GRAMS
 	force = 12
 	possible_item_intents = list(ROD_AUTO, ROD_CAST, POLEARM_BASH)
 	name = "fishing rod"
@@ -54,9 +55,9 @@
 	var/frame_state = "frame_wood"
 
 	/**
-	 * A list with two keys delimiting the spinning interval in which a mouse click has to be pressed while fishing.
-	 * Inherited from baits, passed down to the minigame lure.
-	 */
+	* A list with two keys delimiting the spinning interval in which a mouse click has to be pressed while fishing.
+	* Inherited from baits, passed down to the minigame lure.
+	*/
 	var/list/spin_frequency
 
 	///Prevents spamming the line casting, without affecting the player's click cooldown.
@@ -77,11 +78,11 @@
 	/// The multiplier of negative velocity that pulls the bait/bobber down when not holding the click
 	var/gravity_mult = 1
 	/**
-	 * The multiplier of the bait height. Influenced by the strength_modifier of a material,
-	 * unlike the other variables, lest we add too many vars to materials.
-	 * Also materials with a strength_modifier lower than 1 don't do anything, since
-	 * they're already likely to be quite bad
-	 */
+	* The multiplier of the bait height. Influenced by the strength_modifier of a material,
+	* unlike the other variables, lest we add too many vars to materials.
+	* Also materials with a strength_modifier lower than 1 don't do anything, since
+	* they're already likely to be quite bad
+	*/
 	var/bait_height_mult = 1
 
 /datum/intent/cast
@@ -106,20 +107,22 @@
 	else
 		..()
 
-/obj/item/fishingrod/attackby(obj/item/I, mob/user, list/modifiers)
+/obj/item/fishingrod/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
 	if(baited && reel && hook && line)
-		return ..()
+		return NONE
 
-	if(istype(I, /obj/item/fishing/lure) || istype(I, /obj/item/natural/worms) || istype(I, /obj/item/natural/bundle/worms) || istype(I, /obj/item/fishing/lure) || istype(I, /obj/item/reagent_containers/food/snacks))
-		if(istype(I, /obj/item/fishing/lure) || istype(I, /obj/item/natural/worms) || istype(I, /obj/item/fishing/lure))
+	// This is disgusting
+	if(istype(tool, /obj/item/fishing/lure) || istype(tool, /obj/item/natural/worms) || istype(tool, /obj/item/natural/bundle/worms) || istype(tool, /obj/item/fishing/lure) || istype(tool, /obj/item/reagent_containers/food/snacks))
+		if(istype(tool, /obj/item/fishing/lure) || istype(tool, /obj/item/natural/worms) || istype(tool, /obj/item/fishing/lure))
 			if(!baited)
-				I.forceMove(src)
-				baited = I
-				user.visible_message("<span class='notice'>[user] hooks something to [src].</span>", "<span class='notice'>I hook [I] to [src].</span>")
+				tool.forceMove(src)
+				baited = tool
+				user.visible_message("<span class='notice'>[user] hooks something to [src].</span>", "<span class='notice'>I hook [tool] to [src].</span>")
 				playsound(src, 'sound/foley/pierce.ogg', 50, FALSE)
-		else if(istype(I, /obj/item/natural/bundle/worms))
+			return ITEM_INTERACT_SUCCESS
+		else if(istype(tool, /obj/item/natural/bundle/worms))
 			if(!baited)
-				var/obj/item/natural/bundle/worms/W = I
+				var/obj/item/natural/bundle/worms/W = tool
 				baited = new W.stacktype(src)
 				W.amount--
 				if(W.amount == 1)
@@ -127,31 +130,35 @@
 					qdel(W)
 				user.visible_message("<span class='notice'>[user] hooks something to [src].</span>", "<span class='notice'>I hook some [W.name] to [src].</span>")
 				playsound(src, 'sound/foley/pierce.ogg', 50, FALSE)
-		else
-			if(!baited)
-				I.forceMove(src)
-				baited = I
-				user.visible_message("<span class='notice'>[user] hooks something to the line.</span>", "<span class='notice'>I hook [I] to my line.</span>")
-				playsound(src, 'sound/foley/pierce.ogg', 50, FALSE)
+			return ITEM_INTERACT_SUCCESS
+		else if(!baited)
+			tool.forceMove(src)
+			baited = tool
+			user.visible_message("<span class='notice'>[user] hooks something to the line.</span>", "<span class='notice'>I hook [tool] to my line.</span>")
+			playsound(src, 'sound/foley/pierce.ogg', 50, FALSE)
+			return ITEM_INTERACT_SUCCESS
 
-	else if(istype(I, /obj/item/fishing)) //bait has a null attachtype and is accounted for in the previous check so i don't have to worry about it
-		var/obj/item/fishing/T = I
+	else if(istype(tool, /obj/item/fishing)) //bait has a null attachtype and is accounted for in the previous check so i don't have to worry about it
+		var/obj/item/fishing/T = tool
 		switch(T.attachtype)
 			if("line")
 				if(!line)
-					I.forceMove(src)
-					line = I
-					to_chat(user, "<span class='notice'>I add [I] to [src]...</span>")
+					tool.forceMove(src)
+					line = tool
+					to_chat(user, "<span class='notice'>I add [tool] to [src]...</span>")
 			if("hook")
 				if(!hook)
-					I.forceMove(src)
-					hook = I
-					to_chat(user, "<span class='notice'>I add [I] to [src]...</span>")
+					tool.forceMove(src)
+					hook = tool
+					to_chat(user, "<span class='notice'>I add [tool] to [src]...</span>")
 			if("reel")
 				if(!reel)
-					I.forceMove(src)
-					reel = I
-					to_chat(user, "<span class='notice'>I add [I] to [src]...</span>")
+					tool.forceMove(src)
+					reel = tool
+					to_chat(user, "<span class='notice'>I add [tool] to [src]...</span>")
+
+		return ITEM_INTERACT_SUCCESS
+
 	update_appearance(UPDATE_OVERLAYS)
 
 /obj/item/fishingrod/attack_hand_secondary(mob/user, list/modifiers)

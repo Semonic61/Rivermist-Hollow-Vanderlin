@@ -12,7 +12,7 @@
 	QDEL_NULL(fly)
 	return ..()
 
-/obj/item/organ/wings/flight/Insert(mob/living/carbon/M, special, drop_if_replaced)
+/obj/item/organ/wings/flight/Insert(mob/living/carbon/M, special, drop_if_replaced, new_zone = null)
 	. = ..()
 	if(length(flight_for_species) && !(M.dna?.species.id in flight_for_species))
 		return
@@ -146,7 +146,7 @@
 			start_flying()
 		return
 
-	if(!owner.can_zTravel(direction = DOWN))
+	if(!owner.can_z_move(DOWN, get_turf(owner), z_move_flags = ZMOVE_FLIGHT_FLAGS))
 		stop_flying()
 	else if(do_after(owner, 1 SECONDS, owner))
 		stop_flying()
@@ -157,8 +157,9 @@
 
 	// Only stop flight if there is somewhere to go
 	// This is so you can fly on the top Z level
-	var/turf/above_turf = GET_TURF_ABOVE(get_turf(owner))
-	if(above_turf && (!isopenspace(above_turf) || !owner.can_zTravel(direction = UP)))
+	var/turf/current_turf = get_turf(owner)
+	var/turf/above_turf = GET_TURF_ABOVE(current_turf)
+	if(above_turf && (!isopenspace(above_turf) || !owner.can_z_move(UP, current_turf, above_turf, ZMOVE_INCAPACITATED_CHECKS | ZMOVE_LYING_CHECKS)))
 		owner.balloon_alert(owner, "can't fly up!")
 		return FALSE
 
@@ -170,7 +171,7 @@
 
 	var/mob/living/flier = owner
 
-	if(flier.get_encumbrance() > 0.7)
+	if(flier.encumbrance >= ENCUMBRANCE_HEAVY)
 		owner.balloon_alert(owner, "too heavy!")
 		return FALSE
 
@@ -205,7 +206,7 @@
 		ADD_TRAIT(owner, TRAIT_MOVE_FLYING, ORGAN_TRAIT)
 
 		var/turf/above_turf = GET_TURF_ABOVE(turf)
-		if(owner.can_zTravel(direction = UP) && isopenspace(above_turf))
+		if(isopenspace(above_turf) && owner.can_z_move(UP, turf, above_turf, ZMOVE_FLIGHT_FLAGS))
 			turf = above_turf
 
 	if(flight_time)
@@ -218,6 +219,8 @@
 
 	init_signals()
 
+	release_dragged()
+
 	if(turf != get_turf(owner))
 		var/matrix/original = owner.transform
 		var/prev_alpha = owner.alpha
@@ -227,22 +230,50 @@
 		animate(transform = original, time = 0.5 SECONDS, EASE_OUT)
 		owner.pixel_z = prev_pixel_z
 		owner.alpha = prev_alpha
-		owner.forceMove(turf)
+		owner.set_currently_z_moving(CURRENTLY_Z_ASCENDING)
+		owner.zMove(UP, turf, ZMOVE_FLIGHT_FLAGS)
 
 	build_all_button_icons(update_flags = UPDATE_BUTTON_BACKGROUND)
 
+/// Someone we are only dragging has nothing to hold onto once we leave the ground, and get_dist()
+/// ignores z so the pull would survive and yank them into the air every step. Let go instead.
+/datum/action/item_action/organ_action/use/flight/proc/release_dragged()
+	if(!isliving(owner))
+		return
+	var/mob/living/carrier = owner
+	var/atom/movable/dragged = carrier.pulling
+	if(!dragged || (dragged in carrier.buckled_mobs))
+		return
+	carrier.stop_pulling()
+	to_chat(carrier, span_warning("I lose my grip on [dragged] as I leave the ground."))
+
+/// A passenger who stops being carried mid-air has nothing holding them up any more.
+/datum/action/item_action/organ_action/use/flight/proc/drop_passenger(datum/source, mob/living/passenger, force)
+	SIGNAL_HANDLER
+
+	var/turf/air = get_turf(passenger)
+	if(isopenspace(air))
+		INVOKE_ASYNC(air, TYPE_PROC_REF(/turf, zFall), passenger)
+
 /datum/action/item_action/organ_action/use/flight/proc/init_signals()
-	RegisterSignal(owner, COMSIG_MOB_APPLY_DAMGE, PROC_REF(check_damage))
+	RegisterSignal(owner, COMSIG_MOB_APPLY_DAMAGE, PROC_REF(check_damage))
 	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(check_movement))
 	RegisterSignal(owner, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(check_laying))
-	RegisterSignals(owner, SIGNAL_ADDTRAIT(TRAIT_IMMOBILIZED), PROC_REF(fall))
+	RegisterSignal(owner, COMSIG_MOVABLE_UNBUCKLE, PROC_REF(drop_passenger))
+	RegisterSignal(owner, SIGNAL_ADDTRAIT(TRAIT_IMMOBILIZED), PROC_REF(fall))
 
 // Stop flying normally
 /datum/action/item_action/organ_action/use/flight/proc/stop_flying()
+	// Landing moves the owner to a turf. Someone inside a container has no landing to do, and doing
+	// it anyway would tear them out of it.
+	if(!isturf(owner.loc))
+		fall()
+		return
+
 	var/turf/turf = get_turf(owner)
 	// If you can't fly up you can't fly down, drop like a rock
 	if(allows_z_rise)
-		if(isopenspace(turf) && owner.can_zTravel(direction = DOWN))
+		if(isopenspace(turf) && owner.can_z_move(DOWN, turf, z_move_flags = ZMOVE_FLIGHT_FLAGS))
 			turf = GET_TURF_BELOW(turf)
 
 	to_chat(owner, span_notice("I stop flying."))
@@ -255,7 +286,7 @@
 		owner.alpha = 0
 		owner.pixel_z = 156
 		owner.transform = matrix() * 8
-		owner.forceMove(turf)
+		owner.zMove(DOWN, turf, ZMOVE_FLIGHT_FLAGS)
 		animate(owner, pixel_z = prev_pixel_z, alpha = prev_alpha, time = 1.2 SECONDS, easing = EASE_IN, flags = ANIMATION_PARALLEL)
 		animate(owner, transform = original, time = 1.2 SECONDS, easing = EASE_IN, flags = ANIMATION_PARALLEL)
 
@@ -274,9 +305,10 @@
 	flying = FALSE
 
 	UnregisterSignal(owner, list(
-		COMSIG_MOB_APPLY_DAMGE,
+		COMSIG_MOB_APPLY_DAMAGE,
 		COMSIG_MOVABLE_MOVED,
 		COMSIG_LIVING_SET_BODY_POSITION,
+		COMSIG_MOVABLE_UNBUCKLE,
 		SIGNAL_ADDTRAIT(TRAIT_IMMOBILIZED)
 	))
 
@@ -321,13 +353,19 @@
 	SIGNAL_HANDLER
 
 	if(owner.movement_type & FLYING)
+		// Being stowed in a container is a Moved(), and landing relocates the owner to get_turf(),
+		// which would drag them straight back out of whatever now holds them. Just stop flying.
+		if(!isturf(owner.loc))
+			fall()
+			return
+
 		if(!can_fly())
-			stop_flying(owner)
+			stop_flying()
 			return
 
 		if(!owner.adjust_stamina(-3))
 			to_chat(owner, span_warning("You're too exhausted to keep flying!"))
-			stop_flying(owner)
+			stop_flying()
 			return
 
 		var/turf/this_turf = get_turf(owner)

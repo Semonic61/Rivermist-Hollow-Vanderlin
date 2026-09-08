@@ -51,6 +51,8 @@ GLOBAL_LIST_INIT(container_craft_to_singleton, init_container_crafts())
 	///our completed message
 	var/complete_message = "Something smells good!"
 	var/datum/attribute/skill/used_skill = /datum/attribute/skill/craft/cooking
+	/// Minimum rank in used_skill required to begin this recipe.
+	var/minimum_skill = SKILL_RANK_NONE
 	var/quality_modifier = 1.0  // Default modifier, recipes can override this
 	///Path of looping_sound to use while cooking
 	var/datum/looping_sound/cooking_sound
@@ -124,36 +126,42 @@ GLOBAL_LIST_INIT(container_craft_to_singleton, init_container_crafts())
 	if(length(fake_wildcards))
 		for(var/wildcard in fake_wildcards)
 			var/needed = fake_wildcards[wildcard]
-			var/found = 0
-
-			// Find items that match this wildcard
+			var/total_available = 0
 			for(var/obj/item/path as anything in available_items)
 				if(!ispath(path, wildcard))
 					continue
-
-				var/can_use = min(available_items[path], needed - found)
-				found += can_use
-				available_items[path] -= can_use
-
-				if(available_items[path] <= 0)
-					available_items -= path
-
-				if(found >= needed)
-					break
-
-			// Check if we found enough items for this wildcard
-			if(found < needed)
+				total_available += available_items[path]
+			// Check if we found enough items for at least one craft
+			if(total_available < needed)
 				return FALSE
-
-			// Calculate multiplier based on what we found
-			var/potential_multiplier = FLOOR(found / fake_wildcards[wildcard], 1)
+			// Calculate multiplier based on everything available so the whole
+			// batch cooks in a single operation
+			var/potential_multiplier = FLOOR(total_available / needed, 1)
 			if(!highest_multiplier)
 				highest_multiplier = potential_multiplier
 			else if(potential_multiplier < highest_multiplier)
 				highest_multiplier = potential_multiplier
 
+			// Consume one craft's worth for the isolation leftover bookkeeping
+			var/to_consume = needed
+			for(var/obj/item/path as anything in available_items)
+				if(!ispath(path, wildcard))
+					continue
+				var/can_use = min(available_items[path], to_consume)
+				available_items[path] -= can_use
+				to_consume -= can_use
+				if(available_items[path] <= 0)
+					available_items -= path
+				if(to_consume <= 0)
+					break
+
 	if(isolation_craft && length(available_items))
 		return FALSE
+
+	// Reagent-only recipes still represent one craft. Reagent batching is validated
+	// again during completion, so they deliberately begin one operation at a time.
+	if(!highest_multiplier && length(reagent_requirements) && !length(requirements) && !length(wildcard_requirements))
+		highest_multiplier = 1
 
 	//if we don't have at least this nothing worked
 	if(highest_multiplier < 1)
@@ -161,6 +169,11 @@ GLOBAL_LIST_INIT(container_craft_to_singleton, init_container_crafts())
 
 	if(!initiator)
 		initiator = get_mob_by_ckey(crafter.fingerprintslast)
+	if(minimum_skill > SKILL_RANK_NONE)
+		if(!isliving(initiator) || GET_MOB_SKILL_VALUE_OLD(initiator, used_skill) < minimum_skill)
+			if(initiator)
+				to_chat(initiator, span_warning("I lack the skill to prepare [name]."))
+			return FALSE
 	var/datum/callback/on_craft_start_ref = on_craft_start
 	var/datum/callback/on_craft_fail_ref = on_craft_failed
 	if(!on_craft_start_ref)
@@ -340,7 +353,8 @@ GLOBAL_LIST_INIT(container_craft_to_singleton, init_container_crafts())
 
 		create_item(crafter, initiator, found_optional_requirements, found_optional_wildcards, found_optional_reagents, items_to_delete)
 
-		initiator.mind?.add_sleep_experience(used_skill, GET_MOB_ATTRIBUTE_VALUE(initiator, STAT_INTELLIGENCE) * 0.5)
+		if(initiator)
+			initiator.mind?.add_sleep_experience(used_skill, GET_MOB_ATTRIBUTE_VALUE(initiator, STAT_INTELLIGENCE) * 0.5)
 		// Remove all tracked items
 		for(var/obj/item/item_to_delete in items_to_delete)
 			qdel(item_to_delete)
@@ -378,9 +392,11 @@ GLOBAL_LIST_INIT(container_craft_to_singleton, init_container_crafts())
 	var/average_freshness = (ingredient_count > 0) ? (total_freshness / ingredient_count) : 0
 
 	// Get the initiator's cooking skill
-	var/cooking_skill = GET_MOB_SKILL_VALUE_OLD(initiator, used_skill) + initiator.get_inspirational_bonus()
+	var/cooking_skill = 0
+	if(initiator)
+		cooking_skill = GET_MOB_SKILL_VALUE_OLD(initiator, used_skill) + initiator.get_inspirational_bonus()
 
-	if(HAS_TRAIT(initiator, TRAIT_LUCKY_COOK))
+	if(initiator && HAS_TRAIT(initiator, TRAIT_LUCKY_COOK))
 		// Every level above 9 increases the chance by 4%
 		if(initiator.stat_roll(STAT_FORTUNE, 4, 9))
 			output_amount++
@@ -432,144 +448,19 @@ GLOBAL_LIST_INIT(container_craft_to_singleton, init_container_crafts())
 	return
 
 /datum/container_craft/proc/get_real_time(atom/host, mob/user, estimated_multiplier)
-	return crafting_time * estimated_multiplier
+	var/real_time = crafting_time * estimated_multiplier
+	if(istype(user) && user.mind && used_skill)
+		real_time *= GET_MOB_SKILL_SPEED_MOD(user, used_skill)
+	return real_time
 
 /datum/container_craft/proc/check_failure(obj/item/crafter, mob/user)
 	return FALSE
 
-/datum/container_craft/proc/generate_html(mob/user)
-	var/client/client = user
-	if(!istype(client))
-		client = user.client
-	SSassets.transport.send_assets(client, list("try4_border.png", "try4.png", "slop_menustyle2.css"))
-	user << browse_rsc('html/book.png')
-
-	var/html = {"
-		<!DOCTYPE html>
-		<html lang="en">
-		<meta charset='UTF-8'>
-		<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'/>
-		<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'/>
-		<style>
-			@import url('https://fonts.googleapis.com/css2?family=Charm:wght@700&display=swap');
-			body {
-				font-family: "Charm", cursive;
-				font-size: 1.2em;
-				text-align: center;
-				margin: 20px;
-				background-color: #f4efe6;
-				color: #3e2723;
-				background-color: rgb(31, 20, 24);
-				background:
-					url('[SSassets.transport.get_asset_url("try4_border.png")]'),
-					url('book.png');
-				background-repeat: no-repeat;
-				background-attachment: fixed;
-				background-size: 100% 100%;
-
-			}
-			h1 {
-				text-align: center;
-				font-size: 2em;
-				border-bottom: 2px solid #3e2723;
-				padding-bottom: 10px;
-				margin-bottom: 10px;
-			}
-			.icon {
-				width: 64px;
-				height: 64px;
-				vertical-align: middle;
-				margin-right: 10px;
-			}
-			.requirements {
-				margin-bottom: 20px;
-			}
-			.optional {
-				margin-top: 15px;
-				font-style: italic;
-			}
-		</style>
-		<body>
-		  <div>
-			<h1>[name]</h1>
-			<div class="requirements">
-			  <h2>Requirements</h2>
-	"}
-
-	// Add required items
-	for(var/atom/path as anything in requirements)
-		var/count = requirements[path]
-		html += "[icon2html(new path, user)] [count] [initial(path.name)]<br>"
-
-	// Add required reagents
-	if(length(reagent_requirements))
-		html += "<div class='reagents'><strong>Required Liquids:</strong><br>"
-		for(var/reagent_type in reagent_requirements)
-			var/reagent_amount = reagent_requirements[reagent_type]
-			var/datum/reagent/R = new reagent_type
-			html += "[UNIT_FORM_STRING(CEILING(reagent_amount, 1))] of [initial(R.name)]<br>"
-			qdel(R)
-		html += "</div>"
-
-	// Add wildcard requirements
-	if(length(wildcard_requirements))
-		html += "<div class='requirements'><strong>Alternative Requirements:</strong><br>"
-		for(var/atom/wildcard_type as anything  in wildcard_requirements)
-			var/count = wildcard_requirements[wildcard_type]
-			html += "[count] of any [wildcard_type.name]<br>"
-		html += "</div>"
-
-	// Add optional requirements if any
-	if(max_optionals > 0)
-		html += "<div class='optional'><strong>Optional ingredients (max [max_optionals]):</strong><br>"
-
-		// Add specific optional requirements
-		if(length(optional_requirements))
-			for(var/atom/path as anything in optional_requirements)
-				var/count = optional_requirements[path]
-				html += "[icon2html(new path, user)] up to [count] of which can be [initial(path.name)]<br>"
-
-		// Add wildcard optional requirements
-		if(length(optional_wildcard_requirements))
-			for(var/atom/wildcard_path as anything in optional_wildcard_requirements)
-				var/count = optional_wildcard_requirements[wildcard_path]
-
-				html += "Up to [count] of which can be any [wildcard_path.name]<br>"
-
-		if(length(optional_reagent_requirements))
-			for(var/datum/reagent/reagent as anything in optional_reagent_requirements)
-				var/count = optional_reagent_requirements[reagent]
-				html += "[UNIT_FORM_STRING(count)] of [reagent.name]"
-		html += "</div>"
-
-	html += {"
-		</div>
-		<div>
-	"}
-
-	html += "<strong class='scroll'>After [craft_verb][crafting_time * 0.1] Seconds<br>"
-	if(required_container)
-		var/obj/item/new_container = new required_container
-		html += "[icon2html(new_container, user)] <strong class='scroll'>inside of a [initial(new_container.name)]<br>"
-		qdel(new_container)
-
-	// Result information
-	html += "<strong class='scroll'>Creates<br>"
-	html += extra_html()
-	if(output)
-		html += "[output_amount] [output.name]"
-
-	html += {"
-		</div>
-		</div>
-	</body>
-	</html>
-	"}
-
-	return html
-
-/datum/container_craft/proc/show_menu(mob/user)
-	user << browse(generate_html(user), "window=container_craft;size=500x810")
+/**
+ * Whether an active craft may advance its progress this tick.
+ */
+/datum/container_craft/proc/can_progress(obj/item/crafter)
+	return TRUE
 
 /datum/container_craft/proc/extra_html()
 	return

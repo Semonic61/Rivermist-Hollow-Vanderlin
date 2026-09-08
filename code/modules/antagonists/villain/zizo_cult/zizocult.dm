@@ -72,7 +72,7 @@
 
 /datum/antagonist/zizocultist/examine_target(mob/user, mob/examined, list/P, list/examine_contents)
 	var/mob/living/carbon/human/H = examined
-	if(istype(H) && H.virginity)
+	if(istype(H) && HAS_TRAIT(H, TRAIT_VIRGIN))
 		LAZYADDASSOCLIST(examine_contents, EXAMINE_SECT_BODY, span_purple(html_tag("B", "[P[THEYRE]] a virgin!")))
 	. = ..()
 
@@ -456,7 +456,7 @@
 
 	var/list/runes = list("Servantry", "Transmutation", "Fleshcrafting")
 
-	if(!bloody_hands)
+	if(!bloody_hands || get_bleed_rate())
 		to_chat(src, span_danger("My hands aren't bloody enough."))
 		return
 

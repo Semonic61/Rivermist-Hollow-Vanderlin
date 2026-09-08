@@ -60,10 +60,12 @@
 		if(!(REVERSE_DIR(dir) & structure.dpdir))
 			continue
 		if(rotation_network)
-			if(!structure.try_network_merge(src))
+			var/merge_result = structure.try_network_merge(src)
+			if(merge_result == FALSE)
 				rotation_break()
 		else
-			if(!structure.try_connect(src))
+			var/connect_result = structure.try_connect(src)
+			if(connect_result == FALSE)
 				rotation_break()
 
 	if(!rotation_network)

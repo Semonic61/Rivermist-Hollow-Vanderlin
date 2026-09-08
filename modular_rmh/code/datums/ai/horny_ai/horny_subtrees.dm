@@ -43,6 +43,8 @@
 		return /datum/ai_behavior/horny/human
 	if(controller.pawn?.ai_controller?.horny_pref_family_flag == HORNY_MOB_TYPE_SPIDERS)
 		return /datum/ai_behavior/horny/simple_mob/spider
+	if(controller.pawn?.ai_controller?.horny_pref_family_flag == HORNY_MOB_TYPE_TENTACLES)
+		return /datum/ai_behavior/horny/simple_mob/tentacle
 
 	return /datum/ai_behavior/horny/simple_mob
 
@@ -91,7 +93,7 @@
 		var/mob/living/living_target = target
 		if(living_target.stat == DEAD)
 			return FALSE
-		if(living_target.rogue_sneaking)
+		if(living_target.alpha <= 100 || living_target.rogue_sneaking)
 			var/extra_chance = (living_pawn.health <= living_pawn.maxHealth * 0.5) ? 30 : 0
 			if(!living_pawn.npc_detect_sneak(living_target, extra_chance))
 				return FALSE

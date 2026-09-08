@@ -20,7 +20,7 @@
 	sellprice = 0
 	static_price = TRUE
 	simpleton_price = TRUE
-	item_weight = 0.001
+	item_weight = 23 GRAMS
 
 	COOLDOWN_DECLARE(flip_cd)
 	var/heads_tails = TRUE
@@ -30,9 +30,17 @@
 	var/plural_name
 	var/rigged_outcome = 0 //1 for heads, 2 for tails
 
+/obj/item/coin/get_carry_weight(atom/carrier)
+	. = item_weight * quantity
+
 /obj/item/coin/on_consume(mob/living/eater)
 	. = ..()
+	eater.extra_mob_weight += get_carry_weight(eater)
 	eater.sellprice += quantity * sellprice
+
+/obj/item/coin/on_anti_consume(mob/living/eater)
+	eater.extra_mob_weight -= get_carry_weight(eater)
+	eater.sellprice -= quantity * sellprice
 
 /obj/item/coin/Initialize(mapload, coin_amount)
 	. = ..()
@@ -402,15 +410,17 @@
 	else
 		desc = ""
 
-/obj/item/coin/attackby(obj/item/I, mob/user, list/modifiers)
-	if(istype(I, /obj/item/coin))
-		var/obj/item/coin/G = I
-		if(item_flags & IN_STORAGE)
-			merge(G, user)
-		else
-			G.merge(src, user)
-		return
-	return ..()
+/obj/item/coin/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/coin))
+		return NONE
+
+	var/obj/item/coin/coin = tool
+	if(item_flags & IN_STORAGE)
+		merge(coin, user)
+	else
+		coin.merge(src, user)
+
+	return ITEM_INTERACT_SUCCESS
 
 //PLATINUM
 /obj/item/coin/platinum
@@ -429,6 +439,7 @@
 	sellprice = 100
 	base_type = CTYPE_GOLD
 	plural_name = "dantere"
+	item_weight = 9 GRAMS
 
 //ELECTRUM
 /obj/item/coin/electrum
@@ -447,6 +458,7 @@
 	sellprice = 10
 	base_type = CTYPE_SILV
 	plural_name = "tarane"
+	item_weight = 11 GRAMS
 
 
 // COPPER

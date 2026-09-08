@@ -18,52 +18,52 @@
 			species_list += species.type
 
 		var/rando_race = pick(species_list)
-		pref_species = new rando_race()
+		set_species_preference(rando_race)
 
 	if(NOEYESPRITES in pref_species.species_traits)
 		randomise_flags &= ~RANDOMIZE_EYE_COLOR
 
 	if(randomise_flags & RANDOMIZE_GENDER)
-		gender = pref_species.sexes ? pick(MALE, FEMALE) : PLURAL
+		write_preference(/datum/preference/choiced/gender, pref_species.sexes ? pick(MALE, FEMALE) : PLURAL)
 
 	// pronouns and voice should match gender, not randomized
 	var/list/allowed_voices
-	switch(gender)
+	switch(read_preference(/datum/preference/choiced/gender))
 		if(MALE)
-			pronouns = HE_HIM
+			write_preference(/datum/preference/choiced/pronouns, HE_HIM)
 			allowed_voices = pref_species.allowed_voicetypes_m
-			voice_type = VOICE_TYPE_MASC
+			write_preference(/datum/preference/choiced/voice_type, VOICE_TYPE_MASC)
 		if(FEMALE)
-			pronouns = SHE_HER
+			write_preference(/datum/preference/choiced/pronouns, SHE_HER)
 			allowed_voices = pref_species.allowed_voicetypes_f
-			voice_type = VOICE_TYPE_FEM
+			write_preference(/datum/preference/choiced/voice_type, VOICE_TYPE_FEM)
 		if(PLURAL)
-			pronouns = THEY_THEM
+			write_preference(/datum/preference/choiced/pronouns, THEY_THEM)
 			allowed_voices = VOICE_TYPES_LIST
-			voice_type = VOICE_TYPE_ANDRO
+			write_preference(/datum/preference/choiced/voice_type, VOICE_TYPE_ANDRO)
 		else
-			pronouns = IT_ITS
+			write_preference(/datum/preference/choiced/pronouns, IT_ITS)
 			allowed_voices = VOICE_TYPES_LIST
-			voice_type = VOICE_TYPE_ANDRO
+			write_preference(/datum/preference/choiced/voice_type, VOICE_TYPE_ANDRO)
 
 	if(!allowed_voices || !length(allowed_voices))
 		allowed_voices = VOICE_TYPE_ANDRO
 
-	if(!(voice_type in allowed_voices))
-		voice_type = pick(allowed_voices)
+	if(!(read_preference(/datum/preference/choiced/voice_type) in allowed_voices))
+		write_preference(/datum/preference/choiced/voice_type, pick(allowed_voices))
 
 	var/list/allowed_pronouns = pref_species.allowed_pronouns
 	if(!allowed_pronouns || !length(allowed_pronouns))
 		allowed_pronouns = PRONOUNS_LIST
 
-	if (!(pronouns in allowed_pronouns))
-		pronouns = pick(allowed_pronouns)
+	if (!(read_preference(/datum/preference/choiced/pronouns) in allowed_pronouns))
+		write_preference(/datum/preference/choiced/pronouns, pick(allowed_pronouns))
 
 	if(randomise_flags & RANDOMIZE_AGE)
-		age = pick(pref_species.possible_ages)
+		write_preference(/datum/preference/choiced/age, pick(pref_species.possible_ages))
 
 	if(randomise_flags & RANDOMIZE_NAME)
-		real_name = pref_species.random_name(gender, TRUE)
+		write_preference(/datum/preference/text/real_name, pref_species.random_name(read_preference(/datum/preference/choiced/gender), TRUE))
 
 	//if(randomise_flags & RANDOMIZE_UNDERWEAR)
 	//	underwear = pref_species.random_underwear(gender)
@@ -86,15 +86,12 @@
 
 	if(randomise_flags & RANDOMIZE_SKIN_TONE)
 		var/list/skin_list = pref_species.get_skin_list()
-		skin_tone = pick_assoc(skin_list)
-
-	if(randomise_flags & RANDOMIZE_EYE_COLOR)
-		eye_color = random_eye_color()
+		write_preference(/datum/preference/choiced/skin_tone, pick_assoc(skin_list))
 
 	if(pref_species.forced_taur && pref_species.allowed_taur_types.len)
-		taur_type = pick(pref_species.allowed_taur_types)
+		write_preference(/datum/preference/choiced/taur_type, pick(pref_species.allowed_taur_types))
 	else
-		taur_type = null
+		write_preference(/datum/preference/choiced/taur_type, null)
 
 	validate_descriptors()
 
@@ -108,22 +105,22 @@
 	if(randomise[RANDOM_SPECIES])
 		random_species()
 	if(randomise[RANDOM_GENDER] || antag_override && randomise[RANDOM_GENDER_ANTAG])
-		gender = pref_species.sexes ? pick(MALE, FEMALE) : PLURAL
+		write_preference(/datum/preference/choiced/gender, pref_species.sexes ? pick(MALE, FEMALE) : PLURAL)
 	if(randomise[RANDOM_AGE] || randomise[RANDOM_AGE_ANTAG] && antag_override)
-		age = pick(pref_species.possible_ages)
+		write_preference(/datum/preference/choiced/age, pick(pref_species.possible_ages))
 	if(randomise[RANDOM_VOICETYPE] || antag_override && randomise[RANDOM_VOICETYPE_ANTAG])
-		voice_type = pick(VOICE_TYPES_LIST)
+		write_preference(/datum/preference/choiced/voice_type, pick(VOICE_TYPES_LIST))
 	if(randomise[RANDOM_PRONOUNS] || antag_override && randomise[RANDOM_PRONOUNS_ANTAG])
 		var/list/allowed_pronouns = pref_species.allowed_pronouns
 		if(!allowed_pronouns || !length(allowed_pronouns))
 			allowed_pronouns = PRONOUNS_LIST
 		if(length(allowed_pronouns) == 1)
-			pronouns = allowed_pronouns[1]
+			write_preference(/datum/preference/choiced/pronouns, allowed_pronouns[1])
 		else
-			pronouns = pick(allowed_pronouns)
+			write_preference(/datum/preference/choiced/pronouns, pick(allowed_pronouns))
 
 	if(randomise[RANDOM_NAME] || antag_override && randomise[RANDOM_NAME_ANTAG])
-		real_name = pref_species.random_name(gender, TRUE)
+		write_preference(/datum/preference/text/real_name, pref_species.random_name(read_preference(/datum/preference/choiced/gender), TRUE))
 
 	//if(randomise[RANDOM_UNDERWEAR_COLOR])
 	//	underwear_color = random_short_color()
@@ -133,26 +130,30 @@
 	//	underwear = pref_species.random_underwear(gender)
 	if(randomise[RANDOM_SKIN_TONE])
 		var/list/skins = pref_species.get_skin_list()
-		skin_tone = pick_assoc(skins)
+		write_preference(/datum/preference/choiced/skin_tone, pick_assoc(skins))
 	if(randomise[RANDOM_EYE_COLOR])
-		eye_color = random_eye_color()
+		var/datum/customizer_entry/organ/eyes/eye_entry = get_customizer_entry_of_type(/datum/customizer_entry/organ/eyes)
+		if(eye_entry)
+			var/randomized_eye_color = random_eye_color()
+			eye_entry.right_eye_color = randomized_eye_color
+			eye_entry.left_eye_color = randomized_eye_color
 	features = pref_species.get_random_features()
 	sanitize_species_mutant_colors()
 
 	if(pref_species.default_features["ears"])
 		features["ears"] = pref_species.default_features["ears"]
-	accessory = "Nothing"
+	write_preference(/datum/preference/choiced/accessory, "Nothing")
 	body_markings = pref_species.get_random_body_markings(features)
 
 /datum/preferences/proc/random_species()
 	var/rando_race = GLOB.species_list[pick(GLOB.roundstart_species)]
-	pref_species = new rando_race()
+	set_species_preference(rando_race)
 	if(randomise[RANDOM_NAME])
-		real_name = pref_species.random_name(gender, TRUE)
+		write_preference(/datum/preference/text/real_name, pref_species.random_name(read_preference(/datum/preference/choiced/gender), TRUE))
 	if(pref_species.forced_taur && pref_species.allowed_taur_types.len)
-		taur_type = pick(pref_species.allowed_taur_types)
+		write_preference(/datum/preference/choiced/taur_type, pick(pref_species.allowed_taur_types))
 	else
-		taur_type = null
+		write_preference(/datum/preference/choiced/taur_type, null)
 	validate_descriptors()
 
 /datum/preferences/proc/get_preview_job()
@@ -180,13 +181,20 @@
 	if(isnull(value))
 		return null
 	if(islist(value))
+		var/list/list_value = value
 		var/list/normalized = list()
-		for(var/key in value)
-			var/normalized_value = normalize_preview_fingerprint_value(value[key])
-			if(isnum(key))
-				normalized += list(normalized_value)
+		for(var/index in 1 to length(list_value))
+			var/element = list_value[index]
+			// Associative entries store a non-null value under the element key. Plain/ordered
+			// elements (including datums and objects) return null here, so normalize them directly
+			// instead of dropping their contents - this is what carries eye colors etc. in customizer_entries.
+			var/element_value = null
+			if(!isnull(element) && !isnum(element))
+				element_value = list_value[element]
+			if(isnull(element_value))
+				normalized += list(normalize_preview_fingerprint_value(element))
 			else
-				normalized["[normalize_preview_fingerprint_value(key)]"] = normalized_value
+				normalized["[normalize_preview_fingerprint_value(element)]"] = normalize_preview_fingerprint_value(element_value)
 		return normalized
 	if(ispath(value))
 		return "[value]"
@@ -209,20 +217,21 @@
 		"species" = "[pref_species?.type]",
 		"preview_job" = preview_job ? "[preview_job.type]" : null,
 		"preview_subclass" = preview_subclass ? "[preview_subclass.type]" : null,
-		"gender" = gender,
-		"age" = age,
-		"skin_tone" = skin_tone,
-		"eye_color" = eye_color,
-		"detail" = detail,
-		"detail_color" = detail_color,
-		"taur_type" = taur_type ? "[taur_type]" : null,
-		"taur_color" = taur_color,
-		"taur_markings" = taur_markings,
-		"taur_tertiary" = taur_tertiary,
+		"gender" = read_preference(/datum/preference/choiced/gender),
+		"age" = read_preference(/datum/preference/choiced/age),
+		"skin_tone" = read_preference(/datum/preference/choiced/skin_tone),
+		"eye_color" = get_eye_color(RIGHT_SIDE),
+		"eye_color_left" = get_eye_color(LEFT_SIDE),
+		"detail" = read_preference(/datum/preference/choiced/detail),
+		"detail_color" = read_preference(/datum/preference/color/detail_color),
+		"taur_type" = read_preference(/datum/preference/choiced/taur_type),
+		"taur_color" = read_preference(/datum/preference/color/taur_color),
+		"taur_markings" = read_preference(/datum/preference/color/taur_markings),
+		"taur_tertiary" = read_preference(/datum/preference/color/taur_tertiary),
 		"features" = normalize_preview_fingerprint_value(features),
 		"body_markings" = normalize_preview_fingerprint_value(body_markings),
 		"customizer_entries" = normalize_preview_fingerprint_value(customizer_entries),
-		"smallclothes_preferences" = normalize_preview_fingerprint_value(smallclothes_preferences),
+		"smallclothes_preferences" = normalize_preview_fingerprint_value(read_preference(/datum/preference/list_type/smallclothes_preferences)),
 	)
 	return md5(json_encode(fingerprint_data))
 

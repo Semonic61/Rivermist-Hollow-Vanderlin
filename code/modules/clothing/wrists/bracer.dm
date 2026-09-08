@@ -1,23 +1,25 @@
 
 /obj/item/clothing/wrists/bracers
+	item_weight = 1.2 KILOGRAMS
 	name = "plate vambraces"
 	desc = "Plate forearm guards that offer superior protection while allowing mobility."
 	body_parts_covered = ARMS
 	icon_state = "bracers"
 	item_state = "bracers"
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/wrist/plate
 	prevent_crits = list(BCLASS_LASHING, BCLASS_BITE, BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_TWIST)
 	blocksound = PLATEHIT
 	resistance_flags = FIRE_PROOF
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
-	sewrepair = FALSE
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
+	sewrepair = null
 	smeltresult = /obj/item/ingot/iron //no 1 to 1 conversion
 	melting_material = /datum/material/iron
 	melt_amount = 100
-	max_integrity = INTEGRITY_STRONG
+	max_integrity = ARMOR_INT_SIDE_STEEL
 
 /obj/item/clothing/wrists/bracers/naledi
+	item_weight = 125 GRAMS
 	name = "sojourner's wrappings"
 	desc = "Sheared burlap and cloth, meticulously fashioned around the forearms. It provides more freedom of movement than the traditional steel thorns."
 	slot_flags = ITEM_SLOT_WRISTS
@@ -25,21 +27,21 @@
 	icon_state = "nocwrappings"
 	item_state = "nocwrappings"
 	armor_class = AC_LIGHT
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/wrist/padded/good
 	blade_dulling = DULLING_BASHCHOP
 	color = "#48443B"
 	max_integrity = ARMOR_INT_SIDE_STEEL //Heavy leather-tier protection and critical resistances, steel-tier integrity. Integrity boost encourages hand-to-hand parrying. Weaker than the Psydonic Thorns.
 	prevent_crits = list(BCLASS_CUT, BCLASS_CHOP, BCLASS_STAB, BCLASS_BLUNT, BCLASS_TWIST)
 	blocksound = SOFTHIT
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 
 /obj/item/clothing/wrists/bracers/iron
 	name = "iron plate vambraces"
 	desc = "Plate forearm guards that offer good protection while allowing mobility."
 	icon_state = "ibracers"
 	item_state = "ibracers"
-	armor = ARMOR_MAILLE
-	max_integrity = INTEGRITY_STRONG
+	armor_type = /datum/armor/wrist/maille
+	max_integrity = ARMOR_INT_SIDE_IRON
 
 
 /obj/item/clothing/wrists/bracers/jackchain
@@ -48,8 +50,8 @@
 	icon_state = "jackchain"
 	item_state = "jackchain"
 
-	armor = ARMOR_MAILLE
-	max_integrity = INTEGRITY_STRONGEST
+	armor_type = /datum/armor/wrist/maille
+	max_integrity = ARMOR_INT_SIDE_STEEL
 	prevent_crits = CUT_AND_MINOR_CRITS
 	smeltresult = /obj/item/fertilizer/ash
 	melting_material = /datum/material/steel
@@ -62,20 +64,21 @@
 	item_state = "ijackchain"
 
 	armor_class = AC_MEDIUM
-	armor = ARMOR_MAILLE
-	max_integrity = INTEGRITY_STRONG
+	armor_type = /datum/armor/wrist/maille
+	max_integrity = ARMOR_INT_SIDE_IRON
 	prevent_crits = CUT_AND_MINOR_CRITS
 	smeltresult = /obj/item/fertilizer/ash //we avoid melting one piece for one bar
 	melting_material = /datum/material/iron // we get one bar per two pieces of the item recovered and smelted
 	melt_amount = 75
 
 /obj/item/clothing/wrists/bracers/leather
+	item_weight = 650 GRAMS
 	name = "leather bracers"
 	desc = "Boiled leather bracers typically worn by archers to protect their forearms."
 	icon_state = "lbracers"
 	item_state = "lbracers"
 	armor_class = AC_LIGHT
-	armor = list("blunt" = 30, "slash" = 30, "stab" = 30,  "piercing" = 15, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/wrist/leather
 	prevent_crits = list(BCLASS_LASHING, BCLASS_BITE, BCLASS_CUT)
 	resistance_flags = null
 	blocksound = SOFTHIT
@@ -84,9 +87,9 @@
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
 	anvilrepair = null
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
 	salvage_result = null
-	max_integrity = INTEGRITY_STANDARD
+	max_integrity = ARMOR_INT_SIDE_LEATHER
 
 //THE ARMOUR VALUES OF ADVANCED AND MASTERWORK BRACERS ARE INTENDED
 //KEEP THIS IN MIND
@@ -95,16 +98,16 @@
 /obj/item/clothing/wrists/bracers/leather/advanced
 	name = "hardened leather bracers"
 	desc = "Hardened leather braces that will keep your wrists safe from bludgeoning."
-	armor = list("blunt" = 60, "slash" = 40, "stab" = 20, "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/wrist/leather/advanced
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST) //We're losing stab here
-	max_integrity = INTEGRITY_STANDARD + 50
+	max_integrity = ARMOR_INT_SIDE_HARDLEATHER
 
 /obj/item/clothing/wrists/bracers/leather/masterwork
 	name = "masterwork leather bracers"
 	desc = "These bracers are a craftsmanship marvel. Made with the finest leather. Strong, nimble, reliable."
-	armor = list("blunt" = 80, "slash" = 60, "stab" = 40, "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/wrist/leather/master
 	prevent_crits = list(BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_TWIST) //We're getting chop here
-	max_integrity = INTEGRITY_STANDARD + 100
+	max_integrity = ARMOR_INT_SIDE_STEEL // masterwork leather = steel-grade integrity, intended
 
 /obj/item/clothing/wrists/bracers/leather/masterwork/Initialize()
 	. = ..()
@@ -124,19 +127,20 @@
 	AddComponent(/datum/component/storage/concrete/scabbard/knife)
 
 /obj/item/clothing/wrists/bracers/psythorns
+	item_weight = 1.6 KILOGRAMS
 	name = "exotic thorns"
 	desc = "Thorns fashioned from pliable yet durable blacksteel - woven and interlinked, fashioned to be wrapped around the wrists."
 	body_parts_covered = ARMS
 	icon_state = "psybarbs"
 	item_state = "psybarbs"
 	armor_class = AC_MEDIUM
-	armor = list("blunt" = 80, "slash" = 100, "stab" = 90, "piercing" = 80, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/wrist/plate/psydon_thorns
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_SMASH, BCLASS_TWIST, BCLASS_PICK)
 	blocksound = PLATEHIT
 	resistance_flags = FIRE_PROOF
-	max_integrity = 400
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
-	sewrepair = FALSE
+	max_integrity = ARMOR_INT_SIDE_BLACKSTEEL
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
+	sewrepair = null
 	alternate_worn_layer = WRISTS_LAYER
 
 /obj/item/clothing/wrists/bracers/psythorns/equipped(mob/user, slot)
@@ -154,7 +158,8 @@
 		if(user.is_holding(src))
 			user.dropItemToGround(src)
 			user.put_in_hands(P)
-		user.adjustBruteLoss(25)
+		var/obj/item/bodypart/arm = user.get_active_hand()
+		arm?.bodypart_attacked_by(BCLASS_CUT, 25)
 		qdel(src)
 	else
 		user.visible_message(span_warning("[user] stops reshaping [src]."))

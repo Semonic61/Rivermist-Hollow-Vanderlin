@@ -9,14 +9,14 @@
 	blocksound = PLATEHIT
 	break_sound = 'sound/foley/breaksound.ogg'
 	drop_sound = 'sound/foley/dropsound/armor_drop.ogg'
-	armor = list("blunt" = 80, "slash" = 80, "stab" = 80,  "piercing" = 50, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/rmh/mask/traveler
 	prevent_crits = list(BCLASS_LASHING, BCLASS_BITE, BCLASS_TWIST, BCLASS_CUT, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_STAB)
 	body_parts_covered = FACE
 	block2add = FOV_BEHIND
 	slot_flags = ITEM_SLOT_MASK|ITEM_SLOT_HIP
 	experimental_onhip = TRUE
-	sewrepair = FALSE
-	anvilrepair = TRUE
+	sewrepair = null
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	sellprice = 80
 	allowed_race = SPECIES_BASE_BODY
 	misc_flags = CRAFTING_TEST_EXCLUDE
@@ -40,10 +40,10 @@
 	item_state = "nhat"
 	icon = 'modular_rmh/icons/clothing/karatur.dmi'
 	mob_overlay_icon = 'modular_rmh/icons/clothing/onmob/karatur.dmi'
-	armor = ARMOR_SPELLSINGER
+	armor_type = /datum/armor/rmh/head/silly_hat
 	max_integrity = ARMOR_INT_HELMET_LEATHER
 	blocksound = SOFTHIT
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 	flags_inv = HIDEEARS
 	body_parts_covered = HEAD|HAIR|EARS|NOSE|EYES
 	resistance_flags = FIRE_PROOF
@@ -57,7 +57,7 @@
 	mob_overlay_icon = 'modular_rmh/icons/clothing/onmob/snake.dmi'
 	icon_state = "armor"
 	item_state = "armor"
-	armor = ARMOR_CUIRASS // Identical to steel cuirass, but covering the groin instead of the vitals.
+	armor_type = /datum/armor/rmh/cuirass/snakekini // Identical to steel cuirass, but covering the groin instead of the vitals.
 	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL	// Identical to steel cuirasss. Same steel price.
 	armor_class = AC_MEDIUM
 	misc_flags = CRAFTING_TEST_EXCLUDE

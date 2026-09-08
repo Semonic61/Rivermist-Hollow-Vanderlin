@@ -4,21 +4,22 @@
 	desc = "A cuirass of steel. Lightweight and highly durable."
 	icon_state = "cuirass"
 	item_state = "cuirass"
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	melt_amount = 75
 	melting_material = /datum/material/steel
 	boobed = FALSE
 	sellprice = VALUE_STEEL_ARMOR
 
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/plate
 	body_parts_covered = COVERAGE_TORSO
 	prevent_crits = ALL_EXCEPT_BLUNT
-	max_integrity = INTEGRITY_STRONG
-	item_weight = 7 * STEEL_MULTIPLIER
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL
+	item_weight = 7 KILOGRAMS
 
 //................ Grenzelhoft Cuirass ............... //
 /obj/item/clothing/armor/cuirass/grenzelhoft
+	item_weight = 13.45 KILOGRAMS
 	name = "darkhold cuirass"
 	desc = "Simple armor, but made from Darkholdian black-steel, famed afar for its strength."
 	icon_state = "grenzelcuirass"
@@ -26,7 +27,7 @@
 	sleeved = 'icons/roguetown/clothing/onmob/helpers/stonekeep_merc.dmi'
 	boobed = TRUE
 
-	armor = ARMOR_PLATE_GOOD
+	armor_type = /datum/armor/plate/good
 
 /obj/item/clothing/armor/cuirass/rare
 	abstract_type = /obj/item/clothing/armor/cuirass/rare
@@ -52,10 +53,10 @@
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_ARMOR
 
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/plate/bad
 	body_parts_covered = COVERAGE_VEST
-	max_integrity = INTEGRITY_STRONG
-	item_weight = 7 * IRON_MULTIPLIER
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_IRON
+	item_weight = 7 KILOGRAMS
 
 //................ Rusted Breastplate ............... //
 /obj/item/clothing/armor/cuirass/iron/rust
@@ -68,7 +69,7 @@
 	item_state = "rustcuriass"
 	sellprice = VALUE_IRON_ARMOR/2
 
-	max_integrity = INTEGRITY_STANDARD
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_DECREPIT
 
 //................ Scourge Breastplate ............... //
 /obj/item/clothing/armor/cuirass/iron/shadowplate
@@ -88,11 +89,11 @@
 	sellprice = VALUE_DIRT_CHEAP
 
 	armor_class = AC_LIGHT
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/plate/bad
 	body_parts_covered = CHEST
 	prevent_crits = ONLY_VITAL_ORGANS
 	max_integrity = INTEGRITY_POOR
-	item_weight = 5.5 * COPPER_MULTIPLIER
+	item_weight = 6.4 KILOGRAMS
 
 /obj/item/clothing/armor/cuirass/vampire
 	name = "ancient plate"
@@ -100,16 +101,16 @@
 	icon_state = "vplate"
 
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PLATE_GOOD
+	armor_type = /datum/armor/plate/good
 	body_parts_covered = COVERAGE_TORSO
 	prevent_crits = ALL_CRITICAL_HITS_VAMP
-	item_weight = 5.5 * IRON_MULTIPLIER
+	item_weight = 7 KILOGRAMS
 
 /obj/item/clothing/armor/cuirass/fencer
 	name = "fencer's cuirass"
 	desc = "An expertly smithed form-fitting steel cuirass that is much lighter and agile, but breaks with much more ease. It's thinner, but backed with silk and leather."	// Experimental.
 	armor_class = AC_LIGHT
-	max_integrity = 300
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL
 	melt_amount = 75
 	icon_state = "fencercuirass"
 	item_state = "fencercuirass"
@@ -127,7 +128,7 @@
 	desc = "A sturdy steel cuirass with tassets. Supposedly protective, though maybe not against crossbow bolts."
 
 	body_parts_covered = CHEST | VITALS | LEGS
-	max_integrity = 300
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL
 
 /obj/item/clothing/armor/cuirass/ornate
 	name = "exotic cuirass"

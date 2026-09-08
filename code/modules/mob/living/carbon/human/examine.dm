@@ -1,6 +1,11 @@
 /mob/living/carbon/human/get_examine_string(mob/user, thats = FALSE)
 	. = ..()
 	var/used_title = get_role_title()
+	var/original_title
+	if(job_title_override && used_title == job_title_override && job)
+		var/datum/job/job_datum = SSjob.GetJob(job)
+		if(!QDELETED(job_datum))
+			original_title = job_datum.get_gendered_title(gender, pronouns)
 	if(!used_title)
 		return
 	if(!IsAdminGhost(user))
@@ -15,7 +20,8 @@
 				return
 			if(!user.mind?.do_i_know(mind, real_name))
 				return
-	. += ", the [used_title]"
+	var/title_display = conditional_tooltip_alt(used_title, original_title, original_title && original_title != used_title)
+	. += ", the [title_display]"
 
 /mob/living/carbon/human/get_examine_list(mob/user, list/P)
 	. = ..()
@@ -72,7 +78,10 @@
 
 		if(!is_family && !O)
 			if(do_i_know)
-				. += span_tinynotice("I know [P[THEM]].")
+				if(user.mind?.knows_as(mind, /datum/relation/rival))
+					. += "<span class='tinynotice'>I know [P[THEM]]...</span> <span class='tinywarning'>[P[THEYRE]] my rival!</span>"
+				else
+					. += span_tinynotice("I know [P[THEM]].")
 			else
 				. += span_tinywarning("I do not know [P[THEM]].")
 
@@ -112,11 +121,16 @@
 				. += span_tinynotice("[P[THEY]] hate [hated_drink.name].")
 
 	if(!HAS_TRAIT(src, TRAIT_FACELESS))
-		if(client?.is_donator() && headshot_link)
-			LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, "<img src=[headshot_link] width=100 height=100/>")
+		if(headshot_link)
+			var/safe_headshot_link = html_encode(headshot_link)
+			LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, chat_headshot(safe_headshot_link))
 		if(flavortext || headshot_link || ooc_extra_link)
 			LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, "<a href='?src=[REF(src)];task=view_flavor_text;'>Examine Closer</a>")
-		if((do_i_know || O) && (length(rumour) || length(noble_gossip)))
+		var/has_known_gossip = length(user.mind?.get_gossip_about(mind))
+		if(O && client?.prefs)
+			has_known_gossip ||= length(client.prefs.read_preference(/datum/preference/list_type/rumors))
+			has_known_gossip ||= length(client.prefs.read_preference(/datum/preference/list_type/noble_gossip))
+		if(has_known_gossip)
 			LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, "<a href='?src=[REF(src)];task=view_rumours_gossip;'>Recall Rumours & Gossip</a>")
 		LAZYADDASSOCLIST(examine_list, EXAMINE_SECT_HEADSHOT, "<a href='byond://?src=[REF(src)];view_descriptors=1'>Look at Features</a>")
 

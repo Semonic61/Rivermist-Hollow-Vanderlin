@@ -132,7 +132,11 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	var/sharpness = IS_BLUNT
 
 	var/tool_behaviour = NONE
+	///How fast does the tool work
 	var/toolspeed = 1
+
+	/// Organ storage component requires this
+	var/atom/stored_in
 
 	var/block_chance = 0
 	//If you want to have something unrelated to blocking/armour piercing etc. Maybe not needed, but trying to think ahead/allow more freedom
@@ -171,6 +175,8 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 
 	var/boob_sized = FALSE
 	var/list/possible_item_intents = list(/datum/intent/use)
+	/// Optional intent type to select when this item first enters a hand.
+	var/default_item_intent
 
 	// Used to center screen_loc when in hand
 	var/bigboy = FALSE
@@ -277,6 +283,8 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	var/grid_width
 	/// Height we occupy on the hud - Keep null to generate based on w_class
 	var/grid_height
+	/// Number of times this item's lost max integrity has been restored with extra material.
+	var/integrity_restores = 0
 	///our melting material, basically if exists this is what we melt into in a crucible
 	var/datum/material/melting_material
 	///our metling amount
@@ -299,6 +307,10 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	var/icon_angle = 50 // most of our icons are angled
 	///the processing quality we have
 	var/recipe_quality = 1
+	/// Named quality tier from the craft quality system (one of QUALITY_LEVEL_*),
+	/// stamped by apply_quality_to_item. Drives the examine-preview slot frame color.
+	/// Null = never went through the quality system (plain/spawned item).
+	var/examine_quality_tier = null
 
 	// Lock related
 
@@ -320,6 +332,12 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	var/body_storage_manual_removal = TRUE
 	/// Can random storage effects pick and remove this item?
 	var/body_storage_random_removal = TRUE
+	/// If this item blocks new body storage insertions into the layer it occupies.
+	var/body_storage_blocks_insertions = FALSE
+	/// Extra body storage layers blocked by this item while it is inserted.
+	var/list/body_storage_additional_blocked_layers = null
+	/// Organ slots this item blocks while equipped, such as ORGAN_SLOT_VAGINA or ORGAN_SLOT_ANUS.
+	var/list/body_storage_blocked_slots = null
 	/// If this item has visual overlay when inserted into a body_storage
 	var/loadout_blacklisted = FALSE
 
@@ -327,6 +345,11 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 
 
 	var/toggle_state // Needed for grandmaster/martyr weapons, might be shitcode, might be usable for the future, *shrug, it works
+
+/obj/item/proc/get_default_item_intent_index()
+	if(!default_item_intent || !length(possible_item_intents))
+		return
+	return possible_item_intents.Find(default_item_intent)
 
 /obj/item/proc/set_quality(quality)
 	recipe_quality = clamp(quality, 0, 4)
@@ -384,6 +407,33 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 		if(BODYSTORAGE_REMOVE_RANDOM)
 			return body_storage_random_removal
 	return body_storage_manual_removal
+
+/obj/item/proc/can_random_body_storage_layer_swap()
+	return TRUE
+
+/// Where this item physically sits while stored in [storage_organ]. An inserted organ moves itself to
+/// nullspace, so anything that needs get_turf() to keep resolving - a mob_holder with a live occupant,
+/// whose passenger would otherwise go black-screened - has to hang off [storage_owner] instead.
+/obj/item/proc/body_storage_destination(obj/item/organ/storage_organ, mob/living/storage_owner)
+	return storage_organ
+
+/// Called after this item has been registered in a body storage layer.
+/obj/item/proc/on_body_storage_entered(obj/item/organ/storage_organ, target_layer)
+	return
+
+/// Called after this item has been taken back out of a body storage layer.
+/obj/item/proc/on_body_storage_exited(obj/item/organ/storage_organ)
+	return
+
+/obj/item/proc/blocks_body_storage_insertion(datum/component/body_storage/storage, obj/item/incoming_item, target_layer, blocker_layer)
+	if(!body_storage_blocks_insertions)
+		return FALSE
+	if(target_layer == blocker_layer)
+		return TRUE
+	return body_storage_additional_blocked_layers && (target_layer in body_storage_additional_blocked_layers)
+
+/obj/item/proc/blocks_body_storage_slot(hole_slot)
+	return hole_slot && body_storage_blocked_slots && (hole_slot in body_storage_blocked_slots)
 
 /// Handles sprite changes and decals
 /obj/item/proc/update_transform()
@@ -719,63 +769,79 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 		return
 	return attempt_pickup(user)
 
-/obj/item/proc/attempt_pickup(mob/user)
+/obj/item/proc/attempt_pickup(mob/living/user)
 	. = TRUE
-	var/mob/living/carbon/C = user
-	if(C.has_status_effect(/datum/status_effect/tremor_grip_loss))
+	if(user.has_status_effect(/datum/status_effect/tremor_grip_loss))
 		return
 
 	if(HAS_TRAIT(src, TRAIT_NEEDS_QUENCH))
-		to_chat(user, "<span class='warning'>[src] is too hot to touch.</span>")
-		return
+		var/can_handle_quenching_item = FALSE
+		if(iscarbon(user))
+			var/mob/living/carbon/carbon_user = user
+			can_handle_quenching_item = carbon_user.can_touch_burning(src)
+		if(!can_handle_quenching_item)
+			to_chat(user, "<span class='warning'>[src] is too hot to touch.</span>")
+			return
 
 	if(resistance_flags & ON_FIRE)
-		var/can_handle_hot = FALSE
-		if(!istype(C))
-			can_handle_hot = TRUE
-		else if(C.gloves && (C.gloves.max_heat_protection_temperature > 360))
-			can_handle_hot = TRUE
-		else if(HAS_TRAIT(C, TRAIT_RESISTHEAT) || HAS_TRAIT(C, TRAIT_RESISTHEATHANDS))
-			can_handle_hot = TRUE
+		var/can_handle_hot = TRUE
+		if(iscarbon(user))
+			var/mob/living/carbon/C = user
+			if(!C.can_touch_burning(src))
+				can_handle_hot = FALSE
+
+		extinguish()
 
 		if(can_handle_hot)
-			extinguish()
 			user.visible_message("<span class='warning'>[user] puts out the fire on [src].</span>")
 		else
 			user.visible_message("<span class='warning'>[user] burns [user.p_their()] hand putting out the fire on [src]!</span>")
-			extinguish()
-			var/obj/item/bodypart/affecting = C.get_bodypart("[(user.active_hand_index % 2 == 0) ? "r" : "l" ]_arm")
-			if(affecting && affecting.receive_damage( 0, 5 ))		// 5 burn damage
-				C.update_damage_overlays()
+			if(iscarbon(user))
+				var/mob/living/carbon/C = user
+				var/obj/item/bodypart/affecting = C.get_bodypart("[(user.active_hand_index % 2 == 0) ? "r" : "l" ]_arm")
+				if(affecting?.receive_damage(0, 5))		// 5 burn damage
+					C.update_damage_overlays()
 			return
 
-	if(acid_level > 20 && !ismob(loc))// so we can still remove the clothes on us that have acid.
-		if(istype(C))
-			if(!C.gloves || (!(C.gloves.resistance_flags & (UNACIDABLE|ACID_PROOF))))
-				to_chat(user, "<span class='warning'>The acid on [src] burns my hand!</span>")
-				var/obj/item/bodypart/affecting = C.get_bodypart("[(user.active_hand_index % 2 == 0) ? "r" : "l" ]_arm")
-				if(affecting && affecting.receive_damage( 0, 5 ))		// 5 burn damage
-					C.update_damage_overlays()
+	if(acid_level && iscarbon(user))// so we can still remove the clothes on us that have acid.
+		var/mob/living/carbon/C = user
+		if(!C.can_touch_acid(src))
+			to_chat(user, "<span class='warning'>The acid on [src] burns my hand!</span>")
+			var/obj/item/bodypart/affecting = C.get_bodypart("[(user.active_hand_index % 2 == 0) ? "r" : "l" ]_arm")
+			if(affecting?.receive_damage(0, 5))
+				C.update_damage_overlays()
 
 	if(!(interaction_flags_item & INTERACT_ITEM_ATTACK_HAND_PICKUP))		//See if we're supposed to auto pickup.
 		return
 
-	if(SEND_SIGNAL(loc, COMSIG_STORAGE_BLOCK_USER_TAKE, src, user, TRUE))
-		return
+	if(stored_in)
+		if(SEND_SIGNAL(stored_in, COMSIG_STORAGE_BLOCK_USER_TAKE, src, user, TRUE))
+			return
+	else
+		if(SEND_SIGNAL(loc, COMSIG_STORAGE_BLOCK_USER_TAKE, src, user, TRUE))
+			return
 
 	if(!ontable() && isturf(loc))
-		if(!do_after(user, 3 DECISECONDS, src))
-			return
+		if(stored_in)
+			if(!do_after(user, 3 DECISECONDS, stored_in))
+				return
+		else
+			if(!do_after(user, 3 DECISECONDS, src))
+				return
 
 	//If the item is in a storage item, take it out
 	var/outside_storage = !(item_flags & IN_STORAGE)
 	var/turf/storage_turf
-	if(!outside_storage)
+	if(!outside_storage || stored_in)
 		//We want the pickup animation to play even if we're moving the item between movables. Unless the mob is not located on a turf.
 		if(isturf(user.loc))
 			storage_turf = get_turf(loc)
-		if(!SEND_SIGNAL(loc, COMSIG_TRY_STORAGE_TAKE, src, user, TRUE))
-			return
+		if(stored_in)
+			if(!SEND_SIGNAL(stored_in, COMSIG_TRY_STORAGE_TAKE, src, user, TRUE))
+				return
+		else
+			if(!SEND_SIGNAL(loc, COMSIG_TRY_STORAGE_TAKE, src, user, TRUE))
+				return
 	if(QDELETED(src)) //moving it out of the storage destroyed it.
 		return
 
@@ -787,13 +853,18 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	if(loc == user && outside_storage)
 		if(!allow_attack_hand_drop(user) || !user.temporarilyRemoveItemFromInventory(src))
 			return
+		if(QDELETED(src))
+			return
 
 	. = FALSE
 
 	pickup(user)
+	if(QDELETED(src))
+		return TRUE
 	add_fingerprint(user)
 	if(!user.put_in_active_hand(src, ignore_animation = !outside_storage))
-		user.dropItemToGround(src)
+		if(!QDELETED(src))
+			user.dropItemToGround(src)
 		return TRUE
 	afterpickup(user)
 
@@ -878,9 +949,6 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	toggle_altgrip(user, FALSE)
 	if(user)
 		user.update_equipment_speed_mods()
-	if(isliving(user))
-		var/mob/living/living_user = user
-		living_user.encumbrance_to_speed()
 	update_transform()
 	update_appearance(UPDATE_OVERLAYS)
 
@@ -898,15 +966,44 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 
 	SEND_SIGNAL(src, COMSIG_ITEM_AFTER_PICKUP, user)
 
-	if(isliving(user))
-		var/mob/living/L = user
-		L.encumbrance_to_speed()
-
 /obj/item/proc/afterdrop(mob/user)
 
 // called when "found" in pockets and storage items. Returns 1 if the search should end.
 /obj/item/proc/on_found(mob/finder)
 	return
+
+/obj/item/proc/get_carry_weight(atom/carrier)
+	. = item_weight
+	var/datum/component/storage/storage = GetComponent(/datum/component/storage)
+	if(storage)
+		var/modifier = 1
+		if(carrier && HAS_TRAIT(carrier, TRAIT_AMAZING_BACK))
+			modifier = 0.5
+		. += storage.get_carry_weight(carrier) * carry_multiplier * modifier
+
+/obj/item/clothing/get_carry_weight(atom/carrier)
+	switch(armor_class)
+		if(AC_HEAVY)
+			if(carrier && !HAS_TRAIT(carrier, TRAIT_HEAVYARMOR))
+				. = item_weight * 2
+			else
+				. = item_weight
+		if(AC_MEDIUM)
+			if(carrier && !HAS_TRAIT(carrier, TRAIT_MEDIUMARMOR))
+				. = item_weight * 2
+			else
+				. = item_weight
+		if(AC_LIGHT)
+			. = item_weight
+		else
+			. = item_weight
+
+	var/datum/component/storage/storage = GetComponent(/datum/component/storage)
+	if(storage)
+		var/modifier = 1
+		if(carrier && HAS_TRAIT(carrier, TRAIT_AMAZING_BACK))
+			modifier = 0.5
+		. += storage.get_carry_weight(carrier) * carry_multiplier * modifier
 
 // called after an item is placed in an equipment slot
 // user is mob that equipped it
@@ -1034,7 +1131,7 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 		)
 	if(is_human_victim)
 		var/mob/living/carbon/human/U = M
-		U.apply_damage(7, BRUTE, affecting)
+		U.apply_damage(7, BRUTE, affecting, damage_type = BCLASS_STAB)
 
 	else
 		M.take_bodypart_damage(7)
@@ -1421,6 +1518,17 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 /obj/item/proc/doStrip(mob/stripper, mob/owner)
 	return owner.dropItemToGround(src)
 
+///Called by the carbon throw_item() proc. Returns null if the item negates the throw, or a reference to the thing to suffer the throw else.
+/obj/item/proc/on_thrown(mob/living/carbon/user, atom/target)
+	if((item_flags & ABSTRACT) || HAS_TRAIT(src, TRAIT_NODROP))
+		return
+	if(!user.dropItemToGround(src, silent = TRUE) || QDELETED(src))
+		return
+	if(throwforce && (HAS_TRAIT(user, TRAIT_PACIFISM)) || HAS_TRAIT(user, TRAIT_NO_THROWING))
+		to_chat(user, span_notice("You set [src] down gently on the ground."))
+		return
+	return src
+
 /obj/item/update_appearance(updates)
 	. = ..()
 	update_transform()
@@ -1467,7 +1575,29 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	impactee.visible_message(span_danger("[src] crashes into [impactee]'s [target_zone]!"), span_danger("A [src] hits you in your [target_zone]!"))
 	impactee.apply_damage(item_weight * fall_speed, BRUTE, target_zone, impactee.run_armor_check(target_zone, "blunt", damage = item_weight * fall_speed))
 
+/obj/item/onZImpact(turf/impacted_turf, levels, impact_flags)
+	. = ..()
+	var/mass_kg = get_carry_weight()
+	if(!mass_kg)
+		return
+
+	var/mob/living/carbon/human/impactee = locate(/mob/living/carbon/human) in impacted_turf
+	if(isnull(impactee))
+		return
+
+	var/target_zone = BODY_ZONE_HEAD
+	if(impactee.body_position == LYING_DOWN)
+		target_zone = BODY_ZONE_CHEST
+	add_blood_DNA(GET_ATOM_BLOOD_DNA(impactee))
+	var/fall_factor = sqrt(max(levels, 1))
+	var/impact_damage = mass_kg * fall_factor * FALL_DAMAGE_SCALE
+	impactee.visible_message(span_danger("[src] crashes into [impactee]'s [target_zone]!"), span_danger("[src] hits you in your [target_zone]!"))
+	impactee.apply_damage(impact_damage, BRUTE, target_zone, impactee.run_armor_check(target_zone, "blunt"))
+
 /obj/item/proc/on_consume(mob/living/eater)
+	return
+
+/obj/item/proc/on_anti_consume(mob/living/eater)
 	return
 
 /obj/item/proc/get_displayed_price(mob/user)
@@ -1500,6 +1630,8 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	. = ..()
 	if(ismob(loc))
 		update_slot_icon()
+	if(clean_types & CLEAN_WASH)
+		set_germ_level(GERM_LEVEL_STERILE)
 
 /obj/item/proc/do_pickup_animation(atom/target, turf/source)
 	set waitfor = FALSE
@@ -1589,7 +1721,9 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 	. = ..()
 	if(!get_precursor_data(src))
 		return
-	var/alch_skill = user.attributes ? GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/alchemy) : 6
+	var/alch_skill = SKILL_LEVEL_LEGENDARY
+	if(isliving(user) && user.attributes)
+		alch_skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/alchemy)
 	var/datum/natural_precursor/precursor = get_precursor_data(src)
 	if(precursor)
 		for(var/datum/thaumaturgical_essence/essence as anything in precursor.essence_yields)
@@ -1608,6 +1742,19 @@ GLOBAL_DATUM_INIT(fire_overlay, /mutable_appearance, mutable_appearance('icons/e
 				if(1 to 4)
 					if(alch_skill >= SKILL_LEVEL_EXPERT)
 						. += span_notice(" Smells faintly of [smell].")
+
+/**
+ * Returns the atom(either itself or an internal module) that will interact/attack the target on behalf of us
+ * For example an object can have different `tool_behaviours` (e.g borg omni tool) but will return an internal reference of that tool to attack for us
+ * You can use it for general purpose polymorphism if you need a proxy atom to interact in a specific way
+ * with a target on behalf on this atom
+ *
+ * Currently used only in the object melee attack chain but can be used anywhere else or even moved up to the atom level if required
+ */
+/obj/item/proc/get_proxy_attacker_for(atom/target, mob/user)
+	RETURN_TYPE(/obj/item)
+
+	return src
 
 /obj/item/atom_break(damage_flag, silent)
 	. = ..()

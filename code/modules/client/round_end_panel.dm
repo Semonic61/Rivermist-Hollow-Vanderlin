@@ -132,6 +132,7 @@
 	data += "<font color='#6b5ba1'><span class='bold'>Noble Deaths:</span></font> [GLOB.vanderlin_round_stats[STATS_NOBLE_DEATHS]]<br>"
 	data += "<font color='#e6b327'><span class='bold'>Holy Revivals:</span></font> [GLOB.vanderlin_round_stats[STATS_ASTRATA_REVIVALS]]<br>"
 	data += "<font color='#2dc5bd'><span class='bold'>Lux Revivals:</span></font> [GLOB.vanderlin_round_stats[STATS_LUX_REVIVALS]]<br>"
+	data += "<font color='#2dc5bd'><span class='bold'>CPR Revivals:</span></font> [GLOB.vanderlin_round_stats[STATS_CPR_REVIVALS]]<br>"
 	data += "<font color='#7cc05c'><span class='bold'>Wounds sewed:</span></font> [GLOB.vanderlin_round_stats[STATS_WOUNDS_SEWED]]<br>"
 	data += "<font color='#825b1c'><span class='bold'>Moat Fallers:</span></font> [GLOB.vanderlin_round_stats[STATS_MOAT_FALLERS]]<br>"
 	data += "<font color='#ac5d5d'><span class='bold'>Ankles Broken:</span></font> [GLOB.vanderlin_round_stats[STATS_ANKLES_BROKEN]]<br>"
@@ -514,6 +515,7 @@
 			data += "<div style='margin-bottom: 4px;'><font color='#dfbf57'>Trade Value Imported: </font>[GLOB.vanderlin_round_stats[STATS_TRADE_VALUE_IMPORTED]]</div>"
 			data += "<div style='margin-bottom: 4px;'><font color='#c08f83'>HEADEATER Exports: </font>[GLOB.vanderlin_round_stats[STATS_HEADEATER_EXPORTS]]</div>"
 			data += "<div style='margin-bottom: 4px;'><font color='#c0b283'>GOLDFACE Imports: </font>[GLOB.vanderlin_round_stats[STATS_GOLDFACE_VALUE_SPENT]]</div>"
+			data += "<div style='margin-bottom: 4px;'><font color='#c9c9d1'>SILVERFACE Imports: </font>[GLOB.vanderlin_round_stats[STATS_SILVERFACE_VALUE_SPENT]]</div>" //RMH EDITED
 			data += "<div style='margin-bottom: 4px;'><font color='#b5a642'>PURITY Imports: </font>[GLOB.vanderlin_round_stats[STATS_PURITY_VALUE_SPENT]]</div>"
 			data += "<div><font color='#7495d3'>Peddler Revenue: </font>[GLOB.vanderlin_round_stats[STATS_PEDDLER_REVENUE]]</div>"
 			data += "</div></div>"

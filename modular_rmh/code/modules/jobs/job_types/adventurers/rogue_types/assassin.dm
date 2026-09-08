@@ -34,6 +34,9 @@
 
 	attribute_sheet = /datum/attribute_holder/sheet/job/advclass/combat/adventurer_rogue/assassin
 
+	spells = list(
+		/datum/action/cooldown/spell/undirected/rogue_vanish
+	)
 
 	traits = list(
 		TRAIT_ASSASSIN,
@@ -42,6 +45,8 @@
 		TRAIT_STEELHEARTED,
 		TRAIT_STRONG_GRABBER,
 		TRAIT_VILLAIN,
+		TRAIT_BLINDFIGHTING,
+		TRAIT_LIGHT_STEP,
 	)
 
 /datum/outfit/adventurer_rogue/assassin
@@ -60,7 +65,7 @@
 	backl = /obj/item/storage/backpack/satchel
 	belt = /obj/item/storage/belt/leather/assassin
 	beltr = /obj/item/weapon/knife/dagger/steel/special
-	beltl = /obj/item/storage/belt/pouch/coins/poor
+	beltl = /obj/item/storage/belt/pouch/cloth/coins/poor
 	ring = null
 	l_hand = null
 	r_hand = null

@@ -40,6 +40,7 @@
 	sellprice = 50
 	nodismemsleeves = TRUE
 	min_cold_protection_temperature = -20
+	is_rain_protective = TRUE
 
 /obj/item/clothing/cloak/tribal
 	name = "tribal pelt"
@@ -54,6 +55,7 @@
 	nodismemsleeves = TRUE
 	boobed = FALSE
 	sellprice = 10
+	is_rain_protective = TRUE
 
 /obj/item/clothing/cloak/heartfelt
 	name = "red cloak"
@@ -67,6 +69,7 @@
 	allowed_race = SPECIES_BASE_BODY
 	sellprice = 50
 	nodismemsleeves = TRUE
+	is_rain_protective = TRUE
 
 /obj/item/clothing/cloak/half
 	name = "half cloak"
@@ -86,18 +89,8 @@
 	color = CLOTHING_SOOT_BLACK
 	allowed_sex = list(MALE, FEMALE)
 	allowed_race = SPECIES_BASE_BODY
-
-/obj/item/clothing/cloak/half/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
-
-/obj/item/clothing/cloak/half/dropped(mob/living/carbon/human/user)
-	..()
-	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
-	if(STR)
-		var/list/things = STR.contents()
-		for(var/obj/item/I in things)
-			STR.remove_from_storage(I, get_turf(src))
+	is_rain_protective = TRUE
+	has_storage = TRUE
 
 /obj/item/clothing/cloak/half/guard
 	name = "guard's half cloak"
@@ -132,7 +125,7 @@
 	desc = "Those who wear, thy should beware, for those who do; never come back as who they once were again."
 	allowed_race = ALL_RACES_LIST
 	body_parts_covered = ARMS|CHEST
-	armor = ARMOR_MAILLE_GOOD
+	armor_type = /datum/armor/maille/good
 
 /obj/item/clothing/cloak/half/colored
 	misc_flags = CRAFTING_TEST_EXCLUDE
@@ -165,6 +158,8 @@
 	sleevetype = "shirt"
 	slot_flags = ITEM_SLOT_CLOAK | ITEM_SLOT_BACK_R
 	nodismemsleeves = TRUE
+	is_rain_protective = TRUE
+	has_storage = TRUE
 
 //............... Battle Nun ........................... (unique kit for the role, tabard for aesthetics)
 /obj/item/clothing/cloak/battlenun
@@ -227,6 +222,7 @@
 	nodismemsleeves = TRUE
 	inhand_mod = FALSE
 	slot_flags = ITEM_SLOT_BACK_R|ITEM_SLOT_CLOAK
+	is_rain_protective = TRUE
 
 /obj/item/clothing/cloak/wickercloak
 	name = "wicker cloak"
@@ -240,6 +236,7 @@
 	nodismemsleeves = TRUE
 	inhand_mod = TRUE
 	allowed_race = SPECIES_BASE_BODY
+	is_rain_protective = TRUE
 
 /obj/item/clothing/cloak/faceless
 	name = "sash"
@@ -268,6 +265,7 @@
 	mob_overlay_icon = 'icons/roguetown/clothing/special/onmob/evilarmor.dmi'
 	sleeved = 'icons/roguetown/clothing/special/onmob/evilarmor.dmi'
 	sellprice = 0 // See above comment
+	is_rain_protective = TRUE
 
 /obj/item/clothing/cloak/silktabard
 	name = "fine silk tabard"
@@ -306,6 +304,7 @@
 	item_state = "poncho"
 	boobed = FALSE
 	sleeved = 'icons/roguetown/clothing/onmob/cloaks.dmi'
+	is_rain_protective = TRUE
 
 /obj/item/clothing/cloak/pantheon
 	name = "pantheon cloak"

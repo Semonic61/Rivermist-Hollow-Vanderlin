@@ -166,14 +166,14 @@
 			if(!M.client || isnewplayer(M))
 				continue
 			var/T = get_turf(user)
-			if(M.stat == DEAD && M.client && (M.client.prefs?.chat_toggles & CHAT_GHOSTSIGHT) && !(M in viewers(T, null)))
+			if(M.stat == DEAD && M.client && (M.client.prefs?.read_preference(/datum/preference/bitwise/chat_toggles) & CHAT_GHOSTSIGHT) && !(M in viewers(T, null)))
 				M.show_message(msg)
 		var/runechat_msg_to_use = null
 		var/obfuscated_runechat_msg_to_use = null
-		if(show_runechat && emote_type != EMOTE_AUDIBLE)
+		if(show_runechat && !(emote_type & EMOTE_AUDIBLE))
 			runechat_msg_to_use = runechat_msg ? runechat_msg : raw_msg
 			obfuscated_runechat_msg_to_use = stars(runechat_msg_to_use)
-		if(emote_type == EMOTE_AUDIBLE)
+		if((emote_type & EMOTE_AUDIBLE))
 			user.audible_message(msg, runechat_message = runechat_msg_to_use)
 		else
 			send_visible_emote_message(user, user, msg, runechat_message = runechat_msg_to_use, intentional = intentional, obfuscated_message = obfuscated_msg, obfuscated_runechat_message = obfuscated_runechat_msg_to_use)
@@ -229,7 +229,11 @@
 				possible_sounds = H.dna.species.soundpack_m.get_sound(key,modifier)
 			//RMH ADD - manual voicepack selection
 			if(H.moan_selection && (key in list("sexmoanlight","sexmoanmed","sexmoanhvy","groan","painmoan","whimper","sexmoangag","sexmoangag_org")))
-				var/datum/moan_pack/vpath = new H.moan_selection
+				var/datum/moan_pack/vpath
+				if(user.rogue_sneaking || user.m_intent == MOVE_INTENT_SNEAK || user.alpha <= 100) //stealth sex, keep your voice down.
+					vpath = new /datum/moan_pack/female/quiet //gender dont matter ig, they are quiet
+				else
+					vpath = new H.moan_selection
 				switch(key)
 					if("sexmoanlight")
 						if(vpath.sounds_sexmoanlight)
@@ -299,17 +303,15 @@
 		var/mob/living/carbon/C = user
 		if(!C.can_speak_vocal())
 			. = message_muffled
-		if(!muzzle_ignore && C.mouth?.muteinmouth && emote_type == EMOTE_AUDIBLE)
+		if(!muzzle_ignore && C.mouth?.muteinmouth && (emote_type & EMOTE_AUDIBLE))
 			. = message_muffled
-		if(!muzzle_ignore && emote_type == EMOTE_AUDIBLE && HAS_TRAIT(C, TRAIT_BAGGED))
+		if(!muzzle_ignore && (emote_type & EMOTE_AUDIBLE) && HAS_TRAIT(C, TRAIT_BAGGED))
 			. = message_muffled
 
-	if(!muzzle_ignore && HAS_TRAIT(user, TRAIT_MUTE) && emote_type == EMOTE_AUDIBLE)
+	if(!muzzle_ignore && HAS_TRAIT(user, TRAIT_MUTE) && (emote_type & EMOTE_AUDIBLE))
 		return "makes a [pick("strong ", "weak ", "")]noise."
 	if(user.mind && user.mind.miming && message_mime)
 		. = message_mime
-	else if(ismonkey(user) && message_monkey)
-		. = message_monkey
 	else if(isanimal(user) && message_simple)
 		. = message_simple
 

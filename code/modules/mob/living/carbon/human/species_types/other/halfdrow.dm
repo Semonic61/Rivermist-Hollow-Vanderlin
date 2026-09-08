@@ -92,6 +92,7 @@
 
 	organs = list(
 		ORGAN_SLOT_BRAIN = /obj/item/organ/brain,
+		ORGAN_SLOT_SPLEEN = /obj/item/organ/spleen,
 		ORGAN_SLOT_HEART = /obj/item/organ/heart,
 		ORGAN_SLOT_LUNGS = /obj/item/organ/lungs,
 		ORGAN_SLOT_EYES = /obj/item/organ/eyes/night_vision,
@@ -99,7 +100,6 @@
 		ORGAN_SLOT_TONGUE = /obj/item/organ/tongue,
 		ORGAN_SLOT_LIVER = /obj/item/organ/liver,
 		ORGAN_SLOT_STOMACH = /obj/item/organ/stomach,
-		ORGAN_SLOT_APPENDIX = /obj/item/organ/appendix,
 		ORGAN_SLOT_GUTS = /obj/item/organ/guts,
 		ORGAN_SLOT_PUBIC = /obj/item/organ/genitals/pubes,
 		ORGAN_SLOT_ANUS = /obj/item/organ/genitals/filling_organ/anus,
@@ -191,7 +191,7 @@
 
 /datum/species/human/halfdrow/after_creation(mob/living/carbon/human/C)
 	..()
-	//If a donator picks the Dark Elf Accent as a Half Drow, it will work the same as a non donator.
+	// The full Dark Elf accent keeps the expected Elfish language behavior.
 	if(C.accent == ACCENT_DELF)
 		C.dna.species.native_language = "Elfish"
 		C.dna.species.accent_language = C.dna.species.get_accent(C.dna.species.native_language, 2)

@@ -250,6 +250,7 @@ GLOBAL_LIST_INIT(oldhc, sortList(
 
 /mob/proc/do_after_coefficent() // This gets added to the delay on a do_after, default 1
 	. = 1
+	. *= cached_multiplicative_actions_slowdown
 	return
 
 /// Returns the total amount of do_afters this mob is taking part in
@@ -352,7 +353,9 @@ GLOBAL_LIST_INIT(oldhc, sortList(
 			prefs = new
 
 		var/override = FALSE
-		if(M.client.holder && (prefs.chat_toggles & CHAT_DEAD))
+		var/chat_toggles = prefs.read_preference(/datum/preference/bitwise/chat_toggles)
+		var/toggles = prefs.read_preference(/datum/preference/bitwise/toggles)
+		if(M.client.holder && (chat_toggles & CHAT_DEAD))
 			override = TRUE
 		if(HAS_TRAIT(M, TRAIT_SIXTHSENSE))
 			override = TRUE
@@ -365,10 +368,10 @@ GLOBAL_LIST_INIT(oldhc, sortList(
 
 		switch(message_type)
 			if(DEADCHAT_DEATHRATTLE)
-				if(prefs.toggles & DISABLE_DEATHRATTLE)
+				if(toggles & DISABLE_DEATHRATTLE)
 					continue
 			if(DEADCHAT_ARRIVALRATTLE)
-				if(prefs.toggles & DISABLE_ARRIVALRATTLE)
+				if(toggles & DISABLE_ARRIVALRATTLE)
 					continue
 
 		if(isobserver(M))

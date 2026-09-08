@@ -33,7 +33,7 @@
 		to_chat(usr, "<span class='warning'>I seem to be selecting a mob that doesn't exist anymore.</span>")
 		return
 
-	var/ui_theme = usr.client.prefs.ui_theme
+	var/ui_theme = usr.client.prefs.read_preference(/datum/preference/choiced/ui_theme)
 	var/dark_ui = FALSE
 	if(ui_theme == UI_PREFERENCE_DARK_MODE) // rewrite if you want to add more (yes it's ass)
 		dark_ui = TRUE
@@ -849,16 +849,18 @@
 	for(var/datum/job/job as anything in SSjob.joinable_occupations)
 		count++
 		var/J_title = html_encode(job.title)
-		var/J_opPos = html_encode(job.total_positions - (job.total_positions - job.current_positions))
-		var/J_totPos = html_encode(job.total_positions)
-		dat += "<tr><td>[J_title]:</td> <td>[J_opPos]/[job.total_positions < 0 ? " (unlimited)" : J_totPos]"
+		var/current_positions = job.get_position_count()
+		var/total_positions = job.get_position_limit(TRUE)
+		var/J_opPos = html_encode(current_positions)
+		var/J_totPos = html_encode(total_positions)
+		dat += "<tr><td>[J_title]:</td> <td>[J_opPos]/[total_positions < 0 ? " (unlimited)" : J_totPos]"
 
 		dat += "</td>"
 		dat += "<td>"
-		if(job.total_positions >= 0)
+		if(total_positions >= 0)
 			dat += "<A href='byond://?src=[REF(src)];[HrefToken()];customjobslot=[job.title]'>Custom</A> | "
 			dat += "<A href='byond://?src=[REF(src)];[HrefToken()];addjobslot=[job.title]'>Add 1</A> | "
-			if(job.total_positions > job.current_positions)
+			if(total_positions > current_positions)
 				dat += "<A href='byond://?src=[REF(src)];[HrefToken()];removejobslot=[job.title]'>Remove</A> | "
 			else
 				dat += "Remove | "
@@ -945,7 +947,7 @@
 		if(logout && CONFIG_GET(flag/announce_admin_logout))
 			string = pick(
 				"Admin logout: [key_name(src)]")
-		else if(!logout && CONFIG_GET(flag/announce_admin_login) && (prefs.toggles & ANNOUNCE_LOGIN))
+		else if(!logout && CONFIG_GET(flag/announce_admin_login) && (prefs.read_preference(/datum/preference/bitwise/toggles) & ANNOUNCE_LOGIN))
 			string = pick(
 				"Admin login: [key_name(src)]")
 		if(string)

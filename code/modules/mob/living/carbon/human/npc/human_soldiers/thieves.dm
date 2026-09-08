@@ -11,7 +11,6 @@
 /mob/living/carbon/human/species/human/northern/thief/Initialize()
 	. = ..()
 	AddComponent(/datum/component/ai_aggro_system)
-	set_species(/datum/species/human/northern)
 	addtimer(CALLBACK(src, PROC_REF(after_creation)), 1 SECONDS)
 
 /mob/living/carbon/human/species/human/northern/thief/after_creation()
@@ -25,6 +24,7 @@
 	ADD_TRAIT(src, TRAIT_BREADY, TRAIT_GENERIC)
 	equipOutfit(new /datum/outfit/job/human/species/human/northern/thief)
 	gender = pick(MALE, FEMALE)
+	resync_genitals_to_gender()
 	regenerate_icons()
 
 	var/obj/item/organ/eyes/organ_eyes = getorgan(/obj/item/organ/eyes)

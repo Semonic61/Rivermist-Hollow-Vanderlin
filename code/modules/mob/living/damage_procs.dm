@@ -107,8 +107,8 @@
 	standard 0 if fail
 */
 
-/mob/living/proc/apply_damage(damage = 0, damagetype = BRUTE, def_zone = null, blocked = 0, forced = FALSE, spread_damage = FALSE)
-	SEND_SIGNAL(src, COMSIG_MOB_APPLY_DAMGE, damage, damagetype, def_zone)
+/mob/living/proc/apply_damage(damage = 0, damagetype = BRUTE, def_zone = null, blocked = 0, forced = FALSE, spread_damage = FALSE, damage_type, skip_dtype, can_crit = TRUE)
+	SEND_SIGNAL(src, COMSIG_MOB_APPLY_DAMAGE, damage, damagetype, def_zone)
 	var/hit_percent = 1
 	damage = max(damage-blocked,0)
 	if(!damage || (!forced && hit_percent <= 0))
@@ -126,6 +126,10 @@
 			adjustOxyLoss(damage_amount, forced = forced)
 		if(CLONE)
 			adjustCloneLoss(damage_amount, forced = forced)
+		if(PAIN, SHOCK_PAIN)
+			adjustPainLoss(damage_amount, forced = forced)
+		if(SHOCK_STAGE)
+			adjustShockStage(damage_amount, forced = forced)
 	update_damage_overlays()
 
 	return 1
@@ -142,6 +146,10 @@
 			return adjustOxyLoss(damage)
 		if(CLONE)
 			return adjustCloneLoss(damage)
+		if(PAIN, SHOCK_PAIN)
+			return adjustPainLoss(damage)
+		if(SHOCK_STAGE)
+			return adjustShockStage(damage)
 
 /mob/living/proc/get_damage_amount(damagetype = BRUTE)
 	switch(damagetype)
@@ -156,7 +164,8 @@
 		if(CLONE)
 			return getCloneLoss()
 
-
+/mob/living/proc/custom_pain(message, power, forced, obj/item/bodypart/affecting, nopainloss)
+	return
 
 /mob/living/proc/apply_effect(effect = 0,effecttype = EFFECT_STUN, blocked = FALSE)
 	var/hit_percent = (100-blocked)/100
@@ -211,7 +220,7 @@
 /mob/living/proc/getBruteLoss()
 	return bruteloss
 
-/mob/living/proc/adjustBruteLoss(amount, updating_health = TRUE, forced = FALSE, required_status)
+/mob/living/proc/adjustBruteLoss(amount, updating_health = TRUE, forced = FALSE, required_status, damage_type, can_crit = FALSE, true_heal = FALSE)
 	if(!forced && (status_flags & GODMODE))
 		return FALSE
 	var/old_bruteloss = bruteloss
@@ -337,6 +346,53 @@
 /mob/living/proc/getOrganLoss(slot)
 	return
 
+
+/mob/living/proc/getPainLoss()
+	return painloss
+
+/mob/living/proc/adjustPainLoss(amount, updating_health = TRUE, forced = FALSE)
+	if(!forced && (status_flags & GODMODE))
+		return
+	. = painloss
+	painloss = clamp((painloss + (amount * CONFIG_GET(number/damage_multiplier))), 0, maxHealth * 2)
+	if(updating_health)
+		updatehealth()
+
+/mob/living/proc/setPainLoss(amount, updating_health = TRUE, forced = FALSE)
+	if(!forced && status_flags & GODMODE)
+		return
+	. = painloss
+	painloss = amount
+	if(updating_health)
+		updatehealth()
+
+/mob/living/proc/getShock(painkiller_included = TRUE)
+	return traumatic_shock
+
+/mob/living/proc/getShockStage()
+	return shock_stage
+
+/mob/living/proc/adjustShockStage(amount, updating_health = TRUE, forced = FALSE, deferred = FALSE)
+	if(!forced && (status_flags & GODMODE))
+		return
+	var/old = shock_stage
+	shock_stage = clamp((shock_stage + (amount * CONFIG_GET(number/damage_multiplier))), 0, SHOCK_STAGE_MAX)
+	if(updating_health && old != shock_stage)
+		if(deferred)
+			. |= SHOCK_PROCESS_UPDATE_HEALTH
+		else
+			updatehealth()
+
+/mob/living/proc/setShockStage(amount, updating_health = TRUE, forced = FALSE, deferred = FALSE)
+	if(!forced && status_flags & GODMODE)
+		return
+	shock_stage = amount
+	if(updating_health)
+		if(deferred)
+			. |= SHOCK_PROCESS_UPDATE_HEALTH
+		else
+			updatehealth()
+
 // heal ONE external organ, organ gets randomly selected from damaged ones.
 /mob/living/proc/heal_bodypart_damage(brute = 0, burn = 0, updating_health = TRUE, required_status)
 	adjustBruteLoss(-brute, FALSE) //zero as argument for no instant health update
@@ -359,7 +415,7 @@
 		updatehealth(brute + burn)
 
 // damage MANY bodyparts, in random order
-/mob/living/proc/take_overall_damage(brute = 0, burn = 0, updating_health = TRUE, required_status = null)
+/mob/living/proc/take_overall_damage(brute = 0, burn = 0, updating_health = TRUE, required_status = null, damage_type)
 	adjustBruteLoss(brute, FALSE) //zero as argument for no instant health update
 	adjustFireLoss(burn, FALSE)
 	if(updating_health)
@@ -377,17 +433,46 @@
 			break
 	. -= amount //if there's leftover healing, remove it from what we return
 
+/// TA-style defense-cooldown mutator: combat events push/pull the cooldown of the
+/// currently selected defensive intent. Clamped so events can't lock defense out entirely.
+/// The ceiling respects compiled baselines above DEFENSE_CD_MAX (elite NPCs ship with
+/// dodgetime 40-60 by design — buildup must never *lower* those).
+/mob/living/proc/changeNext_def(num)
+	switch(d_intent)
+		if(INTENT_DODGE)
+			dodgetime = CLAMP(num, DEFENSE_CD_MIN, max(DEFENSE_CD_MAX, initial(dodgetime)))
+		if(INTENT_PARRY)
+			setparrytime = CLAMP(num, DEFENSE_CD_MIN, max(DEFENSE_CD_MAX, initial(setparrytime)))
+
+/// Restore defense cooldowns to this mob type's compiled baseline; called on combat-mode transitions.
+/mob/living/proc/reset_defense_cooldowns()
+	dodgetime = initial(dodgetime)
+	setparrytime = initial(setparrytime)
+
 /**
  * Check if defense is possible against an attack
  * @param datum/intent/intenty The intent used for the attack
  * @param mob/living/user The attacker
- * @return TRUE if defense successful, FALSE otherwise
+ * @return A DEFENSE_* result. DEFENSE_NONE is falsey for legacy callers.
  */
 /mob/living/proc/checkdefense(datum/intent/intenty, mob/living/user)
+	// Struck mid disruptable windup: the swing dies instead of any defense roll. (TA parity)
+	var/datum/status_effect/swingdelay/disrupt/SW = has_status_effect(/datum/status_effect/swingdelay/disrupt)
+	if(SW && !SW.is_disrupted && swing_state)
+		SW.attacked()
+		swing_state = FALSE
+		return DEFENSE_NONE
+
 	if(!cmode || stat || (!canparry && !candodge) || user == src || HAS_TRAIT(src, TRAIT_IMMOBILIZED))
-		return FALSE
+		return DEFENSE_NONE
 	if(client && used_intent && client.charging && used_intent.tranged && !used_intent.tshield)
-		return FALSE
+		return DEFENSE_NONE
+
+	// Client-controlled mobs dodge actively. Their short grace window resolves before passive parry.
+	if(client && consume_dodge_grace(intenty, user))
+		return DEFENSE_DODGE
+	if(client && parry_suppressed)
+		return DEFENSE_NONE
 
 	var/prob2defend = user.defprob
 	var/can_dodge_see = TRUE
@@ -395,23 +480,29 @@
 		prob2defend = 0
 
 	if(!can_see_cone(user)) //for future, if you can't see the attacker, parrying will be useless, unless you're on dodge intent. this also affect being blinded?
-		if(d_intent == INTENT_PARRY && !HAS_TRAIT(src, TRAIT_BLINDFIGHTING))
-			return FALSE
-		can_dodge_see = FALSE
+		if((client || d_intent == INTENT_PARRY) && !HAS_TRAIT(src, TRAIT_BLINDFIGHTING) && !get_tempo_bonus(TEMPO_TAG_NOLOS_PARRY))
+			return DEFENSE_NONE
+		if(!get_tempo_bonus(TEMPO_TAG_NOLOS_DODGE)) // high tempo: dodge without seeing the attacker
+			can_dodge_see = FALSE
 		prob2defend = max(prob2defend - 15, 0)
 
 	if(m_intent == MOVE_INTENT_RUN)
 		prob2defend = max(prob2defend - 15, 0)
 
-	// Handle defense based on intent
+	// Players passively parry while combat mode is active. NPCs retain their automatic intent behavior.
+	if(client)
+		if(!canparry || HAS_TRAIT(src, TRAIT_UNPARRYING))
+			return DEFENSE_NONE
+		return attempt_parry(intenty, user, prob2defend) ? DEFENSE_PARRY : DEFENSE_NONE
+
 	switch(d_intent)
 		if(INTENT_PARRY)
 			if(HAS_TRAIT(src, TRAIT_UNPARRYING))
-				return FALSE
-			return attempt_parry(intenty, user, prob2defend)
+				return DEFENSE_NONE
+			return attempt_parry(intenty, user, prob2defend) ? DEFENSE_PARRY : DEFENSE_NONE
 		if(INTENT_DODGE)
 			if(HAS_TRAIT(src, TRAIT_UNDODGING))
-				return FALSE
-			return attempt_dodge(intenty, user, can_dodge_see)
+				return DEFENSE_NONE
+			return attempt_dodge(intenty, user, can_dodge_see) ? DEFENSE_DODGE : DEFENSE_NONE
 
-	return FALSE
+	return DEFENSE_NONE

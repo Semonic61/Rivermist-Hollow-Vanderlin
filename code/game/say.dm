@@ -28,15 +28,12 @@
 		hearing_movable.Hear(rendered, src, message_language, message, , spans, message_mods, original_message)
 
 /atom/movable/proc/compose_message(atom/movable/speaker, datum/language/message_language, raw_message, radio_freq, list/spans, list/message_mods = list(), face_name = FALSE)
-	// Check if this message should be part of a sex collective
+	// Scene presentation is bound directly to the speaker; no global lookup is needed.
 	var/collective_span = ""
 	if(ishuman(speaker))
 		var/mob/living/carbon/human/human_speaker = speaker
-		// Find any collective this person is involved in
-		for(var/datum/collective_message/collective in GLOB.sex_collectives)
-			if(human_speaker in collective.involved_mobs)
-				collective_span = " [collective.collective_span_class]"
-				break
+		if(human_speaker.sex_scene?.speech_span_class)
+			collective_span = " [human_speaker.sex_scene.speech_span_class]"
 
 	//This proc uses text() because it is faster than appending strings. Thanks BYOND.
 	//Basic span
@@ -114,7 +111,7 @@
 					var/mob/living/L = speaker
 					// This isn't accurate purposely
 					var/appendage = "Figure"
-					switch(L.client?.prefs.voice_type)
+					switch(L.client?.prefs?.read_preference(/datum/preference/choiced/voice_type))
 						if(VOICE_TYPE_FEM)
 							appendage = "Woman"
 						if(VOICE_TYPE_MASC)
@@ -299,4 +296,3 @@ INITIALIZE_IMMEDIATE(/atom/movable/virtualspeaker)
 
 /atom/movable/virtualspeaker/GetSource()
 	return source
-

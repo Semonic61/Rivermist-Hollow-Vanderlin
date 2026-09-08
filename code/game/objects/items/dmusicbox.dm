@@ -17,6 +17,7 @@
 			L.add_stress(stress2give)
 
 /obj/item/dmusicbox
+	item_weight = 5 KILOGRAMS
 	name = "dwarven music box"
 	desc = "A personal device heralding the new era of machine and steam. Dwarven artificers both prize and fear this device for its broad musical range."
 	icon = 'icons/roguetown/misc/machines.dmi'
@@ -53,15 +54,18 @@
 	else
 		icon_state = "mbox[loaded]"
 
-/obj/item/dmusicbox/attackby(obj/item/P, mob/user, list/modifiers)
-	if(!loaded)
-		if(istype(P, /obj/item/coin/gold))
-			loaded=TRUE
-			qdel(P)
-			update_appearance(UPDATE_ICON_STATE)
-			playsound(src, 'sound/misc/machinevomit.ogg', 100, TRUE, -1)
-			return
-	return ..()
+/obj/item/dmusicbox/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(loaded)
+		return NONE
+
+	if(!istype(tool, /obj/item/coin/gold))
+		return NONE
+
+	loaded = TRUE
+	qdel(tool)
+	update_appearance(UPDATE_ICON_STATE)
+	playsound(src, 'sound/misc/machinevomit.ogg', 100, TRUE, -1)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/dmusicbox/attack_self_secondary(mob/user, list/modifiers)
 	. = ..()

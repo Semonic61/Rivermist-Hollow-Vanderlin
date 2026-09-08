@@ -34,6 +34,9 @@
 #define SHRINK_ENCHANT			(1<<13)
 #define ITEM_ONLY_BREAK 		(1<<14)
 #define HIGH_VALUE (1<<15)
+#define OBTAINED_DATA (1<<16)
+/// Abstract hand items do not occupy an arm for riding checks.
+#define HAND_ITEM (1<<17)
 
 // Flags for the clothing_flags var on /obj/item/clothing
 

@@ -47,12 +47,6 @@
 		/datum/action/cooldown/spell/forced_orgasm,
 	)
 
-/datum/job/advclass/combat/adventurer_wizard/necromancer/after_spawn(mob/living/carbon/human/spawned, client/player_client)
-	. = ..()
-
-	spawned.mana_pool?.intrinsic_recharge_sources &= ~MANA_ALL_LEYLINES
-	spawned.mana_pool?.set_intrinsic_recharge(MANA_SOULS)
-	spawned.mana_pool?.ethereal_recharge_rate += 0.1
 
 /datum/outfit/adventurer_wizard/necromancer
 	name = "Necromancer Wizard"
@@ -80,12 +74,17 @@
 		/obj/item/chalk = 1,
 		/obj/item/rope/chain = 1,
 		/obj/item/reagent_containers/glass/bottle/stronghealthpot = 1,
-		/obj/item/storage/belt/pouch/coins/poor = 1,
+		/obj/item/storage/belt/pouch/cloth/coins/poor = 1,
 		/obj/item/weapon/knife/dagger/silver/arcyne = 1
 	)
 
-/datum/outfit/adventurer_wizard/necromancer/post_equip(mob/living/carbon/human/H, visuals_only)
+/datum/job/advclass/combat/adventurer_wizard/necromancer/after_spawn(mob/living/carbon/human/spawned, client/player_client)
 	. = ..()
+
+	spawned.mana_pool?.intrinsic_recharge_sources &= ~MANA_ALL_LEYLINES
+	spawned.mana_pool?.set_intrinsic_recharge(MANA_SOULS)
+	spawned.mana_pool?.ethereal_recharge_rate += 0.1
+
 	var/static/list/selectablehat = list(
 		"Witch hat" = /obj/item/clothing/head/wizhat/witch,
 		"Random Wizard hat" = /obj/item/clothing/head/wizhat/random,
@@ -95,10 +94,12 @@
 		"Black hood" = /obj/item/clothing/head/roguehood/colored/black,
 		"Ominous hood (skullcap)" = /obj/item/clothing/head/helmet/skullcap/cult,
 	)
-	H.select_equippable(H, selectablehat, message = "Choose your hat of choice", title = "NECROMANCER")
+	spawned.select_equippable(player_client, selectablehat, message = "Choose your hat of choice", title = "NECROMANCER")
+	if(QDELETED(spawned))
+		return
 	var/static/list/selectablerobe = list(
 		"Black robes" = /obj/item/clothing/shirt/robe/colored/black,
 		"Mage robes" = /obj/item/clothing/shirt/robe/colored/mage,
 		"Necromancer robes" = /obj/item/clothing/shirt/robe/necromancer
 	)
-	H.select_equippable(H, selectablerobe, message = "Choose your robe of choice", title = "NECROMANCER")
+	spawned.select_equippable(player_client, selectablerobe, message = "Choose your robe of choice", title = "NECROMANCER")

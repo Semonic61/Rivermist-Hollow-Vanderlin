@@ -1,6 +1,7 @@
 //Legcuffs
 
 /obj/item/restraints/legcuffs
+	item_weight = 400 GRAMS
 	name = "leg cuffs"
 	desc = ""
 	gender = PLURAL
@@ -13,6 +14,7 @@
 	breakouttime = 10 SECONDS
 
 /obj/item/restraints/legcuffs/beartrap
+	item_weight = 3 KILOGRAMS
 	icon = 'icons/roguetown/items/misc.dmi'
 	name = "mantrap"
 	gender = NEUTER
@@ -49,7 +51,7 @@
 			BP.add_wound(/datum/wound/fracture)
 			if(BP.can_be_disabled)
 				BP.update_disabled()
-			C.apply_damage(trap_damage, BRUTE, def_zone, C.run_armor_check(def_zone, "stab", damage = trap_damage))
+			C.apply_damage(trap_damage, BRUTE, def_zone, C.run_armor_check(def_zone, "stab", damage = trap_damage), damage_type = BCLASS_BITE)
 			C.update_sneak_invis(TRUE)
 			C.consider_ambush()
 			return FALSE
@@ -76,24 +78,23 @@
 				BP.add_wound(/datum/wound/fracture)
 				if(BP.can_be_disabled)
 					BP.update_disabled()
-				C.apply_damage(trap_damage, BRUTE, def_zone, C.run_armor_check(def_zone, "stab", damage = trap_damage))
+				C.apply_damage(trap_damage, BRUTE, def_zone, C.run_armor_check(def_zone, "stab", damage = trap_damage), damage_type = BCLASS_BITE)
 				C.update_sneak_invis(TRUE)
 				C.consider_ambush()
 				return FALSE
 	..()
 
 /obj/item/restraints/legcuffs/beartrap/attackby(obj/item/W, mob/user, list/modifiers)
-	if(W.force && armed)
-		user.visible_message("<span class='warning'>[user] triggers \the [src] with [W].</span>", \
-				"<span class='danger'>I trigger \the [src] with [W]!</span>")
-		W.take_damage(20)
-		close_trap(user, W)
-		if(isliving(user))
-			var/mob/living/L = user
-			L.update_sneak_invis(TRUE)
-			L.consider_ambush()
-		return
-	..()
+	if(!armed || !W.force)
+		return ..()
+	user.visible_message("<span class='warning'>[user] triggers \the [src] with [W].</span>", \
+			"<span class='danger'>I trigger \the [src] with [W]!</span>")
+	W.take_damage(20)
+	close_trap(user, W)
+	if(isliving(user))
+		var/mob/living/L = user
+		L.update_sneak_invis(TRUE)
+		L.consider_ambush()
 
 /obj/item/restraints/legcuffs/beartrap/armed
 	armed = TRUE
@@ -183,7 +184,7 @@
 				close_trap(L)
 				L.visible_message(span_danger("[L] triggers \the [src]."), \
 						span_danger("I trigger \the [src]!"))
-				if(L.apply_damage(trap_damage, BRUTE, def_zone, L.run_armor_check(def_zone, "stab", damage = trap_damage)))
+				if(L.apply_damage(trap_damage, BRUTE, def_zone, L.run_armor_check(def_zone, "stab", damage = trap_damage), damage_type = BCLASS_BITE))
 					L.Stun(80)
 				L.consider_ambush()
 	..()
@@ -196,6 +197,7 @@
 	melt_amount = 75
 
 /obj/item/restraints/legcuffs/beartrap/crafted/makeshift
+	item_weight = 1.5 KILOGRAMS
 	makeshift_prob = 15 //50 - 15 = 35% chance to set up instead of flat 50%
 	trap_damage = 80 //10 less damage than the actual metal beartrap
 	name = "makeshift mantrap"

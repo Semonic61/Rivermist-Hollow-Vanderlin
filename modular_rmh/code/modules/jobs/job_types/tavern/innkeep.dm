@@ -14,6 +14,7 @@
 
 /datum/job/innkeep
 	title = "Innkeep"
+	alt_titles = list("Taverner")
 	tutorial = "You run the Drunken Dwarf — tavern, inn, and the public face of the Blue Sage Guild. \
 	You serve drinks, rent rooms, keep guests comfortable, and act as the first point of contact \
 	for adventurers, townsfolk, and travelers alike. A steady hand and a sharp ear keep both the ale and rumors flowing."
@@ -53,7 +54,7 @@
 	name = "Innkeep"
 	head = null
 	mask = null
-	neck = /obj/item/storage/belt/pouch/coins/mid
+	neck = /obj/item/storage/belt/pouch/cloth/coins/mid
 	cloak = /obj/item/clothing/cloak/apron/waist
 	armor = null
 	shirt = null
@@ -64,7 +65,7 @@
 	backr = null
 	backl = null
 	belt = /obj/item/storage/belt/leather
-	beltl = /obj/item/storage/keyring/innkeep
+	beltl = /obj/item/storage/keyring/tavern_keeper
 	beltr = /obj/item/reagent_containers/glass/bottle/beer/blackgoat
 	ring = null
 	l_hand = null

@@ -90,7 +90,6 @@
 
 	if(uses_integrity)
 		atom_integrity = max_integrity
-	TEST_ONLY_ASSERT((!armor || istype(armor)), "[type] has an armor that contains an invalid value at intialize")
 
 	var/turf/T = GET_TURF_ABOVE(src)
 	if(T)
@@ -157,10 +156,34 @@
 	return
 
 /turf/attack_hand(mob/user)
+	if(can_lick_fluids(user)) //bite intent + empty hand: lick the puddle on this tile
+		var/datum/reagents/puddle = get_lickable_liquids()
+		if(puddle)
+			handle_fluid_lick(user, puddle, src, "the puddle", FALSE)
+			return TRUE
 	. = ..()
 	if(.)
 		return
 	user.Move_Pulled(src)
+
+/turf/attack_hand_secondary(mob/user, list/modifiers)
+	. = ..()
+	if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
+		return
+	if(can_lick_fluids(user)) //bite intent + empty hand: drink the puddle on this tile
+		var/datum/reagents/puddle = get_lickable_liquids()
+		if(puddle)
+			handle_fluid_lick(user, puddle, src, "the puddle", TRUE)
+			return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+
+/// Returns the reagent holder of a drinkable liquid puddle on this turf, or null.
+/turf/proc/get_lickable_liquids()
+	if(QDELETED(liquids))
+		return null
+	var/datum/reagents/holder = liquids.liquid_group?.reagents
+	if(!holder || holder.total_volume <= 0)
+		return null
+	return holder
 
 /turf/proc/multiz_turf_del(turf/T, dir)
 	SEND_SIGNAL(src, COMSIG_TURF_MULTIZ_DEL, T, dir)
@@ -210,7 +233,7 @@
 	GLOB.preset_fish_sources[fish_source].readd_fish(src, fish, releaser)
 
 /turf/proc/is_blocked_turf(exclude_mobs = FALSE, source_atom = null, list/ignore_atoms, type_list = FALSE)
-	if((!isnull(source_atom) && !CanPass(source_atom, get_dir(src, source_atom))) || density)
+	if((!isnull(source_atom) && !CanPass(source_atom, src)) || density)
 		return TRUE
 
 	for(var/atom/movable/movable_content as anything in contents)
@@ -227,7 +250,7 @@
 		// If the thing is dense AND we're including mobs or the thing isn't a mob AND if there's a source atom and
 		// it cannot pass through the thing on the turf,  we consider the turf blocked.
 		if(movable_content.density && (!exclude_mobs || !ismob(movable_content)))
-			if(source_atom && movable_content.CanPass(source_atom, get_dir(src, source_atom)))
+			if(source_atom && movable_content.CanPass(source_atom, src))
 				continue
 			return TRUE
 	return FALSE
@@ -249,83 +272,62 @@
 /turf/proc/zAirOut(direction, turf/source)
 	return FALSE
 
-/turf/proc/zImpact(atom/movable/falling_atom, levels = 1, turf/prev_turf)
-	if(levels == 1 && falling_atom.ai_controller)
-		for(var/obj/structure/stairs/S in contents)
+/// Called at each level of a grouped fall. Interceptors may stop the fall before impact.
+/turf/proc/zImpact(atom/movable/falling, levels = 1, turf/prev_turf, flags = NONE)
+	if(levels == 1 && falling.ai_controller)
+		for(var/obj/structure/stairs/stairs in contents)
 			return FALSE
 
-	var/flags = NONE
-	var/mov_name = falling_atom.name
-	flags |= SEND_SIGNAL(falling_atom, COMSIG_ATOM_FALL_INTERACT, levels)
-	for(var/atom/thing as anything in contents)
-		flags |= thing.intercept_zImpact(falling_atom, levels)
+	var/list/falling_movables = falling.get_z_move_affected()
+	for(var/atom/movable/falling_movable as anything in falling_movables)
+		flags |= SEND_SIGNAL(falling_movable, COMSIG_ATOM_FALL_INTERACT, levels)
+		for(var/atom/interceptor as anything in contents)
+			flags |= interceptor.intercept_zImpact(falling_movable, levels)
+			if(flags & FALL_STOP_INTERCEPTING)
+				break
 		if(flags & FALL_STOP_INTERCEPTING)
 			break
+
 	if(prev_turf && !(flags & FALL_NO_MESSAGE))
-		prev_turf.visible_message(span_danger("\The [mov_name] falls through [prev_turf]!"))
-	if(flags & FALL_INTERCEPTED)
-		return
-	if(zFall(falling_atom, ++levels))
+		for(var/atom/movable/falling_movable as anything in falling_movables)
+			prev_turf.visible_message(span_danger("\The [falling_movable.name] falls through [prev_turf]!"))
+
+	if(!(flags & FALL_INTERCEPTED) && zFall(falling, levels + 1))
 		return FALSE
-	if(isliving(falling_atom))
-		var/mob/living/falling_mob = falling_atom
-		if(!((falling_mob.movement_type & FLYING) && isopenspace(src)))
-			var/dex_save = GET_MOB_SKILL_VALUE_OLD(falling_mob, /datum/attribute/skill/misc/climbing)
-			if(dex_save >= 5)
-				if(falling_mob.m_intent != MOVE_INTENT_SNEAK) // If we're sneaking, don't show a message to anybody, shhh!
-					falling_mob.visible_message("<span class='danger'>[falling_mob] gracefully lands on top of [src]!</span>")
-			else
-				falling_mob.visible_message("<span class='danger'>[falling_mob] crashes into [src]!</span>")
-				if(falling_mob.fall_damage())
-					for(var/mob/living/crumpled_mob in contents)
-						visible_message("<span class='danger'>\The [src] falls on \the [crumpled_mob.name]!</span>")
-						crumpled_mob.Stun(1)
-						crumpled_mob.take_overall_damage(falling_mob.fall_damage()*2)
-	if(falling_atom.fall_damage())
-		for(var/mob/living/crumpled_mob in contents)
-			visible_message("<span class='danger'>\The [src] falls on \the [crumpled_mob.name]!</span>")
-			crumpled_mob.Stun(1)
-			crumpled_mob.take_overall_damage(falling_atom.fall_damage()*2)
-	falling_atom.onZImpact(src, levels)
-	if(isobj(falling_atom))
-		var/obj/falling_obj = falling_atom
-		for(var/mob/living/mob in falling_obj.contents)
-			falling_obj.on_fall_impact(mob, levels * 0.75)
 
+	for(var/atom/movable/falling_movable as anything in falling_movables)
+		falling_movable.stop_pulling()
+		if(!(flags & FALL_INTERCEPTED))
+			falling_movable.onZImpact(src, levels)
+		if(falling_movable.pulledby && (falling_movable.z != falling_movable.pulledby.z || get_dist(falling_movable, falling_movable.pulledby) > 1))
+			falling_movable.pulledby.stop_pulling()
 	return TRUE
-
-/atom/movable/proc/fall_damage()
-	return 0
-
-/obj/item/fall_damage()
-	if(w_class == WEIGHT_CLASS_TINY)
-		return 0
-	if(w_class == WEIGHT_CLASS_GIGANTIC)
-		return 300
-	var/bsc = 3**(w_class-1)
-	return bsc
-
-/obj/structure/fall_damage()
-	if(w_class == WEIGHT_CLASS_TINY)
-		return 0
-	if(w_class == WEIGHT_CLASS_GIGANTIC)
-		return 300
-	var/bsc = 3**(w_class-1)
-	return bsc
 
 /turf/proc/can_zFall(atom/movable/A, levels = 1, turf/target)
 	return zPassOut(A, DOWN, target) && target.zPassIn(A, DOWN, src)
 
-/turf/proc/zFall(atom/movable/A, levels = 1, force = FALSE)
+/turf/proc/zFall(atom/movable/falling, levels = 1, force = FALSE, falling_from_move = FALSE)
 	var/turf/target = GET_TURF_BELOW(src)
-	if(!target || (!isobj(A) && !ismob(A)))
+	if(!target || (!isobj(falling) && !ismob(falling)))
 		return FALSE
-	if(!force && (!can_zFall(A, levels, target) || !A.can_zFall(src, levels, target, DOWN)))
+	if(isliving(falling))
+		var/mob/living/falling_living = falling
+		if(falling_living.buckled)
+			falling = falling_living.buckled
+	if(!falling_from_move && falling.currently_z_moving)
 		return FALSE
-	A.atom_flags |= Z_FALLING
-	A.forceMove(target)
-	A.atom_flags &= ~Z_FALLING
-	target.zImpact(A, levels, src)
+	if(!force && !falling.can_z_move(DOWN, src, target, ZMOVE_FALL_FLAGS))
+		falling.set_currently_z_moving(FALSE, forced = TRUE)
+		return FALSE
+
+	falling.set_currently_z_moving(CURRENTLY_Z_FALLING)
+	falling.atom_flags |= Z_FALLING
+	if(!falling.zMove(DOWN, target, ZMOVE_CHECK_PULLEDBY))
+		falling.atom_flags &= ~Z_FALLING
+		falling.set_currently_z_moving(FALSE, forced = TRUE)
+		return FALSE
+	falling.atom_flags &= ~Z_FALLING
+	target.zImpact(falling, levels, src)
 	return TRUE
 
 //There's a lot of QDELETED() calls here if someone can figure out how to optimize this but not runtime when something gets deleted by a Bump/CanPass/Cross call, lemme know or go ahead and fix this mess - kevinz000
@@ -390,8 +392,6 @@
 		var/obj/O = AM
 		if(O.obj_flags & FROZEN)
 			O.make_unfrozen()
-	if(!(AM.atom_flags & Z_FALLING))
-		zFall(AM)
 
 /turf/proc/is_plasteel_floor()
 	return FALSE
@@ -454,7 +454,7 @@
 	for(var/mob/living/M in src)
 		if(M==U)
 			continue//Will not harm U. Since null != M, can be excluded to kill everyone.
-		M.adjustBruteLoss(damage)
+		M.adjustBruteLoss(damage, damage_type = BCLASS_BLUNT)
 		M.Unconscious(damage * 4)
 
 /turf/proc/Bless()

@@ -39,7 +39,6 @@
  * this can be extended if you wish to undo unique effects on level up for wizards.
  * - [update_spell_name][/datum/action/cooldown/spell/update_spell_name] updates the prefix of the spell name based on its level.
  */
-
 /datum/action/cooldown/spell
 	name = "Spell"
 	desc = "A wizard spell."
@@ -133,11 +132,11 @@
 	/// Whether we're currently charging the spell.
 	var/currently_charging = FALSE
 	/**
-	 * Cost to charge.
-	 *
-	 * Total drain is: ([charge_time] / [process_time]) * charge_drain
-	 * process_time is currently 4 from SSaction_charge.
-	 */
+	* Cost to charge.
+	*
+	* Total drain is: ([charge_time] / [process_time]) * charge_drain
+	* process_time is currently 4 from SSaction_charge.
+	*/
 	var/charge_drain = 0
 	/// Time to charge.
 	var/charge_time = 0
@@ -307,7 +306,7 @@
 
 		if(charge_required)
 			// If pointed we setup signals to override mouse down to call InterceptClickOn()
-			RegisterSignal(owner.client, COMSIG_CLIENT_MOUSEDOWN, PROC_REF(start_casting))
+			RegisterSignal(owner.client, COMSIG_CLIENT_MOUSEDOWN, PROC_REF(start_casting), override = TRUE)
 
 	return ..()
 
@@ -355,7 +354,7 @@
 
 	if(charge_required && !charged)
 		end_charging()
-		RegisterSignal(owner.client, COMSIG_CLIENT_MOUSEDOWN, PROC_REF(start_casting))
+		RegisterSignal(owner.client, COMSIG_CLIENT_MOUSEDOWN, PROC_REF(start_casting), override = TRUE)
 		return
 	var/atom/aim_assist_target
 	if(aim_assist && isturf(click_target))
@@ -378,7 +377,7 @@
 	if(!is_valid_target(target))
 		if(charge_required && click_to_activate)
 			to_chat(owner, span_warning("I can't cast [src] on [target]!"))
-			RegisterSignal(owner.client, COMSIG_CLIENT_MOUSEDOWN, PROC_REF(start_casting))
+			RegisterSignal(owner.client, COMSIG_CLIENT_MOUSEDOWN, PROC_REF(start_casting), override = TRUE)
 		return FALSE
 
 	return Activate(target)
@@ -419,10 +418,6 @@
 	else
 		new_cost += spell_cost * (10 - owner_stat) * 0.02
 
-	var/owner_encumbrance = living_owner.get_encumbrance()
-	if(owner_encumbrance > 0.4)
-		new_cost += spell_cost * owner_encumbrance * 0.5
-
 	return max(new_cost, 0)
 
 /// Do any attunement handling in here or any time after before_cast
@@ -452,6 +447,13 @@
 /datum/action/cooldown/spell/proc/can_cast_spell(feedback = TRUE)
 	if(!owner)
 		CRASH("[type] - can_cast_spell called on a spell without an owner!")
+
+	if(isliving(owner))
+		var/mob/living/living_owner = owner
+		if(living_owner.has_status_effect(/datum/status_effect/defeat_knockout))
+			if(feedback)
+				owner.balloon_alert(owner, "Too broken to cast...")
+			return FALSE
 
 	if(!(spell_flags & SPELL_IGNORE_SPELLBLOCK) && HAS_TRAIT(owner, TRAIT_SPELLBLOCK))
 		if(feedback)
@@ -1032,9 +1034,9 @@
 		return
 
 	if(!experience_max_skill)
-		experience_max_skill = SKILL_LEVEL_LEGENDARY * 10
+		experience_max_skill = SKILL_LEVEL_LEGENDARY
 
-	var/skill_level = GET_MOB_SKILL_VALUE_RAW_OLD(owner, associated_skill)
+	var/skill_level = GET_MOB_SKILL_VALUE_RAW(owner, associated_skill)
 	if(skill_level >= experience_max_skill)
 		return
 
@@ -1074,7 +1076,7 @@
 	// We don't actually care about the target or params now, we only care about the target on mouse up
 
 	// Register here because the mouse up can get triggered before the mouse down otherwise
-	RegisterSignal(source, COMSIG_CLIENT_MOUSEUP, PROC_REF(try_casting))
+	RegisterSignal(source, COMSIG_CLIENT_MOUSEUP, PROC_REF(try_casting), override = TRUE)
 	RegisterSignal(owner, list(COMSIG_MOB_DEATH, COMSIG_MOB_LOGOUT), PROC_REF(signal_cancel))
 	if(spell_requirements & SPELL_REQUIRES_NO_MOVE)
 		RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(signal_cancel), TRUE)
@@ -1108,7 +1110,7 @@
 
 	var/success = world.time >= (charge_started_at + charge_target_time)
 	if(!on_end_charge(success)) // Give them another try if they mess up the timing
-		RegisterSignal(source, COMSIG_CLIENT_MOUSEDOWN, PROC_REF(start_casting))
+		RegisterSignal(source, COMSIG_CLIENT_MOUSEDOWN, PROC_REF(start_casting), override = TRUE)
 		return
 
 	var/list/modifiers = params2list(params)

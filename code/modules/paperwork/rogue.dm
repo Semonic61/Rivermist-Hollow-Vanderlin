@@ -280,8 +280,6 @@
 		marquevalue += 2
 		REMOVE_TRAIT(user, TRAIT_HAS_CONFESSED, TRAIT_GENERIC)
 		update_appearance()
-	else
-		return
 
 /obj/item/paper/inqslip/arrival
 	name = "arrival slip"
@@ -302,31 +300,44 @@
 		signee = user
 		update_appearance()
 
-/obj/item/paper/inqslip/attack(mob/living/carbon/human/M, mob/user, list/modifiers)
+/obj/item/paper/inqslip/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!ishuman(interacting_with))
+		return NONE
+
+	var/mob/living/M = interacting_with
+
 	if(sealed)
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	if(signed)
 		to_chat(user, span_warning("It's already been signed."))
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	if(paired && !paired.full)
 		to_chat(user, span_warning("I should separate [paired] from [src] before signing it."))
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	if(sliptype != 2)
 		if(M != user)
 			to_chat(user, span_warning("This is meant to be signed by the holder."))
-			return
+			return ITEM_INTERACT_BLOCKING
+
 	if(!M.get_bleed_rate())
 		to_chat(user, span_warning("It must be signed in blood."))
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	if(sliptype == 1)
 		if(signee == M)
 			attemptsign(user)
 		else
 			to_chat(user, span_warning("This slip isn't meant for me."))
+
 	else if(!sliptype)
 		attemptsign(user)
 	else
 		attemptsign(M, user)
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/paper/inqslip/attack_self(mob/user)
 	if(!signed)
@@ -476,62 +487,70 @@
 /obj/item/paper/scroll/frumentarii
 	name = "frumentarii scroll"
 	desc = "A list of the hand's fingers. Strike a candidate with this to allow them servitude. Use a writing utensil to cross out a finger."
+	writable = FALSE
+	resistance_flags = FIRE_PROOF // let's maybe not burn this
 
 	//assoc list of TRUE and FALSE. TRUE indicates the agent is an active finger while FALSE is a severed finger
 	var/list/fingers = list()
 	var/names = 5
-	writable = FALSE
-	resistance_flags = FIRE_PROOF // let's maybe not burn this
 
-/obj/item/paper/scroll/frumentarii/afterattack(atom/target, mob/living/user, proximity_flag, list/modifiers)
-	. = ..()
-	if(!user.mind)
-		return
-	if(!HAS_TRAIT(user, TRAIT_NOBLE))
-		return
+/obj/item/paper/scroll/frumentarii/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isliving(interacting_with))
+		return NONE
+
+	if(!user.mind || !HAS_TRAIT(user, TRAIT_NOBLE))
+		return ITEM_INTERACT_BLOCKING
+
+	var/mob/living/M = interacting_with
+
+	if(!M.client)
+		return NONE
+
+	if(M.real_name in fingers)
+		return ITEM_INTERACT_BLOCKING
+
 	if(length(fingers) >= names)
-		to_chat(user, span_notice("[src] is full"))
-		return
-	if(!isliving(target))
-		return
-	var/mob/living/attacked_target = target
-	if(!attacked_target.client)
-		return
-	if(attacked_target.real_name in fingers)
-		return
-	if(ishuman(target))
-		var/mob/living/carbon/human/H = target
+		balloon_alert(user, "too many fingers!")
+		return ITEM_INTERACT_BLOCKING
+
+	if(ishuman(M))
+		var/mob/living/carbon/human/H = M
 		if(H.family_datum == SSfamilytree.ruling_family)
-			to_chat(user, span_warning("I can't turn a member of the royal family into a finger."))
-			return
+			balloon_alert(user, "can't turn royalty!")
+			return ITEM_INTERACT_BLOCKING
 
-	var/choice = input(attacked_target,"Do you wish to become one of the Hand's fingers?","Binding Contract",null) as null|anything in list("Yes", "No")
-	if(choice != "Yes")
-		return
+	var/choice = tgui_alert(M, "Do you wish to become one of the Hand's fingers?", "Binding Contract", DEFAULT_INPUT_CHOICES)
+	if(choice != CHOICE_YES)
+		return ITEM_INTERACT_BLOCKING
 
-	fingers[attacked_target.real_name] = TRUE
+	fingers[M.real_name] = TRUE
 	user.mind.cached_frumentarii = fingers
 	rebuild_info()
 
-/obj/item/paper/scroll/frumentarii/attackby(obj/item/P, mob/living/carbon/human/user, list/modifiers)
-	. = ..()
-	if(istype(P, /obj/item/natural/thorn) || istype(P, /obj/item/natural/feather))
-		if(!open)
-			return
-		var/list/choices = list()
-		for(var/F in fingers)
-			if(fingers[F] == TRUE)
-				choices[F] = F
-			else
-				choices["<s>[F]</s>"] = F
-		var/choice = browser_input_list(user, "Reattach/Sever a Finger", "THE LIST", choices)
-		if(!choice || QDELETED(src) || QDELETED(user))
-			return
-		var/finger = choices[choice]
-		fingers[finger] = !fingers[finger]
-		user.mind.cached_frumentarii = fingers
-		playsound(src, 'sound/items/write.ogg', 50, FALSE, -4, ignore_walls = FALSE)
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/paper/scroll/frumentarii/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/natural/thorn) && !istype(tool, /obj/item/natural/feather))
+		return NONE
+	if(!open || !user.mind)
+		return ITEM_INTERACT_BLOCKING
+
+	var/list/choices = list()
+	for(var/F in fingers)
+		if(fingers[F] == TRUE)
+			choices[F] = F
+		else
+			choices["<s>[F]</s>"] = F
+	var/choice = browser_input_list(user, "Reattach/Sever a Finger", "THE LIST", choices)
+	if(!choice || QDELETED(src) || QDELETED(user))
+		return ITEM_INTERACT_BLOCKING
+
+	var/finger = choices[choice]
+	fingers[finger] = !fingers[finger]
+	user.mind.cached_frumentarii = fingers
+	playsound(src, 'sound/items/write.ogg', 50, FALSE, -4, ignore_walls = FALSE)
 	rebuild_info()
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/paper/scroll/frumentarii/read(mob/user)
 	. = ..()
@@ -586,14 +605,14 @@
 	icon_state = "contractsigned"
 	var/list/sell_prices
 	var/writers_name
-	var/faction
+	var/merchant_faction
 
 /obj/item/paper/scroll/sell_price_changes/Initialize(mapload, list/prices, faction_name)
 	. = ..()
 
-	faction = faction_name
-	if(!faction)
-		faction = pick("Baldur's Gate", "Luskan", "Waterdeep", "Neverwinter")
+	merchant_faction = faction_name
+	if(!merchant_faction)
+		merchant_faction = pick("Baldur's Gate", "Luskan", "Waterdeep", "Neverwinter")
 
 	sell_prices = prices
 	if(!length(sell_prices))
@@ -632,7 +651,7 @@
 
 	info += "<br/></font>"
 
-	info += "<font size=\"2\" face=\"[FOUNTAIN_PEN_FONT]\" color=#27293f>[writers_name] Shipwright of [faction]</font>"
+	info += "<font size=\"2\" face=\"[FOUNTAIN_PEN_FONT]\" color=#27293f>[writers_name] Shipwright of [merchant_faction]</font>"
 	info += "<br/>"
 	info += "<font size=\"2\" face=\"[FOUNTAIN_PEN_FONT]\" color=#27293f>Time: [gameTimestamp("hh:mm:ss", world.time - SSticker.round_start_time)]</font>"
 	info += "</div>"

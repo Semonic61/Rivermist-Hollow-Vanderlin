@@ -69,7 +69,7 @@
 	backl = null
 	belt = /obj/item/storage/belt/leather
 	beltl = /obj/item/storage/keyring/jester
-	beltr = /obj/item/storage/belt/pouch
+	beltr = /obj/item/storage/belt/pouch/cloth
 	ring = null
 	l_hand = null
 	r_hand = null
@@ -120,7 +120,7 @@
 /mob/living/carbon/human/proc/get_japery()
 	var/japery_list = list(
 		/obj/item/coin/copper,
-		/obj/item/natural/dirtclod,
+		/obj/item/natural/clod/dirt,
 		/obj/item/natural/worms,
 		/obj/item/natural/worms/leech,
 		/obj/item/natural/thorn,

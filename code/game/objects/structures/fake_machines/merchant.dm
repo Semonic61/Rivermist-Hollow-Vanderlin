@@ -1,3 +1,18 @@
+//RMH EDITED START
+// Ported & adapted from Azure (Twilight-Axis) "navigator" into Vanderlin's
+// /obj/item/fake_machine/merchant beacon. Simplified: no market-saturation
+// mechanics (Vanderlin has none). Every cycle the beacon airlifts goods dropped
+// on the 8 surrounding pads, splits the value into a 50% merchant-guild levy
+// (paid into the merchant's GOLDFACE budget) and the Lord's export tax (paid
+// into the realm treasury), then drops the remainder to the seller as coins.
+
+/// Max number of recent sales kept for the beacon's history panel.
+#define SALE_HISTORY_MAX 15
+
+/// Tracks every GOLDFACE/SILVERFACE vendor so the beacon can locate the
+/// merchant's own till to deposit the guild levy into.
+GLOBAL_LIST_EMPTY(goldface_vendors)
+
 /obj/item/fake_machine/merchant
 	name = "SKY HANDLER"
 	desc = "A machine that attracts the attention of trading balloons."
@@ -8,6 +23,12 @@
 	var/next_airlift
 	anchored = TRUE
 	w_class = WEIGHT_CLASS_GIGANTIC
+	/// Merchant guild levy taken from every sale (0.5 = 50%). Paid to the merchant's GOLDFACE.
+	var/merchant_levy = 0.5
+	/// Tagline shown at the top of the TGUI window.
+	var/motto = "MERCHANT'S GUILD - Your goods, airborne."
+	/// Recent sales, oldest first: list of list("name", "value").
+	var/list/sale_history = list()
 
 /obj/structure/fake_machine/balloon_pad
 	name = ""
@@ -18,29 +39,11 @@
 	layer = BELOW_OBJ_LAYER
 	anchored = TRUE
 
-/obj/item/fake_machine/merchant/attack_hand(mob/living/user)
-	if(!anchored)
-		return ..()
-	user.changeNext_move(CLICK_CD_MELEE)
-
-	var/contents
-
-	contents += "<center>MERCHANT'S GUILD<BR>"
-	contents += "--------------<BR>"
-	//contents += "Guild's Tax: [SStreasury.queens_tax*100]%<BR>"
-	contents += "Next Balloon: [time2text((next_airlift - world.time), "mm:ss")]</center><BR>"
-
-	if(!user.can_read(src, TRUE))
-		contents = stars(contents)
-	var/datum/browser/popup = new(user, "VENDORTHING", "", 370, 220)
-	popup.set_content(contents)
-	popup.open()
-
 /obj/item/fake_machine/merchant/Initialize()
 	. = ..()
 	if(anchored)
 		START_PROCESSING(SSroguemachine, src)
-	set_light(2, 2, 2, l_color =  "#1b7bf1")
+	set_light(2, 2, 2, l_color = "#1b7bf1")
 	for(var/X in GLOB.alldirs)
 		var/T = get_step(src, X)
 		if(!T)
@@ -52,42 +55,147 @@
 	set_light(0)
 	return ..()
 
+/obj/item/fake_machine/merchant/attack_hand(mob/living/user)
+	if(!anchored)
+		return ..()
+	if(!ishuman(user))
+		return ..()
+	user.changeNext_move(CLICK_CD_MELEE)
+	playsound(src, 'sound/misc/beep.ogg', 100, FALSE, -1)
+	ui_interact(user)
+
+/obj/item/fake_machine/merchant/ui_state(mob/user)
+	return GLOB.physical_state
+
+/obj/item/fake_machine/merchant/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "Navigator", name, 460, 600)
+		ui.open()
+
+/obj/item/fake_machine/merchant/ui_data(mob/user)
+	var/list/data = list()
+	data["motto"] = motto
+	data["can_read"] = user.can_read(src, TRUE) ? TRUE : FALSE
+	data["next_airlift_seconds"] = max(0, round((next_airlift - world.time) / 10))
+	data["guild_tax_percent"] = round(merchant_levy * 100)
+	data["lord_tax_percent"] = round(SStreasury.tax_value * 100)
+	data["total_tax_percent"] = round((merchant_levy + SStreasury.tax_value) * 100)
+	// TRUE if the viewer themselves is a guild member exempt from the guild levy.
+	data["viewer_exempt"] = is_guild_member(user) ? TRUE : FALSE
+	// Build the history newest-first for display.
+	var/list/hist = list()
+	for(var/i = length(sale_history) to 1 step -1)
+		hist += list(sale_history[i])
+	data["history"] = hist
+	return data
+
+/// Finds the merchant's own (non-public) GOLDFACE till to receive the guild levy.
+/obj/item/fake_machine/merchant/proc/get_merchant_goldface()
+	for(var/obj/structure/fake_machine/merchantvend/G in GLOB.goldface_vendors)
+		if(!G.is_public)
+			return G
+	return null
+
+/// Records one sold item into the rolling history buffer (drops the oldest).
+/obj/item/fake_machine/merchant/proc/add_sale_history(item_name, value)
+	sale_history += list(list("name" = item_name, "value" = value))
+	if(length(sale_history) > SALE_HISTORY_MAX)
+		sale_history.Cut(1, 2)
+
+/// TRUE if this human holds a Waterdeep Guild role that is exempt from the
+/// guild levy (Merchant, Banker, Guild Assistant). They still pay the Lord's tax.
+/obj/item/fake_machine/merchant/proc/is_guild_member(mob/living/carbon/human/H)
+	if(!istype(H) || !H.job)
+		return FALSE
+	var/datum/job/J = SSjob.GetJob(H.job)
+	if(!J)
+		return FALSE
+	return istype(J, /datum/job/waterdeep_merchant) || istype(J, /datum/job/waterdeep_banker) || istype(J, /datum/job/waterdeep_guild_assistant)
+
+/// TRUE if such a guild member is standing on or next to the beacon (within the
+/// pad ring) at airlift time, which waives the guild levy for that cycle.
+/obj/item/fake_machine/merchant/proc/guild_exempt_present()
+	for(var/mob/living/carbon/human/H in range(1, src))
+		if(H.stat == DEAD)
+			continue
+		if(is_guild_member(H))
+			return TRUE
+	return FALSE
+
+/// Splits a tile's gross sale value into guild levy, Lord's tax and seller payout.
+/// When guild_exempt is set the merchant/banker/assistant pays no guild levy.
+/obj/item/fake_machine/merchant/proc/settle_export(gross, obj/structure/fake_machine/balloon_pad/pad, guild_exempt = FALSE)
+	var/guild_levy = guild_exempt ? 0 : round(gross * merchant_levy)
+	var/lord_tax = round(gross * SStreasury.tax_value)
+	var/producer_net = gross - guild_levy - lord_tax
+	if(producer_net < 0)
+		producer_net = 0
+	// Guild levy -> the merchant's GOLDFACE till (fallback to treasury if none exists).
+	if(guild_levy > 0)
+		var/obj/structure/fake_machine/merchantvend/till = get_merchant_goldface()
+		if(till)
+			till.budget += guild_levy
+		else
+			SStreasury.give_money_treasury(guild_levy, "Waterdeep's levy")
+	// Lord's export tax -> realm treasury.
+	if(lord_tax > 0)
+		SStreasury.give_money_treasury(lord_tax, "sky handler export tax")
+		record_round_statistic(STATS_TAXES_COLLECTED, lord_tax)
+	record_round_statistic(STATS_TRADE_VALUE_EXPORTED, gross)
+	// Remainder paid to the seller as coins on the pad tile.
+	if(producer_net > 0)
+		pad.budget2change(producer_net)
+	visible_message(span_info("[src] chimes: \"[gross] gross, [guild_levy] guild, [lord_tax] lords, [producer_net] to the seller.\""))
+
 /obj/item/fake_machine/merchant/process()
-	if(world.time > next_airlift)
-		next_airlift = world.time + rand(2 MINUTES, 3 MINUTES)
+	if(world.time <= next_airlift)
+		return
+	next_airlift = world.time + rand(2 MINUTES, 3 MINUTES)
 #ifdef TESTSERVER
-		next_airlift = world.time + 5 SECONDS
+	next_airlift = world.time + 5 SECONDS
 #endif
-		var/play_sound = FALSE
-		for(var/D in GLOB.alldirs)
-			var/budgie = 0
-			var/turf/T = get_step(src, D)
-			if(!T)
+	var/play_sound = FALSE
+	var/sold_any = FALSE
+	// Spare the guild levy if a Merchant/Banker/Guild Assistant is working the beacon.
+	var/guild_exempt = guild_exempt_present()
+	for(var/D in GLOB.alldirs)
+		var/turf/T = get_step(src, D)
+		if(!T)
+			continue
+		var/obj/structure/fake_machine/balloon_pad/E = locate() in T
+		if(!E)
+			continue
+		var/gross = 0
+		for(var/obj/I in T)
+			if(I.anchored)
 				continue
-			var/obj/structure/fake_machine/balloon_pad/E = locate() in T
-			if(!E)
+			if(!isturf(I.loc))
 				continue
-			for(var/obj/I in T)
-				var/prize
-				if(I.anchored)
-					continue
-				if(!isturf(I.loc))
-					continue
-				if (istype(I, /obj/item/coin))
-					continue
-				prize = I.get_real_price()// - (I.get_real_price() * SStreasury.queens_tax)
-				if(prize >= 1)
-					play_sound=TRUE
-					budgie += prize
-					I.visible_message("<span class='warning'>[I] is sucked into the air!</span>")
-					qdel(I)
-			budgie = round(budgie)
-			if(budgie > 0)
-				play_sound=TRUE
-				E.budget2change(budgie)
-				budgie = 0
-		if(play_sound)
-			playsound(src, 'sound/misc/hiss.ogg', 100, FALSE, -1)
+			// Never airlift currency. This is the coin-resale fix: a naive Azure
+			// port excludes /obj/item/roguecoin (which does not exist in Vanderlin),
+			// so the beacon would keep selling coins - including its own change.
+			if(istype(I, /obj/item/coin))
+				continue
+			var/prize = I.get_real_price()
+			if(prize >= 1)
+				gross += prize
+				add_sale_history(I.name, round(prize))
+				I.visible_message(span_warning("[I] is sucked into the air!"))
+				qdel(I)
+				play_sound = TRUE
+		gross = round(gross)
+		if(gross > 0)
+			settle_export(gross, E, guild_exempt)
+			sold_any = TRUE
+	if(play_sound)
+		playsound(src, 'sound/misc/hiss.ogg', 100, FALSE, -1)
+	if(sold_any)
+		SStgui.update_uis(src)
+
+#undef SALE_HISTORY_MAX
+//RMH EDITED END
+
 
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
@@ -96,6 +204,8 @@
 /////////////////////////////////////////////////////////////////
 
 #define UPGRADE_NOTAX		(1<<0)
+/// Catch-all tab for supply packs that declare no group of their own.
+#define MERCHANT_CAT_MISC	"Misc"
 
 /obj/structure/fake_machine/merchantvend
 	name = "GOLDFACE"
@@ -117,12 +227,31 @@
 	var/base_price = 0
 	var/final_price = 0
 	var/taxes = 0
+	//RMH EDITED START
+	/// Flat percentage markup added on top of the base pack cost (0.5 = +50%).
+	/// Used by the public SILVERFACE tier; GOLDFACE keeps it at 0.
+	var/extra_fee = 0
+	/// Which round statistic to log spending under. Lets SILVERFACE track separately.
+	var/value_record_key = STATS_GOLDFACE_VALUE_SPENT
+	/// Tagline shown at the top of the TGUI window.
+	var/motto = "GOLDFACE - In the name of greed."
+	/// TRUE on the public SILVERFACE tier (anyone may buy; cannot be locked).
+	var/is_public = FALSE
+	/// Active text search across all categories (empty = browse by category).
+	var/search = ""
+	/// Cap on search results sent to the UI.
+	var/result_cap = 60
+	/// Running tally of import tax paid / dodged through this machine.
+	var/tariff_paid = 0
+	var/tariff_evaded = 0
+	//RMH EDITED END
 	// this is the list of supply groups that you can purchase with this machine
-	var/list/unlocked_cats = list("Apparel","Storage","Armor(Light)","Armor(Steel)","Food","Drinks","Jewelry","Luxury","Tools","Seeds","Shields","Medicine","Raw Materials",
-								"Weapons (Iron)","Weapons (Steel)","Weapons (Ranged)","Ammunition")
+	var/list/unlocked_cats = list("Apparel","Storage","Armor(Light)","Armor(Iron)","Armor(Steel)","Food","Drinks","Jewelry","Luxury","Tools","Seeds","Shields","Medicine","Raw Materials",
+								"Weapons (Iron)","Weapons (Steel)","Weapons (Ranged)","Ammunition",MERCHANT_CAT_MISC)
 
 /obj/structure/fake_machine/merchantvend/Initialize()
 	. = ..()
+	GLOB.goldface_vendors += src //RMH EDITED
 	set_light(1, 1, 1, l_color =  "#1b7bf1")
 
 /obj/structure/fake_machine/merchantvend/atom_break(damage_flag)
@@ -136,8 +265,35 @@
 
 /obj/structure/fake_machine/merchantvend/Destroy()
 	. = ..()
+	GLOB.goldface_vendors -= src //RMH EDITED
 	budget2change(budget)
 	set_light(0)
+
+//RMH EDITED START
+/// The effective service-fee multiplier for this machine (0 on GOLDFACE).
+/obj/structure/fake_machine/merchantvend/proc/get_effective_fee()
+	return extra_fee
+
+/// TRUE only if this machine is allowed to stock that pack's category.
+/// Single source of truth for browsing, searching AND buying, so the search
+/// can never surface (or sell) goods outside the machine's own trade.
+/obj/structure/fake_machine/merchantvend/proc/pack_in_stock(datum/supply_pack/P)
+	if(!P)
+		return FALSE
+	var/pack_cat = length(P.group) ? P.group : MERCHANT_CAT_MISC
+	return (pack_cat in unlocked_cats)
+
+/// Shared price calc so the display and the buy path can never disagree.
+/// The service fee is a markup on the good; import tax is charged on the
+/// raw pack cost only (mirrors the original GOLDFACE tax behaviour).
+/obj/structure/fake_machine/merchantvend/proc/get_pack_price(datum/supply_pack/PA, include_tax = TRUE)
+	if(!PA)
+		return 0
+	var/cost = PA.cost + (PA.cost * get_effective_fee())
+	if(include_tax && !(upgrade_flags & UPGRADE_NOTAX))
+		cost += round(SStreasury.tax_value * PA.cost)
+	return round(cost)
+//RMH EDITED END
 
 /obj/structure/fake_machine/merchantvend/attackby(obj/item/I, mob/user, list/modifiers)
 	if(istype(I, /obj/item/coin))
@@ -146,138 +302,260 @@
 		qdel(I)
 		to_chat(user, span_info("I put [money] amna in [src]."))
 		playsound(src, 'sound/misc/machinevomit.ogg', 100, TRUE, -1)
+		SStgui.update_uis(src) //RMH EDITED
 		return attack_hand(user)
 	return ..()
 
-/obj/structure/fake_machine/merchantvend/Topic(href, href_list)
-	. = ..()
-	if(!ishuman(usr))
-		return
-	if(!usr.can_perform_action(src, NEED_DEXTERITY|FORBID_TELEKINESIS_REACH) || locked())
-		return
-	var/mob/living/carbon/human/human_mob = usr
-	if(href_list["buy"])
-		var/path = text2path(href_list["buy"])
-		if(!ispath(path, /datum/supply_pack))
-			message_admins("MERCHANT [usr.key] IS TRYING TO BUY A [path] WITH THE GOLDFACE. THIS IS AN EXPLOIT.")
-			return
-		var/datum/supply_pack/picked_pack = SSmerchant.supply_packs[path]
-		base_price = picked_pack.cost
-		taxes = round(SStreasury.tax_value * base_price)
-		final_price = round(base_price + taxes)
-		if(upgrade_flags & UPGRADE_NOTAX)
-			final_price = base_price
-		if(budget >= final_price)
-			budget -= final_price
-			record_round_statistic(STATS_GOLDFACE_VALUE_SPENT, final_price)
-			if(!(upgrade_flags & UPGRADE_NOTAX))
-				SStreasury.give_money_treasury(taxes, "goldface import tax")
-				record_featured_stat(FEATURED_STATS_TAX_PAYERS, human_mob, taxes)
-				record_round_statistic(STATS_TAXES_COLLECTED, taxes)
-			else
-				record_round_statistic(STATS_TAXES_EVADED, taxes)
-		else
-			say("Not enough!")
-			return
-		if(ispath(picked_pack.contains))
-			var/obj/item/packitem = picked_pack.contains
-			new packitem(get_turf(usr))
-		else
-			for(var/obj/item/packitem as anything in picked_pack.contains)
-				new packitem(get_turf(usr))
-		qdel(picked_pack)
-	if(href_list["change"])
-		if(budget > 0)
-			budget2change(budget, usr)
-			budget = 0
-	if(href_list["changecat"])
-		var/selected_category = href_list["changecat"]
-
-		if (selected_category in unlocked_cats)
-			current_cat = selected_category
-		else
-			current_cat = null
-	if(href_list["secrets"])
-		var/list/options = list()
-		if(upgrade_flags & UPGRADE_NOTAX)
-			options += "Enable Paying Taxes"
-		else
-			options += "Stop Paying Taxes"
-		var/select = input(usr, "Please select an option.", "", null) as null|anything in options
-		if(!select)
-			return
-		if(!usr.can_perform_action(src, NEED_DEXTERITY|FORBID_TELEKINESIS_REACH) || locked())
-			return
-		switch(select)
-			if("Enable Paying Taxes")
-				upgrade_flags &= ~UPGRADE_NOTAX
-				playsound(src, 'sound/misc/beep.ogg', 100, FALSE, -1)
-			if("Stop Paying Taxes")
-				upgrade_flags |= UPGRADE_NOTAX
-				playsound(src, 'sound/misc/beep.ogg', 100, FALSE, -1)
-	return attack_hand(usr)
-
+//RMH EDITED START
 /obj/structure/fake_machine/merchantvend/attack_hand(mob/living/user)
 	. = ..()
 	if(.)
 		return
 	if(!ishuman(user))
 		return
-	if(locked())
-		to_chat(user, "<span class='warning'>It's locked. Of course.</span>")
+	if(locked() && !is_public)
+		to_chat(user, span_warning("It's locked. Of course."))
 		return
 	user.changeNext_move(CLICK_CD_MELEE)
 	playsound(src, 'sound/misc/beep.ogg', 100, FALSE, -1)
-	var/canread = user.can_read(src, TRUE)
-	var/contents
-	contents = "<center>GOLDFACE - In the name of greed.<BR>"
-	contents += "<a href='byond://?src=[REF(src)];change=1'>AMNA LOADED:</a> [budget]<BR>"
+	ui_interact(user)
 
+/obj/structure/fake_machine/merchantvend/ui_state(mob/user)
+	return GLOB.physical_state
+
+/obj/structure/fake_machine/merchantvend/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "Goldface", name, 880, 800)
+		ui.open()
+
+/obj/structure/fake_machine/merchantvend/proc/is_proprietor(mob/user)
+	if(!ishuman(user))
+		return FALSE
 	var/mob/living/carbon/human/H = user
-	if(H.job == "Merchant")
-		if(canread)
-			contents += "<a href='byond://?src=[REF(src)];secrets=1'>Secrets</a>"
-		else
-			contents += "<a href='byond://?src=[REF(src)];secrets=1'>[stars("Secrets")]</a>"
+	return H.job == "Merchant"
 
-	contents += "</center><BR>"
+/obj/structure/fake_machine/merchantvend/ui_data(mob/user)
+	var/list/data = list()
+	var/dodging = (upgrade_flags & UPGRADE_NOTAX) ? TRUE : FALSE
+	data["motto"] = motto
+	data["budget"] = budget
+	data["can_read"] = user.can_read(src, TRUE) ? TRUE : FALSE
+	data["locked"] = locked() ? TRUE : FALSE
+	data["is_public"] = is_public
+	data["is_proprietor"] = is_proprietor(user)
+	data["is_agent"] = FALSE
+	data["is_command_center"] = FALSE
+	data["tariff_rate_pct"] = round(SStreasury.tax_value * 100)
+	data["tariff_paid"] = tariff_paid
+	data["tariff_evaded"] = tariff_evaded
+	data["dodging"] = dodging
+	if(get_effective_fee() > 0)
+		data["public_margin_pct"] = round(get_effective_fee() * 100)
+		data["public_margin_label"] = "Waterdeep's Margin"
+	data["categories"] = unlocked_cats
+	data["current_category"] = current_cat
+	data["search"] = search
+	data["search_mode"] = (length(search) > 0) ? TRUE : FALSE
+	data["result_cap"] = result_cap
 
-	var/split = ceil(unlocked_cats.len / 2)
-
-	if(isnull(current_cat))
-		contents += "<table style='width: 100%' line-height: 20px;'>"
-		for(var/i = 1 to split)
-			contents += "<tr>"
-			contents += "<td style='width: 50%; text-align: center;'>\
-				<a href='?src=[REF(src)];changecat=[unlocked_cats[i]]'>[unlocked_cats[i]]</a>\
-				</td>"
-			if(i + split <= unlocked_cats.len)
-				contents += "<td style='width: 50%; text-align: center;'>\
-					<a href='?src=[REF(src)];changecat=[unlocked_cats[i+split]]'>[unlocked_cats[i+split]]</a>\
-					</td>"
-			else
-				contents += "<td></td>"
-			contents += "</tr>"
-		contents += "</table>"
-	else
-		contents += "<center>[current_cat]<BR></center>"
-		contents += "<center><a href='?src=[REF(src)];changecat=0'>\[RETURN\]</a><BR><BR></center>"
-		var/list/pax = list()
+	var/list/packs = list()
+	var/total_matches = 0
+	var/searching = (length(search) > 0)
+	var/browsing_misc = (current_cat == MERCHANT_CAT_MISC)
+	if(searching || (current_cat && (current_cat in unlocked_cats)))
+		var/list/matched = list()
 		for(var/pack in SSmerchant.supply_packs)
-			var/datum/supply_pack/picked_pack = SSmerchant.supply_packs[pack]
-			if(picked_pack.group == current_cat)
-				pax += picked_pack
-		for(var/datum/supply_pack/picked_pack in sortList(pax))
-			var/costy = picked_pack.cost
+			var/datum/supply_pack/P = SSmerchant.supply_packs[pack]
+			// Never leave this machine's own catalogue, search included.
+			if(!pack_in_stock(P))
+				continue
+			if(searching)
+				if(!findtext(P.name, search))
+					continue
+			else if(browsing_misc)
+				if(length(P.group))
+					continue
+			else if(P.group != current_cat)
+				continue
+			matched += P
+		total_matches = length(matched)
+		var/count = 0
+		for(var/datum/supply_pack/P in sortList(matched))
+			count++
+			if(searching && count > result_cap)
+				break
+			var/price_base = round(P.cost + (P.cost * get_effective_fee()))
+			var/price_tariff = dodging ? 0 : round(SStreasury.tax_value * P.cost)
+			packs += list(list(
+				"ref" = "[P.type]",
+				"name" = P.name,
+				"category" = length(P.group) ? P.group : MERCHANT_CAT_MISC,
+				"qty" = (islist(P.contains) ? length(P.contains) : 1),
+				"price" = price_base + price_tariff,
+				"price_base" = price_base,
+				"price_tariff" = price_tariff,
+			))
+	data["total_matches"] = total_matches
+	data["packs"] = packs
+	return data
+
+/obj/structure/fake_machine/merchantvend/ui_act(action, list/params)
+	. = ..()
+	if(.)
+		return
+	if(!ishuman(usr))
+		return
+	if(!usr.can_perform_action(src, NEED_DEXTERITY|FORBID_TELEKINESIS_REACH) || (locked() && !is_public))
+		return
+	var/mob/living/carbon/human/human_mob = usr
+	switch(action)
+		if("changecat")
+			var/selected_category = params["category"]
+			if(selected_category && (selected_category in unlocked_cats))
+				current_cat = selected_category
+			else
+				current_cat = null
+			return TRUE
+		if("set_search")
+			search = trim(params["search"])
+			return TRUE
+		if("clear_search")
+			search = ""
+			return TRUE
+		if("change")
+			if(budget > 0)
+				budget2change(budget, human_mob)
+				budget = 0
+				playsound(src, 'sound/misc/beep.ogg', 100, FALSE, -1)
+			return TRUE
+		if("secrets")
+			if(!is_proprietor(human_mob) || is_public)
+				return TRUE
+			if(upgrade_flags & UPGRADE_NOTAX)
+				upgrade_flags &= ~UPGRADE_NOTAX
+			else
+				upgrade_flags |= UPGRADE_NOTAX
+			playsound(src, 'sound/misc/beep.ogg', 100, FALSE, -1)
+			return TRUE
+		if("buy")
+			var/path = text2path(params["ref"])
+			if(!ispath(path, /datum/supply_pack))
+				message_admins("MERCHANT [usr.key] IS TRYING TO BUY A [path] WITH THE GOLDFACE. THIS IS AN EXPLOIT.")
+				return TRUE
+			var/datum/supply_pack/picked_pack = SSmerchant.supply_packs[path]
+			if(!picked_pack)
+				return TRUE
+			// Server-side stock check: a stale UI or a spoofed ref cannot buy
+			// goods this machine does not trade in.
+			if(!pack_in_stock(picked_pack))
+				say("We don't deal in that here!")
+				return TRUE
+			base_price = round(picked_pack.cost + (picked_pack.cost * get_effective_fee()))
+			taxes = round(SStreasury.tax_value * picked_pack.cost)
+			final_price = round(base_price + taxes)
+			if(upgrade_flags & UPGRADE_NOTAX)
+				final_price = base_price
+			if(budget < final_price)
+				say("Not enough!")
+				return TRUE
+			budget -= final_price
+			record_round_statistic(value_record_key, final_price)
 			if(!(upgrade_flags & UPGRADE_NOTAX))
-				costy=round(costy+(SStreasury.tax_value * costy))
-			contents += "[picked_pack.name] - ([costy])<a href='byond://?src=[REF(src)];buy=[picked_pack.type]'>BUY</a><BR>"
-
-	if(!canread)
-		contents = stars(contents)
-
-	var/datum/browser/popup = new(user, "VENDORTHING", "", 500, 800)
-	popup.set_content(contents)
-	popup.open()
+				SStreasury.give_money_treasury(taxes, "goldface import tax")
+				record_featured_stat(FEATURED_STATS_TAX_PAYERS, human_mob, taxes)
+				record_round_statistic(STATS_TAXES_COLLECTED, taxes)
+				tariff_paid += taxes
+			else
+				record_round_statistic(STATS_TAXES_EVADED, taxes)
+				tariff_evaded += taxes
+			if(ispath(picked_pack.contains))
+				var/obj/item/packitem = picked_pack.contains
+				new packitem(get_turf(human_mob))
+			else
+				for(var/obj/item/packitem as anything in picked_pack.contains)
+					new packitem(get_turf(human_mob))
+			// NOTE: do NOT qdel(picked_pack) here. Supply packs are shared
+			// singletons owned by SSmerchant; deleting one hard-deletes a datum
+			// that stays referenced in SSmerchant.supply_packs and the faction
+			// pools, and would corrupt the catalogue for every other vendor.
+			playsound(src, 'sound/misc/beep.ogg', 100, FALSE, -1)
+			return TRUE
+//RMH EDITED END
 
 #undef UPGRADE_NOTAX
+
+//RMH EDITED START
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// SILVERFACE
+// Public-access tier of the GOLDFACE, ported from Azure Peak.
+// Anyone may buy from it; in exchange the Company tacks on a flat
+// service fee (extra_fee). It cannot be locked. Themed variants
+// simply expose a different slice of the supply catalogue.
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+
+/obj/structure/fake_machine/merchantvend/public
+	name = "SILVERFACE"
+	desc = "A public cousin of the GOLDFACE. The Company charges a hefty fee for the privilege of using it. By agreement, it cannot be locked by anyone."
+	icon_state = "streetvendor1"
+	lock = null				// public: always usable, can never be locked
+	is_public = TRUE
+	budget = 0				// no starting float; load it with coins
+	extra_fee = 0.5			// +50% Company service margin
+	value_record_key = STATS_SILVERFACE_VALUE_SPENT
+	motto = "SILVERFACE - Commerce for all."
+	unlocked_cats = list(
+		"Apparel",
+		"Storage",
+		"Drinks",
+		"Food",
+		"Jewelry",
+		"Instruments",
+		"Luxury",
+		"Livestock",
+		"Seeds",
+		"Tools",
+		"Medicine",
+		MERCHANT_CAT_MISC,
+	)
+
+/obj/structure/fake_machine/merchantvend/public/examine(mob/user)
+	. = ..()
+	. += span_info("A public version of the GOLDFACE. The Company charges a hefty fee for its usage. Per agreement, it cannot be locked by anyone.")
+
+/obj/structure/fake_machine/merchantvend/public/smith
+	name = "Smithy's SILVERFACE"
+	desc = "A public SILVERFACE stocked with the wares of the smithing trade."
+	// Metalwork only: every piece here needs a bar on the anvil, even the ones
+	// that also use leather or cloth (splint, chain, etc).
+	unlocked_cats = list(
+		"Armor(Iron)",
+		"Armor(Steel)",
+		"Shields",
+		"Weapons (Iron)",
+		"Weapons (Steel)",
+		"Weapons (Ranged)",
+		"Ammunition",
+	)
+
+/obj/structure/fake_machine/merchantvend/public/tailor
+	name = "Tailor's SILVERFACE"
+	desc = "A public SILVERFACE stocked with garments and light protection."
+	// Cloth and leather only: nothing here carries a scrap of metal.
+	unlocked_cats = list(
+		"Apparel",
+		"Armor(Light)",
+		"Storage",
+	)
+
+/obj/structure/fake_machine/merchantvend/public/apothecary
+	name = "Apothecary's SILVERFACE"
+	desc = "A public SILVERFACE stocked with tinctures and remedies."
+	unlocked_cats = list(
+		"Medicine",
+	)
+
+#undef MERCHANT_CAT_MISC
+//RMH EDITED END

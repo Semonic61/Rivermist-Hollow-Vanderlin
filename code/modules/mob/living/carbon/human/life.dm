@@ -32,9 +32,14 @@
 
 	if(HAS_TRAIT(src, TRAIT_SILVER_BLESSED))
 		adjust_bloodpool(3)
+	process_mortal_vitae_regen()
 
 	if (QDELETED(src))
 		return 0
+
+	if(next_tempo_cull && world.time > next_tempo_cull && length(tempo_attackers))
+		cull_tempo_list()
+		next_tempo_cull = length(tempo_attackers) ? (world.time + TEMPO_CULL_DELAY) : 0
 
 	if(advsetup)
 		Stun(50)
@@ -44,17 +49,18 @@
 		for(var/datum/antagonist/A in mind.antag_datums)
 			A.on_life(src)
 
-	handle_vamp_dreams()
+	INVOKE_ASYNC(src, PROC_REF(handle_vamp_dreams))
+
 	if(IsSleeping())
 		if(health > 0)
+			if(has_status_effect(/datum/status_effect/debuff/sleepytime))
+				restore_all_dnd_spell_slots()
 			remove_status_effect(/datum/status_effect/debuff/trainsleep)
 			remove_status_effect(/datum/status_effect/debuff/sleepytime)
-			restore_all_dnd_spell_slots()
 			if(has_status_effect(/datum/status_effect/debuff/dreamytime))
-				restore_all_dnd_spell_slots()
 				remove_status_effect(/datum/status_effect/debuff/dreamytime)
 				if(mind)
-					mind.sleep_adv.advance_cycle()
+					INVOKE_ASYNC(mind.sleep_adv, TYPE_PROC_REF(/datum/sleep_adv, advance_cycle))
 					if(!mind.antag_datums || !mind.antag_datums.len)
 						allmig_reward++
 						var/static/list/towner_jobs
@@ -72,10 +78,8 @@
 					MOBTIMER_SET(src, MT_LEPERBLEED)
 					var/obj/item/bodypart/part = pick(bodyparts)
 					if(part)
-						part.add_wound(/datum/wound/slash/small)
+						part.create_injury(WOUND_SLASH, 5, TRUE)
 					adjustToxLoss(10)
-		handle_heart()
-		handle_liver()
 		update_stamina()
 		update_energy()
 		handle_environment()
@@ -127,11 +131,11 @@
 			mask_sound = pick('sound/items/confessormask1.ogg', 'sound/items/confessormask2.ogg', 'sound/items/confessormask3.ogg',
 							'sound/items/confessormask4.ogg', 'sound/items/confessormask5.ogg', 'sound/items/confessormask6.ogg',
 							'sound/items/confessormask7.ogg', 'sound/items/confessormask8.ogg', 'sound/items/confessormask9.ogg',
-					 		'sound/items/confessormask10.ogg')
+							'sound/items/confessormask10.ogg')
 			playsound(src, mask_sound, 90, FALSE, 4, 0)
 			return
 
-/mob/living/carbon/human/DeadLife()
+/mob/living/carbon/human/DeadLife(delta_time = SSMOBS_DT, times_fired)
 	set invisibility = 0
 
 	if(HAS_TRAIT(src, TRAIT_NO_TRANSFORM))
@@ -143,6 +147,19 @@
 
 	. = ..()
 	name = get_visible_name()
+
+	var/virus_immunity = virus_immunity()
+	var/antibiotics = get_antibiotics()
+	var/immunity_weakness = immunity_weakness()
+	var/turf/turf_loc = get_turf(loc)
+	var/passed_temp = turf_loc?.return_temperature()
+
+	var/organ_flag = handle_organs(delta_time, times_fired,virus_immunity, antibiotics, immunity_weakness, passed_temp)
+	var/bodypart_flag = handle_bodyparts(delta_time, times_fired,virus_immunity, antibiotics, immunity_weakness, passed_temp)
+
+	if((organ_flag & ORGAN_PROCESS_UPDATE_HEALTH) || (bodypart_flag & BODYPART_LIFE_UPDATE_HEALTH))
+		updatehealth()
+		update_stamina() //gods greatest optimization
 
 /mob/living/carbon/human/proc/on_daypass()
 	if(stat < 3) //not dead
@@ -258,12 +275,16 @@
 
 /mob/living/carbon/human/SoakMob(locations, dirty_water = FALSE, rain = FALSE)
 	var/coverhead
+	if(dirty_water)
+		var/list/bodyzones = bodyparts_from_coverage(locations)
+		adjust_germ_level_directed(10, body_zone = bodyzones)
+
 	//add belt slots to this for rusting
 	var/list/body_parts = list(head, wear_mask, wear_wrists, wear_shirt, wear_neck, cloak, wear_armor, wear_pants, backr, backl, gloves, shoes, belt, wear_ring)
 	for(var/bp in body_parts)
 		if(!bp)
 			continue
-		if(bp && istype(bp , /obj/item/clothing))
+		if(istype(bp , /obj/item/clothing))
 			var/obj/item/clothing/C = bp
 			if(zone2covered(BODY_ZONE_HEAD, C.body_parts_covered))
 				coverhead = TRUE
@@ -286,10 +307,10 @@
 			var/obj/item/clothing/C = shoes
 			if(C && C.wetable)
 				C.wet.add_water(20, dirty_water)
-		else
+		else if(!rain || (locations & BELOW_CHEST))
 			var/list/below_chest = list(wear_pants, shoes)
 			for(var/obj/item/clothing/C in below_chest)
-				if(C.wetable)
+				if(C && C.wetable)
 					C.wet.add_water(20, dirty_water)
 
 //This proc returns a number made up of the flags for body parts which you are protected on. (such as HEAD, CHEST, GROIN, etc. See setup.dm for the full list)
@@ -414,26 +435,15 @@
 			vomit(1, blood = TRUE)
 
 /mob/living/carbon/human/has_smoke_protection()
-	if(wear_mask)
-		if(wear_mask.clothing_flags & BLOCK_GAS_SMOKE_EFFECT)
+	if(istype(wear_mask, /obj/item/clothing))
+		var/obj/item/clothing/mask_clothing = wear_mask
+		if(mask_clothing.clothing_flags & BLOCK_GAS_SMOKE_EFFECT)
 			return TRUE
 	if(head && istype(head, /obj/item/clothing))
 		var/obj/item/clothing/CH = head
 		if(CH.clothing_flags & BLOCK_GAS_SMOKE_EFFECT)
 			return TRUE
 	return ..()
-
-/mob/living/carbon/human/proc/handle_heart()
-	var/we_breath = !HAS_TRAIT_FROM(src, TRAIT_NOBREATH, SPECIES_TRAIT)
-
-	if(!undergoing_cardiac_arrest())
-		return
-
-	if(we_breath)
-		adjustOxyLoss(8)
-		Unconscious(80)
-	// Tissues die without blood circulation
-	adjustBruteLoss(2)
 
 /mob/living/carbon/human/proc/handle_vamp_dreams()
 	if(!HAS_TRAIT(src, TRAIT_VAMP_DREAMS))

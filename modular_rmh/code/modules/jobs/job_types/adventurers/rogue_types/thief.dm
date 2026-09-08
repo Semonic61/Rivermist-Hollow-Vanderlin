@@ -38,16 +38,21 @@
 		TRAIT_THIEVESGUILD,
 		TRAIT_DODGEEXPERT,
 		TRAIT_LIGHT_STEP,
+		TRAIT_BLINDFIGHTING,
 	)
 
 	languages = list(/datum/language/thievescant)
+
+	spells = list(
+		/datum/action/cooldown/spell/undirected/rogue_vanish
+	)
 
 /datum/outfit/adventurer_rogue/thief
 	name = "Thief"
 	head = null
 	mask = null
 	neck = null
-	cloak = null
+	cloak = /obj/item/clothing/cloak/raincloak
 	armor = null
 	shirt = /obj/item/clothing/shirt/undershirt/colored/black
 	wrists = null
@@ -58,7 +63,7 @@
 	backl = /obj/item/storage/backpack/satchel
 	belt = /obj/item/storage/belt/leather/adventurers_subclasses
 	beltr = /obj/item/weapon/mace/cudgel // TEMP until I make a blackjack- for now though this will do.
-	beltl = /obj/item/storage/belt/pouch/coins/poor
+	beltl = /obj/item/storage/belt/pouch/cloth/coins/poor
 	ring = null
 	l_hand = null
 	r_hand = null
@@ -71,8 +76,15 @@
 
 /datum/outfit/adventurer_rogue/thief/post_equip(mob/living/carbon/human/H, visuals_only = FALSE)
 	. = ..()
+	var/obj/item/clothing/cloak/raincloak/thiefcloak = H.cloak
+	if(istype(thiefcloak))
+		thiefcloak.color = "#2f352f"
+		H.update_inv_cloak()
 
-	if(visuals_only)
+/datum/job/advclass/combat/adventurer_rogue/thief/after_spawn(mob/living/carbon/human/H, client/player_client)
+	. = ..()
+	var/obj/item/clothing/cloak/raincloak/thiefcloak = H.cloak
+	if(!istype(thiefcloak))
 		return
 
 	var/list/thiefcloak_colors = list(\
@@ -99,7 +111,8 @@
 		"Ashen Black"	="#2f352f",\
 	)
 
-	var/thiefcloak_color_selection = input(H, "What color was I again?", "The Cloak", "Ashen Black") in thiefcloak_colors
-	var/obj/item/clothing/cloak/raincloak/thiefcloak = new()
+	var/thiefcloak_color_selection = input(player_client || H, "What color was I again?", "The Cloak", "Ashen Black") in thiefcloak_colors
+	if(QDELETED(H) || QDELETED(thiefcloak) || H.cloak != thiefcloak || !(thiefcloak_color_selection in thiefcloak_colors))
+		return
 	thiefcloak.color = thiefcloak_colors[thiefcloak_color_selection]
-	H.equip_to_slot(thiefcloak, ITEM_SLOT_CLOAK, TRUE)
+	H.update_inv_cloak()

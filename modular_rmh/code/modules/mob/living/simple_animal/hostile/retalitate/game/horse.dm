@@ -6,6 +6,8 @@
 	icon_living = "horsewhite"
 	icon_dead = "horsewhite_dead"
 	gender = FEMALE
+	// horse.dmi ships a unisex saddle rather than saiga's split male/female pair.
+	saddle_overlay_state = "saddle"
 	SET_BASE_PIXEL(-8, 0)
 
 /mob/living/simple_animal/hostile/retaliate/saiga/horse/random/Initialize()
@@ -16,24 +18,11 @@
 	icon_dead = "[horsecolor]_dead"
 	gender = pick(MALE, FEMALE)
 
-/mob/living/simple_animal/hostile/retaliate/saiga/horse/update_overlays()
-	. = ..()
-	if(stat == DEAD)
-		return
-	if(ssaddle)
-		var/mutable_appearance/saddlet = mutable_appearance(icon, "saddle-above", 4.3)
-		. += saddlet
-		saddlet = mutable_appearance(icon, "saddle")
-		. += saddlet
-	if(has_buckled_mobs())
-		var/mutable_appearance/mounted = mutable_appearance(icon, "[icon_state]_mounted", 4.3)
-		. += mounted
-
 /mob/living/simple_animal/hostile/retaliate/saiga/horse/tamed(mob/user)
 	. = ..()
+	if(.)
+		return
 	deaggroprob = 30
-	if(can_buckle)
-		AddComponent(/datum/component/riding/saiga)
 	if(can_breed)
 		AddComponent(\
 			/datum/component/breed,\
@@ -54,6 +43,8 @@
 	gender = FEMALE
 	health = CALF_HEALTH
 	maxHealth = CALF_HEALTH
+	// Matches saigakid: foals are too small to ride, and horse.dmi has no foal mounted overlay.
+	can_buckle = FALSE
 
 	adult_growth = /mob/living/simple_animal/hostile/retaliate/saiga/horse
 

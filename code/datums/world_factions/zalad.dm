@@ -29,7 +29,7 @@
 	)
 	common_pool = list(
 		// Light armor for desert travel
-		/datum/supply_pack/armor/light/imask,
+		/datum/supply_pack/armor/iron/imask,
 		/datum/supply_pack/armor/steel/smask,
 		// Apparel suited for desert nomads
 		/datum/supply_pack/apparel/headband,
@@ -54,6 +54,10 @@
 		/datum/supply_pack/tools/flint,
 		/datum/supply_pack/tools/bottle,
 		/datum/supply_pack/tools/needle,
+		/datum/supply_pack/tools/poor_armorkit,
+		/datum/supply_pack/tools/repair_kit,
+		/datum/supply_pack/tools/poor_sewingkit,
+		/datum/supply_pack/tools/sewingkit,
 		/datum/supply_pack/tools/scroll,
 		/datum/supply_pack/tools/parchment,
 		/datum/supply_pack/tools/sleepingbag,
@@ -69,12 +73,15 @@
 		/datum/supply_pack/luxury/spectacles_onyxa,
 		/datum/supply_pack/jewelry/nosegold,
 		/datum/supply_pack/apparel/engineering_goggles,
-		/datum/supply_pack/apparel/hatblu
+		/datum/supply_pack/apparel/hatblu,
+		// Nomad shelter
+		/datum/supply_pack/tools/camp_tent,
+		/datum/supply_pack/tools/camp_yurt
 	)
 	uncommon_pool = list(
 		// Better armor
-		/datum/supply_pack/armor/light/splint,
-		/datum/supply_pack/armor/light/haukberk,
+		/datum/supply_pack/armor/iron/splint,
+		/datum/supply_pack/armor/iron/haukberk,
 		// Apparel
 		/datum/supply_pack/apparel/raincloak_random,
 		/datum/supply_pack/apparel/leather_gloves,
@@ -130,7 +137,7 @@
 		/datum/supply_pack/apparel/robe,
 		/datum/supply_pack/apparel/armordress,
 		/datum/supply_pack/armor/light/studleather,
-		/datum/supply_pack/armor/light/lakkariancap,
+		/datum/supply_pack/armor/iron/lakkariancap,
 		/datum/supply_pack/armor/light/lakkarianarmor,
 		/datum/supply_pack/armor/light/stepperobes,
 		/datum/supply_pack/armor/light/steppehidearmor,
@@ -163,9 +170,24 @@
 		/datum/supply_pack/seeds/sunflowers,
 		/datum/supply_pack/seeds/plum,
 		/datum/supply_pack/seeds/strawberry,
+		// Luxury goods
+		/datum/supply_pack/luxury/chess,
+		/datum/supply_pack/narcotics/perfume/random,
+		/datum/supply_pack/narcotics/perfume/lavender,
+		/datum/supply_pack/narcotics/perfume/cherry,
+		/datum/supply_pack/narcotics/perfume/rose,
+		/datum/supply_pack/narcotics/perfume/jasmine,
+		/datum/supply_pack/narcotics/perfume/mint,
+		/datum/supply_pack/narcotics/perfume/vanilla,
+		/datum/supply_pack/narcotics/perfume/pear,
+		/datum/supply_pack/narcotics/perfume/strawberry,
 		// Narcotics
 		/datum/supply_pack/narcotics/ozium,
-		/datum/supply_pack/narcotics/poison
+		/datum/supply_pack/narcotics/poison,
+		/datum/supply_pack/medicine/antipregpot,
+		/datum/supply_pack/tools/camp_pavilion,
+		// Livestock
+		/datum/supply_pack/livestock/terrorbird
 	)
 	exotic_pool = list(
 		/datum/supply_pack/apparel/silkcoat,

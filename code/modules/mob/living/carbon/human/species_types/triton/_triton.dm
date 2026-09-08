@@ -55,7 +55,7 @@
 	use_skintones = TRUE
 
 	species_traits = list(NO_UNDERWEAR, HAIR, FACEHAIR, OLDGREY)
-	inherent_traits = list(TRAIT_NOMOBSWAP, TRAIT_WATER_BREATHING, TRAIT_GOOD_SWIM)
+	inherent_traits = list(TRAIT_NOMOBSWAP, TRAIT_WATER_BREATHING, TRAIT_GOOD_SWIM, TRAIT_WATER_LOVER)
 	inherent_traits_m = list(TRAIT_STRONGBITE)
 	inherent_sheet = /datum/attribute_holder/sheet/job/species/triton/inherent
 
@@ -75,6 +75,7 @@
 
 	organs = list(
 		ORGAN_SLOT_BRAIN = /obj/item/organ/brain,
+		ORGAN_SLOT_SPLEEN = /obj/item/organ/spleen,
 		ORGAN_SLOT_HEART = /obj/item/organ/heart,
 		ORGAN_SLOT_LUNGS = /obj/item/organ/lungs,
 		ORGAN_SLOT_EYES = /obj/item/organ/eyes/triton,
@@ -83,7 +84,6 @@
 		ORGAN_SLOT_TONGUE = /obj/item/organ/tongue/fish,
 		ORGAN_SLOT_LIVER = /obj/item/organ/liver,
 		ORGAN_SLOT_STOMACH = /obj/item/organ/stomach,
-		ORGAN_SLOT_APPENDIX = /obj/item/organ/appendix,
 		ORGAN_SLOT_GUTS = /obj/item/organ/guts,
 		ORGAN_SLOT_PUBIC = /obj/item/organ/genitals/pubes,
 		ORGAN_SLOT_ANUS = /obj/item/organ/genitals/filling_organ/anus,
@@ -146,6 +146,9 @@
 	RegisterSignal(C, COMSIG_MOB_SAY, PROC_REF(handle_speech))
 	C.grant_language(/datum/language/common)
 	C.grant_language(/datum/language/deepspeak)
+
+	var/obj/item/bodypart/mouth/jaw = C.get_bodypart(BODY_ZONE_PRECISE_MOUTH)
+	jaw.replace_teeth(/obj/item/natural/bundle/teeth/fang)
 
 /datum/species/triton/after_creation(mob/living/carbon/C)
 	. = ..()

@@ -1,10 +1,13 @@
 /obj/item/natural/cloth/bandage
+	item_weight = 18 GRAMS
 	name = "bandage"
 	icon = 'icons/roguetown/items/surgery.dmi'
 	icon_state = "bandageroll"
 	desc = "A fabric treated and specially made to help with bleeding wounds. Better and faster at stopping bleeding than your regular piece of cloth."
 	bundletype = /obj/item/natural/bundle/cloth/bandage
 	bandage_effectiveness = 0.25
+	bandage_brute_heal = 2
+	bandage_burn_heal = 6
 	bandage_health = 300
 	bandage_speed = 4 SECONDS
 	volume = 18

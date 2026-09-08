@@ -2,12 +2,12 @@
 	name = "Medium armor template"
 	equip_delay_self = 4 SECONDS
 	unequip_delay_self = 3 SECONDS
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	melt_amount = 75
 	melting_material = /datum/material/steel
 	armor_class = AC_MEDIUM
-	armor = ARMOR_SCALE
-	max_integrity = INTEGRITY_STANDARD
+	armor_type = /datum/armor/scale
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_SCALE
 	clothing_flags = CANT_SLEEP_IN
 	prevent_crits = ALL_EXCEPT_STAB
 	abstract_type = /obj/item/clothing/armor/medium
@@ -20,7 +20,7 @@
 
 	body_parts_covered = COVERAGE_ALL_BUT_ARMS
 	prevent_crits = ALL_CRITICAL_HITS
-	max_integrity = INTEGRITY_STRONG
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL
 	item_weight = 7
 
 /obj/item/clothing/armor/medium/scale/steppe
@@ -37,7 +37,7 @@
 	item_state = "surcoat"
 	detail_tag = "_metal"		// metal bits are the details so keep them uncolorer = white
 	detail_color = COLOR_WHITE
-	item_weight = 7.4
+	item_weight = 5.3 KILOGRAMS
 
 /obj/item/clothing/armor/medium/surcoat/Initialize()
 	. = ..()
@@ -62,6 +62,7 @@
 	body_parts_covered = COVERAGE_FULL
 
 /obj/item/clothing/armor/medium/scale/inqcoat
+	item_weight = 6.3 KILOGRAMS
 	slot_flags = ITEM_SLOT_ARMOR
 	name = "inquisitorial duster"
 	desc = "Metal plates reinforce this heavy coat. Its striking silhouette is of ill omen to any mainland community - whether pious, or profane."
@@ -73,8 +74,8 @@
 	icon_state = "inqcoat"
 	item_state = "inqcoat"
 	sleevetype = "shirt"
-	max_integrity = INTEGRITY_STRONG
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	melt_amount = 75
 	melting_material = /datum/material/steel
 	equip_delay_self = 4 SECONDS
@@ -84,7 +85,7 @@
 	. = ..()
 	AddComponent(/datum/component/item_equipped_movement_rustle, custom_sounds = SFX_INQUIS_BOOT_STEP)
 
-/obj/item/clothing/armor/medium/scale/inqcoat/attackby(obj/item/W, mob/living/user, params)
+/obj/item/clothing/armor/medium/scale/inqcoat/attackby(obj/item/W, mob/living/user, list/modifiers)
 	..()
 	if(istype(W, /obj/item/clothing/armor/plate/fluted/ornate))
 		user.visible_message(span_warning("[user] starts to fit [W] inside the [src]."))
@@ -101,6 +102,7 @@
 		return
 
 /obj/item/clothing/armor/medium/scale/inqcoat/armored
+	item_weight = 7.2 KILOGRAMS
 	slot_flags = ITEM_SLOT_ARMOR
 	name = "armored inquisitorial duster"
 	desc = "Metal plates reinforce this heavy coat, worn over the top of the finest Aonic plate."
@@ -108,9 +110,9 @@
 	icon_state = "inqcoata"
 	item_state = "inqcoata"
 	equip_delay_self = 4 SECONDS
-	max_integrity = 300
+	max_integrity = ARMOR_INT_CHEST_MEDIUM_STEEL
 	armor_class = AC_MEDIUM
-	armor = list("blunt" = 40, "slash" = 100, "stab" = 80, "piercing" = 40, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/scale/inqcoat/armored
 	melt_amount = 150
 	melting_material =  /datum/material/steel
 	blocksound = PLATEHIT

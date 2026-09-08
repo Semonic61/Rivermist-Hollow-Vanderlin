@@ -1,4 +1,5 @@
 /obj/item/clothing/pants/webs
+	item_weight = 90 GRAMS
 	name = "webbing"
 	desc = "A fine webbing made from spidersilk, popular fashion within the underdark."
 	gender = PLURAL
@@ -16,10 +17,10 @@
 	sleeved = 'icons/roguetown/clothing/onmob/helpers/stonekeep_merc.dmi'
 	detail_tag = "_detail"
 	colorgrenz = TRUE
-	armor = ARMOR_PADDED
+	armor_type = /datum/armor/pants/padded
 	prevent_crits = MINOR_CRITICALS
 	max_integrity = INTEGRITY_STANDARD
-	item_weight = 4
+	item_weight = 400 GRAMS
 
 /obj/item/clothing/pants/grenzelpants/update_overlays()
 	. = ..()

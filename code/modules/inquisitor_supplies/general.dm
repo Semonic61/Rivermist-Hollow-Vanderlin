@@ -254,7 +254,7 @@
 
 /obj/structure/closet/crate/chest/inqcrate/equipment/puffer/populate_contents()
 	new /obj/item/gun/ballistic/revolver/grenadelauncher/pistol(src)
-	new /obj/item/storage/belt/pouch/bullets(src)
+	new /obj/item/storage/belt/pouch/cloth/bullets(src)
 	new /obj/item/reagent_containers/glass/bottle/aflask(src)
 
 /*
@@ -362,7 +362,7 @@
 	icon_state = "fencercollar"
 	color = "#8b1414"
 	detail_color = "#99b2b1"
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/neck/plate
 	max_integrity = ARMOR_INT_SIDE_STEEL
 	body_parts_covered = NECK
 	resistance_flags = FIRE_PROOF

@@ -102,6 +102,11 @@
 
 	. = list()
 
+	// Ooc lang
+	var/player_language = client?.prefs?.read_preference(/datum/preference/text/player_language)
+	if(player_language) //should be tied to known persons but can't do that until there is a way to recognise new people
+		. += span_tiny("OOC: This player speaks [player_language].")
+
 	// Lord's title
 	if(GLOB.lord_titles[real_name]) //should be tied to known persons but can't do that until there is a way to recognise new people
 		. += span_notice("[P[THEYVE]] been granted the title of \"[GLOB.lord_titles[real_name]]\".")
@@ -129,6 +134,10 @@
 			else // you can only be ugly then, huh.
 				. += span_necrosis("[P[THEYRE]] hideous!")
 				user.add_stress(self_inspect ? /datum/stress_event/ugly_self : /datum/stress_event/ugly)
+
+	if(HAS_TRAIT(src, TRAIT_ALLURE))
+		. += span_love(span_bold("[P[THEYVE]] quite a tempting appeal"))
+		user.add_stress(self_inspect ? /datum/stress_event/allure_self : /datum/stress_event/allure)
 
 	//Facial status
 	var/datum/status_effect/facial/facial = has_status_effect(/datum/status_effect/facial)
@@ -185,12 +194,6 @@
 			. += span_smallgreen("A member of the Thieves' Guild.")
 
 
-		if(HAS_TRAIT(src, TRAIT_ALLURE))
-			if(user == src)
-				user.add_stress(/datum/stress_event/allure_self)
-			else
-				user.add_stress(/datum/stress_event/allure)
-
 		// Cabal
 		if(HAS_TRAIT(user, TRAIT_CABAL) && (istype(patron, /datum/patron/inhumen/zizo) || HAS_TRAIT(src, TRAIT_CABAL)))
 			. += span_purple("A fellow seeker of Her ascension.")
@@ -245,18 +248,20 @@
 		//Drunkenness
 		var/drunk_msg
 		switch(drunkenness)
-			if(11 to 21)
-				drunk_msg = span_tinynoticeital("[P[THEY]] look[pl] slightly flushed.")
+			if(3 to 11)
+				drunk_msg = span_tinynoticeital("[P[THEYRE]] tipsy.")
+			if(11.01 to 21)
+				drunk_msg = span_tinynoticeital("[P[THEY]] look[pl] a little drunk.")
 			if(21.01 to 41) //.01s are used in case drunkenness ends up to be a small decimal
-				drunk_msg = span_tinynotice("[P[THEY]] look[pl] flushed.")
+				drunk_msg = span_tinynotice("[P[THEYRE]] visibly drunk.")
 			if(41.01 to 51)
-				drunk_msg = span_smallnotice("[P[THEY]] look[pl] quite flushed and [P[THEIR]] breath smells of ale.")
+				drunk_msg = span_smallnotice("[P[THEYRE]] drunk, flushed, and [P[THEIR]] breath smells of ale.")
 			if(51.01 to 61)
 				drunk_msg = span_notice("[P[THEY]] look[pl] very flushed, with breath reeking of ale.")
 			if(61.01 to 91)
-				drunk_msg = span_boldnotice("[P[THEY]] look[pl] like a drunken mess.")
+				drunk_msg = span_boldnotice("[P[THEYRE]] a drunken mess.")
 			if(91.01 to INFINITY)
-				drunk_msg = span_bignotice(html_tag("B", "[P[THEYRE]] a shitfaced, slobbering wreck."))
+				drunk_msg = span_bignotice(html_tag("B", "[P[THEYRE]] completely shitfaced."))
 		if(drunk_msg)
 			. += drunk_msg
 		// Closed eyes
@@ -267,7 +272,7 @@
 	. = list()
 	if(stat < UNCONSCIOUS && isliving(user))
 		var/mob/living/living_user = user
-		if(living_user.has_quirk(/datum/quirk/vice/wanted))
+		if(living_user.has_quirk(/datum/quirk/vice/wanted) && user != src)
 			user.add_stress(/datum/stress_event/hunted)
 
 
@@ -458,7 +463,7 @@
 		var/handcuff_msg = "[capitalize(P[THEIR])] arms are restrained by [handcuffed.get_examine_string(user)]!"
 		. += "<A href='byond://?src=[REF(src)];item=[ITEM_SLOT_HANDCUFFED]'>[handcuff_msg]</A>"
 	if(legcuffed)
-		var/legcuff_msg = "[capitalize(P[THEIR])] legs are restrained by [handcuffed.get_examine_string(user)]!"
+		var/legcuff_msg = "[capitalize(P[THEIR])] legs are restrained by [legcuffed.get_examine_string(user)]!"
 		. += "<A href='byond://?src=[REF(src)];item=[ITEM_SLOT_LEGCUFFED]'>[legcuff_msg]</A>"
 
 	//Bloody hands
@@ -470,9 +475,9 @@
 	var/fire_str
 	if(on_fire)
 		fire_str = span_boldwarning("on fire!")
-		if(L?.has_quirk(/datum/quirk/vice/pyromaniac)) // living only
+		if(L?.has_quirk(/datum/quirk/vice/addiction/pyromaniac)) // living only
 			fire_str += span_boldred(" IT'S BEAUTIFUL!")
-			L.sate_addiction(/datum/quirk/vice/pyromaniac)
+			L.sate_addiction(/datum/quirk/vice/addiction/pyromaniac)
 	else if(fire_stacks + divine_fire_stacks > 0)
 		fire_str += "covered in something flammable."
 	else if(fire_stacks < 0 && !on_fire)
@@ -497,6 +502,10 @@
 
 
 /// Things relevant to one's health.
+/mob/living/carbon/proc/get_heartbeat_examine_link(label)
+	var/heartbeat_tip = "Listen for a heartbeat. A working heart keeps blood moving and helps prevent brain damage; if it is stopped, restart or replace the heart, treat cardiac arrest, and restore breathing or blood oxygen."
+	return "<a href='byond://?src=[REF(src)];check_hb=1'>[span_tooltip(heartbeat_tip, label)]</a>"
+
 /mob/living/carbon/proc/get_examine_health(mob/user, list/P, list/examine_list)
 	var/self_inspect = user == src
 	var/pl = self_inspect ? "" : p_s()
@@ -539,6 +548,9 @@
 			limb_msg = span_boldwarning(limb_msg)
 		. += limb_msg
 
+	if(has_status_effect(/datum/status_effect/defeat_knockout))
+		. += span_boldwarning("[P[THEYRE]] defeated and unable to rise.")
+
 	// Health statuses
 	if(stat == DEAD || (HAS_TRAIT(src, TRAIT_FAKEDEATH)))
 		appears_dead = TRUE
@@ -557,10 +569,10 @@
 	//The Nymphomaniac Underground
 	if(isliving(user))
 		var/mob/living/living_user = user
-		if((!appears_dead) && stat == CONSCIOUS && src.has_quirk(/datum/quirk/vice/lovefiend))
-			var/datum/quirk/vice/bonercheck = src.get_quirk(/datum/quirk/vice/lovefiend)
+		if((!appears_dead) && stat == CONSCIOUS && src.has_quirk(/datum/quirk/vice/addiction/lovefiend))
+			var/datum/quirk/vice/addiction/bonercheck = src.get_quirk(/datum/quirk/vice/addiction/lovefiend)
 			if((bonercheck) && (bonercheck.sated == 0))
-				if(living_user.has_quirk(/datum/quirk/vice/lovefiend)) //Takes one to know one
+				if(living_user.has_quirk(/datum/quirk/vice/addiction/lovefiend)) //Takes one to know one
 					switch(rand(1,5))
 						if(1)
 							. += span_love("I can sense [P[THEIR]] <B>need</B> for fun...")
@@ -654,6 +666,7 @@
 		if(O)
 			var/static/list/check_zones = list(
 				BODY_ZONE_HEAD,
+				BODY_ZONE_PRECISE_MOUTH,
 				BODY_ZONE_CHEST,
 				BODY_ZONE_R_ARM,
 				BODY_ZONE_L_ARM,
@@ -668,12 +681,12 @@
 				zone_str += "<a href='byond://?src=[REF(src)];inspect_limb=[zone]'>Inspect [parse_zone(zone)]</a>"
 			if(length(zone_str))
 				. += zone_str.Join(" ")
-			. += "<a href='byond://?src=[REF(src)];check_hb=1'>Check Heartbeat</a>"
+			. += get_heartbeat_examine_link("Check Heartbeat")
 		else
 			var/checked_zone = check_zone(user.zone_selected)
 			. += "<a href='byond://?src=[REF(src)];inspect_limb=[checked_zone]'>Inspect [parse_zone(checked_zone)]</a>"
 			if(!self_inspect && body_position == LYING_DOWN && (user.zone_selected == BODY_ZONE_CHEST))
-				. += "<a href='byond://?src=[REF(src)];check_hb=1'>Listen to Heartbeat</a>"
+				. += get_heartbeat_examine_link("Listen to Heartbeat")
 
 	// i dont really wanna put this here but its kinda of a huge hassel to make an appropriate spot
 	if(IsAdminGhost(user))

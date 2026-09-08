@@ -66,20 +66,22 @@
 	backpack_contents = list(
 		/obj/item/book/granter/spellbook/apprentice = 1,
 		/obj/item/chalk = 1,
-		/obj/item/storage/belt/pouch/coins/mid,
+		/obj/item/storage/belt/pouch/cloth/coins/mid,
 	)
 
 /datum/outfit/guild_wizard_apprentice/pre_equip(mob/living/carbon/human/equipped_human, visuals_only)
 	. = ..()
 	equipped_human.mana_pool?.set_intrinsic_recharge(MANA_ALL_LEYLINES)
 
-/datum/outfit/guild_wizard_apprentice/post_equip(mob/living/carbon/human/equipped_human, visuals_only)
+/datum/job/guild_wizard_apprentice/after_spawn(mob/living/carbon/human/spawned, client/player_client)
 	. = ..()
 	var/static/list/selectablehat = list(
 		"Mage hood" = /obj/item/clothing/head/roguehood/colored/mage,
 		"None" = null,
 	)
-	equipped_human.select_equippable(equipped_human, selectablehat, message = "Choose your hat of choice", title = "APPRENTICE")
+	spawned.select_equippable(player_client, selectablehat, message = "Choose your hat of choice", title = "APPRENTICE")
+	if(QDELETED(spawned))
+		return
 
 	var/static/list/selectablerobe = list(
 		"Mage robes" = /obj/item/clothing/shirt/robe/colored/mage,
@@ -88,4 +90,4 @@
 		"Lowcut tunic" = /obj/item/clothing/shirt/undershirt/lowcut,
 		"Silk dress" = /obj/item/clothing/shirt/dress/silkdress/colored/random,
 	)
-	equipped_human.select_equippable(equipped_human, selectablerobe, message = "Choose your attire of choice", title = "APPRENTICE")
+	spawned.select_equippable(player_client, selectablerobe, message = "Choose your attire of choice", title = "APPRENTICE")

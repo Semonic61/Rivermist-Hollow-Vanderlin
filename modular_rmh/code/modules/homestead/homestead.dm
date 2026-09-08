@@ -1,5 +1,5 @@
 /mob/living/carbon/human
-    var/received_resident_key = FALSE
+	var/received_resident_key = FALSE
 
 /obj/structure/door/town
 	name = "homestead door"
@@ -10,7 +10,7 @@
 	var/house_id
 	max_integrity = 4000
 	integrity_failure = 0.5
-	armor = list("blunt" = 25, "slash" = 25, "stab" = 25,  "piercing" = 25, "fire" = 150, "acid" = 0)
+	armor_type = /datum/armor/rmh/structure/town_door
 	damage_deflection = 20
 
 /obj/item/key/town
@@ -76,38 +76,38 @@
 
 /obj/structure/door/town/attack_hand(mob/user)
 
-    if(try_award_resident_key(user))
-        return
+	if(try_award_resident_key(user))
+		return
 
-    return ..()
+	return ..()
 
 
 /obj/structure/door/town/proc/can_open(mob/living/user)
-    if(!ishuman(user))
-        return FALSE
+	if(!ishuman(user))
+		return FALSE
 
-    var/mob/living/carbon/human/H = user
+	var/mob/living/carbon/human/H = user
 
-    if(!H.has_quirk(/datum/quirk/boon/resident))
-        to_chat(H, span_warning("This is not your home."))
-        return FALSE
+	if(!H.has_quirk(/datum/quirk/boon/resident))
+		to_chat(H, span_warning("This is not your home."))
+		return FALSE
 
-    return TRUE
+	return TRUE
 
 /obj/structure/door/town/TryToSwitchState(atom/user)
 
-    if(grant_resident_key)
-        return FALSE
+	if(grant_resident_key)
+		return FALSE
 
-    if(isliving(user))
-        var/mob/living/L = user
+	if(isliving(user))
+		var/mob/living/L = user
 
-        if(ishuman(L))
-            var/mob/living/carbon/human/H = L
+		if(ishuman(L))
+			var/mob/living/carbon/human/H = L
 
-            if(!H.has_quirk(/datum/quirk/boon/resident))
-                to_chat(H, span_warning("This is not your home."))
-                return FALSE
+			if(!H.has_quirk(/datum/quirk/boon/resident))
+				to_chat(H, span_warning("This is not your home."))
+				return FALSE
 
-    return ..()
+	return ..()
 

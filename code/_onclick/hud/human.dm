@@ -48,7 +48,7 @@
 
 	scannies = new /atom/movable/screen/scannies(null, src)
 	static_inventory += scannies
-	if(owner.client?.prefs?.crt == TRUE)
+	if(owner.client?.prefs?.read_preference(/datum/preference/toggle/crt))
 		scannies.alpha = 70
 
 	action_intent = new /atom/movable/screen/act_intent/rogintent(null, src)
@@ -72,10 +72,12 @@
 	quad_intents = new /atom/movable/screen/quad_intents(null, src)
 	static_inventory += quad_intents
 
-	def_intent = new /atom/movable/screen/def_intent(null, src)
-	static_inventory += def_intent
+	combat_utilities = new /atom/movable/screen/combat_utilities(null, src)
+	static_inventory += combat_utilities
 
 	cmode_button = new /atom/movable/screen/cmode(null, src)
+	var/atom/movable/screen/cmode/combat_mode_screen = cmode_button
+	combat_mode_screen.update_dodge_charges()
 	static_inventory += cmode_button
 
 	give_intent = new /atom/movable/screen/give_intent(null, src)
@@ -89,12 +91,6 @@
 
 	mana_over =  new /atom/movable/screen/mana_over(null, src)
 	static_inventory += mana_over
-
-	fov = new /atom/movable/screen/fov(null, src)
-	static_inventory += fov
-
-	fov_blocker = new /atom/movable/screen/fov_blocker(null, src)
-	static_inventory += fov_blocker
 
 	cdleft = new /atom/movable/screen/action_bar/clickdelay/left(null, src)
 	cdleft.screen_loc = "WEST-3:-16,SOUTH+7"
@@ -406,6 +402,9 @@
 	var/mob/living/carbon/human/H = mymob
 
 	var/mob/screenmob = viewer || H
+
+	if(screenmob == H)
+		H.apply_dnd_spell_hud_visibility()
 
 	if(screenmob.hud_used)
 		if(screenmob.hud_used.hud_shown)

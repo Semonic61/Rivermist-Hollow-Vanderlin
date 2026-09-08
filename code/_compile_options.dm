@@ -1,3 +1,7 @@
+#if defined(OPENDREAM) && !defined(SPACEMAN_DMM)
+#define OPENDREAM_REAL
+#endif
+
 //#define TESTING				//By using the testing("message") proc you can create debug-feedback for people with this
 								//uncommented, but not visible in the release version)
 
@@ -57,6 +61,7 @@
 #define REFERENCE_TRACKING
 // actually look for refs
 #define GC_FAILURE_HARD_LOOKUP
+#define REFERENCE_TRACKING_LOG_APART
 #endif // REFERENCE_DOING_IT_LIVE
 
 
@@ -85,7 +90,7 @@
 
 //#define LOWMEMORYMODE //uncomment this to load centcom and roguetest and thats it.
 
-//#define NO_DUNGEON //comment this to load dungeons.
+#define NO_DUNGEON //comment this to load "Matthios" dungeons.
 
 //#define USES_PQ
 //#define ABSOLUTE_MINIMUM_MODE //uncomment this to skip as many resource intensive ops as possible to load in for testing the fastest while preserving most gameplay features.
@@ -127,20 +132,20 @@
 #endif
 
 //Update this whenever you need to take advantage of more recent byond features
-#define MIN_COMPILER_VERSION 515
+#define MIN_COMPILER_VERSION 516
 #if DM_VERSION < MIN_COMPILER_VERSION
 //Don't forget to update this part
 #error Your version of BYOND is too out-of-date to compile this project. Go to https://secure.byond.com/download and update.
-#error You need version 515 or higher
+#error You need version 516 or higher
 #endif
 
 //Update this whenever you need to take advantage of more recent byond features
-#define MIN_COMPILER_MINOR_VERSION 1643
+#define MIN_COMPILER_MINOR_VERSION 1667
 #ifndef SPACEMAN_DMM
 #if DM_BUILD < MIN_COMPILER_MINOR_VERSION
 //Don't forget to update this part
 #error Your version of BYOND is too out-of-date to compile this project. Go to https://secure.byond.com/download and update.
-#error You need version 515.1643 or higher
+#error You need version 516.1667 or higher
 #endif
 #endif
 
@@ -149,4 +154,13 @@
 #define NO_DUNGEON
 #define FORCE_MAP "projectkalypso"
 #define FORCE_MAP_DIRECTORY "_maps"
+#endif
+
+// Local reference tracking with its own log; this may stall the server during searches.
+//#define REFERENCE_TRACKING_STANDARD
+#ifdef REFERENCE_TRACKING_STANDARD
+#define REFERENCE_TRACKING
+#define GC_FAILURE_HARD_LOOKUP
+#define FIND_REF_NO_CHECK_TICK
+#define REFERENCE_TRACKING_LOG_APART
 #endif

@@ -1,24 +1,28 @@
-/mob/living/carbon/human/getarmor(def_zone, type, damage, armor_penetration, blade_dulling)
+/mob/living/carbon/human/getarmor(def_zone, type, damage, armor_penetration, blade_dulling, intdamfactor = 1, used_weapon, mob/living/attacker)
 	var/armorval = 0
 	var/organnum = 0
 
+	type = normalize_armor_attack_flag(type)
 	if(def_zone)
-		return checkarmor(def_zone, type, damage, armor_penetration, blade_dulling)
+		return checkarmor(def_zone, type, damage, armor_penetration, blade_dulling, intdamfactor, used_weapon, attacker)
 		//If a specific bodypart is targetted, check how that bodypart is protected and return the value.
 
 	//If you don't specify a bodypart, it checks ALL my bodyparts for protection, and averages out the values
 	for(var/obj/item/bodypart/BP as anything in bodyparts)
-		armorval += checkarmor(BP, type, damage, armor_penetration)
+		armorval += checkarmor(BP, type, damage, armor_penetration, blade_dulling, intdamfactor, used_weapon, attacker)
 		organnum++
 	return (armorval/max(organnum, 1))
 
 
-/mob/living/carbon/human/proc/checkarmor(def_zone, d_type, damage, armor_penetration, blade_dulling)
+/mob/living/carbon/human/proc/checkarmor(def_zone, d_type, damage, armor_penetration, blade_dulling, intdamfactor = 1, used_weapon, mob/living/attacker)
 	if(!d_type)
 		return 0
+	d_type = normalize_armor_attack_flag(d_type)
 	if(isbodypart(def_zone))
 		var/obj/item/bodypart/CBP = def_zone
 		def_zone = CBP.body_zone
+		if(def_zone == BODY_ZONE_PRECISE_MOUTH)
+			def_zone = BODY_ZONE_HEAD
 	var/protection = 0
 	var/obj/item/clothing/used
 	var/list/body_parts = list(skin_armor, head, wear_mask, wear_wrists, gloves, wear_neck, cloak, wear_armor, wear_shirt, shoes, wear_pants, backr, backl, belt, wear_ring)
@@ -31,7 +35,7 @@
 				if(C.uses_integrity)
 					if(C.get_integrity() <= 0)
 						continue
-				var/val = C.armor.getRating(d_type)
+				var/val = C.get_armor_rating(d_type)
 				// The code below finally fixes the targetting order of armor > shirt > flesh. - Foxtrot (#gundamtanaka)
 				var/obj/item/armorworn = src.get_item_by_slot(ITEM_SLOT_ARMOR) // The armor we're wearing
 				var/obj/item/shirtworn = src.get_item_by_slot(ITEM_SLOT_SHIRT) // The shirt we're wearing
@@ -67,14 +71,150 @@
 	if(used)
 		if(used.blocksound)
 			playsound(src, get_armor_sound(used.blocksound, blade_dulling), 100)
-		used.take_damage(damage, damage_flag = d_type, sound_effect = FALSE, armor_penetration = 100)
+		var/intdamage = damage || 0
+		var/protection_tier = normalize_armor_rating(d_type, protection)
+		if(protection_tier > ARMOR_TIER_NONE && (d_type in ARMOR_DR_PIERCE_TYPES))
+			intdamage = get_armor_blocked_damage(d_type, protection, armor_penetration, damage)
+		// Blunt-rated armor fully absorbs the blow for the wearer but bruises at 1.6x;
+		// unrated armor (tier 0) doesn't absorb, so it skips the multiplier by design.
+		else if(protection_tier > ARMOR_TIER_NONE && (d_type in ARMOR_DR_ABSORB_TYPES))
+			intdamage = (intdamage * BLUNT_ARMOR_INTEGRITY_MULT) / (1 + (0.2 * protection_tier))
+		if(intdamfactor != 1)
+			intdamage *= intdamfactor
+		intdamage *= get_tempo_bonus(TEMPO_TAG_ARMOR_INTEGFACTOR)
+		var/old_integrity = used.get_integrity()
+		var/armor_damage_dealt = used.take_damage(intdamage, damage_flag = d_type, sound_effect = FALSE, armor_penetration = 100)
+		if(armor_damage_dealt > 0)
+			show_armor_damage_feedback(used, armor_damage_dealt, old_integrity, used.get_integrity(), attacker)
 
 	if(steam_boiler && def_zone == BODY_ZONE_CHEST)
 		steam_boiler.take_damage(boiler_damage, damage_flag = d_type, sound_effect = FALSE, armor_penetration = 100)
 
 	if(physiology)
-		protection += physiology.armor.getRating(d_type)
+		protection += physiology.armor.get_rating(d_type)
 	return protection
+
+/// Returns the best protection tier covering a body part without triggering armor-hit effects.
+/mob/living/carbon/human/proc/get_armor_protection_tier(def_zone, attack_flag)
+	attack_flag = normalize_armor_attack_flag(attack_flag)
+	if(isbodypart(def_zone))
+		var/obj/item/bodypart/bodypart = def_zone
+		def_zone = bodypart.body_zone
+		if(def_zone == BODY_ZONE_PRECISE_MOUTH)
+			def_zone = BODY_ZONE_HEAD
+
+	var/protection_tier = ARMOR_TIER_NONE
+	var/list/worn_layers = list(skin_armor, head, wear_mask, wear_wrists, gloves, wear_neck, cloak, wear_armor, wear_shirt, shoes, wear_pants, backr, backl, belt, wear_ring)
+	for(var/layer in worn_layers)
+		if(!istype(layer, /obj/item/clothing))
+			continue
+		var/obj/item/clothing/armor_layer = layer
+		if(!zone2covered(def_zone, armor_layer.body_parts_covered))
+			continue
+		if(armor_layer.uses_integrity && armor_layer.get_integrity() <= 0)
+			continue
+		var/armor_rating = armor_layer.get_armor_rating(attack_flag)
+		protection_tier = max(protection_tier, normalize_armor_rating(attack_flag, armor_rating))
+
+	if(physiology)
+		var/innate_armor_rating = physiology.armor.get_rating(attack_flag)
+		protection_tier = max(protection_tier, normalize_armor_rating(attack_flag, innate_armor_rating))
+
+	return protection_tier
+
+/// Returns the best blunt-protection tier covering a body part without damaging the armor.
+/mob/living/carbon/human/proc/get_armor_trauma_tier(def_zone)
+	return get_armor_protection_tier(def_zone, BLUNT)
+
+/// Calculates blunt trauma transmitted by a fully blocked held-item melee attack.
+/mob/living/carbon/human/proc/get_armor_trauma(obj/item/used_weapon, mob/living/attacker, delivered_damage, def_zone)
+	if(!used_weapon || !attacker || delivered_damage <= 0 || used_weapon.item_weight < ARMOR_TRAUMA_MASS_LIGHT)
+		return 0
+
+	var/mass_impact
+	if(used_weapon.item_weight < ARMOR_TRAUMA_MASS_MEDIUM)
+		mass_impact = ARMOR_TRAUMA_IMPACT_LIGHT
+	else if(used_weapon.item_weight < ARMOR_TRAUMA_MASS_HEAVY)
+		mass_impact = ARMOR_TRAUMA_IMPACT_MEDIUM
+	else if(used_weapon.item_weight < ARMOR_TRAUMA_MASS_VERY_HEAVY)
+		mass_impact = ARMOR_TRAUMA_IMPACT_HEAVY
+	else if(used_weapon.item_weight < ARMOR_TRAUMA_MASS_EXTREME)
+		mass_impact = ARMOR_TRAUMA_IMPACT_VERY_HEAVY
+	else
+		mass_impact = ARMOR_TRAUMA_IMPACT_EXTREME
+
+	var/impact_multiplier
+	switch(attacker.used_intent?.blade_class)
+		if(BCLASS_STAB)
+			impact_multiplier = ARMOR_TRAUMA_MULT_STAB
+		if(BCLASS_CUT, BCLASS_LASHING)
+			impact_multiplier = ARMOR_TRAUMA_MULT_CUT
+		if(BCLASS_PICK, BCLASS_DRILL)
+			impact_multiplier = ARMOR_TRAUMA_MULT_PICK
+		if(BCLASS_CHOP)
+			impact_multiplier = ARMOR_TRAUMA_MULT_CHOP
+		if(BCLASS_BLUNT)
+			impact_multiplier = ARMOR_TRAUMA_MULT_BLUNT
+		if(BCLASS_SMASH)
+			impact_multiplier = ARMOR_TRAUMA_MULT_SMASH
+	if(!impact_multiplier)
+		return 0
+
+	var/base_damage = used_weapon.force * (attacker.used_intent?.damfactor || 1)
+	if(base_damage <= 0)
+		return 0
+	var/delivery_multiplier = CLAMP(delivered_damage / base_damage, 0, ARMOR_TRAUMA_MAX_DELIVERY_MULT)
+
+	var/blunt_tier = get_armor_trauma_tier(def_zone)
+	var/armor_transmission = 1 / (1 + (ARMOR_TRAUMA_ARMOR_TIER_SCALE * blunt_tier))
+	var/constitution = GET_MOB_ATTRIBUTE_VALUE(src, STAT_CONSTITUTION)
+	var/constitution_multiplier = CLAMP(1 - ((constitution - 10) * ARMOR_TRAUMA_CON_SCALE), ARMOR_TRAUMA_CON_MULT_MIN, ARMOR_TRAUMA_CON_MULT_MAX)
+	var/trauma = mass_impact * impact_multiplier * delivery_multiplier * armor_transmission * constitution_multiplier
+	if(trauma < ARMOR_TRAUMA_MINIMUM)
+		return 0
+
+	return min(round(trauma, 1), ARMOR_TRAUMA_MAXIMUM)
+
+/proc/armor_integrity_percent(obj/item/clothing/armor)
+	if(!armor || armor.max_integrity <= 0)
+		return 0
+	var/failure_integrity = armor.max_integrity * armor.integrity_failure
+	var/usable_integrity = max(armor.get_integrity() - failure_integrity, 0)
+	var/usable_max = max(armor.max_integrity - failure_integrity, 1)
+	return CLAMP(round((usable_integrity / usable_max) * 100), 0, 100)
+
+/proc/armor_integrity_status(percent)
+	if(percent <= 0)
+		return "broken"
+	if(percent <= 25)
+		return "sundered"
+	if(percent <= 50)
+		return "damaged"
+	if(percent <= 75)
+		return "marred"
+	return "holding"
+
+/proc/armor_integrity_color(percent)
+	if(percent <= 25)
+		return "#a8705a"
+	if(percent <= 50)
+		return "#d4d36c"
+	if(percent <= 75)
+		return "#d4d36c"
+	return "#8aaa4d"
+
+/mob/living/carbon/human/proc/show_armor_damage_feedback(obj/item/clothing/used, armor_damage_dealt, old_integrity, new_integrity, mob/living/attacker)
+	if(!used || armor_damage_dealt <= 0 || old_integrity <= new_integrity)
+		return
+	var/percent = armor_integrity_percent(used)
+	var/status = armor_integrity_status(percent)
+	var/armor_damage_text = round(armor_damage_dealt, 0.1)
+	var/detail = HAS_TRAIT(src, TRAIT_COMBAT_AWARE) ? " for [armor_damage_text] integrity damage" : ""
+	to_chat(src, span_warning("My [used.name] is [status][detail] ([percent]% integrity)."))
+	if(attacker && attacker != src && !QDELETED(attacker))
+		var/attacker_detail = HAS_TRAIT(attacker, TRAIT_COMBAT_AWARE) ? " for [armor_damage_text] integrity damage" : ""
+		to_chat(attacker, span_notice("[src]'s [used.name] is [status][attacker_detail] ([percent]% integrity)."))
+	balloon_alert_to_viewers("<font color='[armor_integrity_color(percent)]'>armor [percent]%</font>", balloon_flag = DISABLE_BALLOON_COMBAT, y_offset = -10)
 
 /// Return the armor that blocks the crit
 /mob/living/carbon/human/proc/check_crit_armor(def_zone, d_type)
@@ -111,6 +251,13 @@
 		dna.species.on_hit(P, src)
 
 /mob/living/carbon/human/bullet_act(obj/projectile/P, def_zone = BODY_ZONE_CHEST)
+	if(dodge_projectile(P))
+		return BULLET_ACT_FORCE_PIERCE
+
+	// Duplicated from /mob/living/bullet_act so deflection outranks species/martial-art/reflect handling; safe to run twice.
+	if(guard_deflect_projectile(P))
+		return BULLET_ACT_BLOCK
+
 	if(dna && dna.species)
 		var/spec_return = dna.species.bullet_act(P, src, def_zone)
 		if(spec_return)
@@ -271,7 +418,7 @@
 		var/mob/living/carbon/human/H = user
 		dna.species.spec_attack_hand(H, src)
 
-/mob/living/carbon/human/attack_paw(mob/living/carbon/monkey/M)
+/mob/living/carbon/human/attack_paw(mob/living/carbon/M)
 	var/dam_zone = pick(BODY_ZONE_CHEST, BODY_ZONE_PRECISE_L_HAND, BODY_ZONE_PRECISE_R_HAND, BODY_ZONE_L_LEG, BODY_ZONE_R_LEG)
 	var/obj/item/bodypart/affecting = get_bodypart(ran_zone(dam_zone))
 	if(!affecting)
@@ -333,7 +480,7 @@
 		var/obj/item/bodypart/affecting = get_bodypart(ran_zone(dam_zone))
 		if(!affecting)
 			affecting = get_bodypart(BODY_ZONE_CHEST)
-		var/armor = run_armor_check(affecting, M.damage_type, armor_penetration = M.a_intent.penfactor, damage = damage)
+		var/armor = run_armor_check(affecting, M.damage_type, armor_penetration = M.a_intent.penfactor, damage = damage, attacker = M, used_intent = M.a_intent)
 		next_attack_msg.Cut()
 
 		var/nodmg = FALSE
@@ -342,7 +489,7 @@
 			nodmg = TRUE
 			next_attack_msg += " <span class='warning'>Armor stops the damage.</span>"
 		else
-			affecting.bodypart_attacked_by(M.a_intent.blade_class, damage - armor, M, dam_zone, crit_message = TRUE)
+			affecting.bodypart_attacked_by(M.a_intent.blade_class, damage - armor, M, dam_zone, crit_message = TRUE, pre_applied = TRUE)
 		clear_damage_attack_context()
 		visible_message("<span class='danger'>\The [M] [pick(M.a_intent.attack_verb)] [src]![next_attack_msg.Join()]</span>", \
 					"<span class='danger'>\The [M] [pick(M.a_intent.attack_verb)] me![next_attack_msg.Join()]</span>", null, COMBAT_MESSAGE_RANGE)
@@ -397,7 +544,7 @@
 			if(bomb_armor)
 				brute_loss = (10 * (2 - round(bomb_armor*0.01, 0.05)) * ldist) - ((10 * (2 - round(bomb_armor*0.01, 0.05))) * fodist)
 				damage_clothes(max(brute_loss - bomb_armor, 0), BRUTE, "blunt")
-	take_overall_damage(brute_loss,burn_loss)
+	take_overall_damage(brute_loss,burn_loss, damage_type = BCLASS_BLUNT)
 
 	//attempt to dismember bodyparts
 	if(severity <= 2)
@@ -626,56 +773,147 @@
 
 	var/static/list/body_zones = list(
 		BODY_ZONE_HEAD,
+		BODY_ZONE_PRECISE_MOUTH,
 		BODY_ZONE_CHEST,
 		BODY_ZONE_L_ARM,
 		BODY_ZONE_R_ARM,
 		BODY_ZONE_L_LEG,
 		BODY_ZONE_R_LEG,
 	)
+	var/list/all_untreated = list()
 	for(var/body_zone in body_zones)
 		var/obj/item/bodypart/bodypart = get_bodypart(body_zone)
 		if(!bodypart)
 			examination += "<span class='info'>☼ [capitalize(parse_zone(body_zone))]: <span class='deadsay'><b>MISSING</b></span></span>"
 			continue
 		examination += bodypart.check_for_injuries(user, deep_examination)
+		all_untreated |= bodypart.get_injury_types()
+
+	if(length(all_untreated))
+		var/list/mechanics_result = list()
+		for(var/wound_type in all_untreated)
+			switch(wound_type)
+				if(WOUND_SLASH, WOUND_PIERCE, WOUND_BITE)
+					mechanics_result += "Suture or bandage cuts, bites, or punctures to allow them to heal."
+				if(WOUND_BLUNT, WOUND_LASH)
+					mechanics_result += "Bandage bruises and lashes to allow them to heal."
+				if(WOUND_BURN)
+					mechanics_result += "Disinfect and salve burns to allow them to heal."
+				if("germs")
+					mechanics_result += "Infected injuries can be disinfected by covering them in beer or other disinfectent soaked bandages."
+				if("self_heal")
+					mechanics_result += "Small injuries will heal on their own."
+
+		var/list/result = list()
+		if(length(mechanics_result))
+			var/mechanics_result_str = "<details><summary>Mechanics</summary>"
+			for(var/line in mechanics_result)
+				mechanics_result_str += " - " + span_blue(line) + "\n"
+			mechanics_result_str += "</details>"
+			result += mechanics_result_str
+		for(var/i in 1 to (length(result) - 1))
+			result[i] += "\n"
+
+		examination += result.Join()
+
 	if(additional)
 		examination += span_info(span_green("[getToxLoss()] TOXIN"))
 		examination += span_info(span_blue("[getOxyLoss()] OXYGEN"))
 
-	examination += "ø ------------ ø" //automatically lists internal organs that have those functions
-	var/mob/living/carbon/human/userino = user
-	if(userino.has_quirk(/datum/quirk/peculiarity/selfawaregeni))
-		for(var/obj/item/organ/genitals/filling_organ/forgan in userino.internal_organs)
-			var/health_status = ""
-			var/health_ratio = (forgan.maxHealth - forgan.damage) / forgan.maxHealth
-			if(forgan.maxHealth - forgan.damage < forgan.maxHealth)
-				health_status = " It looks [round(health_ratio * 100)]% healthy."
-			else
-				health_status = " It looks <span class='green'>OK</span>"
+	if(user == src)
+		var/main_organ_examination = get_damaged_main_organ_examination()
+		if(main_organ_examination)
+			examination += main_organ_examination
 
-			var/list/stored_items = list()
-			SEND_SIGNAL(userino, COMSIG_BODYSTORAGE_GET_2D_ITEM_LIST, stored_items, forgan.slot)
-			if(forgan.reagents.total_volume)
-				examination += span_info("[user == src ? "my" : "[user.p_their()]"] [pick(forgan.altnames)] are <bold>[forgan.reagents.total_volume]/[forgan.reagents.maximum_volume] liguae</bold> full.[health_status]")
-			else
-				examination += span_info("[user == src ? "my" : "[user.p_their()]"] [pick(forgan.altnames)] has no fluids.[health_status]")
-			if(length(stored_items))
-				examination += span_info("There is <bold>[english_list(stored_items)]</bold> in [user == src ? "my" : "[user.p_their()]"] [pick(forgan.altnames)].")
-			continue
-		examination += "ø ------------ ø</span>"
+		var/genital_examination = get_genital_examination()
+		if(genital_examination)
+			examination += genital_examination
 
-
-	var/mob/living/carbon/human/H = user
-	for(var/obj/item/organ/genitals/gen in H.internal_organs)
-		if(SEND_SIGNAL(gen, COMSIG_BODYSTORAGE_IS_ITEM_TYPE_IN, /obj/item/natural/worms/leech, STORAGE_LAYER_OUTER))
-			for(var/obj/item/natural/worms/leech/invader in gen.contents)
-				if(SEND_SIGNAL(gen, COMSIG_BODYSTORAGE_IS_ITEM_IN, invader, STORAGE_LAYER_OUTER))
-					examination += "☼ <a href='byond://?src=[REF(src)];leech=[REF(invader)];organ=[REF(gen)]'>There's a leech on my [gen.name]!</a>"
-			examination += "ø ------------ ø</span>"
+	examination += "ø ------------ ø</span>"
 
 	if(!silent)
 		to_chat(user, examination.Join("\n"))
 	return examination
+
+/mob/living/carbon/human/proc/get_self_check_details(summary, list/lines)
+	if(!length(lines))
+		return
+	var/result = "<details><summary>[summary]</summary>"
+	for(var/line in lines)
+		result += " - [line]\n"
+	result += "</details>"
+	return result
+
+/mob/living/carbon/human/proc/get_organ_health_examination_line(obj/item/organ/organ, include_healthy = FALSE)
+	if(!organ || organ.maxHealth <= 0)
+		return
+	if(organ.damage <= 0 && !include_healthy)
+		return
+
+	var/health_ratio = max(0, (organ.maxHealth - organ.damage) / organ.maxHealth)
+	var/health_percent = round(health_ratio * 100)
+	var/status = "healthy"
+	var/status_class = "green"
+	if(organ.damage >= organ.maxHealth || (organ.organ_flags & ORGAN_DESTROYED))
+		status = "ruined"
+		status_class = "userdanger"
+	else if(organ.damage >= organ.high_threshold || (organ.organ_flags & ORGAN_FAILING))
+		status = "badly damaged"
+		status_class = "danger"
+	else if(organ.damage >= organ.medium_threshold)
+		status = "damaged"
+		status_class = "danger"
+	else if(organ.damage >= organ.low_threshold)
+		status = "bruised"
+		status_class = "warning"
+	else if(organ.damage > 0)
+		status = "lightly hurt"
+		status_class = "warning"
+
+	var/organ_label = lowertext(organ.name)
+	var/organ_zone = organ.current_zone || organ.zone
+	if(organ_zone)
+		organ_label += " ([parse_zone(organ_zone)])"
+	return "<span class='[status_class]'>[organ_label] is [status] ([health_percent]% healthy).</span>"
+
+/mob/living/carbon/human/proc/get_damaged_main_organ_examination()
+	var/list/organ_lines = list()
+	for(var/obj/item/organ/organ as anything in internal_organs)
+		if(istype(organ, /obj/item/organ/genitals))
+			continue
+		var/organ_line = get_organ_health_examination_line(organ)
+		if(organ_line)
+			organ_lines += organ_line
+	return get_self_check_details("Organs", organ_lines)
+
+/mob/living/carbon/human/proc/get_genital_examination()
+	var/list/genital_lines = list()
+	for(var/obj/item/organ/organ as anything in internal_organs)
+		if(!istype(organ, /obj/item/organ/genitals))
+			continue
+		var/obj/item/organ/genitals/genital = organ
+		var/genital_line = get_organ_health_examination_line(genital, TRUE)
+		if(genital_line)
+			genital_lines += genital_line
+
+		if(istype(genital, /obj/item/organ/genitals/filling_organ))
+			var/obj/item/organ/genitals/filling_organ/filling_organ = genital
+			if(filling_organ.reagents)
+				if(filling_organ.reagents.total_volume)
+					genital_lines += "[lowertext(filling_organ.name)] contains <bold>[filling_organ.reagents.total_volume]/[filling_organ.reagents.maximum_volume] units</bold> of fluid."
+				else
+					genital_lines += "[lowertext(filling_organ.name)] has no fluids."
+
+		var/list/stored_items = genital.contents
+		if(length(stored_items))
+			genital_lines += "There is <bold>[english_list(stored_items)]</bold> in my [lowertext(genital.name)]."
+
+		if(SEND_SIGNAL(genital, COMSIG_BODYSTORAGE_IS_ITEM_TYPE_IN, /obj/item/natural/worms/leech, STORAGE_LAYER_OUTER))
+			for(var/obj/item/natural/worms/leech/invader in genital.contents)
+				if(SEND_SIGNAL(genital, COMSIG_BODYSTORAGE_IS_ITEM_IN, invader, STORAGE_LAYER_OUTER))
+					genital_lines += "☼ <a href='byond://?src=[REF(src)];leech=[REF(invader)];organ=[REF(genital)]'>There's a leech on my [lowertext(genital.name)]!</a>"
+
+	return get_self_check_details("Genitals", genital_lines)
 
 /mob/living/carbon/human/proc/check_limb_for_injuries(mob/user = src, choice = BODY_ZONE_CHEST, advanced = FALSE, silent = FALSE)
 	choice = check_zone(choice)
@@ -692,7 +930,7 @@
 
 	var/obj/item/bodypart/examined_part = get_bodypart(choice)
 	if(examined_part)
-		examination += examined_part.check_for_injuries(user, deep_examination)
+		examination += examined_part.check_for_injuries(user, deep_examination, TRUE)
 	else
 		examination += "<span class='info'>☼ [capitalize(parse_zone(choice))]: <span class='deadsay'><B>MISSING</B></span></span>"
 	examination += "ø ------------ ø</span>"
@@ -764,3 +1002,16 @@
 
 	for(var/obj/item/I in torn_items)
 		I.take_damage(damage_amount, damage_type, damage_flag, 0)
+
+///Get all the clothing on a specific body part
+/mob/living/carbon/human/proc/clothingonpart(obj/item/bodypart/def_zone)
+	var/list/covering_part = list()
+	var/list/clothing_slots = list(head, wear_mask, wear_wrists, wear_shirt, wear_neck, cloak, wear_armor, wear_pants, backr, backl, gloves, shoes, belt, wear_ring)
+	for(var/bp in clothing_slots)
+		if(!bp)
+			continue
+		if(bp && istype(bp , /obj/item/clothing))
+			var/obj/item/clothing/C = bp
+			if(C.body_parts_covered & def_zone.body_part)
+				covering_part += C
+	return covering_part

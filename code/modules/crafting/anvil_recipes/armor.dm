@@ -1379,6 +1379,9 @@
 	created_item = /obj/item/clothing/armor/chainmail/hauberk/fluted
 	craftdiff = 3
 
+/datum/anvil_recipe/armor/blessedsilver
+	abstract_type = /datum/anvil_recipe/armor/blessedsilver
+
 /datum/anvil_recipe/armor/blessedsilver/psychestplate
 	name = "Psydonic Chestplate (+1 Cured Leather)"
 	req_bar = /obj/item/ingot/silverblessed

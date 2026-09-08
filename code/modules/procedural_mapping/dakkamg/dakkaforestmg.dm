@@ -50,7 +50,7 @@
 							/obj/structure/flora/grass = 120,
 							/obj/structure/flora/grass/maneater = 0,
 							/obj/structure/flora/grass/maneater/real = 0,
-							/obj/item/restraints/legcuffs/beartrap/armed/camouflage = 0,
+							// /obj/item/restraints/legcuffs/beartrap/armed/camouflage = 0,
 							/obj/item/natural/stone = 6,
 							/obj/item/natural/rock = 5,
 							/obj/item/grown/log/tree/stick = 3,
@@ -62,5 +62,5 @@
 	excluded_turfs = list()
 	allowed_areas = list(/area/outdoors/wilderness)
 	spawnableAtoms = list(/obj/structure/flora/grass/water = 20,
-	                        /obj/structure/flora/grass/water/reeds = 30,
-	                        /obj/structure/kneestingers = 55)
+	/obj/structure/flora/grass/water/reeds = 30,
+	/obj/structure/kneestingers = 55)

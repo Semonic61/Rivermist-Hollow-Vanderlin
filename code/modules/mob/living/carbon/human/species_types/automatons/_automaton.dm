@@ -4,7 +4,7 @@
 
 /mob/living/carbon/human/species/automaton/vessel/LateInitialize()
 	. = ..()
-	AddComponent(/datum/component/ghost_vessel, /obj/item/reagent_containers/lux)
+	AddComponent(/datum/component/ghost_vessel, /obj/item/riddleofsteel)
 
 /mob/living/carbon/human/species/automaton/prefilled_vessel/LateInitialize()
 	. = ..()
@@ -61,9 +61,11 @@
 	species_traits = list(
 		NO_UNDERWEAR,
 		NOTRANSSTING,
-		NOBLOOD
+		NOBLOOD,
 	)
 	inherent_traits = list(
+		TRAIT_BLOODLOSS_IMMUNE,
+		TRAIT_NORMALIZED_BLOOD,
 		TRAIT_NOMOOD,
 		TRAIT_NOMETABOLISM,
 		TRAIT_NOHUNGER,
@@ -103,6 +105,7 @@
 
 	organs = list(
 		ORGAN_SLOT_BRAIN = /obj/item/organ/brain/automaton,
+		ORGAN_SLOT_SPLEEN = /obj/item/organ/spleen,
 		ORGAN_SLOT_HEART = /obj/item/organ/heart/automaton,
 		ORGAN_SLOT_EYES = /obj/item/organ/eyes/automaton,
 		ORGAN_SLOT_LUNGS = /obj/item/organ/lungs,
@@ -110,7 +113,6 @@
 		ORGAN_SLOT_TONGUE = /obj/item/organ/tongue,
 		ORGAN_SLOT_LIVER = /obj/item/organ/liver,
 		ORGAN_SLOT_STOMACH = /obj/item/organ/stomach,
-		ORGAN_SLOT_APPENDIX = /obj/item/organ/appendix,
 		ORGAN_SLOT_GUTS = /obj/item/organ/guts,
 	)
 
@@ -123,7 +125,7 @@
 	var/movespeed_slowdown = 0.9
 
 /datum/species/automaton/proc/add_synthetic_components(mob/living/carbon/C)
-	C.AddComponent(/datum/component/abberant_eater, list(/obj/item/ore/coal, /obj/item/grown/log/tree))
+	C.AddComponent(/datum/component/abberant_eater, list(/obj/item/ore/coal, /obj/item/grown/log/tree), _keeps_items = FALSE)
 	C.AddComponent(/datum/component/steam_life)
 	C.AddComponent(/datum/component/command_follower)
 	C.AddComponent(/datum/component/augmentable)

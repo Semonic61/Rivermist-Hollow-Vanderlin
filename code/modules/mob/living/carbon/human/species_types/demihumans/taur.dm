@@ -41,6 +41,11 @@
 	)
 	forced_taur = TRUE
 	allowed_taur_types = list(
+		/obj/item/bodypart/taur/tentacle,
+		/obj/item/bodypart/taur/mermaid,
+		/obj/item/bodypart/taur/lamiastriped,
+		/obj/item/bodypart/taur/fatlamia,
+		/obj/item/bodypart/taur/lamia,
 		/obj/item/bodypart/taur/otie,
 		/obj/item/bodypart/taur/canine,
 		/obj/item/bodypart/taur/venard,
@@ -64,7 +69,7 @@
 		/obj/item/bodypart/taur/wasp,
 		/obj/item/bodypart/taur/insect,
 		/obj/item/bodypart/taur/jdeer,
-		/datum/customizer/bodypart_feature/pubic_hair,
+		/obj/item/bodypart/taur/goat,
 	)
 
 	inherent_biotypes = MOB_ORGANIC|MOB_HUMANOID
@@ -130,7 +135,6 @@
 		ORGAN_SLOT_TONGUE = /obj/item/organ/tongue,
 		ORGAN_SLOT_LIVER = /obj/item/organ/liver,
 		ORGAN_SLOT_STOMACH = /obj/item/organ/stomach,
-		ORGAN_SLOT_APPENDIX = /obj/item/organ/appendix,
 		ORGAN_SLOT_ANUS = /obj/item/organ/genitals/filling_organ/anus,
 	)
 	bodypart_features = list(

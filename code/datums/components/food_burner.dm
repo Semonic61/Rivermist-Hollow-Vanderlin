@@ -12,8 +12,10 @@
 	var/create_smoke = TRUE
 	/// Tracks already processed items to avoid burning them again
 	var/list/processed_items = list()
-	///this is a callback for if we continue processing a burn
+	/// this is a callback for if we continue processing a burn
 	var/datum/callback/can_burn
+	/// world.time of the previous process tick where burning was active; 0 while paused
+	var/last_burn_tick = 0
 
 /**
  * Initialize the component
@@ -30,6 +32,7 @@
 	RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
 	RegisterSignal(parent, COMSIG_STORAGE_REMOVED, PROC_REF(on_item_removed))
 	RegisterSignal(parent, COMSIG_CONTAINER_CRAFT_COMPLETE, PROC_REF(on_craft_complete))
+	RegisterSignal(parent, COMSIG_ATOM_ENTERED, PROC_REF(on_item_entered))
 
 /**
  * Clean up when component is removed
@@ -68,12 +71,14 @@
  * Process tick for checking if foods need to progress burning
  */
 /datum/component/food_burner/process()
-	// Skip processing if the can_burn callback returns false
 	if(can_burn && !can_burn.Invoke())
+		last_burn_tick = 0
 		return
 
 	var/obj/item/container = parent
 	var/current_time = world.time
+	var/hot_delta = last_burn_tick ? (current_time - last_burn_tick) : SSprocessing.wait
+	last_burn_tick = current_time
 	var/foods_to_burn = list()
 
 	// Check all tracked foods to update burn progress
@@ -83,13 +88,9 @@
 			continue
 
 		var/list/food_data = tracked_foods[food]
-		var/insertion_time = food_data["time"]
+		food_data["hot_time"] += hot_delta
 
-		// Calculate how long it's been since insertion
-		var/elapsed_time = current_time - insertion_time
-
-		// Calculate burn progress (0.0 to 1.0)
-		var/burn_progress = min(elapsed_time / burn_time, 1.0)
+		var/burn_progress = min(food_data["hot_time"] / burn_time, 1.0)
 
 		// Update burn progress
 		food_data["progress"] = burn_progress
@@ -149,11 +150,21 @@
 	tracked_foods -= removed_item
 
 /**
+ * Track any food item entering the container so it can burn even if it wasn't
+ * produced by a craft.
+ */
+/datum/component/food_burner/proc/on_item_entered(datum/source, atom/movable/arrived, atom/old_loc)
+	SIGNAL_HANDLER
+	if(!is_food_item(arrived))
+		return
+	register_food(arrived)
+
+/**
  * Hook for tracking newly crafted food items
  */
 /datum/component/food_burner/proc/on_craft_complete(datum/source, obj/item/crafted_item)
 	if(is_food_item(crafted_item) && !(crafted_item in tracked_foods))
-		tracked_foods[crafted_item] = list("time" = world.time, "progress" = 0)
+		tracked_foods[crafted_item] = list("hot_time" = 0, "progress" = 0)
 
 /**
  * Turn a food item into a burned food
@@ -200,7 +211,7 @@
 /datum/component/food_burner/proc/register_food(obj/item/reagent_containers/food/snacks/food)
 	var/obj/item/container = parent
 	if(!QDELETED(food) && (food in container.contents) && !(food in tracked_foods))
-		tracked_foods[food] = list("time" = world.time, "progress" = 0)
+		tracked_foods[food] = list("hot_time" = 0, "progress" = 0)
 
 #undef BURN_STAGE_WARNING
 #undef BURN_STAGE_SMOKING

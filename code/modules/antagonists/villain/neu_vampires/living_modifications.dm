@@ -25,6 +25,8 @@
 	var/maxbloodpool = 3000
 	var/masquerade = 5
 
+	var/extra_mob_weight = 0
+
 	COOLDOWN_DECLARE(detection_cooldown)
 	var/detections = 0
 
@@ -41,6 +43,7 @@
 	var/last_drinkblood_use = 0
 	var/last_bloodpower_click = 0
 	var/last_drinkblood_click = 0
+	var/tmp/last_vitae_drain = 0
 
 	var/list/drunked_of = list()
 
@@ -368,13 +371,40 @@
 		heal_overall_damage(5, 5)
 		adjustToxLoss(-5)
 		heal_wounds(25)
+		for(var/obj/item/organ/artery/artery in getorganslotlist(ORGAN_SLOT_ARTERY))
+			artery.applyOrganDamage(-5)
 		if(prob(3))
 			regenerate_limb(silent = FALSE)
-		blood_volume = max(blood_volume, min(BLOOD_VOLUME_SAFE, blood_volume + 10))
+		if(blood_volume <= BLOOD_VOLUME_NORMAL)
+			if(blood_volume < BLOOD_VOLUME_SAFE)
+				blood_volume = BLOOD_VOLUME_SAFE
+			adjust_bloodvolume(10)
 		set_bloodpool(max(bloodpool, min(maxbloodpool * 0.25, bloodpool + 5)))
 	else if(HAS_TRAIT(src, TRAIT_DEATHCOMA) && !InCritical())
 		REMOVE_TRAIT(src, TRAIT_DEATHCOMA, VAMPIRE_TRAIT)
 		to_chat(src, span_warning("You have recovered from Torpor."))
+
+/mob/living/carbon/human/proc/process_mortal_vitae_regen()
+	if(stat == DEAD)
+		return
+	if(mind?.has_antag_datum(/datum/antagonist/vampire))
+		return
+	if((FACTION_UNDEAD in faction) || (MOB_UNDEAD in mob_biotypes))
+		return
+	if(NOBLOOD in dna?.species?.species_traits)
+		return
+	if(last_vitae_drain && world.time < last_vitae_drain + MORTAL_VITAE_REGEN_DELAY)
+		return
+	if(blood_volume < MORTAL_VITAE_REGEN_MIN_BLOOD_VOLUME)
+		return
+	if(get_bleed_rate())
+		return
+
+	var/natural_bloodpool = min(initial(bloodpool), maxbloodpool)
+	if(natural_bloodpool <= 0 || bloodpool >= natural_bloodpool)
+		return
+
+	adjust_bloodpool(min(MORTAL_VITAE_REGEN_AMOUNT, natural_bloodpool - bloodpool))
 
 /mob/living/carbon/human/proc/handle_bloodpool_effects()
 	// Apply thirst effects based on bloodpool levels

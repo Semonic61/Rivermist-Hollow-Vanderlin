@@ -5,7 +5,7 @@
 	race = /datum/species/orc
 	gender = MALE
 	bodyparts = list(/obj/item/bodypart/chest/orc, /obj/item/bodypart/head/orc, /obj/item/bodypart/l_arm/orc,
-					/obj/item/bodypart/r_arm/orc, /obj/item/bodypart/r_leg/orc, /obj/item/bodypart/l_leg/orc)
+					/obj/item/bodypart/r_arm/orc, /obj/item/bodypart/r_leg/orc, /obj/item/bodypart/l_leg/orc, /obj/item/bodypart/mouth)
 	rot_type = /datum/component/rot/corpse/orc
 	ambushable = FALSE
 	base_intents = list(INTENT_HELP, INTENT_DISARM, INTENT_GRAB, /datum/intent/unarmed/claw, /datum/intent/simple/bite, /datum/intent/kick)
@@ -120,11 +120,6 @@
 	apply_overlay(BODY_LAYER)
 	dna.species.update_damage_overlays()
 
-/mob/living/carbon/human/species/orc/update_inv_head(hide_nonstandard = FALSE)
-	update_wearable()
-/mob/living/carbon/human/species/orc/update_inv_armor()
-	update_wearable()
-
 /mob/living/carbon/human/species/orc/Initialize()
 	. = ..()
 	addtimer(CALLBACK(src, PROC_REF(after_creation)), 1 SECONDS)
@@ -157,19 +152,27 @@
 			headdy.headprice = rand(15,40)
 			headdy.sellprice = rand(15,40)
 	src.grant_language(/datum/language/common)
-	var/obj/item/organ/eyes/eyes = src.getorganslot(ORGAN_SLOT_EYES)
-	if(eyes)
+
+	var/list/eye_list = getorganslotlist(ORGAN_SLOT_EYES)
+	for(var/obj/item/organ/eyes/eyes as anything in eye_list)
 		eyes.Remove(src,1)
 		QDEL_NULL(eyes)
-	eyes = new /obj/item/organ/eyes/night_vision/nightmare
-	eyes.Insert(src)
+
+	var/obj/item/organ/eyes/LE = new /obj/item/organ/eyes/night_vision/nightmare
+	var/obj/item/organ/eyes/RE = new /obj/item/organ/eyes/night_vision/nightmare
+	LE.switch_side(LEFT_SIDE)
+
+	LE.Insert(src)
+	RE.Insert(src)
+
+	//src.underwear = "Nude"
 	if(length(quirks))
 		clear_quirks()
-	update_body()
-	faction = list(FACTION_ORCS)
+	update_eyes()
+	set_faction(list(FACTION_ORCS))
 	var/turf/turf = get_turf(src)
 	if(SSterrain_generation.get_island_at_location(turf))
-		faction |= "islander"
+		add_faction("islander")
 	name = "orc"
 	real_name = "orc"
 	ADD_TRAIT(src, TRAIT_HEAVYARMOR, TRAIT_GENERIC)
@@ -226,7 +229,7 @@
 		return
 	var/should_update = FALSE
 	var/is_matthios = FALSE
-	if(FACTION_MATTHIOS in C.faction)
+	if(C.has_faction(FACTION_MATTHIOS))
 		is_matthios = TRUE
 	if(amount > 20 MINUTES)
 		for(var/obj/item/bodypart/B in C.bodyparts)
@@ -235,10 +238,10 @@
 				should_update = TRUE
 	else if(amount > 12 MINUTES)
 		for(var/obj/item/bodypart/B in C.bodyparts)
-			if(!B.rotted)
-				B.rotted = TRUE
+			if(!HAS_TRAIT(B, TRAIT_ROTTEN))
+				B.kill_limb()
 				should_update = TRUE
-			if(B.rotted && amount < 16 MINUTES && !is_matthios)
+			if(HAS_TRAIT(B, TRAIT_ROTTEN) && amount < 16 MINUTES && !is_matthios)
 				var/turf/open/T = C.loc
 				if(istype(T))
 					T.pollute_turf(/datum/pollutant/rot, 4)
@@ -286,6 +289,7 @@
 			if(prob(30))
 				l_hand = /obj/item/weapon/sword/iron
 				armor = /obj/item/clothing/armor/chainmail/iron/orc
+				pants = /obj/item/clothing/pants/tights
 				head = /obj/item/clothing/head/helmet/leather
 			if(prob(23))
 				armor = /obj/item/clothing/armor/chainmail/iron/orc
@@ -302,6 +306,7 @@
 				r_hand = /obj/item/weapon/mace
 				l_hand = /obj/item/weapon/whip
 				armor = /obj/item/clothing/armor/plate/orc
+				shoes = /obj/item/clothing/shoes/boots/armor/orc
 				head = /obj/item/clothing/head/helmet/orc
 			else
 				r_hand = /obj/item/weapon/sword/short/iron
@@ -316,11 +321,14 @@
 			else
 				head = /obj/item/clothing/head/helmet/orc
 				armor = /obj/item/clothing/armor/plate/orc
+				shoes = /obj/item/clothing/shoes/boots
 				r_hand = /obj/item/weapon/axe/battle
 			if(prob(50))
 				r_hand = /obj/item/weapon/sword/iron
 				l_hand = /obj/item/weapon/shield/wood
 				armor = /obj/item/clothing/armor/plate/orc
+				pants = /obj/item/clothing/pants/tights
+				shoes = /obj/item/clothing/shoes/boots
 				head = /obj/item/clothing/head/helmet/orc
 			else
 				r_hand = /obj/item/weapon/mace/spiked
@@ -330,6 +338,8 @@
 			if(prob(30))
 				r_hand = /obj/item/weapon/sword/scimitar/messer
 				armor = /obj/item/clothing/armor/plate/orc
+				pants = /obj/item/clothing/pants/tights
+				shoes = /obj/item/clothing/shoes/boots/armor/orc
 				head = /obj/item/clothing/head/helmet/orc
 
 /mob/living/carbon/human/species/orc/tribal
@@ -424,22 +434,26 @@
 			r_hand = /obj/item/weapon/sword/iron
 			l_hand = /obj/item/weapon/shield/wood
 			armor = /obj/item/clothing/armor/chainmail/iron/orc
+			pants = /obj/item/clothing/pants/tights
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			head = /obj/item/clothing/head/helmet/leather
 		if(2)
 			r_hand = /obj/item/weapon/axe/iron
 			l_hand = /obj/item/weapon/shield/wood
 			armor = /obj/item/clothing/armor/chainmail/iron/orc
+			pants = /obj/item/clothing/pants/tights
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			head = /obj/item/clothing/head/helmet/leather
 		if(3)
 			r_hand = /obj/item/weapon/flail
 			l_hand = /obj/item/weapon/sword/scimitar/messer
 			armor = /obj/item/clothing/armor/chainmail/iron/orc
+			pants = /obj/item/clothing/pants/tights
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			head = /obj/item/clothing/head/helmet/leather
 		if(4)
 			armor = /obj/item/clothing/armor/chainmail/iron/orc
+			pants = /obj/item/clothing/pants/tights
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			r_hand = /obj/item/weapon/sword/iron
 			l_hand = /obj/item/weapon/sword/short/iron
@@ -449,16 +463,22 @@
 				r_hand = /obj/item/weapon/mace/spiked
 				l_hand = /obj/item/weapon/shield/wood
 				armor = /obj/item/clothing/armor/plate/orc
+				pants = /obj/item/clothing/pants/tights
+				shoes = /obj/item/clothing/shoes/boots
 				head = /obj/item/clothing/head/helmet/orc
 			else
 				r_hand = /obj/item/weapon/mace/spiked
 				l_hand = /obj/item/weapon/sword/scimitar/messer
 				armor = /obj/item/clothing/armor/plate/orc
+				shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
+				pants = /obj/item/clothing/pants/tights
 				head = /obj/item/clothing/head/helmet/orc
 				cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			if(prob(30))
 				r_hand = /obj/item/weapon/axe/iron
 				armor = /obj/item/clothing/armor/plate/orc
+				pants = /obj/item/clothing/pants/tights
+				shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 				head = /obj/item/clothing/head/helmet/orc
 				cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 
@@ -497,20 +517,28 @@
 			r_hand = /obj/item/weapon/sword/iron
 			l_hand = /obj/item/weapon/axe/iron
 			armor = /obj/item/clothing/armor/plate/orc
+			pants = /obj/item/clothing/pants/tights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			head = /obj/item/clothing/head/helmet/orc
 		if(2)
 			r_hand = /obj/item/weapon/axe/battle
 			armor = /obj/item/clothing/armor/plate/orc
+			pants = /obj/item/clothing/pants/tights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			head = /obj/item/clothing/head/helmet/orc
 		if(3)
 			r_hand = /obj/item/weapon/mace/goden/steel/warhammer
 			armor = /obj/item/clothing/armor/plate/orc
+			pants = /obj/item/clothing/pants/tights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			head = /obj/item/clothing/head/helmet/orc
 		if(4)
 			armor = /obj/item/clothing/armor/plate/orc
+			pants = /obj/item/clothing/pants/tights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			r_hand = /obj/item/weapon/mace/steel
 			l_hand = /obj/item/weapon/shield/tower
@@ -518,6 +546,8 @@
 		if(5)
 			r_hand = /obj/item/weapon/polearm/halberd/bardiche
 			armor = /obj/item/clothing/armor/plate/orc
+			pants = /obj/item/clothing/pants/tights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			cloak = /obj/item/clothing/cloak/raincloak/colored/brown
 			head = /obj/item/clothing/head/helmet/orc
 
@@ -555,24 +585,33 @@
 		if(1)
 			r_hand = /obj/item/weapon/polearm/halberd
 			armor = /obj/item/clothing/armor/plate/orc/warlord
+			pants = /obj/item/clothing/pants/trou/leathertights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			head = /obj/item/clothing/head/helmet/orc/warlord
 		if(2)
 			r_hand = /obj/item/weapon/sword/long/greatsword
 			armor = /obj/item/clothing/armor/plate/orc/warlord
+			pants = /obj/item/clothing/pants/trou/leathertights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			head = /obj/item/clothing/head/helmet/orc/warlord
 		if(3)
 			r_hand = /obj/item/weapon/whip/antique
 			l_hand = /obj/item/weapon/sword/short/iron
 			armor = /obj/item/clothing/armor/plate/orc/warlord
+			pants = /obj/item/clothing/pants/trou/leathertights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			head = /obj/item/clothing/head/helmet/orc/warlord
 		if(4)
 			armor = /obj/item/clothing/armor/plate/orc/warlord
+			pants = /obj/item/clothing/pants/trou/leathertights
 			r_hand = /obj/item/weapon/sword/scimitar/falchion
 			l_hand = /obj/item/weapon/shield/tower
 			head = /obj/item/clothing/head/helmet/orc/warlord
 		if(5)
 			r_hand = /obj/item/weapon/flail/sflail
 			armor = /obj/item/clothing/armor/plate/orc/warlord
+			pants = /obj/item/clothing/pants/trou/leathertights
+			shoes = /obj/item/clothing/shoes/boots/armor/orc/warlord
 			head = /obj/item/clothing/head/helmet/orc/warlord
 
 /mob/living/carbon/human/species/orc/warlord/skilled/after_creation()

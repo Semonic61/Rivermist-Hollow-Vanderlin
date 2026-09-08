@@ -10,6 +10,13 @@
 #define SNACK_VPOOR 2
 #define SNACK_WORST 1
 
+/// Solid food is measured in single-digit nutrition units while cooked reagents
+/// are measured in volume, so a pot of soup dwarfed anything on a plate. Solid
+/// food gets a flat uplift here rather than editing 300 item definitions.
+#define SOLID_FOOD_MULT 1.5
+/// Effective nutriment a solid foodstuff yields, rounded up to a whole unit.
+#define SOLID_FOOD_NUTRITION(base) CEILING((base) * SOLID_FOOD_MULT, 1)
+
 #define COOK_MOD 1.5
 #define DRIED_MOD 0.75
 #define SLICED_MOD (1/6)
@@ -22,6 +29,8 @@
 
 #define BREAD_NUTRITION (DOUGH_NUTRITION * COOK_MOD)
 #define BREADSLICE_NUTRITION (BREAD_NUTRITION * SLICED_MOD)
+#define BOOKBREAD_NUTRITION (BUTTERDOUGH_NUTRITION * COOK_MOD)
+#define BOOKBREADSLICE_NUTRITION (BOOKBREAD_NUTRITION * 0.2)
 
 #define CAKEBASE_NUTRITION (BUTTERDOUGH_NUTRITION + EGG_NUTRITION)
 
@@ -48,6 +57,7 @@
 #define FRUIT_NUTRITION SNACK_POOR
 #define BERRY_NUTRITION SNACK_WORST
 #define RAISIN_NUTRITION (BERRY_NUTRITION * DRIED_MOD)
+#define DRIEDFRUIT_NUTRITION (FRUIT_NUTRITION * DRIED_MOD)
 
 #define VEGGIE_NUTRITION (SNACK_VPOOR + 0.5)
 #define COOKED_VEGGIE_NUTRITION (VEGGIE_NUTRITION * COOK_MOD)

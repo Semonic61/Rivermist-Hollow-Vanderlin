@@ -13,12 +13,6 @@
 	ambushable = FALSE
 	base_intents = list(INTENT_HELP, INTENT_DISARM, INTENT_GRAB)
 
-/mob/living/carbon/human/species/werewolf/death(gibbed, nocutscene)
-	. = ..()
-	if(stored_mob)
-		var/datum/antagonist/werewolf/ww = mind.has_antag_datum(/datum/antagonist/werewolf)
-		ww.werewolf_untransform(null, TRUE, gibbed)
-
 /mob/living/carbon/human/species/werewolf/male
 	gender = MALE
 
@@ -80,6 +74,7 @@
 
 	organs = list(
 		ORGAN_SLOT_BRAIN = /obj/item/organ/brain,
+		ORGAN_SLOT_SPLEEN = /obj/item/organ/spleen,
 		ORGAN_SLOT_HEART = /obj/item/organ/heart,
 		ORGAN_SLOT_LUNGS = /obj/item/organ/lungs,
 		ORGAN_SLOT_EYES = /obj/item/organ/eyes/night_vision/werewolf,
@@ -87,7 +82,6 @@
 		ORGAN_SLOT_TONGUE = /obj/item/organ/tongue,
 		ORGAN_SLOT_LIVER = /obj/item/organ/liver,
 		ORGAN_SLOT_STOMACH = /obj/item/organ/stomach,
-		ORGAN_SLOT_APPENDIX = /obj/item/organ/appendix,
 		ORGAN_SLOT_GUTS = /obj/item/organ/guts,
 		ORGAN_SLOT_PUBIC = /obj/item/organ/genitals/pubes,
 		ORGAN_SLOT_ANUS = /obj/item/organ/genitals/filling_organ/anus,
@@ -123,7 +117,7 @@
 	. = ..()
 	RegisterSignal(C, COMSIG_MOB_SAY, PROC_REF(handle_speech))
 	C.grant_language(/datum/language/beast)
-	C.faction.Add("wolves")
+	C.add_faction(FACTION_WOLVES)
 
 /datum/species/werewolf/update_damage_overlays(mob/living/carbon/human/H)
 	H.remove_overlay(DAMAGE_LAYER)

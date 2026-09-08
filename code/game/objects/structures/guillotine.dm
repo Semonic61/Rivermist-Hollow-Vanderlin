@@ -154,7 +154,7 @@
 			for(var/mob/M in viewers(src, 7))
 				M.add_stress(/datum/stress_event/viewexecution)
 		else
-			H.apply_damage(30 * blade_sharpness, BRUTE, head)
+			H.apply_damage(30 * blade_sharpness, BRUTE, head, damage_type = BCLASS_CUT)
 			log_combat(user, H, "dropped the blade on", src, " non-fatally")
 			H.emote("scream")
 			// Executor has failed and was ashamed
@@ -181,7 +181,7 @@
 				if(do_after(user, 7 DECISECONDS, src))
 					blade_status = GUILLOTINE_BLADE_RAISED
 					user.visible_message(span_notice("[user] sharpens the large blade of the guillotine."),
-						              span_notice("I sharpen the large blade of the guillotine."))
+						span_notice("I sharpen the large blade of the guillotine."))
 					blade_sharpness += 1
 					playsound(src, 'sound/items/sharpen_long1.ogg', 100, TRUE)
 					return
@@ -252,30 +252,33 @@
 	..()
 
 /obj/structure/guillotine/can_be_unfasten_wrench(mob/user, silent)
-	if (LAZYLEN(buckled_mobs))
-		if (!silent)
-			to_chat(user, "<span class='warning'>Can't unfasten, someone's strapped in!</span>")
+	if(LAZYLEN(buckled_mobs))
+		if(!silent)
+			to_chat(user, span_warning("Can't unfasten [src] while someone is strapped in!"))
 		return FAILED_UNFASTEN
 
-	if (current_action)
+	if(current_action)
 		return FAILED_UNFASTEN
 
 	return ..()
 
-/obj/structure/guillotine/wrench_act(mob/living/user, obj/item/I)
-	. = ..()
-	if (current_action)
-		return
+/obj/structure/guillotine/wrench_act(mob/living/user, obj/item/tool)
+	if(current_action)
+		return ITEM_INTERACT_BLOCKING
+	if(can_be_unfasten_wrench(user, FALSE) != SUCCESSFUL_UNFASTEN)
+		return ITEM_INTERACT_BLOCKING
 
 	current_action = GUILLOTINE_ACTION_WRENCH
+	if(!do_after(user, GUILLOTINE_WRENCH_DELAY, src))
+		current_action = 0
+		return ITEM_INTERACT_BLOCKING
 
-	if (do_after(user, GUILLOTINE_WRENCH_DELAY, src))
-		current_action = 0
-		default_unfasten_wrench(user, I, 0)
-		setDir(SOUTH)
-		return TRUE
-	else
-		current_action = 0
+	current_action = 0
+	if(default_unfasten_wrench(user, tool, 0) != SUCCESSFUL_UNFASTEN)
+		return ITEM_INTERACT_BLOCKING
+
+	setDir(SOUTH)
+	return ITEM_INTERACT_SUCCESS
 
 #undef GUILLOTINE_BLADE_MAX_SHARP
 #undef GUILLOTINE_DECAP_MIN_SHARP

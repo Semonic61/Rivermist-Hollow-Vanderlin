@@ -11,9 +11,15 @@
 	var/toxpwr = 1.5
 	var/silent_toxin = FALSE //won't produce a pain message when processed by liver/life() if there isn't another non-silent toxin present.
 
-/datum/reagent/toxin/on_mob_life(mob/living/carbon/M)
+/datum/reagent/toxin/on_mob_life(mob/living/carbon/M, efficiency)
 	if(toxpwr)
-		M.adjustToxLoss(toxpwr*REM, 0)
+		M.adjustToxLoss(toxpwr*REM * efficiency, 0)
+	return ..()
+
+/datum/reagent/toxin/reaction_mob(mob/living/M, method=TOUCH, reac_volume, show_message = 1, touch_protection = 0, target_zone = null)
+	if((method & TOUCH) && iscarbon(M))
+		var/mob/living/carbon/carbon_target = M
+		carbon_target.adjust_germ_level_directed(max(1, reac_volume * max(toxpwr, 1)), body_zone = target_zone)
 	return ..()
 
 /datum/reagent/toxin/amatoxin
@@ -65,16 +71,15 @@
 	metabolization_rate = 1 * REAGENTS_METABOLISM
 	alpha = 225
 
-/datum/reagent/medicine/soporpot/on_mob_life(mob/living/carbon/M)
-	M.adjust_confusion(2 SECONDS)
-	M.adjust_dizzy(2 SECONDS)
-	M.adjust_energy(-25)
+/datum/reagent/medicine/soporpot/on_mob_life(mob/living/carbon/M, efficiency)
+	M.adjust_confusion(2 SECONDS * efficiency)
+	M.adjust_dizzy(2 SECONDS * efficiency)
+	M.adjust_energy(-25 * efficiency)
 	if(M.stamina > 75)
-		M.adjust_drowsiness(4 SECONDS)
+		M.adjust_drowsiness(4 SECONDS * efficiency)
 	else
-		M.adjust_stamina(15)
+		M.adjust_stamina(15 * efficiency)
 	..()
-	. = 1
 
 /datum/reagent/toxin/venom
 	name = "Venom"
@@ -84,8 +89,8 @@
 	metabolization_rate = 0.25 * REAGENTS_METABOLISM
 	toxpwr = 0
 
-/datum/reagent/toxin/venom/on_mob_life(mob/living/carbon/M)
-	toxpwr = 0.2*volume
+/datum/reagent/toxin/venom/on_mob_life(mob/living/carbon/M, efficiency)
+	toxpwr = 0.2*volume * efficiency
 	. = 1
 	..()
 
@@ -97,14 +102,14 @@
 	metabolization_rate = 0.5 * REAGENTS_METABOLISM
 	toxpwr = 0
 
-/datum/reagent/toxin/fentanyl/on_mob_life(mob/living/carbon/M)
-	M.adjustOrganLoss(ORGAN_SLOT_BRAIN, 3*REM, 150)
+/datum/reagent/toxin/fentanyl/on_mob_life(mob/living/carbon/M, efficiency)
+	M.adjustOrganLoss(ORGAN_SLOT_BRAIN, 3*REM * efficiency, 150)
 	if(M.toxloss <= 60)
-		M.adjustToxLoss(1*REM, 0)
+		M.adjustToxLoss(1*REM * efficiency, 0)
 	if(current_cycle >= 4)
 		M.add_stress(/datum/stress_event/narcotic_heavy)
 	if(current_cycle >= 18)
-		M.Sleeping(40, 0)
+		M.Sleeping(40 * efficiency, 0)
 	..()
 	return TRUE
 
@@ -116,10 +121,10 @@
 	metabolization_rate = 0.01
 	toxpwr = 0
 
-/datum/reagent/toxin/killersice/on_mob_life(mob/living/carbon/M)
+/datum/reagent/toxin/killersice/on_mob_life(mob/living/carbon/M, efficiency)
 	//testing("Someone was poisoned") // This is too gold to remove
 	if(volume > 0.95)
-		M.adjustToxLoss(10, 0)
+		M.adjustToxLoss(10 * efficiency, 0)
 	return ..()
 
 /datum/reagent/toxin/bad_food
@@ -164,10 +169,10 @@
 		return
 	reac_volume = round(reac_volume,0.1)
 	if(method & INGEST)
-		C.adjustBruteLoss(min(6*toxpwr, reac_volume * toxpwr))
+		C.adjustBruteLoss(min(6*toxpwr, reac_volume * toxpwr), damage_type = WOUND_INTERNAL_BRUISE)
 		return
 	if(method & INJECT)
-		C.adjustBruteLoss(1.5 * min(6*toxpwr, reac_volume * toxpwr))
+		C.adjustBruteLoss(1.5 * min(6*toxpwr, reac_volume * toxpwr), damage_type = WOUND_INTERNAL_BRUISE)
 		return
 	C.acid_act(acidpwr, reac_volume)
 
@@ -201,11 +206,11 @@
 
 	L.mana_pool.halt_mana_disperse("manabloom")
 
-/datum/reagent/toxin/manabloom_juice/on_mob_life(mob/living/carbon/M)
+/datum/reagent/toxin/manabloom_juice/on_mob_life(mob/living/carbon/M, efficiency)
 	. = ..()
 	if(!M.mana_pool)
 		return
-	M.mana_pool.adjust_mana(volume)
+	M.mana_pool.adjust_mana(volume * efficiency)
 
 /datum/reagent/toxin/manabloom_juice/on_mob_end_metabolize(mob/living/L)
 	. = ..()
@@ -244,10 +249,10 @@
 /datum/reagent/toxin/spidervenom_paralytic/on_mob_end_metabolize(mob/living/L)
 	..()
 
-/datum/reagent/toxin/spidervenom_paralytic/on_mob_life(mob/living/carbon/M)
+/datum/reagent/toxin/spidervenom_paralytic/on_mob_life(mob/living/carbon/M, efficiency)
 	..()
 	if(!(current_cycle % 5) && !(prob(venom_resistance / 5)))
-		M.Paralyze(50)
+		M.Paralyze(50 * efficiency)
 	if(current_cycle >= 60 && !(current_cycle % 5) && prob(venom_resistance))
 		M.reagents.remove_reagent(/datum/reagent/toxin/spidervenom_paralytic, 100)
 

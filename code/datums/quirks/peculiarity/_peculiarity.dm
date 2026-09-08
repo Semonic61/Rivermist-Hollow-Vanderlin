@@ -96,18 +96,7 @@
 /datum/quirk/peculiarity/virgin
 	name = "Virgin"
 	desc = "I am a virgin, whether truly, by magic or plot holes. Vampires and cultists are likely to lust for my blood."
-
-/datum/quirk/peculiarity/virgin/on_spawn()
-	if(!ishuman(owner))
-		return
-	var/mob/living/carbon/human/H = owner
-	H.virginity = TRUE
-
-/datum/quirk/peculiarity/virgin/after_job_spawn()
-	if(!ishuman(owner))
-		return
-	var/mob/living/carbon/human/H = owner
-	H.virginity = TRUE
+	traits_to_add = list(TRAIT_VIRGIN)
 
 
 /*/datum/quirk/peculiarity/mystery_box
@@ -194,6 +183,7 @@
 		qdel(mystery_box)
 
 /obj/item/mystery
+	item_weight = 750 GRAMS
 	name = "locked box"
 	desc = "A mysterious locked box."
 	icon = 'icons/roguetown/items/misc.dmi'
@@ -240,9 +230,16 @@
 		. += span_green("You know the words to open this box: \"[linked_quirk.passcode]\"")
 	else
 		. += span_notice("It seems to respond to spoken words. Perhaps [linked_quirk?.keeper ? linked_quirk.keeper.real_name : "someone"] knows how to open it.")
-	. += span_notice("Right-click to get a hint about who might know the passcode.")*/
+	. += span_notice("Click in-hand to get a hint about who might know the passcode.")*/
 
 /datum/quirk/peculiarity/selfawaregeni
 	name = "Sensitiveness"
-	desc = "I can tell more about my private bits (may be spammy, exact liquid information and alerts etc.)"
+	desc = "I can tell more about my private bits."
+	desc_hint = "May be spammy, exact liquid information and alerts e.t.c."
+	point_value = 0
+
+/datum/quirk/peculiarity/free_flowing
+	name = "Free-Flowing"
+	desc = "My fluids pool into proper puddles on the ground instead of scattering as stray drops."
+	desc_hint = "Genital fluids form liquid puddles directly, bypassing the drip decals."
 	point_value = 0

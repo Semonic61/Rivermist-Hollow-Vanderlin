@@ -46,7 +46,7 @@
 	name = "Sellwizard"
 	head = null
 	mask = null
-	neck = /obj/item/storage/belt/pouch/coins/poor //broke
+	neck = /obj/item/storage/belt/pouch/cloth/coins/poor //broke
 	cloak = null
 	armor = null
 	shirt = /obj/item/clothing/armor/gambeson
@@ -69,11 +69,8 @@
 		/obj/item/reagent_containers/glass/bottle/manapot = 1
 	)
 
-/datum/outfit/adventurer_wizard/sell_wizard/post_equip(mob/living/carbon/human/equipped_human, visuals_only)
+/datum/job/advclass/combat/adventurer_wizard/sell_wizard/after_spawn(mob/living/carbon/human/spawned, client/player_client)
 	. = ..()
-	if(visuals_only)
-		return
-
 	// Hat selection (visual equipment)
 	var/static/list/selectablehat = list(
 		"Witch hat" = /obj/item/clothing/head/wizhat/witch,
@@ -82,14 +79,16 @@
 		"Generic Wizard hat" = /obj/item/clothing/head/wizhat/gen,
 		"Black hood" = /obj/item/clothing/head/roguehood/colored/black,
 	)
-	equipped_human.select_equippable(equipped_human, selectablehat, message = "Choose your hat of choice", title = "WIZARD")
+	spawned.select_equippable(player_client, selectablehat, message = "Choose your hat of choice", title = "WIZARD")
+	if(QDELETED(spawned))
+		return
 
 	// Robe selection (visual equipment)
 	var/static/list/selectablerobe = list(
 		"Black robes" = /obj/item/clothing/shirt/robe/colored/black,
 		"Mage robes" = /obj/item/clothing/shirt/robe/colored/mage,
 	)
-	equipped_human.select_equippable(equipped_human, selectablerobe, message = "Choose your robe of choice", title = "WIZARD")
+	spawned.select_equippable(player_client, selectablerobe, message = "Choose your robe of choice", title = "WIZARD")
 
 /datum/outfit/adventurer_wizard/sell_wizard/pre_equip(mob/living/carbon/human/equipped_human, visuals_only)
 	. = ..()

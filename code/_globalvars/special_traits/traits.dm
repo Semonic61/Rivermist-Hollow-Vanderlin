@@ -41,12 +41,11 @@
 	weight = 100
 
 /datum/special_trait/nightvision/on_apply(mob/living/carbon/human/character, silent)
-	var/obj/item/organ/eyes/eyes = character.getorganslot(ORGAN_SLOT_EYES)
-	if(!eyes)
-		return
-	eyes.see_in_dark = 3
-	eyes.lighting_alpha = LIGHTING_PLANE_ALPHA_NV_TRAIT
-	character.update_sight()
+	var/list/eye_list = character.getorganslotlist(ORGAN_SLOT_EYES)
+	for(var/obj/item/organ/eyes/eyes as anything in eye_list)
+		eyes.see_in_dark = 3
+		eyes.lighting_alpha = LIGHTING_PLANE_ALPHA_NV_TRAIT
+		character.update_sight()
 
 /datum/special_trait/thickskin
 	name = "Tough"
@@ -457,7 +456,7 @@
 	weight = 25
 
 /datum/special_trait/sadistic/on_apply(mob/living/carbon/human/character, silent)
-	character.add_quirk(/datum/quirk/vice/maniac)
+	character.add_quirk(/datum/quirk/vice/addiction/sadist)
 	//add_verb(character, /mob/living/carbon/human/proc/torture_victim)
 	character.mind.special_items["Chains"] = /obj/item/rope/chain
 

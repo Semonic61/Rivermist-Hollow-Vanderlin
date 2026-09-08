@@ -1,4 +1,5 @@
 /obj/item/contraption
+	item_weight = 500 GRAMS
 	name = "random piece of machinery"
 	desc = "A cog with teeth meticulously crafted for tight interlocking."
 	icon_state = "gear"
@@ -95,11 +96,10 @@
 	if(!current_charge)
 		addtimer(CALLBACK(src, PROC_REF(battery_collapse), A, user), 5)
 
-/obj/item/contraption/attackby(obj/item/I, mob/user, list/modifiers)
-	var/datum/effect_system/spark_spread/S = new()
-	var/turf/front = get_turf(src)
-	if(istype(I, /obj/item/gear/wood) && special_cog)
-		var/obj/item/gear/wood/cog = I
+/obj/item/contraption/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, /obj/item/gear/wood) && special_cog)
+		var/turf/front = get_turf(src)
+		var/obj/item/gear/wood/cog = tool
 		if(cog.misfire_modification)
 			misfire_chance = CLAMP(misfire_chance + cog.misfire_modification, 0, 100)
 		if(cog.name_prefix)
@@ -109,27 +109,33 @@
 		qdel(cog)
 		playsound(src, pick('sound/combat/hits/onwood/fence_hit1.ogg', 'sound/combat/hits/onwood/fence_hit2.ogg', 'sound/combat/hits/onwood/fence_hit3.ogg'), 100, FALSE)
 		shake_camera(user, 1, 1)
+		var/datum/effect_system/spark_spread/S = new()
 		S.set_up(1, 1, front)
 		S.start()
-		to_chat(user, "<span class='warning'>I use [cog] to modify [src]!</span>")
-		return
-	if(istype(I, accepted_power_source))
+		to_chat(user, "<span class='warning'>tool use [cog] to modify [src]!</span>")
+		return ITEM_INTERACT_SUCCESS
+
+	if(istype(tool, accepted_power_source))
+		var/turf/front = get_turf(src)
 		user.changeNext_move(CLICK_CD_FAST)
+		var/datum/effect_system/spark_spread/S = new()
 		S.set_up(1, 1, front)
 		S.start()
 		if(current_charge)
-			to_chat(user, span_info("I try to insert the [I.name] but there's already \a [initial(accepted_power_source.name)] inside!"))
+			to_chat(user, span_info("I try to insert the [tool.name] but there's already \a [initial(accepted_power_source.name)] inside!"))
 			playsound(src, 'sound/combat/hits/blunt/woodblunt (2).ogg', 100, TRUE)
 			shake_camera(user, 1, 1)
 		else
-			to_chat(user, span_info("I insert the [I.name] and the [name] starts ticking."))
+			to_chat(user, span_info("I insert the [tool.name] and the [name] starts ticking."))
 			current_charge = charge_per_source
 			playsound(src, 'sound/combat/hits/blunt/woodblunt (2).ogg', 100, TRUE)
-			qdel(I)
+			qdel(tool)
 			addtimer(CALLBACK(src, PROC_REF(play_clock_sound)), 5)
-	if(istype(I, /obj/item/weapon/hammer))
-		hammer_action(I, user)
-	..()
+		return ITEM_INTERACT_SUCCESS
+
+	if(istype(tool, /obj/item/weapon/hammer))
+		hammer_action(tool, user)
+		return ITEM_INTERACT_SUCCESS
 
 /obj/item/contraption/proc/hammer_action(obj/item/I, mob/user)
 	user.changeNext_move(CLICK_CD_FAST)
@@ -163,9 +169,10 @@
 		to_chat(user, span_info("The contraption beeps! It requires \a [initial(accepted_power_source.name)]!"))
 		playsound(src, 'sound/magic/magic_nulled.ogg', 100, TRUE)
 		return TRUE
-	. = ..()
+	return ..()
 
 /obj/item/contraption/wood_metalizer
+	item_weight = 1.5 KILOGRAMS
 	name = "wood metalizer"
 	desc = "A creation of genius or insanity. This cursed contraption is somehow able to turn wood into metal."
 	icon_state = "metalizer"
@@ -182,14 +189,15 @@
 	/// The smelting result, used by the smelter or by the portable smelter
 	var/smeltresult
 
-/obj/item/contraption/wood_metalizer/attack_atom(atom/attacked_atom, mob/living/user)
-	if(!isobj(attacked_atom))
-		return ..()
+/obj/item/contraption/wood_metalizer/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isobj(interacting_with))
+		return NONE
 
-	var/obj/O = attacked_atom
-	. = TRUE
 	if(!current_charge)
-		return
+		return NONE
+
+	var/obj/O = interacting_with
+
 	if(!O.metalizer_result)
 		to_chat(user, span_info("The [name] refuses to function."))
 		playsound(user, 'sound/items/flint.ogg', 100, FALSE)
@@ -198,8 +206,19 @@
 		var/turf/front = get_turf(O)
 		S.set_up(1, 1, front)
 		S.start()
-		return
+		return ITEM_INTERACT_BLOCKING
+
+	flick(on_icon, src)
+	charge_deduction(O, user, 1)
+	shake_camera(user, 1, 1)
+	playsound(src, 'sound/magic/swap.ogg', 100, TRUE)
+	user.mind.add_sleep_experience(/datum/attribute/skill/craft/engineering, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) / 2))
+
 	var/skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/engineering)
+	if(misfire_chance && prob(max(0, misfire_chance - user.stat_roll(STAT_FORTUNE,2 , 10) - skill)))
+		misfire(O, user)
+		return
+
 	if(istype(O, /obj/structure/door)) //This is to ensure the new door will retain its lock
 		var/obj/structure/door/door = O
 		var/obj/structure/door/new_door = new door.metalizer_result(get_turf(door))
@@ -214,14 +233,8 @@
 		var/obj/I = O
 		new I.metalizer_result(get_turf(I))
 		qdel(I)
-	flick(on_icon, src)
-	charge_deduction(O, user, 1)
-	shake_camera(user, 1, 1)
-	playsound(src, 'sound/magic/swap.ogg', 100, TRUE)
-	user.mind.add_sleep_experience(/datum/attribute/skill/craft/engineering, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) / 2))
-	if(misfire_chance && prob(max(0, misfire_chance - user.stat_roll(STAT_FORTUNE,2,10) - skill)))
-		misfire(O, user)
-	return
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/contraption/wood_metalizer/misfire_result()
 	misfiring = TRUE
@@ -234,6 +247,7 @@
 	qdel(src)
 
 /obj/item/contraption/smelter
+	item_weight = 2 KILOGRAMS
 	name = "portable smelter"
 	desc = "Furnaces are a thing of the past. The future is here!"
 	icon_state = "smelter"
@@ -276,14 +290,15 @@
 	playsound(turf, pick('sound/combat/hits/onmetal/sheet (1).ogg', 'sound/combat/hits/onmetal/sheet (2).ogg'), 100, TRUE)
 	qdel(src)
 
-/obj/item/contraption/smelter/attack_atom(atom/attacked_atom, mob/living/user)
-	if(!isobj(attacked_atom))
-		return ..()
+/obj/item/contraption/smelter/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isobj(interacting_with))
+		return NONE
 
-	var/obj/O = attacked_atom
-	. = TRUE
 	if(!current_charge)
-		return
+		return NONE
+
+	var/obj/O = interacting_with
+
 	if(!O.smeltresult)
 		to_chat(user, span_info("The [name] refuses to function."))
 		playsound(user, 'sound/items/flint.ogg', 100, FALSE)
@@ -292,13 +307,16 @@
 		var/turf/front = get_turf(O)
 		S.set_up(1, 1, front)
 		S.start()
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	user.mind.add_sleep_experience(/datum/attribute/skill/craft/engineering, (GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) / 3))
+
 	charge_deduction(O, user, 1)
 	flick(on_icon, src)
 	playsound(src, 'sound/misc/machinevomit.ogg', 50, TRUE)
 	addtimer(CALLBACK(src, PROC_REF(smelt_part2), O, user), 5)
-	return
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/contraption/smelter/proc/smelt_part2(obj/O, mob/living/user)
 	var/skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/engineering)
@@ -308,9 +326,9 @@
 	if(misfire_chance && prob(max(0, misfire_chance - user.stat_roll(STAT_FORTUNE,2,10) - skill)))
 		misfire(O, user)
 	addtimer(CALLBACK(O, PROC_REF(popcorn_smelt_result), turf), 20)
-	return
 
 /obj/item/contraption/shears
+	item_weight = 1.8 KILOGRAMS
 	name = "amputation shears"
 	desc = "A powered shear used for achieving a clean separation between limb and patient. Keeping the patient still is imperative to aligning the blades."
 	icon = 'icons/roguetown/items/misc.dmi'
@@ -326,49 +344,59 @@
 /obj/item/contraption/shears/hammer_action(obj/item/I, mob/user)
 	return
 
-/obj/item/contraption/shears/attack(mob/living/amputee, mob/living/user, list/modifiers)
-	if(!current_charge)
-		return
+/obj/item/contraption/shears/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!iscarbon(interacting_with))
+		return NONE
 
-	if(!iscarbon(amputee))
-		return
+	if(!current_charge)
+		to_chat(user, span_warning("[src] is out of charge!"))
+		return ITEM_INTERACT_BLOCKING
 
 	var/targeted_zone = check_zone(user.zone_selected)
 	if(targeted_zone == BODY_ZONE_CHEST || targeted_zone == BODY_ZONE_HEAD)
 		to_chat(user, span_warning("I can't amputate that!"))
-		return
+		return ITEM_INTERACT_BLOCKING
 
-	var/mob/living/carbon/patient = amputee
+	var/mob/living/carbon/amputee = interacting_with
 
-	if(HAS_TRAIT(patient, TRAIT_NODISMEMBER))
-		to_chat(user, span_warning("[patient]'s limbs look too sturdy to amputate."))
-		return
+	if(HAS_TRAIT(amputee, TRAIT_NODISMEMBER))
+		to_chat(user, span_warning("[amputee]'s limbs look too sturdy to amputate."))
+		return ITEM_INTERACT_BLOCKING
 
-	var/obj/item/bodypart/limb_snip_candidate
-
-	limb_snip_candidate = patient.get_bodypart(targeted_zone)
+	var/obj/item/bodypart/limb_snip_candidate = amputee.get_bodypart(targeted_zone)
 	if(!limb_snip_candidate)
-		to_chat(user, span_warning("[patient] is already missing that limb, what more do you want?"))
-		return
+		to_chat(user, span_warning("[amputee] is already missing that limb, what more do you want?"))
+		return ITEM_INTERACT_BLOCKING
 
 	var/amputation_speed_mod = 1
 
-	patient.visible_message(span_danger("[user] begins to secure [src] around [patient]'s [limb_snip_candidate.name]."), span_userdanger("[user] begins to secure [src] around your [limb_snip_candidate.name]!"))
-	playsound(patient, 'sound/misc/ratchet.ogg', 20, TRUE)
-	if(patient.stat >= UNCONSCIOUS || patient.buckled || locate(/obj/structure/table/optable) in get_turf(patient))
+	amputee.visible_message(span_danger("[user] begins to secure [src] around [amputee]'s [limb_snip_candidate.name]."), span_userdanger("[user] begins to secure [src] around your [limb_snip_candidate.name]!"))
+
+	playsound(amputee, 'sound/misc/ratchet.ogg', 20, TRUE)
+
+	if(amputee.stat >= UNCONSCIOUS || amputee.buckled || locate(/obj/structure/table/optable) in get_turf(amputee))
 		amputation_speed_mod *= 0.5
-	if(patient.stat != DEAD && (patient.has_status_effect(/datum/status_effect/jitter) || patient.body_position != LYING_DOWN)) //jittering will make it harder to secure the shears, even if you can't otherwise move
+
+	if(amputee.stat != DEAD && (amputee.has_status_effect(/datum/status_effect/jitter) || amputee.body_position != LYING_DOWN)) //jittering will make it harder to secure the shears, even if you can't otherwise move
 		amputation_speed_mod *= 1.5 //15*0.5*1.5=11.25
 
 	var/skill_modifier = 1.5 - (GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/engineering) / 6)
-	if(do_after(user, 15 SECONDS * amputation_speed_mod * skill_modifier, target = patient))
-		playsound(patient, 'sound/misc/guillotine.ogg', 20, TRUE)
-		limb_snip_candidate.drop_limb()
-		user.visible_message(span_danger("[src] violently slams shut, amputating [patient]'s [limb_snip_candidate.name]."), span_notice("You amputate [patient]'s [limb_snip_candidate.name] with [src]."))
-		charge_deduction(amputee, user, 1)
+	if(!do_after(user, 15 SECONDS * amputation_speed_mod * skill_modifier, target = amputee))
+		return ITEM_INTERACT_BLOCKING
+
+	playsound(amputee, 'sound/misc/guillotine.ogg', 20, TRUE)
+	limb_snip_candidate.drop_limb()
+	user.visible_message(
+		span_danger("[src] violently slams shut, amputating [amputee]'s [limb_snip_candidate.name]."),
+		span_notice("You amputate [amputee]'s [limb_snip_candidate.name] with [src].")
+	)
+	charge_deduction(amputee, user, 1)
+
+	return ITEM_INTERACT_SUCCESS
 
 //Shamelessly stolen multitool code
 /obj/item/contraption/linker
+	item_weight = 800 GRAMS
 	name = "engineering wrench"
 	desc = "This strange contraption is able to connect machinery through an unknown calibration method, allowing them to communicate over long distances."
 	icon = 'icons/obj/wrenches.dmi'
@@ -426,6 +454,7 @@
 	buffer = null
 
 /obj/item/folding_table_stored
+	item_weight = 3 KILOGRAMS
 	name = "folding table"
 	desc = "A folding table, useful for setting up a temporary workspace."
 	icon = 'icons/roguetown/items/gadgets.dmi'
@@ -501,7 +530,7 @@
 		attachment = null
 	if(!on)
 		user.visible_message(span_notice("[user] begins packing up \the [src]."))
-		if(!do_after(user, 2 SECONDS, TRUE, src))
+		if(!do_after(user, 2 SECONDS, src)) // RMH EDITED
 			return
 		var/obj/item/mobilestove/new_mobilestove = new /obj/item/mobilestove(get_turf(src))
 		new_mobilestove.color = src.color
@@ -523,6 +552,7 @@
 	qdel(src)
 
 /obj/item/mobilestove
+	item_weight = 4 KILOGRAMS
 	name = "packed stove"
 	desc = "A portable bronze stovetop. The underside is covered in an esoteric pattern of small tubes. Whatever heats the hob is hidden inside the body of the device"
 	icon = 'icons/roguetown/misc/lighting.dmi'

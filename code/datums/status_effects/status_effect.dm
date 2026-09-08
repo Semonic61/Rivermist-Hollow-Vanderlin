@@ -60,17 +60,21 @@
 	initial_duration = duration
 	if(duration != -1)
 		duration = world.time + duration
-	tick_interval = world.time + tick_interval
+	if(tick_interval != STATUS_EFFECT_NO_TICK)
+		tick_interval = world.time + tick_interval
 	if(alert_type)
 		var/atom/movable/screen/alert/status_effect/A = owner?.throw_alert(id, alert_type)
 		if(A)
 			A?.attached_effect = src //so the alert can reference us, if it needs to
 			linked_alert = A //so we can reference the alert, if we need to
 
-	if(duration > world.time || tick_interval > world.time) //don't process if we don't care
+	if(duration != -1 || tick_interval != STATUS_EFFECT_NO_TICK) // Don't process permanent effects with no tick.
 		switch(processing_speed)
 			if(STATUS_EFFECT_FAST_PROCESS)
-				START_PROCESSING(SSstatusprocess, src)
+				if(tick_interval == STATUS_EFFECT_NO_TICK)
+					START_PROCESSING(SSprocessing, src)
+				else
+					START_PROCESSING(SSstatusprocess, src)
 			if(STATUS_EFFECT_NORMAL_PROCESS)
 				START_PROCESSING(SSprocessing, src)
 
@@ -78,6 +82,7 @@
 
 /datum/status_effect/Destroy()
 	STOP_PROCESSING(SSstatusprocess, src)
+	STOP_PROCESSING(SSprocessing, src)
 	if(owner)
 		linked_alert = null
 		owner.clear_alert(id)
@@ -93,7 +98,7 @@
 	if(!owner)
 		qdel(src)
 		return
-	if(tick_interval < world.time)
+	if(tick_interval != STATUS_EFFECT_NO_TICK && tick_interval < world.time)
 		tick()
 		tick_interval = world.time + initial(tick_interval)
 	if(duration != -1 && duration < world.time)

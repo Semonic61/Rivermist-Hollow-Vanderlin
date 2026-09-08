@@ -151,14 +151,25 @@
  * Sets a mob as our owner
  */
 /datum/attribute_holder/proc/set_parent(mob/new_parent)
+	// Already ours - re-registering the same signals would runtime.
+	if(parent == new_parent)
+		update_attributes()
+		return
+
+	if(parent)
+		UnregisterSignal(parent, list(COMSIG_SHARE_APPRENTICE_XP, COMSIG_ATOM_UPDATED_ICON))
+		// Only clear the mob's pointer if it still points at us - the mob may already own a replacement holder.
+		if(parent.attributes == src)
+			parent.attributes = null
+		parent = null
+
 	if(new_parent)
 		parent = new_parent
 		new_parent.attributes = src
-	else
-		parent.attributes = null
-		parent = null
+		RegisterSignal(parent, COMSIG_SHARE_APPRENTICE_XP, PROC_REF(onshare_apprentice_xp))
+		RegisterSignal(parent, COMSIG_ATOM_UPDATED_ICON, PROC_REF(on_parent_appearance_changed))
+
 	update_attributes()
-	RegisterSignal(parent, COMSIG_SHARE_APPRENTICE_XP, PROC_REF(onshare_apprentice_xp))
 
 /**
  * Seeds the XP pool to match the current raw skill level.
@@ -335,6 +346,18 @@
  * you should multiply amount of dices and crit according to how many of them you added to the formula.
  *
  * If you don't care about crits, just count them as being the same as normal successes/failures.
+ *
+ * Dice rolling works inversely to how you'd think so if you have a requirement of 30 it needs to be BELOW 30
+ * Example:
+ * Single stat (baseline)
+ * diceroll(requirement = 10, crit = 10, dice_num = 3, dice_sides = 6)
+ *
+ * Two stats combined (e.g. STR + DEX)
+ * diceroll(requirement = 10, crit = 20, dice_num = 6, dice_sides = 6)
+ *
+ * Three stats combined
+ * diceroll(requirement = 10, crit = 30, dice_num = 9, dice_sides = 6)
+ *
  */
 /datum/attribute_holder/proc/diceroll(requirement = 0, \
 									crit = 10, \
@@ -515,7 +538,7 @@
 		if(!old_level)
 			continue
 		LAZYSET(skill_xp, skill_type, 0)
-		apply_skill_level(skill_type, SKILL_LEVEL_NONE, old_level, silent)
+		apply_skill_level(skill_type, SKILL_RANK_NONE, old_level, silent)
 	if(!silent)
 		to_chat(parent, span_boldwarning("I forget all my skills!"))
 
@@ -528,8 +551,8 @@
 	raw_attribute_list[skill_type] = new_level
 	update_attributes()
 
-	SEND_SIGNAL(parent, COMSIG_SKILL_RANK_CHANGE, skill_type, new_level * 0.1, old_level * 0.1)
 	SEND_SIGNAL(parent, COMSIG_SKILL_LEVEL_CHANGE, skill_type, new_level, old_level)
+	SEND_SIGNAL(parent, COMSIG_SKILL_RANK_CHANGE, skill_type, floor(new_level / 10), floor(old_level / 10))
 
 	// Per-skill side-effects
 	on_skill_level_changed(skill_type, new_level, old_level)
@@ -554,3 +577,44 @@
 		var/display_level = return_raw_effective_skill(skill_type)
 		var/tier_name = display_level > 0 ? skill.description_from_level(display_level) : "nothing"
 		to_chat(parent, span_warning("My [skill_name] has weakened to [tier_name]!"))
+
+/// Breaks a skill's final value into base + named contributions
+/datum/attribute_holder/proc/get_skill_value_breakdown(skill_type)
+	var/list/breakdown = list()
+	var/base = raw_attribute_list[skill_type]
+	breakdown["base"] = base
+
+	var/after_direct = attribute_list[skill_type] // raw + direct attribute_modification entries only
+	var/datum/attribute/skill/skill = GET_ATTRIBUTE_DATUM(skill_type)
+	var/governing_contribution = 0
+	var/value = after_direct
+
+	if(istype(skill) && skill.governing_attribute && !isnull(after_direct) && (after_direct > 0))
+		var/governing_raw = return_raw_calculated_skill(skill.governing_attribute)
+		var/governing_effective = return_calculated_skill(skill.governing_attribute)
+		var/governing_delta = governing_effective - governing_raw
+		if(governing_delta < 0)
+			governing_contribution = floor((governing_raw * SKILL_GOVERNING_MULTIPLIER_POSITIVE) + (governing_delta * SKILL_GOVERNING_MULTIPLIER_NEGATIVE))
+		else
+			governing_contribution = floor(governing_effective * SKILL_GOVERNING_MULTIPLIER_POSITIVE)
+		value = after_direct + governing_contribution
+
+	var/defaults_contribution = 0
+	if(istype(skill) && LAZYLEN(skill.default_attributes))
+		var/best_default = null
+		for(var/attribute_type in skill.default_attributes)
+			var/default_value = return_calculated_skill(attribute_type)
+			if(isnull(default_value))
+				continue
+			default_value += skill.default_attributes[attribute_type]
+			default_value = min(default_value, ATTRIBUTE_MASTER) // Rule of 20
+			if(isnull(best_default) || default_value > best_default)
+				best_default = default_value
+		if(!isnull(best_default) && (isnull(value) || best_default > value))
+			defaults_contribution = best_default - nulltozero(value)
+			value = best_default
+
+	breakdown["value"] = value
+	breakdown["governing_contribution"] = governing_contribution
+	breakdown["defaults_contribution"] = defaults_contribution
+	return breakdown

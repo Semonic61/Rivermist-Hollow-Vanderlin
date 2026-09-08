@@ -40,7 +40,7 @@
 	/// If a rune provides a bonus to a spell, or spellbook reading.
 	var/spellbonus = 0
 	/// Hhow much damage you take doing it
-	var/scribe_damage = 0.1
+	var/scribe_damage = 5
 	/// How much damage invokers take when invoking it
 	var/invoke_damage = 0
 	/// If the rune requires a keyword when scribed
@@ -56,24 +56,22 @@
 	var/tier = 1
 	/// ritual result is the result of a ritual!
 	var/ritual_result
-	//atoms in ranges
-	var/list/atom/movable/atoms_in_range	//list for atoms in range of rune
 	var/datum/runerituals/pickritual		//selected
 	var/list/selected_atoms
 	var/associated_ritual = null	//Associated ritual for runes with only 1 ritual. Use in tandom with ritual_number
 	var/takes_all_items = FALSE
 
 /proc/isarcyne(mob/living/carbon/human/A)
-	return istype(A) && A.mind && (GET_MOB_SKILL_VALUE_OLD(A, /datum/attribute/skill/magic/arcane) > SKILL_LEVEL_NONE)	//checks if person has arcane skill
+	return istype(A) && A.mind && (GET_MOB_SKILL_VALUE_OLD(A, /datum/attribute/skill/magic/arcane) > SKILL_RANK_NONE)	//checks if person has arcane skill
 
 /proc/isdivine(mob/living/carbon/human/A)
-	return istype(A) && A.mind && (GET_MOB_SKILL_VALUE_OLD(A, /datum/attribute/skill/magic/holy) > SKILL_LEVEL_NONE)	//checks if person has holy/divine skill
+	return istype(A) && A.mind && (GET_MOB_SKILL_VALUE_OLD(A, /datum/attribute/skill/magic/holy) > SKILL_RANK_NONE)	//checks if person has holy/divine skill
 
 /proc/isdruid(mob/living/carbon/human/A)
-	return istype(A) && A.mind && (GET_MOB_SKILL_VALUE_OLD(A, /datum/attribute/skill/magic/druidic) > SKILL_LEVEL_NONE)	//checks if person has druidic skill
+	return istype(A) && A.mind && (GET_MOB_SKILL_VALUE_OLD(A, /datum/attribute/skill/magic/druidic) > SKILL_RANK_NONE)	//checks if person has druidic skill
 
 /proc/isblood(mob/living/carbon/human/A)
-	return istype(A) && A.mind && (GET_MOB_SKILL_VALUE_OLD(A, /datum/attribute/skill/magic/blood) > SKILL_LEVEL_NONE)		//checks if person has blood magic skill
+	return istype(A) && A.mind && (GET_MOB_SKILL_VALUE_OLD(A, /datum/attribute/skill/magic/blood) > SKILL_RANK_NONE)		//checks if person has blood magic skill
 
 GLOBAL_LIST_INIT(rune_types, generate_rune_types())
 GLOBAL_LIST_INIT(t1rune_types, generate_t1rune_types())
@@ -245,7 +243,7 @@ GLOBAL_LIST(teleport_runes)
 
 /obj/effect/decal/cleanable/roguerune/proc/invoke(list/invokers, datum/runerituals/runeritual)		//Generic invoke proc. This will be defined on every rune, along with effects.If you want to make an object, or provide a buff, do so through this proc., have both here.
 	rune_in_use = FALSE
-	atoms_in_range = list()
+	var/list/atom/movable/atoms_in_range = list()
 	for(var/atom/close_atom as anything in range(runesize, src))
 		if(!ismovable(close_atom))
 			continue
@@ -294,6 +292,9 @@ GLOBAL_LIST(teleport_runes)
 		if(takes_all_items && isitem(nearby_atom))
 			if(length(nearby_atom:attunement_values))
 				selected_atoms |= nearby_atom
+
+	// Nearby atoms are no longer needed; ritual completion may sleep for a ghost poll.
+	atoms_in_range = null
 
 	var/list/what_are_we_missing = list()
 	for(var/req_type in requirements_list)
@@ -742,34 +743,40 @@ GLOBAL_LIST(teleport_runes)
 	var/mob/living/simple_animal/summoned_mob
 
 /obj/effect/decal/cleanable/roguerune/arcyne/summoning/Destroy()
-	if(summoning)
-		REMOVE_TRAIT(summoned_mob, TRAIT_PACIFISM, MAGIC_TRAIT)	//can't kill while planar bound.
-		summoned_mob.status_flags -= GODMODE//remove godmode
-		summoned_mob.candodge = TRUE
-		summoned_mob.binded = FALSE
-		summoned_mob.move_resist = MOVE_RESIST_DEFAULT
-		summoned_mob.SetParalyzed(0)
-		summoned_mob = null
-		summoning = FALSE
-	.=..()
+	release_summon()
+	return ..()
+
+/// Release the binding and both references to the summoned mob.
+/obj/effect/decal/cleanable/roguerune/arcyne/summoning/proc/release_summon()
+	if(summoned_mob)
+		UnregisterSignal(summoned_mob, COMSIG_PARENT_QDELETING)
+		if(!QDELETED(summoned_mob))
+			REMOVE_TRAIT(summoned_mob, TRAIT_PACIFISM, MAGIC_TRAIT)
+			summoned_mob.status_flags &= ~GODMODE
+			summoned_mob.candodge = TRUE
+			summoned_mob.binded = FALSE
+			summoned_mob.move_resist = MOVE_RESIST_DEFAULT
+			summoned_mob.SetParalyzed(0)
+	summoned_mob = null
+	ritual_result = null
+	summoning = FALSE
+
+/obj/effect/decal/cleanable/roguerune/arcyne/summoning/proc/on_summon_deleted(datum/source)
+	SIGNAL_HANDLER
+	release_summon()
 
 /obj/effect/decal/cleanable/roguerune/arcyne/summoning/attack_hand(mob/living/user)
 	if(summoning && isarcyne(user))
 		to_chat(user, span_warning("You release the summon from its containment!"))
-		playsound(usr, 'sound/magic/teleport_diss.ogg', 75, TRUE)
+		playsound(user, 'sound/magic/teleport_diss.ogg', 75, TRUE)
 		do_invoke_glow()
-		sleep(20)
-		animate(summoned_mob, color = null,time = 5)
-		REMOVE_TRAIT(summoned_mob, TRAIT_PACIFISM, MAGIC_TRAIT)	//can't kill while planar bound.
-		summoned_mob.status_flags -= GODMODE//remove godmode
-		summoned_mob.candodge = TRUE
-		summoned_mob.binded = FALSE
-		summoned_mob.move_resist = MOVE_RESIST_DEFAULT
-		summoned_mob.SetParalyzed(0)
-		summoned_mob = null
-		summoning = FALSE
+		sleep(2 SECONDS)
+		if(QDELETED(src) || QDELETED(summoned_mob))
+			return
+		animate(summoned_mob, color = null, time = 5)
+		release_summon()
 		return
-	. = ..()
+	return ..()
 
 /obj/effect/decal/cleanable/roguerune/arcyne/summoning/invoke(list/invokers, datum/runerituals/runeritual)
 	if(!..())	//VERY important. Calls parent and checks if it fails. parent/invoke has all the checks for ingredients
@@ -780,7 +787,11 @@ GLOBAL_LIST(teleport_runes)
 	// - If the ritual failed for some reason (Returned FALSE), likely due to no ghosts taking a role or an error, we shouldn't clean up anything, and reset.
 	if(ismob(ritual_result))
 		summoned_mob = ritual_result
-		src.summoning = TRUE
+		summoning = TRUE
+		if(QDELETED(src) || QDELETED(summoned_mob))
+			release_summon()
+			return
+		RegisterSignal(summoned_mob, COMSIG_PARENT_QDELETING, PROC_REF(on_summon_deleted))
 	if(ritual_result)
 		pickritual.cleanup_atoms(selected_atoms)
 

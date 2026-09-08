@@ -79,14 +79,44 @@
 	reagents.trans_to(user, reagents.total_volume, transfered_by = user, method = INGEST)
 	playsound(user,pick('sound/items/drink_gen (1).ogg','sound/items/drink_gen (2).ogg','sound/items/drink_gen (3).ogg'), 100, TRUE)
 
+// Healing spring: a fountain that gently mends those who linger by it, and frees the defeated
+// (an environmental rescue source from the Defeat system - see DEFEAT_SYSTEM_SPEC_ADDENDUM.md section 3).
+/obj/structure/well/fountain/healing
+	name = "healing spring"
+	desc = "Warm, clear water wells up with a soft glow. Linger by it and your hurts ease - it has even been known to rouse the fallen."
+	color = "#9fe0ff"
+
+/obj/structure/well/fountain/healing/Initialize(mapload)
+	. = ..()
+	START_PROCESSING(SSobj, src)
+
+/obj/structure/well/fountain/healing/Destroy()
+	STOP_PROCESSING(SSobj, src)
+	return ..()
+
+/obj/structure/well/fountain/healing/process(seconds_per_tick)
+	for(var/mob/living/bather in range(1, src))
+		if(bather.stat == DEAD)
+			continue
+		bather.adjustBruteLoss(-3)
+		bather.adjustFireLoss(-3)
+		bather.adjustToxLoss(-2)
+		if(bather.has_status_effect(/datum/status_effect/defeat_knockout))
+			bather.defeat_environmental_rescue("healing spring")
+
 /obj/structure/well/attackby(obj/item/I, mob/user, list/modifiers)
 	if(istype(I, /obj/item/reagent_containers/glass/bucket))
 		var/obj/item/reagent_containers/glass/bucket/W = I
 		if(W.reagents.holder_full())
 			to_chat(user, "<span class='warning'>[W] is full.</span>")
 			return
-		if(do_after(user, 6 SECONDS, src))
-			var/list/waterl = list(/datum/reagent/water = 100)
+		if(do_after(user, 2 SECONDS, src)) // RMH EDITED - 6 seconds its too long
+			//RMH EDITED START
+			// BUGFIX: filled a fixed 100 units, which only half-fills containers whose
+			// volume is above 100 (e.g. the 200-volume iron pot). add_reagent clamps to
+			// the holder's maximum, so request the full remaining capacity to top it off.
+			var/list/waterl = list(/datum/reagent/water = W.reagents.maximum_volume - W.reagents.total_volume)
+			//RMH EDITED END
 			W.reagents.add_reagent_list(waterl)
 			to_chat(user, "<span class='notice'>I fill [W] from [src].</span>")
 			playsound(user, pick('sound/foley/waterwash (1).ogg','sound/foley/waterwash (2).ogg'), 80, FALSE)

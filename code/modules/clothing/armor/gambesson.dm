@@ -1,4 +1,5 @@
 /obj/item/clothing/armor/gambeson
+	item_weight = 4.7 KILOGRAMS
 	slot_flags = ITEM_SLOT_ARMOR|ITEM_SLOT_SHIRT
 	name = "gambeson"
 	desc = "Thick quilted cloth in layers, good on its own or worn below metal as padding."
@@ -10,27 +11,29 @@
 	pickup_sound = 'sound/foley/equip/cloak_take_off.ogg'
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 //	nodismemsleeves = FALSE gambesson being ripped by hand to bandages makes no sense. OTOH it can go into shirt slot asnd its kinda fun so maybe?
 	r_sleeve_status = SLEEVE_NOMOD
 	l_sleeve_status = SLEEVE_NOMOD
 	sellprice = VALUE_GAMBESSON
 
 	armor_class = AC_LIGHT
-	armor = ARMOR_PADDED
+	armor_type = /datum/armor/padded
 	body_parts_covered = COVERAGE_FULL
 	prevent_crits = ALL_EXCEPT_CHOP_AND_STAB
+	max_integrity = ARMOR_INT_CHEST_LIGHT_BASE
 
 	material_category = ARMOR_MAT_FABRIC
 
 /obj/item/clothing/armor/gambeson/light
+	item_weight = 3.1 KILOGRAMS
 	name = "light gambeson"
 	desc = "Thin and the maker skimped on the padding, typically worn by the peasantry to give some protection against cold for the whole body."
 	icon_state = "gambesonl"
 	color = CLOTHING_LINEN
 	sellprice = VALUE_LIGHT_GAMBESSON
 
-	armor = ARMOR_PADDED_BAD
+	armor_type = /datum/armor/padded/bad
 	prevent_crits = MINOR_CRITICALS
 
 /obj/item/clothing/armor/gambeson/light/steppe
@@ -45,12 +48,14 @@
 	color = CLOTHING_SOOT_BLACK
 
 /obj/item/clothing/armor/gambeson/heavy
+	item_weight = 5.6 KILOGRAMS
 	name = "padded gambeson"
 	desc = "Thick, padded, this will help a little even against arrows. A wise man carried steel as well, but it will do in a pinch."
 	icon_state = "gambesonp"
 	sellprice = VALUE_HEAVY_GAMBESSON
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MEDIUM
 
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/padded/good
 
 /obj/item/clothing/armor/gambeson/heavy/colored
 	misc_flags = CRAFTING_TEST_EXCLUDE
@@ -62,12 +67,12 @@
 	name = "robed jupon"
 	desc = "A thick, quilted jupon with an iron heart protector. It's great for the southern desert's heat and northern tundra's cold."
 	icon_state = "lakkarijupon"
-	max_integrity = INTEGRITY_STRONG
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
 	r_sleeve_status = SLEEVE_NORMAL
 	l_sleeve_status = SLEEVE_NORMAL
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/padded/good
 
 /obj/item/clothing/armor/gambeson/apothecary
 	name = "apothecary overcoat"
@@ -75,7 +80,7 @@
 	icon_state = "apothover"
 	item_state = "apothover"
 
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/padded/good
 
 /obj/item/clothing/armor/gambeson/steward
 	name = "steward tailcoat"
@@ -83,7 +88,7 @@
 	sleeved = 'icons/roguetown/clothing/special/onmob/steward.dmi'
 	icon_state = "stewardtailcoat"
 	item_state = "stewardtailcoat"
-	armor = ARMOR_PADDED
+	armor_type = /datum/armor/padded
 	icon = 'icons/roguetown/clothing/special/steward.dmi'
 	mob_overlay_icon = 'icons/roguetown/clothing/special/onmob/steward.dmi'
 
@@ -93,7 +98,7 @@
 	sleeved = 'icons/roguetown/clothing/special/onmob/hand.dmi'
 	icon_state = "handgambeson"
 	item_state = "handgambeson"
-	armor = ARMOR_PADDED_GOOD
+	armor_type = /datum/armor/padded/good
 	icon = 'icons/roguetown/clothing/special/hand.dmi'
 	mob_overlay_icon = 'icons/roguetown/clothing/special/onmob/hand.dmi'
 	detail_tag = "_detail"
@@ -174,5 +179,5 @@
 	icon_state = "leathertunic"
 	color = null
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_CHOP)
-	armor = ARMOR_PADDED
+	armor_type = /datum/armor/padded
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS

@@ -15,6 +15,7 @@
 
 /datum/job/cook
 	title = "Inn Cook"
+	alt_titles = list("Baker", "Griller", "Souper")
 	tutorial = "The heart of the Drunken Dwarf’s kitchen. \
 	You prepare hot meals, fresh bread, and hearty fare for adventurers and guests, \
 	working closely with the innkeep to keep morale high and stomachs full. \
@@ -47,7 +48,7 @@
 	name = "Cook"
 	head = /obj/item/clothing/head/cookhat
 	mask = null
-	neck = /obj/item/storage/belt/pouch/coins/poor
+	neck = /obj/item/storage/belt/pouch/cloth/coins/poor
 	cloak = /obj/item/clothing/cloak/apron/cook
 	armor = null
 	shirt = null

@@ -22,8 +22,39 @@
 
 /datum/emote/living/carbon/human/cry/run_emote(mob/user, params, type_override, intentional, targetted)
 	. = ..()
-	if(. && user.mind)
+	if(!.)
+		return
+	if(user.mind)
 		record_featured_stat(FEATURED_STATS_CRYBABIES, user)
+	var/mob/living/carbon/human/human_user = user
+	human_user.show_visual_emote_overlay(/datum/bodypart_feature/visual_emote/cry, 12.8 SECONDS)
+
+/datum/emote/living/carbon/human/eflick
+	key = "eflick"
+	key_third_person = "flicks"
+	message = "flicks their ears."
+	emote_type = EMOTE_VISIBLE
+	runechat_msg = FALSE
+	soundping = FALSE
+
+/datum/emote/living/carbon/human/eflick/can_run_emote(mob/user, status_check = TRUE, intentional)
+	if(!..())
+		return FALSE
+	var/mob/living/carbon/human/H = user
+	return H.dna?.species?.can_flick_ears(H)
+
+/datum/emote/living/carbon/human/eflick/run_emote(mob/user, params, type_override, intentional, targetted)
+	. = ..()
+	if(!.)
+		return
+	var/mob/living/carbon/human/H = user
+	H.dna.species.perform_flick_ears(H)
+
+/mob/living/carbon/human/verb/emote_eflick()
+	set name = "Ear Flick"
+	set category = "Emotes.Silent"
+
+	emote("eflick", intentional = TRUE)
 
 /datum/emote/living/carbon/human/eyebrow
 	key = "eyebrow"
@@ -35,6 +66,30 @@
 	set category = "Emotes.Silent"
 
 	emote("eyebrow", intentional = TRUE)
+
+/datum/emote/living/carbon/human/glasses
+	key = "glasses"
+	key_third_person = "glasses"
+	message = "pushes up their spectacles."
+	emote_type = EMOTE_VISIBLE
+
+/mob/living/carbon/human/verb/emote_glasses()
+	set name = "Push Spectacles"
+	set category = "Emotes.Silent"
+
+	emote("glasses", intentional = TRUE)
+
+/datum/emote/living/carbon/human/glasses/can_run_emote(mob/user, status_check = TRUE, intentional, params)
+	var/mob/living/carbon/human/human_user = user
+	if(istype(human_user?.wear_mask, /obj/item/clothing/face/spectacles))
+		return ..()
+	return FALSE
+
+/datum/emote/living/carbon/human/glasses/run_emote(mob/user, params, type_override, intentional, targetted)
+	. = ..()
+	if(.)
+		var/mob/living/carbon/human/human_user = user
+		human_user.show_visual_emote_animation("glasses", 1.6 SECONDS)
 
 /datum/emote/living/carbon/human/psst
 	key = "psst"

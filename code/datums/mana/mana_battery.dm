@@ -38,7 +38,7 @@
 		if(!user.is_holding(src))
 			return
 		var/mana_to_draw = input(user, "How much mana do you want to draw from the battery? Soft Cap (You will lose mana when above this!): [user.mana_pool.get_softcap()]", "Draw Mana") as num
-		mana_to_draw = CLAMP(mana_to_draw, mana_pool.maximum_mana_capacity, 0)
+		mana_to_draw = CLAMP(mana_to_draw, 0, mana_pool.maximum_mana_capacity)
 		if(!mana_to_draw || QDELETED(user) || QDELETED(src) || !user.is_holding(src))
 			return
 		var/drawn_mana = mana_to_draw
@@ -59,7 +59,7 @@
 	if(!user.is_holding(src))
 		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 	var/mana_to_send = input(user, "How much mana do you want to send to the battery? Max Capacity: [mana_pool.maximum_mana_capacity]", "Send Mana") as num
-	mana_to_send = CLAMP(mana_to_send, mana_pool.maximum_mana_capacity, 0)
+	mana_to_send = CLAMP(mana_to_send, 0, mana_pool.maximum_mana_capacity)
 	if(!mana_to_send || QDELETED(user) || QDELETED(src) || !user.is_holding(src))
 		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 	var/sent_mana = mana_to_send
@@ -71,6 +71,9 @@
 	name = MAGIC_MATERIAL_NAME + " crystal"
 	desc = "Crystalized mana." //placeholder desc
 	icon = 'icons/obj/crystals.dmi' //placeholder
+	grid_height = 32
+	grid_width = 32
+	w_class = WEIGHT_CLASS_SMALL
 
 // Do not use, basetype
 /datum/mana_pool/mana_battery/mana_crystal
@@ -91,18 +94,19 @@
 	desc = "A stabilized Primordial Quartz Crystal, one of the few objects capable of stably storing mana without binding."
 	icon_state = "standard"
 
-/obj/item/mana_battery/mana_crystal/standard/attackby(obj/item/I, mob/living/user, list/modifiers)
-	. = ..()
-	if(!istype(I, /obj/item/weapon/knife))
-		return
+/obj/item/mana_battery/mana_crystal/standard/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/weapon/knife))
+		return NONE
 
 	user.visible_message(span_notice("[user] starts to chop up [src]!"), span_notice("You start to chop up [src]!"))
 	if(!do_after(user, 3 SECONDS, src))
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	new /obj/item/mana_battery/mana_crystal/small (get_turf(src))
 	new /obj/item/mana_battery/mana_crystal/small (get_turf(src))
 	visible_message(span_notice("Mana flows freely into the newly created crystals!"))
 	qdel(src)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/mana_battery/mana_crystal/standard/get_initial_mana_pool_type()
 	return /datum/mana_pool/mana_battery/mana_crystal/standard
@@ -113,7 +117,7 @@
 	name = "small primordial quartz crystal"
 	desc = "A miniaturized Primordial Quartz Crystal, formed using the run-off of cutting larger ones. Able to hold mana still, although not as much as a proper formation."
 	icon_state = "small"
-	w_class = WEIGHT_CLASS_SMALL
+	w_class = WEIGHT_CLASS_TINY
 
 /obj/item/mana_battery/mana_crystal/small/get_initial_mana_pool_type()
 	return /datum/mana_pool/mana_battery/mana_crystal/small
@@ -122,7 +126,9 @@
 	name = "cut primordial quartz crystal"
 	desc = "A cut and shaped Primordial Quartz Crystal, using a standardized square cut. It lacks power until it is slotted into a proper amulet."
 	icon_state = "cut"
-	w_class = WEIGHT_CLASS_SMALL
+	w_class = WEIGHT_CLASS_TINY
+	grid_height = 32
+	grid_width = 32
 
 /obj/item/mana_battery/mana_crystal/cut/get_initial_mana_pool_type()
 	return /datum/mana_pool/mana_battery/mana_crystal/small
@@ -145,6 +151,8 @@
 	has_initial_mana_pool = TRUE
 	icon = 'icons/obj/crystals.dmi'
 	icon_state = "amulet"
+	grid_height = 32
+	grid_width = 32
 
 /obj/item/clothing/neck/mana_star/Initialize()
 	. = ..()
@@ -170,7 +178,7 @@
 		if(!user.is_holding(src))
 			return
 		var/mana_to_draw = input(user, "How much mana do you want to draw from the battery? Soft Cap (You will lose mana when above this!): [user.mana_pool.get_softcap()]", "Draw Mana") as num|null
-		mana_to_draw = CLAMP(mana_to_draw, mana_pool.maximum_mana_capacity, 0)
+		mana_to_draw = CLAMP(mana_to_draw, 0, mana_pool.maximum_mana_capacity)
 		if(!mana_to_draw || QDELETED(user) || QDELETED(src) || !user.is_holding(src))
 			return
 		var/drawn_mana = mana_to_draw
@@ -191,18 +199,20 @@
 		var/datum/attunement/attunement = mana_pool.network_attunement
 		. += span_blue("It is attuned to [initial(attunement.name)]")
 
-/obj/item/mana_battery/mana_crystal/small/focus/attackby(obj/item/I, mob/living/user, list/modifiers)
-	. = ..()
-	if(!istype(I, /obj/item/gem))
-		return
+/obj/item/mana_battery/mana_crystal/small/focus/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/gem))
+		return NONE
 
-	var/obj/item/gem/gem = I
+	var/obj/item/gem/gem = tool
 	if(!gem.attuned)
-		return
+		return NONE
+
 	user.visible_message(span_notice("[user] starts to attune [src]."), span_notice("You start to attune [src]."))
 	if(!do_after(user, 3 SECONDS, src))
-		return
+		return ITEM_INTERACT_BLOCKING
+
 	mana_pool.network_attunement = gem.attuned
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/mana_battery/mana_crystal/small/focus/Initialize(mapload)
 	. = ..()

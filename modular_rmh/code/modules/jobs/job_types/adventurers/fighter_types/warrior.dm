@@ -37,6 +37,7 @@
 	traits = list(
 		TRAIT_MEDIUMARMOR,
 		TRAIT_STEELHEARTED,
+		TRAIT_BLINDFIGHTING,
 	)
 
 
@@ -64,7 +65,7 @@
 	r_hand = /obj/item/flashlight/flare/torch/prelit
 
 	backpack_contents = list(
-		/obj/item/storage/belt/pouch/coins/poor = 1,
+		/obj/item/storage/belt/pouch/cloth/coins/poor = 1,
 	)
 
 
@@ -86,7 +87,7 @@
 
 // ------------------------------------------------------------
 
-/datum/outfit/adventurer_fighter/warrior/post_equip(mob/living/carbon/human/H)
+/datum/job/advclass/combat/adventurer_fighter/warrior/after_spawn(mob/living/carbon/human/H, client/player_client)
 	. = ..()
 
 	var/list/selectableweapon = list(
@@ -100,9 +101,9 @@
 		"Great axe" = /obj/item/weapon/polearm/halberd/bardiche/woodcutter,
 	)
 
-	var/weaponchoice = H.select_equippable(H, selectableweapon, message = "Choose Your Martial Training", title = "Warrior")
+	var/weaponchoice = H.select_equippable(player_client, selectableweapon, message = "Choose Your Martial Training", title = "Warrior")
 
-	if(!weaponchoice)
+	if(QDELETED(H) || !weaponchoice)
 		return
 
 	var/grant_shield = TRUE
@@ -115,7 +116,7 @@
 			H.adjust_skillrank(/datum/skill/combat/axesmaces, 1, TRUE)
 		if("Spear")
 			H.adjust_skillrank(/datum/skill/combat/polearms, 1, TRUE)
-			grant_shield = new /obj/item/weapon/shield/tower/buckleriron
+			grant_shield = /obj/item/weapon/shield/tower/buckleriron
 		if("Flail", "Great flail")
 			H.adjust_skillrank(/datum/skill/combat/whipsflails, 1, TRUE)
 			if(weaponchoice == "Great flail")

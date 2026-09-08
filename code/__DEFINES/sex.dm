@@ -1,15 +1,13 @@
 GLOBAL_LIST_INIT(sex_actions, build_sex_actions())
 
-GLOBAL_LIST_EMPTY(sex_sessions)
-GLOBAL_LIST_EMPTY(sex_sessions_by_user)
-GLOBAL_LIST_EMPTY(sex_collectives)
-GLOBAL_VAR_INIT(collective_counter, 1)
-GLOBAL_LIST_EMPTY(locked_sex_objects)
-
 #define SEX_ACTION(sex_action_type) GLOB.sex_actions[sex_action_type]
 
 #define ERP_PREFERENCE_EDIT_GRACE_MINUTES 20
 #define ERP_PREFERENCE_EDIT_GRACE_PERIOD (ERP_PREFERENCE_EDIT_GRACE_MINUTES MINUTES)
+
+#define MAGE_HAND_ACTION_MESSAGE_START "start"
+#define MAGE_HAND_ACTION_MESSAGE_PERFORM "perform"
+#define MAGE_HAND_ACTION_MESSAGE_FINISH "finish"
 
 
 #define COMSIG_SEX_ADJUST_AROUSAL "sex_adjust_arousal"                  // (amount) - Adjust arousal level
@@ -17,8 +15,8 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 #define COMSIG_SEX_AROUSAL_CHANGED "sex_arosual_change"					// fires to the parent about a change
 #define COMSIG_SEX_FREEZE_AROUSAL "sex_freeze_arousal"                  // (freeze_state) - Toggle arousal freeze
 #define COMSIG_SEX_GET_AROUSAL "sex_get_arousal"                        // () - Get current arousal info
-#define COMSIG_SEX_CLIMAX "sex_climax"                                  // (type, target) - Handle climax event
-#define COMSIG_SEX_RECEIVE_ACTION "sex_receive_action"                  // (arousal_amt, pain_amt, giving, force, speed) - Receive action effects
+#define COMSIG_SEX_CLIMAX "sex_climax"                                  // (sex_action, action_receiver, action_partner, action_performer) - Handle climax event
+#define COMSIG_SEX_RECEIVE_ACTION "sex_receive_action"                  // (sex_action, action_receiver, action_partner, arousal_amt, pain_amt, orgasm_prog_amt, giving, force, speed, resist, action_performer) - Receive action effects
 #define COMSIG_SEX_GENERIC_ACTION "sex_receive_gen_action"					// ... - for generic actions without the sex session panel
 #define COMSIG_SEX_ADJUST_EDGING "sex_adjust_edging"                 	// (amount) - Adjust edging level
 #define COMSIG_SEX_SET_EDGING "sex_set_edging"                        	// (amount) - Set edging to specific value
@@ -35,7 +33,7 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 #define COMSIG_SEX_ORGASM "sex_orgasm"									// manual orgasm
 
 // Knotting Component Signals
-/// Attempts to knot a target. Args: (target, force_level)
+/// Attempts to knot a target. Args: (target, force_level, originating_action)
 #define COMSIG_SEX_TRY_KNOT "sex_try_knot"
 /// Removes an existing knot. Args: (forceful_removal, notify, keep_top_status, keep_btm_status)
 #define COMSIG_SEX_REMOVE_KNOT "sex_remove_knot"
@@ -71,6 +69,28 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 #define SEX_CUSTOM_PART_THIGHS 9
 #define SEX_CUSTOM_PART_BODY 10
 #define SEX_CUSTOM_PART_ANY_GENITALS 11
+
+/// Scene-level interaction families used by multi-action pattern matching.
+#define SEX_SCENE_INTERACTION_ORAL "oral"
+#define SEX_SCENE_INTERACTION_PENETRATION "penetration"
+
+/// A participant's direction within one scene-level interaction.
+#define SEX_SCENE_ROLE_GIVER "giver"
+#define SEX_SCENE_ROLE_RECEIVER "receiver"
+
+/// Stable identifiers for recognized multi-action configurations.
+#define SEX_SCENE_PATTERN_AIRTIGHT "airtight"
+#define SEX_SCENE_PATTERN_DOUBLE_PENETRATION "double_penetration"
+#define SEX_SCENE_PATTERN_SPITROAST "spitroast"
+
+/// Hard cap for one shared multi-participant scene.
+#define SEX_SCENE_AI_MAX_PARTICIPANTS 8
+#define SEX_SCENE_MAX_PARTICIPANTS 30
+
+/// Sent to a scene and every involved participant when a multi-action pattern begins. Args: (pattern_match)
+#define COMSIG_SEX_SCENE_PATTERN_STARTED "sex_scene_pattern_started"
+/// Sent to a scene and every involved participant when a multi-action pattern ends. Args: (pattern_match)
+#define COMSIG_SEX_SCENE_PATTERN_ENDED "sex_scene_pattern_ended"
 
 
 #define COMSIG_BODYSTORAGE_TRY_INSERT "hole_try_fit"			// (incoming_item, target_layer, force, override)
@@ -132,6 +152,28 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 #define PAIN_MINIMUM_FOR_DAMAGE PAIN_MED_EFFECT
 #define PAIN_DAMAGE_DIVISOR 50
 
+/// Force pain steps. Top step jumps hard; low steps stay under 1 so gentle contact never hurts.
+#define SEX_FORCE_PAIN_MULT_LOW 0.25
+#define SEX_FORCE_PAIN_MULT_MID 0.75
+#define SEX_FORCE_PAIN_MULT_HIGH 2.0
+#define SEX_FORCE_PAIN_MULT_EXTREME 4.0
+
+/// Speed pain steps. Secondary to force; speed sharpens what force already causes.
+#define SEX_SPEED_PAIN_MULT_LOW 0.8
+#define SEX_SPEED_PAIN_MULT_MID 1.0
+#define SEX_SPEED_PAIN_MULT_HIGH 1.25
+#define SEX_SPEED_PAIN_MULT_EXTREME 1.5
+
+/// How much the receiver's own arousal softens incoming pain, by arousal band.
+#define SEX_PAIN_READINESS_UNAROUSED 1.4
+#define SEX_PAIN_READINESS_WARMING 1.0
+#define SEX_PAIN_READINESS_READY 0.75
+#define SEX_PAIN_READINESS_LOST 0.55
+
+#define SEX_PAIN_READINESS_WARMING_THRESHOLD 20
+#define SEX_PAIN_READINESS_READY_THRESHOLD 60
+#define SEX_PAIN_READINESS_LOST_THRESHOLD 120
+
 #define MAX_AROUSAL 500
 #define PASSIVE_EJAC_THRESHOLD 108
 #define ACTIVE_EJAC_THRESHOLD 100
@@ -146,6 +188,9 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 
 #define MOAN_COOLDOWN 3 SECONDS
 #define PAIN_COOLDOWN 6 SECONDS
+/// Harder force earns faster feedback, so top settings read as continuous.
+#define PAIN_COOLDOWN_HIGH (4 SECONDS)
+#define PAIN_COOLDOWN_EXTREME (2.5 SECONDS)
 
 #define LOW_ORGASM_THRESHOLD_GAIN 4
 #define MED_ORGASM_THRESHOLD_GAIN 6
@@ -159,6 +204,18 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 
 #define ORGASM_RESET_TIME (3 MINUTES)
 #define ORGASM_COOLDOWN_TIME (10 SECONDS)
+#define ORGASM_STRAIN_MAX 100
+#define ORGASM_STRAIN_DECAY_INTERVAL (30 SECONDS)
+#define ORGASM_STRAIN_DECAY_AMOUNT 4
+#define ORGASM_STRAIN_NYMPH_THRESHOLD_MOD 10
+#define LOW_ORGASM_STRAIN_GAIN 22
+#define MED_ORGASM_STRAIN_GAIN 42
+#define HIGH_ORGASM_STRAIN_GAIN 66
+#define OVER_THE_TOP_ORGASM_STRAIN_GAIN 90
+#define LOW_ORGASM_STRAIN_LOSS 10
+#define MED_ORGASM_STRAIN_LOSS 24
+#define HIGH_ORGASM_STRAIN_LOSS 44
+#define OVER_THE_TOP_ORGASM_STRAIN_LOSS 66
 #define AROUSAL_EDGING_THRESHOLD 65
 #define MAX_EDGING 90
 
@@ -172,7 +229,6 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 #define AROUSAL_LOW_UNHORNY_RATE (0.2 / (1 SECONDS))
 
 #define LOINHURT_GAIN_THRESHOLD 25
-#define LOINHURT_LOSE_THRESHOLD 20
 
 #define MIN_PENIS_SIZE 1
 #define DEFAULT_PENIS_SIZE 2
@@ -290,6 +346,10 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 #define ORGASM_LOCATION_ONTO "onto"
 #define ORGASM_LOCATION_ORAL "oral"
 #define ORGASM_LOCATION_SELF "self"
+#define ORGASM_LOCATION_CONTAINER "container"
+
+/// Units of fluid a female climax adds into the vagina (instead of spawning a puddle); the organ's drip system leaks it out.
+#define FEMCUM_ORGASM_VOLUME 10
 
 /proc/build_sex_actions()
 	. = list()
@@ -382,4 +442,51 @@ GLOBAL_LIST_EMPTY(locked_sex_objects)
 #define HORNY_MOB_TYPE_LYCANS (1 << 7)
 #define HORNY_MOB_TYPE_LIZARDS (1 << 8)
 #define HORNY_MOB_TYPE_UNDEAD (1 << 9)
-#define HORNY_MOB_TYPE_ALL (HORNY_MOB_TYPE_HUMANOIDS | HORNY_MOB_TYPE_SPIDERS | HORNY_MOB_TYPE_BOG_BUGS | HORNY_MOB_TYPE_TROLLS | HORNY_MOB_TYPE_BEASTS | HORNY_MOB_TYPE_LAMIAS | HORNY_MOB_TYPE_MINOTAURS | HORNY_MOB_TYPE_LYCANS | HORNY_MOB_TYPE_LIZARDS | HORNY_MOB_TYPE_UNDEAD)
+#define HORNY_MOB_TYPE_TENTACLES (1 << 10)
+#define HORNY_MOB_TYPE_MANEATERS (1 << 11)
+#define HORNY_MOB_TYPE_ALL (HORNY_MOB_TYPE_HUMANOIDS | HORNY_MOB_TYPE_SPIDERS | HORNY_MOB_TYPE_BOG_BUGS | HORNY_MOB_TYPE_TROLLS | HORNY_MOB_TYPE_BEASTS | HORNY_MOB_TYPE_LAMIAS | HORNY_MOB_TYPE_MINOTAURS | HORNY_MOB_TYPE_LYCANS | HORNY_MOB_TYPE_LIZARDS | HORNY_MOB_TYPE_UNDEAD | HORNY_MOB_TYPE_TENTACLES | HORNY_MOB_TYPE_MANEATERS)
+
+#define MAGE_HAND_ZONE_GROIN "groin"
+#define MAGE_HAND_ZONE_CHEST "chest"
+#define MAGE_HAND_ZONE_BUTT "butt"
+#define MAGE_HAND_ZONE_MOUTH "mouth"
+#define MAGE_HAND_ZONE_BODY "body"
+
+/// Bind zones. Unlike the zones above these are conjured by hand, not driven by a running action.
+#define MAGE_HAND_ZONE_ARMS "arms"
+#define MAGE_HAND_ZONE_LEGS "legs"
+#define MAGE_HAND_ZONE_EYES "eyes"
+
+/// Every Mage Hand mob overlay lives here, stated like worn clothing.
+#define MAGE_HAND_OVERLAY_ICON 'modular_rmh/icons/mob/overlays/mage_hands.dmi'
+/// Blindness source held by a conjured blindfold.
+#define MAGE_HAND_BLIND_TRAIT "mage_hand_blindfold"
+/// 25% transparent, so the hands read as conjured rather than solid.
+#define MAGE_HAND_OVERLAY_ALPHA 190
+
+/// Mage Hand zone to icon_state suffix. A zone missing from this list draws nothing.
+GLOBAL_LIST_INIT(mage_hand_zone_sprites, list(
+	MAGE_HAND_ZONE_GROIN = "masturbate",
+	MAGE_HAND_ZONE_CHEST = "tittwister",
+	MAGE_HAND_ZONE_BUTT = "cheekslap",
+	MAGE_HAND_ZONE_MOUTH = "blindfold",
+	MAGE_HAND_ZONE_BODY = "tittwister",
+	MAGE_HAND_ZONE_ARMS = "shacklesup",
+	MAGE_HAND_ZONE_LEGS = "shacklesdown",
+	MAGE_HAND_ZONE_EYES = "blindfold",
+))
+
+/// Deciseconds each `start_` state runs before handing off to its looping state. Must equal the sheet's summed frame delays.
+GLOBAL_LIST_INIT(mage_hand_start_durations, list(
+	"masturbate" = 9,
+	"tittwister" = 12,
+	"cheekslap" = 12,
+	"blindfold" = 9,
+	"shacklesup" = 9,
+	"shacklesdown" = 9,
+))
+
+/// Clench roll outcomes, ordered worst to best for the clencher.
+#define CLENCH_RESULT_FAIL 0
+#define CLENCH_RESULT_INTERRUPT 1
+#define CLENCH_RESULT_STOP 2

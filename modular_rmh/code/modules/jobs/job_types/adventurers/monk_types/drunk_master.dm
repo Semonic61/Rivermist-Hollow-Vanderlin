@@ -20,24 +20,26 @@
 /datum/job/advclass/combat/adventurer_monk/drunk_master
 	title = "Drunk Master"
 	tutorial = "With the unpredictable lurches of a tippler, you hiccup your way through battle, \
-	frustrating foes with carefully executed movements concealed beneath a façade of incompetence."
+	frustrating foes with carefully executed movements concealed beneath a façade of incompetence. \
+	Maintain moderate drunkenness to find your perfect balance, but overindulgence will break your focus."
 
 	outfit = /datum/outfit/adventurer_monk/drunk_master
 	category_tags = list(CAT_ADVENTURER_MONK)
 	give_bank_account = TRUE
 
-	total_positions = 0
+	total_positions = 1
 
 	attribute_sheet = /datum/attribute_holder/sheet/job/advclass/combat/adventurer_monk/drunk_master
 
 
 	traits = list(
 		TRAIT_DODGEEXPERT,
+		TRAIT_DODGE_THROUGH_MOBS,
 		TRAIT_STEELHEARTED,
 		TRAIT_CRITICAL_RESISTANCE,
-		TRAIT_NOPAINSTUN,
 		TRAIT_NOSEGRAB,
 		TRAIT_NUTCRACKER,
+		TRAIT_BLINDFIGHTING,
 		TRAIT_DRUNKMASTER
 	)
 
@@ -62,7 +64,7 @@
 	backr = /obj/item/weapon/polearm/woodstaff
 	backl = /obj/item/storage/backpack/backpack
 	belt = /obj/item/storage/belt/leather/rope/adventurers_subclasses
-	beltr = /obj/item/storage/belt/pouch/coins/poor
+	beltr = /obj/item/storage/belt/pouch/cloth/coins/poor
 	beltr = null
 	ring = null
 	l_hand = /obj/item/weapon/knuckles

@@ -1,5 +1,6 @@
 
 /obj/item/rope
+	item_weight = 300 GRAMS
 	name = "rope"
 	desc = "A series of threads intertwined to create a firm rope for binding, hanging and other jobs."
 	gender = PLURAL
@@ -124,7 +125,7 @@
 		target.update_handcuffed()
 		return TRUE
 	else
-		if(target.handcuffed)
+		if(target.legcuffed)
 			return FALSE
 
 		if(user && !user.temporarilyRemoveItemFromInventory(src))
@@ -140,6 +141,7 @@
 		return TRUE
 
 /obj/item/rope/chain
+	item_weight = 1.2 KILOGRAMS
 	name = "chain"
 	desc = "Metal chains designed to interlock and apply the harshest confinement on the villainous."
 	icon = 'icons/roguetown/items/misc.dmi'
@@ -167,6 +169,7 @@
 	drop_sound = 'sound/foley/dropsound/chain_drop.ogg'
 
 /obj/item/rope/net
+	item_weight = 500 GRAMS
 	name = "rope net"
 	desc = "A rope mesh of designed to slow a person down."
 	icon = 'icons/roguetown/items/misc.dmi'
@@ -176,7 +179,7 @@
 	grid_width = 64
 	grid_height = 64
 	icon_state = "net"
-	throw_speed = 1.5
+	throw_speed = 0.5
 	breakouttime = 3.5 SECONDS //easy to apply, easy to break out of
 	gender = NEUTER
 	var/knockdown = 2 SECONDS
@@ -190,7 +193,9 @@
 /obj/item/rope/net/throw_impact(atom/hit_atom, datum/thrownthing/throwingdatum)
 	if(..() || !iscarbon(hit_atom))//if it gets caught or the target can't be cuffed,
 		return//abort
-	if(prob(100 * (throwingdatum?.GET_MOB_SKILL_VALUE_OLD(thrower, /datum/attribute/skill/craft/traps) || 1) / 3))
+	var/mob/thrower = throwingdatum?.get_thrower()
+	var/trapping_skill = istype(thrower) ? GET_MOB_SKILL_VALUE_OLD(thrower, /datum/attribute/skill/craft/traps) : 0
+	if(prob(100 * (trapping_skill || 1) / 3))
 		ensnare(hit_atom)
 
 /obj/item/rope/net/proc/ensnare(mob/living/carbon/C)
@@ -199,7 +204,7 @@
 		SSblackbox.record_feedback("tally", "handcuffs", 1, type)
 		C.apply_status_effect(/datum/status_effect/debuff/netted)
 		playsound(src, 'sound/combat/hits/nodmg (2).ogg', 100, TRUE)
-		if(MOVE_INTENT_RUN && C.body_position == STANDING_UP && C.sprinted_tiles > 0)
+		if((C.m_intent = MOVE_INTENT_RUN || HAS_TRAIT(C, TRAIT_STUMBLE)) && C.body_position == STANDING_UP && C.sprinted_tiles > 0)
 			C.Knockdown(knockdown)
 
 // Failsafe in case the item somehow ends up being destroyed
@@ -209,6 +214,20 @@
 		if(M.legcuffed == src)
 			M.remove_status_effect(/datum/status_effect/debuff/netted)
 	return ..()
+
+/obj/item/rope/net/bola
+	item_weight = 800 GRAMS
+	name = "Bola"
+	desc = "A clever but simple bundle of rope and stones used to catch criminals"
+	icon = 'icons/roguetown/items/misc.dmi'
+	icon_state = "bola"
+	grid_width = 64
+	grid_height = 64
+	throw_range = 10
+	throw_speed = 1.5
+	breakouttime = 6 SECONDS
+	knockdown = 3 SECONDS
+	legcuff_multiplicative_slowdown = 2.5
 
 /obj/structure/noose
 	name = "noose"
@@ -243,23 +262,23 @@
 		for(var/mob/living/buckled_mob as anything in buckled_mobs)
 			buckled_mob.visible_message("<span class='danger'>[buckled_mob] falls over and hits the ground!</span>")
 			to_chat(buckled_mob, "<span class='userdanger'>You fall over and hit the ground!</span>")
-			buckled_mob.adjustBruteLoss(10)
+			buckled_mob.adjustBruteLoss(10, damage_type = BCLASS_BLUNT)
 			buckled_mob.Knockdown(60)
 	return ..()
 
 /obj/structure/noose/attackby(obj/item/W, mob/user, list/modifiers)
-	if (W.get_sharpness())
-		if(do_after(user, 1 SECONDS, src))
-			new /obj/item/rope(loc)
-			playsound(src, 'sound/foley/dropsound/cloth_drop.ogg', 50, TRUE)
-			if (istype(src, /obj/structure/noose/gallows))
-				new /obj/machinery/light/fueled/lanternpost/unfixed(loc)
-				user.visible_message(span_notice("[user] cuts the noose down from the gallows."), span_notice("I cut the noose down from the gallows."), span_hear("I hear something snap."))
-			else
-				user.visible_message(span_notice("[user] cuts down the noose."), span_notice("I cut down the noose."), span_hear("I hear something snap."))
-			qdel(src)
-	else
+	if(!W.get_sharpness())
 		return ..()
+
+	if(do_after(user, 1 SECONDS, src))
+		new /obj/item/rope(loc)
+		playsound(src, 'sound/foley/dropsound/cloth_drop.ogg', 50, TRUE)
+		if (istype(src, /obj/structure/noose/gallows))
+			new /obj/machinery/light/fueled/lanternpost/unfixed(loc)
+			user.visible_message(span_notice("[user] cuts the noose down from the gallows."), span_notice("I cut the noose down from the gallows."), span_hear("I hear something snap."))
+		else
+			user.visible_message(span_notice("[user] cuts down the noose."), span_notice("I cut down the noose."), span_hear("I hear something snap."))
+		qdel(src)
 
 /obj/structure/noose/bullet_act(obj/projectile/P, def_zone, piercing_hit = FALSE)
 	. = ..()

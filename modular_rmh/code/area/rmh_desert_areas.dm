@@ -26,7 +26,7 @@
 	icon_state = "lowdesert"
 	soundenv = 19
 	ambush_times = list("night","dawn","dusk","day")
-	ambush_types = list(/turf/open/floor/sand/dunes)
+	ambush_types = list(/turf/open/floor/desert/dunes)
 	ambush_mobs = list(
 				/mob/living/simple_animal/hostile/retaliate/spider/mutated = 5)
 	first_time_text = "DESERT VALLEY"
@@ -230,4 +230,3 @@
 	background_track = 'sound/music/area/spidercave.ogg'
 	background_track_dusk = 'sound/silence.ogg'
 	background_track_night = 'sound/silence.ogg'
-	ceiling_protected = TRUE

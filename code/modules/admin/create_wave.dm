@@ -1020,7 +1020,7 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 
 /datum/create_wave/proc/create_job(mob/admin)
 
-    // Generate HTML form
+	// Generate HTML form
 	var/dat = {"
 	<html><head><title>Create Custom Job</title></head><body>
 	<form name='job' action='byond://?src=[REF(src)];[HrefToken()]' method='get'>
@@ -1351,7 +1351,7 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 	if(!J)
 		return
 
-    // Generate HTML form
+	// Generate HTML form
 	var/dat = {"
 	<html><head><title>Edit Custom Wave</title></head><body>
 	<form name='wave' action='byond://?src=[REF(src)];[HrefToken()]' method='get'>
@@ -1683,7 +1683,7 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 
 /datum/create_wave/proc/create_wave(mob/admin)
 
-    // Generate HTML form
+	// Generate HTML form
 	var/dat = {"
 	<html><head><title>Create Custom Wave</title></head><body>
 	<form name='wave' action='byond://?src=[REF(src)];[HrefToken()]' method='get'>
@@ -1820,7 +1820,7 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 		to_chat(admin, span_warning("You can't edit the wave while it is deploying!"))
 		return
 
-    // Generate HTML form (mostly like create_wave)
+	// Generate HTML form (mostly like create_wave)
 	var/dat = {"
 	<html><head><title>Edit Custom Wave</title></head><body>
 	<form name='wave' action='byond://?src=[REF(src)];[HrefToken()]' method='get'>
@@ -2043,10 +2043,10 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 			if(!job_check.prefs_species_check(prefs))
 				continue
 
-			if(length(job_check.allowed_sexes) && !(prefs.gender in job_check.allowed_sexes))
+			if(length(job_check.allowed_sexes) && !(prefs.read_preference(/datum/preference/choiced/gender) in job_check.allowed_sexes))
 				continue
 
-			if(length(job_check.allowed_ages) && !(prefs.age in job_check.allowed_ages))
+			if(length(job_check.allowed_ages) && !(prefs.read_preference(/datum/preference/choiced/age) in job_check.allowed_ages))
 				continue
 
 			// Valid assign this job
@@ -2138,11 +2138,11 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 			job_fail += "Wrong species (disallowed: [job_check.blacklisted_species.Join(", ")])"
 
 		// Check allowed sexes
-		if(length(job_check.allowed_sexes) && !(prefs.gender in job_check.allowed_sexes))
+		if(length(job_check.allowed_sexes) && !(prefs.read_preference(/datum/preference/choiced/gender) in job_check.allowed_sexes))
 			job_fail += "Wrong sex (allowed: [job_check.allowed_sexes.Join(", ")])"
 
 		// Check allowed ages
-		if(length(job_check.allowed_ages) && !(prefs.age in job_check.allowed_ages))
+		if(length(job_check.allowed_ages) && !(prefs.read_preference(/datum/preference/choiced/age) in job_check.allowed_ages))
 			job_fail += "Wrong age (allowed: [job_check.allowed_ages.Join(", ")])"
 
 		// If no fails, player can join this wave

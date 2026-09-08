@@ -16,17 +16,11 @@
 		return grab_state
 	return max(grabstate, grab_state)
 
-/proc/do_thrust_animate(atom/movable/user, atom/movable/target, pixels = 4, time = 2.7)
-	var/datum/sex_session/sex_session
-	if(isliving(user) && isliving(target))
-		sex_session = get_sex_session(user, target)
-		if(!sex_session)
-			sex_session = get_sex_session(target, user)
-	if(sex_session)
-		if(sex_session.speed > SEX_SPEED_MID)
-			time = max(0.5, time - 0.25)
-		if(sex_session.force < SEX_FORCE_MID)
-			pixels = max(1, pixels - 1)
+/datum/sex_action/proc/do_thrust_animate(atom/movable/user, atom/movable/target, pixels = 4, time = 2.7)
+	if(speed > SEX_SPEED_MID)
+		time = max(0.5, time - 0.25)
+	if(force < SEX_FORCE_MID)
+		pixels = max(1, pixels - 1)
 	var/oldx = user.pixel_x
 	var/oldy = user.pixel_y
 	var/target_x = oldx
@@ -47,67 +41,45 @@
 	animate(user, pixel_x = target_x, pixel_y = target_y, time = time)
 	animate(pixel_x = oldx, pixel_y = oldy, time = time)
 
-/mob/living/proc/start_sex_session(mob/living/target, show_ui = TRUE)
+/mob/living/proc/open_sex_scene(mob/living/target, show_ui = TRUE)
 	if(!target)
+		return
+	if(QDELETED(src) || QDELETED(target))
+		return
+	if(stat == DEAD || target.stat == DEAD)
+		return
+	if(src != target && !target.allows_player_erp_while_disconnected())
 		return
 	if(!GetComponent(/datum/component/arousal))
 		AddComponent(/datum/component/arousal)
 	if(!target.GetComponent(/datum/component/arousal))
 		target.AddComponent(/datum/component/arousal)
-	var/datum/sex_session/old_session = get_sex_session(src, target)
-	if(old_session && !QDELETED(old_session))
+	var/datum/sex_scene/shared_scene = get_or_create_sex_scene(src, target)
+	if(!shared_scene)
+		return
+	var/datum/sex_scene_controller/existing_controller = shared_scene.get_controller(src)
+	if(existing_controller && !QDELETED(existing_controller))
+		existing_controller.set_target(target)
 		if(show_ui)
-			old_session.show_ui()
-		return old_session
+			existing_controller.show_ui()
+		return existing_controller
 
-
-	var/datum/sex_session/session = new /datum/sex_session(src, target)
-	register_sex_session(session)
+	var/datum/sex_scene_controller/controller = new(src, target)
+	if(!controller.scene)
+		qdel(controller)
+		return
 	if(target.client && client && show_ui)
-		session.show_ui()
-	return session
-
-/proc/register_sex_session(datum/sex_session/session)
-	if(!session)
-		return
-	LAZYADD(GLOB.sex_sessions, session)
-	add_user_sex_session(session.user, session)
-	if(session.target != session.user)
-		add_user_sex_session(session.target, session)
-
-/proc/add_user_sex_session(mob/living/user, datum/sex_session/session)
-	if(!user || !session)
-		return
-	var/list/user_sessions = GLOB.sex_sessions_by_user[user]
-	if(!user_sessions)
-		user_sessions = list()
-		GLOB.sex_sessions_by_user[user] = user_sessions
-	user_sessions |= session
-
-/proc/unregister_sex_session(datum/sex_session/session)
-	if(!session)
-		return
-	GLOB.sex_sessions -= session
-	remove_user_sex_session(session.user, session)
-	if(session.target != session.user)
-		remove_user_sex_session(session.target, session)
-
-/proc/remove_user_sex_session(mob/living/user, datum/sex_session/session)
-	if(!user || !session)
-		return
-	var/list/user_sessions = GLOB.sex_sessions_by_user[user]
-	if(!user_sessions)
-		return
-	user_sessions -= session
-	if(length(user_sessions))
-		return
-	GLOB.sex_sessions_by_user -= user
+		controller.show_ui()
+	return controller
 
 /mob/living/proc/make_sucking_noise()
+	var/suckyvolume = 25
+	if(rogue_sneaking || alpha <= 100)
+		suckyvolume *= 0.5
 	if(gender == FEMALE)
-		playsound(src, pick('sound/misc/mat/girlmouth (1).ogg','sound/misc/mat/girlmouth (2).ogg'), 25, TRUE, ignore_walls = FALSE)
+		playsound(src, pick('sound/misc/mat/girlmouth (1).ogg','sound/misc/mat/girlmouth (2).ogg'), suckyvolume, TRUE, ignore_walls = FALSE)
 	else
-		playsound(src, pick('sound/misc/mat/guymouth (2).ogg','sound/misc/mat/guymouth (3).ogg','sound/misc/mat/guymouth (4).ogg','sound/misc/mat/guymouth (5).ogg'), 35, TRUE, ignore_walls = FALSE)
+		playsound(src, pick('sound/misc/mat/guymouth (2).ogg','sound/misc/mat/guymouth (3).ogg','sound/misc/mat/guymouth (4).ogg','sound/misc/mat/guymouth (5).ogg'), suckyvolume, TRUE, ignore_walls = FALSE)
 
 /mob/living/proc/can_do_sex()
 	return TRUE
@@ -119,6 +91,10 @@
 		return ..()
 	if(!istype(dragged))
 		return
+	// Hiding under a table (or sitting in a closet) puts you inside it, so your own sprite isn't on
+	// screen to drag - the container is. Dragging what you are inside counts as dragging yourself.
+	if(dragged != user && dragged == user.loc)
+		dragged = user
 	// Need to drag yourself to the target.
 	if(dragged != user)
 		return
@@ -126,30 +102,9 @@
 		to_chat(user, "<span class='warning'>I can't do this.</span>")
 		return
 
-	if(!user.start_sex_session(target))
+	if(!user.open_sex_scene(target))
 		to_chat(user, "<span class='warning'>I'm already sexing.</span>")
 		return
-
-/proc/get_sex_session(mob/giver, mob/taker)
-	for(var/datum/sex_session/session as anything in return_sessions_with_user(giver))
-		if(session.user != giver)
-			continue
-		if(session.target != taker)
-			continue
-		return session
-	return null
-
-/proc/get_or_create_sex_session(mob/living/giver, mob/living/taker, show_ui = FALSE)
-	if(!giver || !taker)
-		return null
-
-	var/datum/sex_session/session = get_sex_session(giver, taker)
-	if(session && !QDELETED(session))
-		if(show_ui)
-			session.show_ui()
-		return session
-
-	return giver.start_sex_session(taker, show_ui)
 
 /mob/living/proc/has_hands()
 	return TRUE
@@ -260,7 +215,8 @@
 	var/last_character = copytext(summary_text, length(summary_text), length(summary_text) + 1)
 	if(!(last_character in list(".", "!", "?")))
 		summary_text += "."
-	return "<div>...[html_encode("[summary_text]")]</div>"
+	// Plain text: the scene window renders these as its own list rows.
+	return summary_text
 
 /mob/living/proc/get_general_sex_state_summary()
 	var/datum/component/arousal/arousal_component = GetComponent(/datum/component/arousal)
@@ -386,36 +342,15 @@
 				if(G.limb_grabbed == LH || G.limb_grabbed == RH)
 					return TRUE
 
-/proc/return_sessions_with_user(mob/living/user)
-	if(!user)
-		return list()
-	return GLOB.sex_sessions_by_user[user] || list()
-
-/proc/return_highest_priority_action(list/sessions = list(), mob/living/user)
-	var/datum/sex_session/highest_session
-	for(var/datum/sex_session/session in sessions)
-		var/datum/sex_action/session_action = session.get_highest_priority_action_for(user)
-		if(!session_action)
-			continue
-		if(!highest_session)
-			highest_session = session
-			continue
-		var/datum/sex_action/highest_action = highest_session.get_highest_priority_action_for(user)
-		if(user == session.target)
-			if(session_action.target_priority > highest_action.target_priority)
-				highest_session = session
-				continue
-		if(user == session.user)
-			if(session_action.user_priority > highest_action.user_priority)
-				highest_session = session
-				continue
-	return highest_session
-
 /mob/proc/get_erp_pref(pref_type)
-	if(!client?.prefs)
+	if(!ispath(pref_type, /datum/erp_preference))
 		return FALSE
 
-	if(!ispath(pref_type, /datum/erp_preference))
+	if(isliving(src))
+		var/mob/living/living_mob = src
+		return living_mob.get_cached_erp_pref(pref_type)
+
+	if(!client?.prefs)
 		return FALSE
 
 	var/datum/erp_preference/pref = new pref_type()
@@ -441,16 +376,16 @@
 		return FALSE
 	if(actor.client)
 		return FALSE
-	if(!target.client)
-		return FALSE
-	return TRUE
+	if(target.client || target.mind?.key || target.mind?.cached_erp_preferences || target.cached_erp_preferences)
+		return TRUE
+	return FALSE
 
 /proc/target_allows_mob_erp_action(mob/living/actor, mob/living/target, pref_type)
 	if(!ispath(pref_type, /datum/erp_preference))
 		return TRUE
 	if(!should_apply_mob_erp_target_pref(actor, target))
 		return TRUE
-	return target.get_erp_pref(pref_type)
+	return target.get_cached_erp_pref(pref_type)
 
 /mob/proc/get_all_erp_prefs()
 	if(!client?.prefs)
@@ -488,19 +423,52 @@
 	return TRUE
 
 /mob/living/proc/has_kink(kink_name)
-	if(!client?.prefs?.erp_preferences)
-		return FALSE
-	var/list/kink_prefs = client.prefs.erp_preferences["kinks"]
+	refresh_erp_preference_cache()
+	var/list/kink_prefs = cached_erp_preferences?["kinks"]
 	if(!kink_prefs || !kink_prefs[kink_name])
 		return FALSE
 	return kink_prefs[kink_name]["enabled"]
 
+/mob/living/proc/is_disconnected_player_erp_body()
+	if(client)
+		return FALSE
+	if(!mind)
+		return FALSE
+	return !!(mind.key || mind.cached_erp_preferences || cached_erp_preferences)
+
+/mob/living/proc/allows_player_erp_while_disconnected()
+	if(!is_disconnected_player_erp_body())
+		return TRUE
+	return get_cached_erp_pref(/datum/erp_preference/boolean/allow_player_erp_when_disconnected) == TRUE
+
+/datum/mind
+	var/tmp/list/cached_erp_preferences
+	var/tmp/cached_erp_preferences_revision = -1
+
+/datum/mind/proc/cache_erp_preferences_from_prefs(datum/preferences/prefs)
+	if(!prefs)
+		return FALSE
+	var/list/erp_preferences = prefs.read_preference(/datum/preference/list_type/erp_preferences)
+	if(!length(erp_preferences))
+		return FALSE
+	set_cached_erp_preferences(erp_preferences, prefs.erp_preferences_revision)
+	return TRUE
+
+/datum/mind/proc/set_cached_erp_preferences(list/preferences, revision = -1)
+	cached_erp_preferences = islist(preferences) ? deep_copy_list_alt(preferences) : null
+	cached_erp_preferences_revision = revision
+	if(isliving(current))
+		var/mob/living/current_living = current
+		current_living.set_cached_erp_preferences(cached_erp_preferences, cached_erp_preferences_revision)
 
 /mob/living
 	var/list/attached_sex_toys = list()
+	var/tmp/list/cached_erp_preferences
 	var/tmp/erp_preferences_revision_seen = -1
 	var/tmp/cached_horny_mob_pref_flags = NONE
 	var/tmp/cached_horny_mob_family_flags = NONE
+	var/tmp/cached_allow_belly_inflation = null
+	var/tmp/cached_nonmatching_horny_mobs_are_nonlethal = null
 
 	///npc organs to use
 	var/ball_organ = /obj/item/organ/genitals/filling_organ/testicles
@@ -522,6 +490,150 @@
 	var/show_genitals = FALSE
 	var/mouth_blocked = FALSE
 
+	COOLDOWN_DECLARE(npc_sneak_detect_cd)
+
+/datum/component/gender_potion_genital_backup
+	var/original_gender
+	var/list/stored_organs = list()
+	var/list/stored_zones = list()
+
+/datum/component/gender_potion_genital_backup/Initialize(original_gender)
+	if(!isliving(parent))
+		return COMPONENT_INCOMPATIBLE
+	src.original_gender = original_gender
+
+/datum/component/gender_potion_genital_backup/Destroy(force = FALSE)
+	QDEL_LIST(stored_organs)
+	stored_zones = null
+	return ..()
+
+/datum/component/gender_potion_genital_backup/proc/store_current_genitals(mob/living/owner)
+	if(!owner)
+		return FALSE
+	for(var/organ_slot in owner.get_gender_potion_genital_slots())
+		for(var/obj/item/organ/genitals/organ as anything in owner.getorganslotlist(organ_slot))
+			if(QDELETED(organ))
+				continue
+			stored_organs += organ
+			stored_zones[organ] = organ.current_zone
+			owner.remove_gender_potion_genital_organ(organ, TRUE)
+	return TRUE
+
+/datum/component/gender_potion_genital_backup/proc/restore_genitals(mob/living/owner)
+	if(!owner)
+		return FALSE
+	owner.clear_gender_potion_genitals()
+	for(var/obj/item/organ/genitals/organ as anything in stored_organs)
+		if(QDELETED(organ))
+			continue
+		var/saved_zone = null
+		if(stored_zones)
+			saved_zone = stored_zones[organ]
+		DISABLE_BITFIELD(organ.organ_flags, ORGAN_CUT_AWAY)
+		organ.Insert(owner, special = TRUE, drop_if_replaced = FALSE, new_zone = saved_zone)
+	stored_organs = null
+	stored_zones = null
+	qdel(src)
+	return TRUE
+
+/mob/living/proc/get_gender_potion_genital_slots()
+	var/static/list/gender_potion_genital_slots = list(
+		ORGAN_SLOT_PENIS,
+		ORGAN_SLOT_TESTICLES,
+		ORGAN_SLOT_BREASTS,
+		ORGAN_SLOT_VAGINA
+	)
+	return gender_potion_genital_slots
+
+/mob/living/proc/remove_gender_potion_genital_organ(obj/item/organ/genitals/organ, preserve = FALSE)
+	if(!organ || organ.owner != src)
+		return FALSE
+	organ.Remove(src, special = TRUE)
+	if(preserve)
+		organ.moveToNullspace()
+		DISABLE_BITFIELD(organ.organ_flags, ORGAN_CUT_AWAY)
+		STOP_PROCESSING(SSobj, organ)
+	else
+		qdel(organ)
+	return TRUE
+
+/mob/living/proc/clear_gender_potion_genitals()
+	for(var/organ_slot in get_gender_potion_genital_slots())
+		for(var/obj/item/organ/genitals/organ as anything in getorganslotlist(organ_slot))
+			remove_gender_potion_genital_organ(organ)
+
+/mob/living/proc/give_gender_potion_genitals_for_gender(target_gender)
+	if(target_gender == MALE)
+		var/obj/item/organ/genitals/filling_organ/testicles/testicles = getorganslot(ORGAN_SLOT_TESTICLES)
+		if(!testicles)
+			if(!show_genitals)
+				testicles = new /obj/item/organ/genitals/filling_organ/testicles/invisible
+			else
+				testicles = new ball_organ
+			testicles.organ_size = rand(ball_min, ball_max)
+			testicles.Insert(src, TRUE)
+
+		var/obj/item/organ/genitals/penis/penis = getorganslot(ORGAN_SLOT_PENIS)
+		if(!penis)
+			if(!show_genitals)
+				penis = new /obj/item/organ/genitals/penis
+			else
+				penis = new penis_organ
+			penis.organ_size = rand(penis_min, penis_max)
+			penis.Insert(src, TRUE)
+
+	else if(target_gender == FEMALE)
+		var/obj/item/organ/genitals/filling_organ/breasts/breasts = getorganslot(ORGAN_SLOT_BREASTS)
+		if(!breasts)
+			if(!show_genitals)
+				breasts = new /obj/item/organ/genitals/filling_organ/breasts
+			else
+				breasts = new breast_organ
+			breasts.organ_size = rand(breast_min, breast_max)
+			breasts.Insert(src, TRUE)
+
+		var/obj/item/organ/genitals/filling_organ/vagina/vagina = getorganslot(ORGAN_SLOT_VAGINA)
+		if(!vagina)
+			if(!show_genitals)
+				vagina = new /obj/item/organ/genitals/filling_organ/vagina
+			else
+				vagina = new vagina_organ
+			vagina.Insert(src, TRUE)
+
+	if(iscarbon(src))
+		var/mob/living/carbon/carbon_owner = src
+		carbon_owner.update_body_parts(TRUE)
+	return TRUE
+
+/mob/living/proc/apply_gender_potion_genital_change(old_gender)
+	if(gender != MALE && gender != FEMALE)
+		return FALSE
+	var/datum/component/gender_potion_genital_backup/backup = GetComponent(/datum/component/gender_potion_genital_backup)
+	if(backup && gender == backup.original_gender)
+		return backup.restore_genitals(src)
+
+	if(!backup)
+		backup = AddComponent(/datum/component/gender_potion_genital_backup, old_gender)
+		if(!backup)
+			return FALSE
+		backup.store_current_genitals(src)
+	else
+		clear_gender_potion_genitals()
+
+	give_gender_potion_genitals_for_gender(gender)
+	return TRUE
+
+/// Forces the gendered genital slots to match the current gender.
+/// NPCs that randomize gender in after_creation (after organs were already built)
+/// otherwise keep the wrong set, or gain both once arousal adds the matching one.
+/mob/living/proc/resync_genitals_to_gender()
+	if(!iscarbon(src))
+		return FALSE
+	if(gender != MALE && gender != FEMALE)
+		return FALSE
+	clear_gender_potion_genitals()
+	return give_gender_potion_genitals_for_gender(gender)
+
 /mob/living/Initialize()
 	. = ..()
 	refresh_erp_preference_cache()
@@ -532,24 +644,77 @@
 
 /mob/living/proc/invalidate_erp_preference_cache()
 	erp_preferences_revision_seen = -1
-	cached_horny_mob_pref_flags = NONE
-	cached_horny_mob_family_flags = NONE
+	cached_erp_preferences = null
+	refresh_erp_preference_cache()
 
-/mob/living/proc/refresh_erp_preference_cache()
-	var/datum/preferences/prefs = client?.prefs
-	var/current_revision = prefs?.erp_preferences_revision
-	if(erp_preferences_revision_seen == current_revision)
-		return
-	erp_preferences_revision_seen = current_revision
+/mob/living/proc/rebuild_cached_erp_preference_shortcuts()
 	cached_horny_mob_pref_flags = NONE
 	cached_horny_mob_family_flags = NONE
-	if(!prefs?.erp_preferences)
+	cached_allow_belly_inflation = null
+	cached_nonmatching_horny_mobs_are_nonlethal = null
+	if(!cached_erp_preferences)
 		return
-	cached_horny_mob_pref_flags = prefs.erp_preferences[/datum/erp_preference/bitflag/horny_mobs] || NONE
-	var/allowed_families = prefs.erp_preferences[/datum/erp_preference/bitflag/horny_mob_types]
+	var/datum/erp_preference/boolean/allow_belly_inflation/belly_pref = new
+	cached_allow_belly_inflation = belly_pref.get_value_from_list(cached_erp_preferences)
+	var/datum/erp_preference/boolean/nonmatching_horny_mobs_are_nonlethal/nonlethal_pref = new
+	cached_nonmatching_horny_mobs_are_nonlethal = nonlethal_pref.get_value_from_list(cached_erp_preferences)
+	cached_horny_mob_pref_flags = cached_erp_preferences[/datum/erp_preference/bitflag/horny_mobs] || NONE
+	var/allowed_families = cached_erp_preferences[/datum/erp_preference/bitflag/horny_mob_types]
 	if(isnull(allowed_families))
 		allowed_families = HORNY_MOB_TYPE_ALL
 	cached_horny_mob_family_flags = allowed_families
+
+/mob/living/proc/set_cached_erp_preferences(list/preferences, revision = -1)
+	cached_erp_preferences = islist(preferences) ? deep_copy_list_alt(preferences) : null
+	erp_preferences_revision_seen = revision
+	rebuild_cached_erp_preference_shortcuts()
+
+/mob/living/proc/cache_erp_preferences_from_prefs(datum/preferences/prefs)
+	if(!prefs)
+		return FALSE
+	var/list/erp_preferences = prefs.read_preference(/datum/preference/list_type/erp_preferences)
+	if(!length(erp_preferences))
+		return FALSE
+	if(mind?.current == src)
+		return mind.cache_erp_preferences_from_prefs(prefs)
+	set_cached_erp_preferences(erp_preferences, prefs.erp_preferences_revision)
+	return TRUE
+
+/mob/living/proc/refresh_erp_preference_cache()
+	var/datum/preferences/prefs = client?.prefs
+	var/list/erp_preferences = prefs?.read_preference(/datum/preference/list_type/erp_preferences)
+	if(length(erp_preferences))
+		var/current_revision = prefs.erp_preferences_revision
+		if(erp_preferences_revision_seen == current_revision && cached_erp_preferences)
+			return
+		cache_erp_preferences_from_prefs(prefs)
+		return
+
+	if(mind?.cached_erp_preferences)
+		if(erp_preferences_revision_seen == mind.cached_erp_preferences_revision && cached_erp_preferences)
+			return
+		set_cached_erp_preferences(mind.cached_erp_preferences, mind.cached_erp_preferences_revision)
+		return
+
+	if(!cached_erp_preferences)
+		rebuild_cached_erp_preference_shortcuts()
+
+/mob/living/proc/get_cached_erp_pref(pref_type)
+	if(!ispath(pref_type, /datum/erp_preference))
+		return FALSE
+	refresh_erp_preference_cache()
+	if(!cached_erp_preferences)
+		return FALSE
+	var/datum/erp_preference/pref = new pref_type()
+	return pref.get_value_from_list(cached_erp_preferences)
+
+/mob/living/proc/get_cached_allow_belly_inflation()
+	refresh_erp_preference_cache()
+	return cached_allow_belly_inflation == TRUE
+
+/mob/living/proc/get_cached_nonmatching_horny_mobs_are_nonlethal()
+	refresh_erp_preference_cache()
+	return cached_nonmatching_horny_mobs_are_nonlethal == TRUE
 
 /mob/living/proc/get_cached_horny_mob_pref_flags()
 	refresh_erp_preference_cache()
@@ -626,20 +791,37 @@
 	if(iscarbon(user))
 		var/mob/living/carbon/carbon_user = user
 		carbon_user.update_body_parts()
+	return TRUE
 
 /mob/living/proc/lose_virginity()
 	return
 
 /mob/living/carbon/human/lose_virginity()
-	virginity = FALSE
+	REMOVE_TRAIT(src, TRAIT_VIRGIN, null)
 
 /mob/living/proc/adjacent_or_closet(atom/neighbor)
-	if(istype(loc, /obj/structure/closet) || istype(loc, /obj/structure/handcart) || istype(neighbor.loc, /obj/structure/closet) || istype(neighbor.loc, /obj/structure/handcart)) // within container
-		return loc == neighbor.loc
-	return Adjacent(neighbor)
-
-/mob/living/proc/check_closet(atom/neighbor)
-	if(istype(loc, /obj/structure/closet) || istype(loc, /obj/structure/handcart) || istype(neighbor.loc, /obj/structure/closet) || istype(neighbor.loc, /obj/structure/handcart)) // within container
-		return loc == neighbor.loc
-	else
+	if(!neighbor)
 		return FALSE
+	if(loc == neighbor.loc) // same tile, or tucked inside the same thing
+		return TRUE
+	if(Adjacent(neighbor))
+		return TRUE
+	// Adjacent() gives up outright once either loc is not a turf, which locks out anyone inside a
+	// closet, a handcart, or a hiding spot under a table. Reach from the container's own tile.
+	if(isturf(loc) && isturf(neighbor.loc))
+		return FALSE
+	var/turf/our_turf = get_turf(src)
+	if(!our_turf)
+		return FALSE
+	return our_turf.Adjacent(neighbor, target = neighbor, mover = src)
+
+/// TRUE when both of us are tucked inside the same thing, which counts as sharing a tile.
+/mob/living/proc/check_closet(atom/neighbor)
+	return neighbor && !isturf(loc) && (loc == neighbor.loc)
+
+/mob/living/proc/in_sex_interaction_range(atom/other)
+	if(!other)
+		return FALSE
+	if(other in view(1, src))
+		return TRUE
+	return adjacent_or_closet(other)

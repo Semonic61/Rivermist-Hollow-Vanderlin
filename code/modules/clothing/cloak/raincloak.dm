@@ -19,18 +19,8 @@
 	salvage_result = /obj/item/natural/hide/cured
 	color = CLOTHING_BARK_BROWN
 	wetable = FALSE
-
-/obj/item/clothing/cloak/raincloak/Initialize(mapload, ...)
-	. = ..()
-	AddComponent(/datum/component/storage/concrete/grid/cloak)
-
-/obj/item/clothing/cloak/raincloak/dropped(mob/living/carbon/human/user)
-	..()
-	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
-	if(STR)
-		var/list/things = STR.contents()
-		for(var/obj/item/I in things)
-			STR.remove_from_storage(I, get_turf(src))
+	is_rain_protective = TRUE
+	has_storage = TRUE
 
 /obj/item/clothing/cloak/raincloak/colored
 	misc_flags = CRAFTING_TEST_EXCLUDE
@@ -69,8 +59,9 @@
 	edelay_type = 1 // Leaving as 1 so you get that small do_after for dramatic purposes
 	body_parts_covered = HEAD
 	resistance_flags = FLAMMABLE
-	flags_inv = HIDEEARS|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR
+	flags_inv = HIDEEARS|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR|HIDETAIL //hide tail for more anonimity
 	block2add = FOV_BEHIND
+	wetable = FALSE
 
 /obj/item/clothing/head/hooded/equipped(mob/user, slot)
 	. = ..()

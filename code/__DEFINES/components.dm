@@ -47,16 +47,14 @@
 	#define COMPONENT_ATOM_BLOCK_EXIT 1
 #define COMSIG_ATOM_EXITED "atom_exited"						//from base of atom/Exited(): (atom/movable/exiting, atom/newloc)
 #define COMSIG_ATOM_BUMPED "atom_bumped"						//from base of atom/Bumped(): (/atom/movable)
-#define COMSIG_ATOM_EX_ACT "atom_ex_act"						//from base of atom/ex_act(): (severity, target)
-#define COMSIG_ATOM_FIRE_ACT "atom_fire_act"					//from base of atom/fire_act(): (added, maxstacks)
-#define COMSIG_ATOM_BULLET_ACT "atom_bullet_act"				//from base of atom/bullet_act(): (/obj/projectile, def_zone)
 #define COMSIG_ATOM_BLOB_ACT "atom_blob_act"					//from base of atom/blob_act(): (/obj/structure/blob)
-#define COMSIG_ATOM_ACID_ACT "atom_acid_act"					//from base of atom/acid_act(): (acidpwr, acid_volume)
 #define COMSIG_ATOM_EMAG_ACT "atom_emag_act"					//from base of atom/emag_act(): (/mob/user)
 #define COMSIG_ATOM_NARSIE_ACT "atom_narsie_act"				//from base of atom/narsie_act(): ()
 #define COMSIG_ATOM_BSA_BEAM "atom_bsa_beam_pass"				//from obj/machinery/bsa/full/proc/fire(): ()
 	#define COMSIG_ATOM_BLOCKS_BSA_BEAM 1
 #define COMSIG_ATOM_DIR_CHANGE "atom_dir_change"				//from base of atom/setDir(): (old_dir, new_dir)
+///from base of atom/setDir(): (old_dir, new_dir). Called after the direction changes.
+#define COMSIG_ATOM_POST_DIR_CHANGE "atom_post_dir_change"
 #define COMSIG_ATOM_CONTENTS_DEL "atom_contents_del"			//from base of atom/handle_atom_del(): (atom/deleted)
 #define COMSIG_ATOM_CANREACH "atom_can_reach"					//from internal loop in atom/movable/proc/CanReach(): (list/next)
 	#define COMPONENT_BLOCK_REACH 1
@@ -115,12 +113,12 @@
 #define COMSIG_MOB_ATTACK_HAND "mob_attack_hand"				//from base of
 #define COMSIG_MOB_ITEM_ATTACK "mob_item_attack"				//from base of /obj/item/attack(): (mob/M, mob/user)
 	#define COMPONENT_ITEM_NO_ATTACK 1
-#define COMSIG_MOB_APPLY_DAMGE	"mob_apply_damage"				//from base of /mob/living/proc/apply_damage(): (damage, damagetype, def_zone)
+#define COMSIG_MOB_APPLY_DAMAGE	"mob_apply_damage"				//from base of /mob/living/proc/apply_damage(): (damage, damagetype, def_zone)
 #define COMSIG_MOB_ITEM_AFTERATTACK "mob_item_afterattack"		//from base of obj/item/afterattack(): (atom/target, mob/user, proximity_flag, click_parameters)
 #define COMSIG_MOB_ITEM_ATTACK_QDELETED "mob_item_attack_qdeleted"	//from base of obj/item/attack_qdeleted(): (atom/target, mob/user, proxiumity_flag, click_parameters)
 #define COMSIG_MOB_ATTACK_RANGED "mob_attack_ranged"			//from base of mob/RangedAttack(): (atom/A, params)
 #define COMSIG_MOB_POSTATTACK_RANGED "mob_postattack_ranged"
-#define COMSIG_MOB_THROW "mob_throw"							//from base of /mob/throw_item(): (atom/target)
+#define COMSIG_MOB_THROW "mob_throw"							//from /mob/living/carbon/throw_item(): (atom/movable/thrown_thing)
 #define COMSIG_MOB_EXAMINATE "mob_examinate"					//from base of /mob/verb/examinate(): (atom/target)
 #define COMSIG_MOB_EXAMINATE_CARBON "mob_examinte_carbon"		//from base of mob/living/carbon/examine(): (mob/user, mob/target, list/pronouns, list/examine_strings)
 #define COMSIG_MOB_UPDATE_SIGHT "mob_update_sight"				//from base of /mob/update_sight(): ()
@@ -149,7 +147,6 @@
 
 // /mob/living/carbon signals
 #define COMSIG_CARBON_REAGENT_ADD "carbon_reagent_add"
-#define COMSIG_CARBON_SOUNDBANG "carbon_soundbang"					//from base of mob/living/carbon/soundbang_act(): (list(intensity))
 #define COMSIG_CARBON_ON_HANDLE_BLOOD "human_on_handle_blood"
 	#define HANDLE_BLOOD_HANDLED (1<<0)
 	#define HANDLE_BLOOD_NO_NUTRITION_DRAIN (1<<1)
@@ -283,6 +280,7 @@
 #define COMSIG_NANITE_SYNC "nanite_sync"						//(datum/component/nanites, full_overwrite, copy_activation) Called to sync the target's nanites to a given nanite component
 
 #define COMSIG_CONTAINER_CRAFT_COMPLETE "container_craft_complete"
+#define COMSIG_CONTAINER_CRAFT_ABORTED "container_craft_aborted"
 // /datum/component/storage signals
 #define COMSIG_CONTAINS_STORAGE "is_storage"							//() - returns bool.
 #define COMSIG_TRY_STORAGE_INSERT "storage_try_insert"					//(obj/item/inserting, mob/user, silent, force) - returns bool
@@ -298,6 +296,7 @@
 #define COMSIG_TRY_STORAGE_RETURN_INVENTORY "storage_return_inventory"	//(list/list_to_inject_results_into, recursively_search_inside_storages = TRUE)
 #define COMSIG_TRY_STORAGE_CAN_INSERT "storage_can_equip"				//(obj/item/insertion_candidate, mob/user, silent) - returns bool
 #define COMSIG_STORAGE_CLOSED "storage_close"
+#define COMSIG_ATOM_HEAT_SOURCE_LIT "atom_heat_source_lit"
 #define COMSIG_STORAGE_REMOVED "storage_item_removed"
 #define COMSIG_STORAGE_ADDED "storage_item_added"
 
@@ -364,6 +363,8 @@
 #define COMSIG_TIPS_REMOVE "comsig_tip_remove"
 ///used incase we care about a tracker dying
 #define COMSIG_LIVING_TRACKER_REMOVED "tracker_removed"
+/// Sent after a ghost vessel is successfully possessed: (datum/component/ghost_vessel)
+#define COMSIG_GHOST_VESSEL_POSSESSED "ghost_vessel_possessed"
 
 //Mood
 #define COMSIG_ADD_MOOD_EVENT "add_mood" //Called when you send a mood event from anywhere in the code.
@@ -376,6 +377,7 @@
 #define COMSIG_AUGMENT_REMOVE "augment_remove"
 #define COMSIG_AUGMENT_REPAIR "augment_repair"
 #define COMSIG_AUGMENT_GET_STABILITY "augment_get_stability"
+#define COMSIG_AUGMENT_GET_INSTALLED "augment_get_installed"
 
 #define COMPONENT_AUGMENT_SUCCESS (1<<0)
 #define COMPONENT_AUGMENT_FAILED (1<<1)

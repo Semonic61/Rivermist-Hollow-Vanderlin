@@ -29,9 +29,6 @@
 	quad_intents = new /atom/movable/screen/quad_intents(null, src)
 	static_inventory += quad_intents
 
-	def_intent = new /atom/movable/screen/def_intent(null, src)
-	static_inventory += def_intent
-
 	give_intent = new /atom/movable/screen/give_intent(null, src)
 	static_inventory += give_intent
 
@@ -40,9 +37,6 @@
 
 	hsover =  new /atom/movable/screen/heatstamover(null, src)
 	static_inventory += hsover
-
-	fov = new /atom/movable/screen/fov(null, src)
-	static_inventory += fov
 
 	cdleft = new /atom/movable/screen/action_bar/clickdelay/left(null, src)
 	cdleft.screen_loc = "WEST-3:-16,SOUTH+7"

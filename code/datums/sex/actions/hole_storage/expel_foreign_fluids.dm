@@ -11,8 +11,6 @@
 	continous = FALSE
 	do_time = FOREIGN_FLUID_EXPULSION_TIME
 	stamina_cost = 0
-	user_priority = 0
-	target_priority = 0
 	var/cavity_name = "cavity"
 
 /datum/sex_action/hole_storage/expel_foreign_fluids/shows_on_menu(mob/living/user, mob/living/target)
@@ -65,6 +63,7 @@
 	)
 
 /datum/sex_action/hole_storage/expel_foreign_fluids/on_perform(mob/living/user, mob/living/target)
+	. = ..()
 	var/obj/item/organ/genitals/filling_organ/filling_organ = get_action_organ(user, target)
 	if(!filling_organ)
 		to_chat(user, span_warning("There is nothing to clear right now."))

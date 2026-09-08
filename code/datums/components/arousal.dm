@@ -29,8 +29,14 @@
 	var/resistance_to_pleasure = RESIST_NONE
 	/// Recent orgasm count
 	var/recent_orgasm_count = 0
+	/// How much recent orgasms have strained the body. Built by quick/intense climaxes, not ordinary ones.
+	var/orgasm_strain = 0
+	/// Last time orgasm strain naturally decayed
+	var/last_orgasm_strain_decay_time = 0
 	/// Are we edged by partner
 	var/is_edged = FALSE
+	/// Last time high arousal auto-flicked the mob's ears
+	var/last_ear_flick_time = 0
 
 /datum/component/arousal/Initialize(...)
 	. = ..()
@@ -42,6 +48,16 @@
 
 /datum/component/arousal/RegisterWithParent()
 	. = ..()
+	// A clientless mob that gains arousal (i.e. is in the horny system) becomes horny-KO-able. Scoped to
+	// clientless bodies so players - who also carry arousal - are untouched and keep the full defeat flow.
+	// !client alone is not enough to tell those apart: every human is given arousal in Initialize, long
+	// before its client attaches at Login, so a player body looks identical to an NPC at this point.
+	// An ai_controller is what actually marks a body as AI-driven - carbon NPCs declare one as an
+	// initial var, player bodies never do - and non-carbons are the mob path's original audience.
+	var/mob/living/horny_ko_parent = parent
+	if(istype(horny_ko_parent) && !horny_ko_parent.client && (horny_ko_parent.ai_controller || !iscarbon(horny_ko_parent)))
+		horny_ko_parent.mob_horny_defeat_enabled = TRUE
+		horny_ko_parent.ensure_defeat_monitor()
 	RegisterSignal(parent, COMSIG_SEX_ADJUST_AROUSAL, PROC_REF(adjust_arousal))
 	RegisterSignal(parent, COMSIG_SEX_SET_AROUSAL, PROC_REF(set_arousal))
 	RegisterSignal(parent, COMSIG_SEX_FREEZE_AROUSAL, PROC_REF(freeze_arousal))
@@ -86,9 +102,23 @@
 	handle_charge()
 	handle_aroousal_cooling()
 	handle_orgasm_count()
+	handle_orgasm_strain()
 	handle_statuses()
 	handle_passive_orgasm()
 	handle_orgasm_cooling()
+	handle_ear_flick()
+
+/// High arousal makes flickable ears twitch on a fixed interval.
+/datum/component/arousal/proc/handle_ear_flick()
+	if(arousal <= 200)
+		return
+	if(last_ear_flick_time + 5 SECONDS > world.time)
+		return
+	if(!isliving(parent))
+		return
+	var/mob/living/user = parent
+	last_ear_flick_time = world.time
+	user.try_ear_flick()
 
 /datum/component/arousal/proc/handle_orgasm_count()
 	if(!recent_orgasm_count)
@@ -98,6 +128,19 @@
 	if(last_climax_reset_time + ORGASM_RESET_TIME < world.time)
 		recent_orgasm_count -= 1
 		last_climax_reset_time = world.time
+
+/datum/component/arousal/proc/handle_orgasm_strain()
+	if(orgasm_strain <= 0)
+		last_orgasm_strain_decay_time = 0
+		return
+	if(!last_orgasm_strain_decay_time)
+		last_orgasm_strain_decay_time = world.time
+		return
+	var/elapsed_intervals = FLOOR((world.time - last_orgasm_strain_decay_time) / ORGASM_STRAIN_DECAY_INTERVAL, 1)
+	if(elapsed_intervals <= 0)
+		return
+	orgasm_strain = max(0, orgasm_strain - elapsed_intervals * ORGASM_STRAIN_DECAY_AMOUNT)
+	last_orgasm_strain_decay_time += elapsed_intervals * ORGASM_STRAIN_DECAY_INTERVAL
 
 /datum/component/arousal/proc/handle_orgasm_cooling()
 	if(last_orgasm_prog_increase_time >= world.time - 8 SECONDS)
@@ -205,6 +248,7 @@
 		"last_ejaculation_time" = last_ejaculation_time,
 		"is_spent" = is_spent(),
 		"edging" = edging_charge,
+		"orgasm_strain" = orgasm_strain,
 		"resistance_to_pleasure" = resistance_to_pleasure,
 		"orgasm_progress" = orgasm_progress
 	)
@@ -215,9 +259,11 @@
 /datum/component/arousal/proc/set_edging(datum/source, amount)
 	edging_charge = clamp(amount, 0, MAX_EDGING)
 
-/datum/component/arousal/proc/receive_generic_sex_action(datum/source, mob/living/action_target, arousal_amt, pain_amt, orgasm_prog_amt, action_initiator)
+/// action_performer is whatever drove this - a mob, or a structure/item like a horse, table or whip.
+/datum/component/arousal/proc/receive_generic_sex_action(datum/source, mob/living/action_target, arousal_amt, pain_amt, orgasm_prog_amt, atom/action_performer)
 	var/mob/living/user = parent
-	var/giving = action_target != action_initiator
+	// Self-directed only when the other party is us; an external performer never counts as giving.
+	var/giving = (action_target == user)
 	var/datum/sex_action/generic/s_action = new()
 
 	if(user.stat == DEAD)
@@ -226,31 +272,27 @@
 		orgasm_prog_amt = 0
 	var/applied_resist = RESIST_NONE
 	var/applied_force = SEX_FORCE_MID
-	var/datum/sex_session/s_session = get_sex_session(action_target, action_target)
-
-	if(s_session)
-		applied_resist = s_session.get_current_resist()
-		applied_force = s_session.get_current_force()
+	var/applied_speed = SEX_SPEED_MID
+	// Generic sources have no force/speed controls, so they run at the mid step rather than unscaled.
+	pain_amt = get_scaled_pain(pain_amt, applied_force, applied_speed)
 
 	var/isnymph = FALSE
-	if(HAS_TRAIT(user, TRAIT_NYMPHO_CURSE) || user.has_quirk(/datum/quirk/vice/lovefiend))
+	if(HAS_TRAIT(user, TRAIT_NYMPHO_CURSE) || user.has_quirk(/datum/quirk/vice/addiction/lovefiend))
 		isnymph = TRUE
 
 	if(user.has_status_effect(/datum/status_effect/debuff/orgasmbroken))
 		if(isnymph)
-			arousal_amt *= 2
-		else
 			arousal_amt *= 1.5
-		update_aching(1, giving)
+		else
+			arousal_amt *= 1.25
 		var/lovermessage = pick("This feels too good!", "I must never stop!", "I want MORE!", "I need this!")
 		if(prob(15))
 			to_chat(user, span_love(lovermessage))
 
 	else if(user.has_status_effect(/datum/status_effect/debuff/cumbrained))
-		update_aching(5, giving)
 		var/lovermessage
 		if(!isnymph)
-			arousal_amt *= 0.5
+			arousal_amt *= 0.75
 			lovermessage = pick("My mind is going blank!", "I'm too spent!", "This is too much!")
 		else
 			lovermessage = pick("This feels too good!", "I must never stop!", "I want MORE!", "I need this!", "I LOVE this!")
@@ -259,10 +301,10 @@
 
 
 	else if(user.has_status_effect(/datum/status_effect/debuff/loinspent))
-		update_aching(2, giving)
+		refresh_aching()
 		var/lovermessage
 		if(!isnymph)
-			arousal_amt *= 0.8
+			arousal_amt *= 0.9
 			lovermessage = pick("This is starting to feel unpleasant...", "Maybe I should rest soon...", "My loins are starting to chafe a bit.")
 		else
 			lovermessage = pick("This is starting to feel interesting.", "We're getting there...", "I love this feeling.")
@@ -270,7 +312,7 @@
 			to_chat(user, span_love(lovermessage))
 
 	if(user.has_status_effect(/datum/status_effect/edging_overstimulation))
-		arousal_amt *= 2
+		arousal_amt *= 1.5
 		if(prob(15))
 			var/stimmessage
 			stimmessage = pick("I'm too sensitive!", "There's too much pleasure!")
@@ -294,7 +336,7 @@
 
 	if(is_spent() || is_manhood_overstimulated())
 		arousal_amt *= 0.8
-		update_aching(8, giving)
+		refresh_aching()
 		if(prob(5))
 			var/spentmessage = pick("I need to let my loins rest!", "I came too much too quickly!")
 			to_chat(user, span_warn(spentmessage))
@@ -305,19 +347,19 @@
 	orgasm_prog_amt *= CLAMP(arousal / 60, 0.3, 2)
 	adjust_orgasm_prog(parent, orgasm_prog_amt)
 
-	damage_from_pain(pain_amt, giving)
-	try_ejaculate(s_action, action_initiator, action_target, giving)
+	damage_from_pain(pain_amt)
+	// The receiver is always the climaxer on this path, matching the panel path's initiator contract.
+	try_ejaculate(s_action, user, action_target, giving, action_performer || user)
 	try_do_moan(arousal_amt, pain_amt, applied_force, giving)
-	try_do_pain_effect(pain_amt, giving)
+	try_do_pain_effect(pain_amt, giving, applied_force, action_target)
 
-/datum/component/arousal/proc/receive_sex_action(datum/source, datum/sex_action/s_action, mob/living/action_initiator, mob/living/action_target, arousal_amt, pain_amt, orgasm_prog_amt, giving, applied_force, applied_speed, applied_resist)
+/datum/component/arousal/proc/receive_sex_action(datum/source, datum/sex_action/s_action, mob/living/action_initiator, mob/living/action_target, arousal_amt, pain_amt, orgasm_prog_amt, giving, applied_force, applied_speed, applied_resist, atom/action_performer)
 	var/mob/living/user = parent
 
 	// Apply multipliers
 	arousal_amt *= get_force_pleasure_multiplier(applied_force, giving)
 	orgasm_prog_amt *= get_force_orgasm_multiplier(applied_force, giving)
-	pain_amt *= get_force_pain_multiplier(applied_force)
-	pain_amt *= get_speed_pain_multiplier(applied_speed)
+	pain_amt = get_scaled_pain(pain_amt, applied_force, applied_speed)
 
 	if(user.stat == DEAD)
 		arousal_amt = 0
@@ -365,39 +407,37 @@
 							to_chat(devouser, span_info("I feel Viiritri guide me."))*/
 
 	var/isnymph = FALSE
-	if(HAS_TRAIT(user, TRAIT_NYMPHO_CURSE) || user.has_quirk(/datum/quirk/vice/lovefiend))
+	if(HAS_TRAIT(user, TRAIT_NYMPHO_CURSE) || user.has_quirk(/datum/quirk/vice/addiction/lovefiend))
 		isnymph = TRUE
 	if(user.has_status_effect(/datum/status_effect/debuff/orgasmbroken))
 		if(isnymph)
-			arousal_amt *= 2
-		else
 			arousal_amt *= 1.5
-		update_aching(1, giving)
+		else
+			arousal_amt *= 1.25
 		var/lovermessage = pick("This feels too good!", "I must never stop!", "I want MORE!", "I need this!")
 		if(prob(15))
 			to_chat(user, span_love(lovermessage))
 	else if(user.has_status_effect(/datum/status_effect/debuff/cumbrained))
-		update_aching(5, giving)
 		var/lovermessage
 		if(!isnymph)
-			arousal_amt *= 0.5
+			arousal_amt *= 0.75
 			lovermessage = pick("My mind is going blank!", "I'm too spent!", "This is too much!")
 		else
 			lovermessage = pick("This feels too good!", "I must never stop!", "I want MORE!", "I need this!", "I LOVE this!")
 		if(prob(15))
 			to_chat(user, span_love(lovermessage))
 	else if(user.has_status_effect(/datum/status_effect/debuff/loinspent))
-		update_aching(2, giving)
+		refresh_aching()
 		var/lovermessage
 		if(!isnymph)
-			arousal_amt *= 0.8
+			arousal_amt *= 0.9
 			lovermessage = pick("This is starting to feel unpleasant...", "Maybe I should rest soon...", "My loins are starting to chafe a bit.")
 		else
 			lovermessage = pick("This is starting to feel interesting.", "We're getting there...", "I love this feeling.")
 		if(prob(15))
 			to_chat(user, span_love(lovermessage))
 	if(user.has_status_effect(/datum/status_effect/edging_overstimulation))
-		arousal_amt *= 2
+		arousal_amt *= 1.5
 		if(prob(15))
 			var/stimmessage
 			stimmessage = pick("I'm too sensitive!", "There's too much pleasure!")
@@ -428,7 +468,7 @@
 			to_chat(user, span_love(edgemessage))
 	if(is_spent() || is_manhood_overstimulated())
 		arousal_amt *= 0.8
-		update_aching(8, giving)
+		refresh_aching()
 		if(prob(5))
 			var/spentmessage = pick("I need to let my loins rest!", "I came too much too quickly!")
 			to_chat(user, span_warn(spentmessage))
@@ -439,10 +479,10 @@
 	orgasm_prog_amt *= CLAMP(arousal / 60, 0.3, 2)
 	adjust_orgasm_prog(parent, orgasm_prog_amt)
 
-	damage_from_pain(pain_amt, giving)
-	try_ejaculate(s_action, action_initiator, action_target, giving)
+	damage_from_pain(pain_amt)
+	try_ejaculate(s_action, action_initiator, action_target, giving, action_performer)
 	try_do_moan(arousal_amt, pain_amt, applied_force, giving)
-	try_do_pain_effect(pain_amt, giving)
+	try_do_pain_effect(pain_amt, giving, applied_force, action_target)
 
 	is_edged = FALSE
 
@@ -451,31 +491,25 @@
 	handle_statuses()
 	//update_erect_state()
 
-/datum/component/arousal/proc/try_ejaculate(datum/sex_action/s_action, mob/living/action_initiator, mob/living/action_target, giving = FALSE)
+/datum/component/arousal/proc/try_ejaculate(datum/sex_action/s_action, mob/living/action_initiator, mob/living/action_target, giving = FALSE, atom/action_performer)
 	if(orgasm_progress < PASSIVE_EJAC_THRESHOLD)
 		return
 	if(!can_climax())
 		return
-	ejaculate(s_action, action_initiator, action_target, giving)
+	ejaculate(s_action, action_initiator, action_target, giving, action_performer)
 
 /datum/component/arousal/proc/manual_orgasm(datum/source)
 	ejaculate()
 
-/datum/component/arousal/proc/ejaculate(datum/sex_action/s_action, mob/living/action_initiator, mob/living/action_target, giving = FALSE)
+/datum/component/arousal/proc/ejaculate(datum/sex_action/s_action, mob/living/action_initiator, mob/living/action_target, giving = FALSE, atom/action_performer)
 
 	var/mob/living/mob = parent
-	var/list/parent_sessions = return_sessions_with_user(parent)
-	var/datum/sex_session/highest_priority = return_highest_priority_action(parent_sessions, parent)
-	var/datum/sex_action/action
-
-	if(s_action)
-		action = s_action
-
-	else if(highest_priority)
-		action = highest_priority.get_highest_priority_action_for(parent)
+	var/datum/sex_action/action = s_action
 
 	if(!action_initiator)
 		action_initiator = parent
+	if(!action_performer)
+		action_performer = action_initiator
 
 	var/mob/living/target
 	if(parent == action_initiator)
@@ -484,11 +518,12 @@
 		target = action_initiator
 	var/must_flip = !giving
 
+	mob.sex_scene?.handle_pattern_climax(mob, action)
 	playsound(parent, 'sound/misc/mat/endout.ogg', 50, TRUE, ignore_walls = FALSE)
 	// Special cases for when the user has a penis but no testicles & for eunuchs
 	if((!mob.getorganslot(ORGAN_SLOT_TESTICLES) && mob.getorganslot(ORGAN_SLOT_PENIS)) || (!mob.getorganslot(ORGAN_SLOT_TESTICLES) && !mob.getorganslot(ORGAN_SLOT_VAGINA)))
 		mob.visible_message(span_love("[mob] climaxes, yet nothing is released!"))
-		after_ejaculation(FALSE, parent)
+		after_ejaculation(FALSE, parent, null, action, action_initiator, action_target, action_performer)
 		return
 	if(!action || !target)
 		mob.visible_message(span_love("[mob] orgasms!"))
@@ -498,14 +533,13 @@
 			if(testes)
 				if(testes.reagents)
 					var/cum_to_take = min(3, 10 * testes.organ_size)
-					turf.add_liquid_from_reagents(testes.reagents, amount = cum_to_take)
+					deposit_cum_on_turf(turf, testes.reagents, cum_to_take)
+		// Female climax fills the vagina rather than spawning a puddle; the organ's drip system handles leakage.
 		if(mob.getorganslot(ORGAN_SLOT_VAGINA))
 			var/obj/item/organ/genitals/filling_organ/vagina/vag = mob.getorganslot(ORGAN_SLOT_VAGINA)
-			if(vag)
-				var/femcum_to_take = min(3, vag.reagents.total_volume*0.3)
-				if(vag.reagents)
-					turf.add_liquid_from_reagents(vag.reagents, amount = femcum_to_take)
-		after_ejaculation(FALSE, mob, null)
+			if(vag?.reagents)
+				vag.reagents.add_reagent(vag.reagent_to_make, FEMCUM_ORGASM_VOLUME)
+		after_ejaculation(FALSE, mob, null, action, action_initiator, action_target, action_performer)
 	else
 		var/return_type = action.handle_climax_message(mob, target, must_flip)
 		if(!return_type)
@@ -515,16 +549,15 @@
 				if(testes)
 					if(testes.reagents)
 						var/cum_to_take = min(3, 10 * testes.organ_size)
-						turf.add_liquid_from_reagents(testes.reagents, amount = cum_to_take)
+						deposit_cum_on_turf(turf, testes.reagents, cum_to_take)
+			// Female climax fills the vagina rather than spawning a puddle; the organ's drip system handles leakage.
 			if(mob.getorganslot(ORGAN_SLOT_VAGINA))
 				var/obj/item/organ/genitals/filling_organ/vagina/vag = mob.getorganslot(ORGAN_SLOT_VAGINA)
-				if(vag)
-					if(vag.reagents)
-						var/femcum_to_take = min(3, vag.reagents.total_volume*0.3)
-						turf.add_liquid_from_reagents(vag.reagents, amount = femcum_to_take)
-			after_ejaculation(FALSE, mob, target)
+				if(vag?.reagents)
+					vag.reagents.add_reagent(vag.reagent_to_make, FEMCUM_ORGASM_VOLUME)
+			after_ejaculation(FALSE, mob, target, action, action_initiator, action_target, action_performer)
 		else
-			handle_climax(action, return_type, mob, target, giving)
+			handle_climax(action, return_type, mob, target, giving, action_initiator, action_target, action_performer)
 
 		var/knot_finished = FALSE
 		if(action.knot_on_finish) //no idea how to stop other partner from triggering the knotting yet sorry
@@ -536,9 +569,10 @@
 			target_human.handle_werewolf_creampie_conversion(source_human, knot_finished)
 
 
-/datum/component/arousal/proc/handle_climax(datum/sex_action/action, climax_type, mob/living/user, mob/living/target, giving)
+/datum/component/arousal/proc/handle_climax(datum/sex_action/action, climax_type, mob/living/user, mob/living/target, giving, mob/living/action_initiator, mob/living/action_target, atom/action_performer)
 	var/obj/item/organ/genitals/filling_organ/testicles/testes
 	var/obj/item/organ/genitals/filling_organ/vagina/vag
+	var/climax_fluid_transferred = FALSE
 	if(user.getorganslot(ORGAN_SLOT_TESTICLES) && user.getorganslot(ORGAN_SLOT_PENIS))
 		testes = user.getorganslot(ORGAN_SLOT_TESTICLES)
 	if(user.getorganslot(ORGAN_SLOT_VAGINA))
@@ -565,14 +599,17 @@
 			if(testes)
 				if(testes.reagents)
 					var/cum_to_take = CLAMP((testes.reagents.maximum_volume/2), 1, 10 * testes.organ_size)
-					turf.add_liquid_from_reagents(testes.reagents, amount = cum_to_take)
-					if(target)
+					var/cum_transferred = route_climax_reagents(testes.reagents, cum_to_take, user, target, action, climax_type, turf, null, action_initiator, action_target, action_performer, TRUE)
+					if(cum_transferred > 0)
+						climax_fluid_transferred = TRUE
+					if(target && cum_transferred > 0)
 						target.apply_status_effect(/datum/status_effect/facial)
 			if(vag)
 				if(vag.reagents)
 					var/femcum_to_take = min(8, vag.reagents.total_volume*0.3)
-					turf.add_liquid_from_reagents(vag.reagents, amount = femcum_to_take)
-			if(target && (!action || !action.knot_on_finish))
+					if(route_climax_reagents(vag.reagents, femcum_to_take, user, target, action, climax_type, turf, null, action_initiator, action_target, action_performer) > 0)
+						climax_fluid_transferred = TRUE
+			if(target && climax_fluid_transferred && (!action || !action.knot_on_finish))
 				apply_facial_effect(target)
 
 		if(ORGASM_LOCATION_INTO)
@@ -589,11 +626,13 @@
 							cameloc = target.getorganslot(ORGAN_SLOT_ANUS)
 				if(cameloc && cameloc.reagents)
 					var/cum_to_take = CLAMP((testes.reagents.maximum_volume / 4), 1, min(testes.reagents.total_volume, cameloc.reagents.maximum_volume - cameloc.reagents.total_volume))
-					testes.reagents.trans_to(cameloc, cum_to_take, transfered_by = user, method = INGEST)
+					if(route_climax_reagents(testes.reagents, cum_to_take, user, target, action, climax_type, cameloc, INGEST, action_initiator, action_target, action_performer) > 0)
+						climax_fluid_transferred = TRUE
 				else if(target)
 					var/cum_to_take = CLAMP((testes.reagents.maximum_volume / 4), 1, testes.reagents.total_volume)
-					testes.reagents.trans_to(target, cum_to_take, transfered_by = user, method = INGEST)
-			if(target)
+					if(route_climax_reagents(testes.reagents, cum_to_take, user, target, action, climax_type, target, INGEST, action_initiator, action_target, action_performer) > 0)
+						climax_fluid_transferred = TRUE
+			if(target && climax_fluid_transferred)
 				apply_creampie_effect(target)
 
 		if(ORGASM_LOCATION_ORAL)
@@ -604,12 +643,14 @@
 				if(user.getorganslot(ORGAN_SLOT_PENIS) && action.check_sex_lock(user, ORGAN_SLOT_PENIS))
 					if(testes && testes.reagents)
 						var/cum_to_take = CLAMP((testes.reagents.maximum_volume / 4), 1, min(testes.reagents.total_volume, target.reagents.maximum_volume - target.reagents.total_volume))
-						testes.reagents.trans_to(target, cum_to_take, transfered_by = user, method = INGEST)
+						if(route_climax_reagents(testes.reagents, cum_to_take, user, target, action, climax_type, target, INGEST, action_initiator, action_target, action_performer) > 0)
+							climax_fluid_transferred = TRUE
 				if(user.getorganslot(ORGAN_SLOT_VAGINA) && action.check_sex_lock(user, ORGAN_SLOT_VAGINA))
 					if(vag && vag.reagents)
 						var/femcum_to_take = min(8, vag.reagents.total_volume*0.3)
-						vag.reagents.trans_to(target, femcum_to_take, transfered_by = user, method = INGEST)
-			if(target)
+						if(route_climax_reagents(vag.reagents, femcum_to_take, user, target, action, climax_type, target, INGEST, action_initiator, action_target, action_performer) > 0)
+							climax_fluid_transferred = TRUE
+			if(target && climax_fluid_transferred)
 				if(is_oral)
 					apply_facial_effect(target)
 				else
@@ -623,16 +664,58 @@
 			if(testes)
 				if(testes.reagents)
 					var/cum_to_take = CLAMP((testes.reagents.maximum_volume/5), 1, testes.reagents.total_volume)
-					turf.add_liquid_from_reagents(testes.reagents, amount = cum_to_take)
-			if(vag)
-				if(vag.reagents)
-					var/femcum_to_take = min(2, vag.reagents.total_volume*0.3)
-					turf.add_liquid_from_reagents(vag.reagents, amount = femcum_to_take)
+					route_climax_reagents(testes.reagents, cum_to_take, user, target, action, climax_type, turf, null, action_initiator, action_target, action_performer, TRUE)
+			// Female climax fills the vagina rather than spawning a puddle; the organ's drip system handles leakage.
+			if(vag?.reagents)
+				vag.reagents.add_reagent(vag.reagent_to_make, FEMCUM_ORGASM_VOLUME)
+
+		if(ORGASM_LOCATION_CONTAINER)
+			var/obj/item/container = action?.get_climax_container(user, target, action_initiator, action_target, action_performer)
+			if(!container || !container.reagents)
+				// container is gone (dropped/swapped/full-removed); don't silently eat the climax, spill it like SELF.
+				var/turf/turf = get_turf(user)
+				if(testes?.reagents)
+					var/cum_to_take = CLAMP((testes.reagents.maximum_volume/5), 1, testes.reagents.total_volume)
+					route_climax_reagents(testes.reagents, cum_to_take, user, target, action, climax_type, turf, null, action_initiator, action_target, action_performer, TRUE)
+				// Female climax fills the vagina rather than spawning a puddle; the organ's drip system handles leakage.
+				if(vag?.reagents)
+					vag.reagents.add_reagent(vag.reagent_to_make, FEMCUM_ORGASM_VOLUME)
+			else
+				log_combat(user, user, "Ejaculated into [container]")
+				playsound(container, 'sound/misc/mat/endin.ogg', 50, TRUE, ignore_walls = FALSE)
+				var/free_space = container.reagents.maximum_volume - container.reagents.total_volume
+				if(testes?.reagents && free_space > 0)
+					var/cum_to_take = min(max(testes.reagents.maximum_volume / 3, 1), testes.reagents.total_volume, free_space)
+					if(cum_to_take > 0 && route_climax_reagents(testes.reagents, cum_to_take, user, target, action, climax_type, container, INJECT, action_initiator, action_target, action_performer) > 0)
+						climax_fluid_transferred = TRUE
+						free_space = container.reagents.maximum_volume - container.reagents.total_volume
+				if(vag?.reagents && free_space > 0)
+					var/femcum_to_take = min(8, vag.reagents.total_volume * 0.3, free_space)
+					if(femcum_to_take > 0 && route_climax_reagents(vag.reagents, femcum_to_take, user, target, action, climax_type, container, INJECT, action_initiator, action_target, action_performer) > 0)
+						climax_fluid_transferred = TRUE
+				if(!climax_fluid_transferred)
+					to_chat(user, span_warning("Nothing comes out into \the [container]."))
 	if(testes)
 		if(testes.reagents)
 			if(testes.reagents.total_volume <= testes.reagents.maximum_volume / 4)
 				to_chat(user, span_info("Damn, my [pick(testes.altnames)] are pretty dry now."))
-	after_ejaculation(climax_type == ORGASM_LOCATION_INTO || climax_type == ORGASM_LOCATION_ORAL, user, target)
+	after_ejaculation(climax_type == ORGASM_LOCATION_INTO || climax_type == ORGASM_LOCATION_ORAL, user, target, action, action_initiator, action_target, action_performer)
+
+/datum/component/arousal/proc/route_climax_reagents(datum/reagents/source_reagents, amount, mob/living/user, mob/living/target, datum/sex_action/action, climax_type, atom/destination, transfer_method, mob/living/action_initiator, mob/living/action_target, atom/action_performer, use_fluid_decal = FALSE)
+	if(!source_reagents || amount <= 0)
+		return 0
+	var/remaining = apply_sex_action_climax_effects(user, target, action, climax_type, source_reagents, amount, destination, transfer_method, action_initiator, action_target, action_performer)
+	if(remaining <= 0)
+		return 0
+	if(isturf(destination))
+		var/turf/destination_turf = destination
+		if(use_fluid_decal) //spilled ejaculate forms a drip/puddle decal instead of a raw liquid puddle.
+			deposit_cum_on_turf(destination_turf, source_reagents, remaining)
+		else
+			destination_turf.add_liquid_from_reagents(source_reagents, amount = remaining)
+	else if(destination)
+		source_reagents.trans_to(destination, remaining, transfered_by = user, method = transfer_method)
+	return remaining
 
 /datum/component/arousal/proc/apply_facial_effect(mob/living/recipient)
 	if(!recipient)
@@ -652,7 +735,46 @@
 	else
 		recipient.apply_status_effect(/datum/status_effect/facial/internal)
 
-/datum/component/arousal/proc/after_ejaculation(intimate = FALSE, mob/living/user, mob/living/target)
+/datum/component/arousal/proc/add_orgasm_strain(mob/living/user)
+	if(!user)
+		return
+	var/strain_to_add = 0
+	if(last_ejaculation_time)
+		var/time_since_last = world.time - last_ejaculation_time
+		if(time_since_last <= 45 SECONDS)
+			strain_to_add += 20
+		else if(time_since_last <= 2 MINUTES)
+			strain_to_add += 14
+		else if(time_since_last <= 4 MINUTES)
+			strain_to_add += 8
+		else if(time_since_last <= 6 MINUTES)
+			strain_to_add += 4
+
+	switch(edging_charge)
+		if(30 to 50)
+			strain_to_add += 4
+		if(51 to 70)
+			strain_to_add += 8
+		if(71 to INFINITY)
+			strain_to_add += 14
+
+	switch(arousal)
+		if(160 to 239)
+			strain_to_add += 4
+		if(240 to INFINITY)
+			strain_to_add += 8
+
+	if(charge <= CHARGE_FOR_CLIMAX)
+		strain_to_add += 10
+	if(user.has_status_effect(/datum/status_effect/edging_overstimulation))
+		strain_to_add += 8
+	if(strain_to_add <= 0)
+		return
+
+	orgasm_strain = clamp(orgasm_strain + strain_to_add, 0, ORGASM_STRAIN_MAX)
+	last_orgasm_strain_decay_time = world.time
+
+/datum/component/arousal/proc/after_ejaculation(intimate = FALSE, mob/living/user, mob/living/target, datum/sex_action/action, mob/living/action_initiator, mob/living/action_target, atom/action_performer)
 	switch(edging_charge)
 		if(10 to 20)
 			to_chat(user, span_love("Feels good to finally cum!"))
@@ -660,6 +782,8 @@
 			to_chat(user, span_love("Oh gods, I came!"))
 		if(51 to MAX_EDGING)
 			to_chat(user, span_love("Finally finally finally!"))
+
+	add_orgasm_strain(user)
 
 	if(user.has_penis())
 		if(is_spent())
@@ -674,16 +798,18 @@
 
 	set_arousal(parent, arousal * (arousal_falloff_coeff + edging_charge / MAX_EDGING))
 	set_orgasm_prog(parent, 0)
-	SEND_SIGNAL(user, COMSIG_SEX_CLIMAX)
+	SEND_SIGNAL(user, COMSIG_SEX_CLIMAX, action, action_initiator, action_target, action_performer)
 
-	if(user.has_quirk(/datum/quirk/vice/lovefiend))
-		user.sate_addiction(/datum/quirk/vice/lovefiend)
+	if(user.has_quirk(/datum/quirk/vice/addiction/lovefiend))
+		user.sate_addiction(/datum/quirk/vice/addiction/lovefiend)
 
 	if(!user.rogue_sneaking && user.alpha > 100) //stealth sex, keep your voice down.
 		if(!user.can_speak())
 			user.emote("sexmoangag_org", forced = TRUE)
 		else
 			user.emote("sexmoanhvy", forced = TRUE)
+
+	user.try_ear_flick()
 
 	charge = max(0, charge - CHARGE_FOR_CLIMAX)
 
@@ -803,20 +929,32 @@
 		penis.update_erect_state()*/
 
 
-/datum/component/arousal/proc/damage_from_pain(pain_amt, giving)
-	//var/mob/living/carbon/user = parent
+/// Scales an action's declared pain by force, speed and receiver arousal. Floored at zero.
+/datum/component/arousal/proc/get_scaled_pain(pain_amt, applied_force, applied_speed)
+	if(pain_amt <= 0)
+		return 0
+	pain_amt *= get_force_pain_multiplier(applied_force)
+	pain_amt *= get_speed_pain_multiplier(applied_speed)
+	pain_amt *= get_readiness_pain_multiplier()
+	return max(pain_amt, 0)
+
+/// Feeds ERP pain into the body pain system, so it reaches shock, painkillers and the masochist craving.
+/datum/component/arousal/proc/damage_from_pain(pain_amt)
 	if(pain_amt < PAIN_MINIMUM_FOR_DAMAGE)
 		return
-	//var/damage = (pain_amt / PAIN_DAMAGE_DIVISOR)
-	//var/obj/item/bodypart/part = user.get_bodypart(BODY_ZONE_CHEST)
-	//if(!part)
-	//	return
-	//user.apply_damage(damage, BRUTE, part)
-	update_aching(pain_amt, giving)
+	update_aching(pain_amt)
+
+	var/mob/living/user = parent
+	var/obj/item/bodypart/part = user.get_bodypart(BODY_ZONE_CHEST)
+	if(!part)
+		return
+	// add_pain() already honours can_feel_pain(), painkillers and the limb's own pain ceiling.
+	part.add_pain(pain_amt / PAIN_DAMAGE_DIVISOR)
 
 /datum/component/arousal/proc/try_do_moan(arousal_amt, pain_amt, applied_force, giving)
 	var/mob/living/user = parent
-	if(arousal_amt < 1.5)
+	// Pain is its own reason to make a noise, not just arousal.
+	if(arousal_amt < 1.5 && pain_amt < PAIN_MILD_EFFECT)
 		return
 	if(user.stat != CONSCIOUS)
 		return
@@ -872,61 +1010,74 @@
 	last_moan = world.time
 	user.emote(chosen_emote, forced = TRUE)
 
-/datum/component/arousal/proc/try_do_pain_effect(pain_amt, giving)
+/// Harder settings earn feedback more often, so the top steps read as continuous rather than occasional.
+/datum/component/arousal/proc/get_pain_cooldown(applied_force)
+	switch(applied_force)
+		if(SEX_FORCE_HIGH)
+			return PAIN_COOLDOWN_HIGH
+		if(SEX_FORCE_EXTREME)
+			return PAIN_COOLDOWN_EXTREME
+	return PAIN_COOLDOWN
+
+/// Receiver is always told. Only the room line and partner cue are probability-gated, against spam.
+/datum/component/arousal/proc/try_do_pain_effect(pain_amt, giving, applied_force = SEX_FORCE_MID, mob/living/partner)
 	var/mob/living/user = parent
 	if(pain_amt < PAIN_MILD_EFFECT)
 		return
-	if(last_pain + PAIN_COOLDOWN >= world.time)
-		return
-	if(prob(50))
+	if(last_pain + get_pain_cooldown(applied_force) >= world.time)
 		return
 	last_pain = world.time
-	if(!user.has_quirk(/datum/quirk/vice/masochist))
-		if(pain_amt >= PAIN_HIGH_EFFECT)
-			var/pain_msg = pick(list("IT HURTS!!!", "IT NEEDS TO STOP!!!", "I CAN'T TAKE IT ANYMORE!!!"))
-			to_chat(user, span_boldwarning(pain_msg))
-			user.flash_fullscreen("redflash2")
-			if(prob(70) && user.stat == CONSCIOUS)
-				user.visible_message(span_warning("[user] shudders in pain!"))
-		else if(pain_amt >= PAIN_MED_EFFECT)
-			var/pain_msg = pick(list("It hurts!", "It pains me!"))
-			to_chat(user, span_boldwarning(pain_msg))
-			user.flash_fullscreen("redflash1")
-			if(prob(40) && user.stat == CONSCIOUS)
-				user.visible_message(span_warning("[user] shudders in pain!"))
-		else
-			var/pain_msg = pick(list("It hurts a little...", "It stings...", "I'm aching..."))
-			to_chat(user, span_warning(pain_msg))
-	else
-		if(pain_amt >= PAIN_HIGH_EFFECT)
-			var/pain_msg = pick(list("IT HURTS, DON'T STOP!!!", "DON'T STOP!!!", "MORE, MORE!!!"))
-			to_chat(user, span_boldgreen(pain_msg))
-			user.flash_fullscreen("redflash2")
-			if(prob(70) && user.stat == CONSCIOUS)
-				user.visible_message(span_warning("[user] shudders in pain!"))
-		else if(pain_amt >= PAIN_MED_EFFECT)
-			var/pain_msg = pick(list("It hurts!", "It pains me!"))
-			to_chat(user, span_boldgreen(pain_msg))
-			user.flash_fullscreen("redflash1")
-			if(prob(40) && user.stat == CONSCIOUS)
-				user.visible_message(span_warning("[user] shudders in pain!"))
-		else
-			var/pain_msg = pick(list("It hurts a little...", "It stings...", "I'm aching..."))
-			to_chat(user, span_boldgreen(pain_msg))
 
-/datum/component/arousal/proc/update_aching(pain_amt, giving)
+	var/masochist = user.has_quirk(/datum/quirk/vice/addiction/masochist)
+	var/self_msg
+	var/observed_msg
+	var/partner_msg
+	var/flash
+
+	if(pain_amt >= PAIN_HIGH_EFFECT)
+		self_msg = masochist \
+			? pick("IT HURTS, DON'T STOP!!!", "DON'T STOP!!!", "MORE, MORE!!!") \
+			: pick("IT HURTS!!!", "IT NEEDS TO STOP!!!", "I CAN'T TAKE IT ANYMORE!!!")
+		observed_msg = pick("[user] convulses in pain!", "[user] jerks hard, [user.p_their()] face contorted!", "[user] shudders violently in pain!")
+		partner_msg = pick("[user] is being torn up by this.", "[user] can barely take what I am doing to [user.p_them()].", "I am hurting [user] badly.")
+		flash = "redflash2"
+	else if(pain_amt >= PAIN_MED_EFFECT)
+		self_msg = pick("It hurts!", "It pains me!")
+		observed_msg = pick("[user] shudders in pain!", "[user] winces sharply!")
+		partner_msg = pick("[user] winces under me.", "I can feel [user] flinching.", "This is hurting [user].")
+		flash = "redflash1"
+	else
+		self_msg = pick("It hurts a little...", "It stings...", "I'm aching...")
+		observed_msg = pick("[user] winces.", "[user] tenses up for a moment.")
+
+	to_chat(user, masochist ? span_boldgreen(self_msg) : (pain_amt >= PAIN_MED_EFFECT ? span_boldwarning(self_msg) : span_warning(self_msg)))
+	if(flash)
+		user.flash_fullscreen(flash)
+
+	if(user.stat != CONSCIOUS)
+		return
+	if(observed_msg && prob(pain_amt >= PAIN_HIGH_EFFECT ? 70 : 40))
+		user.visible_message(span_warning(observed_msg), ignored_mobs = list(user, partner))
+	if(partner_msg && partner && partner != user && !QDELETED(partner) && prob(50))
+		to_chat(partner, span_warning(partner_msg))
+
+/// Refreshes the ache only when this hit was hard enough to earn it.
+/datum/component/arousal/proc/update_aching(pain_amt)
+	if(pain_amt < LOINHURT_GAIN_THRESHOLD)
+		return
+	refresh_aching()
+
+/// Never cancel the ache early; add_stress resets its timer and it expires on its own.
+/datum/component/arousal/proc/refresh_aching()
 	var/mob/living/user = parent
-	if(pain_amt >= LOINHURT_GAIN_THRESHOLD)
-		if(user.has_quirk(/datum/quirk/vice/masochist))
-			user.sate_addiction(/datum/quirk/vice/lovefiend)
-			user.add_stress(/datum/stress_event/loinachegood)
-			return
-		if(user.has_quirk(/datum/quirk/vice/lovefiend))
-			user.add_stress(/datum/stress_event/loinachegood)
-			return
-		user.add_stress(/datum/stress_event/loinache)
-	else if (pain_amt <= LOINHURT_LOSE_THRESHOLD)
-		user.remove_stress(/datum/stress_event/loinache)
+	if(user.has_quirk(/datum/quirk/vice/addiction/masochist))
+		user.sate_addiction(/datum/quirk/vice/addiction/masochist)
+		user.add_stress(/datum/stress_event/loinachegood)
+		return
+	if(user.has_quirk(/datum/quirk/vice/addiction/lovefiend))
+		user.add_stress(/datum/stress_event/loinachegood)
+		return
+	user.add_stress(/datum/stress_event/loinache)
 
 /datum/component/arousal/proc/get_force_pleasure_multiplier(passed_force, giving)
 	switch(passed_force)
@@ -950,28 +1101,41 @@
 				return 2.0
 			else
 				return 0.8
+	return 1.2
 
 /datum/component/arousal/proc/get_force_pain_multiplier(passed_force)
 	switch(passed_force)
 		if(SEX_FORCE_LOW)
-			return 0.5
+			return SEX_FORCE_PAIN_MULT_LOW
 		if(SEX_FORCE_MID)
-			return 1.0
+			return SEX_FORCE_PAIN_MULT_MID
 		if(SEX_FORCE_HIGH)
-			return 2.0
+			return SEX_FORCE_PAIN_MULT_HIGH
 		if(SEX_FORCE_EXTREME)
-			return 3.0
+			return SEX_FORCE_PAIN_MULT_EXTREME
+	return SEX_FORCE_PAIN_MULT_MID
 
 /datum/component/arousal/proc/get_speed_pain_multiplier(passed_speed)
 	switch(passed_speed)
 		if(SEX_SPEED_LOW)
-			return 0.8
+			return SEX_SPEED_PAIN_MULT_LOW
 		if(SEX_SPEED_MID)
-			return 1.0
+			return SEX_SPEED_PAIN_MULT_MID
 		if(SEX_SPEED_HIGH)
-			return 1.2
+			return SEX_SPEED_PAIN_MULT_HIGH
 		if(SEX_SPEED_EXTREME)
-			return 1.4
+			return SEX_SPEED_PAIN_MULT_EXTREME
+	return SEX_SPEED_PAIN_MULT_MID
+
+/// An aroused body takes the same act far better than a cold one. Applied to the receiver's own arousal.
+/datum/component/arousal/proc/get_readiness_pain_multiplier()
+	if(arousal < SEX_PAIN_READINESS_WARMING_THRESHOLD)
+		return SEX_PAIN_READINESS_UNAROUSED
+	if(arousal < SEX_PAIN_READINESS_READY_THRESHOLD)
+		return SEX_PAIN_READINESS_WARMING
+	if(arousal < SEX_PAIN_READINESS_LOST_THRESHOLD)
+		return SEX_PAIN_READINESS_READY
+	return SEX_PAIN_READINESS_LOST
 
 /datum/component/arousal/proc/get_resist_multiplier(passed_res)
 	switch(passed_res)
@@ -983,6 +1147,7 @@
 			return 0.4
 		if(RESIST_HIGH)
 			return 0.2
+	return 1
 
 /datum/component/arousal/proc/get_force_orgasm_multiplier(passed_force, giving)
 	switch(passed_force)
@@ -1006,60 +1171,57 @@
 				return 1.5
 			else
 				return 1
+	return 0.8
 
 /datum/component/arousal/proc/handle_statuses()
 	var/mob/living/user = parent
 	var/nymph_mod = 0
-	if(HAS_TRAIT(user, TRAIT_NYMPHO_CURSE) || user.has_quirk(/datum/quirk/vice/lovefiend))
-		nymph_mod = 2
+	if(HAS_TRAIT(user, TRAIT_NYMPHO_CURSE) || user.has_quirk(/datum/quirk/vice/addiction/lovefiend))
+		nymph_mod = ORGASM_STRAIN_NYMPH_THRESHOLD_MOD
 
-	//Sorry but idk how else to do this
 	if(user.has_status_effect(/datum/status_effect/debuff/loinspent))
-		if(recent_orgasm_count <= LOW_ORGASM_THRESHOLD_LOSS + nymph_mod)
+		if(orgasm_strain <= LOW_ORGASM_STRAIN_LOSS + nymph_mod)
 			user.remove_status_effect(/datum/status_effect/debuff/loinspent)
 	else
-		if(recent_orgasm_count >= LOW_ORGASM_THRESHOLD_GAIN + nymph_mod)
+		if(orgasm_strain >= LOW_ORGASM_STRAIN_GAIN + nymph_mod)
 			user.apply_status_effect(/datum/status_effect/debuff/loinspent)
 
 	if(user.has_status_effect(/datum/status_effect/debuff/cumbrained))
-		if(recent_orgasm_count <= MED_ORGASM_THRESHOLD_LOSS + nymph_mod)
+		if(orgasm_strain <= MED_ORGASM_STRAIN_LOSS + nymph_mod)
 			user.remove_status_effect(/datum/status_effect/debuff/cumbrained)
 	else
-		if(recent_orgasm_count >= MED_ORGASM_THRESHOLD_GAIN + nymph_mod)
+		if(orgasm_strain >= MED_ORGASM_STRAIN_GAIN + nymph_mod)
 			user.apply_status_effect(/datum/status_effect/debuff/cumbrained)
 
 	if(user.has_status_effect(/datum/status_effect/debuff/orgasmbroken))
-		if(recent_orgasm_count <= HIGH_ORGASM_THRESHOLD_LOSS + nymph_mod)
+		if(orgasm_strain <= HIGH_ORGASM_STRAIN_LOSS + nymph_mod)
 			user.remove_status_effect(/datum/status_effect/debuff/orgasmbroken)
 	else
-		if(recent_orgasm_count >= HIGH_ORGASM_THRESHOLD_GAIN + nymph_mod)
+		if(orgasm_strain >= HIGH_ORGASM_STRAIN_GAIN + nymph_mod)
 			user.apply_status_effect(/datum/status_effect/debuff/orgasmbroken)
 
-	/*if(user.has_status_effect(/datum/status_effect/debuff/nympho_addiction))
-		if(recent_orgasm_count <= OVER_THE_TOP_ORGASM_THRESHOLD_LOSS + nymph_mod)
+	if(user.has_status_effect(/datum/status_effect/debuff/nympho_addiction))
+		if(orgasm_strain <= OVER_THE_TOP_ORGASM_STRAIN_LOSS + nymph_mod)
 			user.remove_status_effect(/datum/status_effect/debuff/nympho_addiction)
 	else
-		if(recent_orgasm_count >= OVER_THE_TOP_ORGASM_THRESHOLD_GAIN + nymph_mod)
-			user.apply_status_effect(/datum/status_effect/debuff/nympho_addiction)*/
+		if(orgasm_strain >= OVER_THE_TOP_ORGASM_STRAIN_GAIN + nymph_mod)
+			user.apply_status_effect(/datum/status_effect/debuff/nympho_addiction)
 
 	if(user.has_penis())
 		if(user.has_status_effect(/datum/status_effect/blue_balls))
-			if(edging_charge <= 15)
+			if(edging_charge <= 20)
 				user.remove_status_effect(/datum/status_effect/blue_balls)
 		else
-			if(edging_charge >= 20)
+			if(edging_charge >= 35)
 				user.apply_status_effect(/datum/status_effect/blue_balls)
 	if(user.has_vagina())
 		if(user.has_status_effect(/datum/status_effect/blue_bean))
-			if(edging_charge <= 15)
+			if(edging_charge <= 20)
 				user.remove_status_effect(/datum/status_effect/blue_bean)
 		else
-			if(edging_charge >= 20)
+			if(edging_charge >= 35)
 				user.apply_status_effect(/datum/status_effect/blue_bean)
-	if(edging_charge > 60)
-		if(!MOBTIMER_FINISHED(user, "edging_overstimulation", 5 MINUTES)) //this isn't how mob timers work
-			return
-
+	if(edging_charge > 75 && MOBTIMER_FINISHED(user, "edging_overstimulation", 5 MINUTES)) //this isn't how mob timers work
 		MOBTIMER_SET(user, "edging_overstimulation")
 		user.apply_status_effect(/datum/status_effect/edging_overstimulation)
 

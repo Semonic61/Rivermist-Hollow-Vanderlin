@@ -35,6 +35,7 @@
 
 	traits = list(
 		TRAIT_DODGEEXPERT,
+		TRAIT_BLINDFIGHTING,
 	)
 
 /datum/outfit/adventurer_rogue/swashbuckler
@@ -60,7 +61,7 @@
 
 	backpack_contents = list(
 		/obj/item/natural/worms/leech = 2,
-		/obj/item/storage/belt/pouch/coins/mid = 1
+		/obj/item/storage/belt/pouch/cloth/coins/mid = 1
 	)
 
 /datum/outfit/folkhero/swashbuckler/pre_equip(mob/living/carbon/human/H, visuals_only)

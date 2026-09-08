@@ -57,6 +57,10 @@
 ///from base of mob/living/Sleeping() (amount, ignore_canstun)
 #define COMSIG_LIVING_STATUS_SLEEP "living_sleeping"
 	#define COMPONENT_NO_STUN 1			//For all of them
+///from base of mob/living/Stumble(): (amount, update, ignore)
+#define COMSIG_LIVING_STATUS_STUMBLE "living_stumble"
+///from base of mob/living/Concussion(): (amount, update, ignore)
+#define COMSIG_LIVING_STATUS_CONCUSSION "living_concussion"
 ///from end of fully_heal(): (heal_flags)
 #define COMSIG_LIVING_POST_FULLY_HEAL "living_post_fully_heal"
 ///from base of /mob/living/can_track(): (mob/user)
@@ -64,11 +68,26 @@
 	#define COMPONENT_CANT_TRACK 1
 ///from base of mob/living/death(): (gibbed)
 #define COMSIG_LIVING_DEATH "living_death"
+
+/// From /mob/living/proc/defeat_rescue(): (mob/living/helper, rescue_source)
+#define COMSIG_LIVING_DEFEAT_RESCUED "living_defeat_rescued"
+/// Sent when a mob is knocked into a defeat state (defeat_knockout or mob_horny_knockout applied): ()
+#define COMSIG_LIVING_DEFEATED "living_defeated"
+/// From /mob/living/proc/defeat_treat_trauma(): (mob/living/helper, treatment_type)
+#define COMSIG_LIVING_DEFEAT_TREATED "living_defeat_treated"
 #define COMSIG_LIVING_TRY_ENTER_AFTERLIFE "try_enter_afterlife"
 /// From /mob/living/befriend() : (mob/living/new_friend)
 #define COMSIG_LIVING_BEFRIENDED "living_befriended"
 /// From /mob/living/unfriend() : (mob/living/old_friend)
 #define COMSIG_LIVING_UNFRIENDED "living_unfriended"
+///From base of mob/living/ZImpactDamage() (mob/living, levels, turf/t)
+#define COMSIG_LIVING_Z_IMPACT "living_z_impact"
+	/// Just for the signal return, does not run normal living handing of z fall damage for mobs
+	#define ZIMPACT_CANCEL_DAMAGE (1<<0)
+	/// Do not show default z-impact message
+	#define ZIMPACT_NO_MESSAGE (1<<1)
+	/// Do not do the spin animation when landing
+	#define ZIMPACT_NO_SPIN (1<<2)
 
 ///from base of mob/living/set_body_position(): (new_position, old_position)
 #define COMSIG_LIVING_SET_BODY_POSITION  "living_set_body_position"
@@ -109,12 +128,22 @@
 	/// Block the Life() proc from proceeding... this should really only be done in some really wacky situations.
 	#define COMPONENT_LIVING_CANCEL_LIFE_PROCESSING (1<<0)
 
+/// From organ insertion/removal after a living mob's organ slot changes. (obj/item/organ/organ, organ_slot, inserted)
+#define COMSIG_LIVING_ORGAN_CHANGED "living_organ_changed"
+
+/// Sent from /mob/living/get_ear_protection(): (list/protection)
+#define COMSIG_LIVING_GET_EAR_PROTECTION "living_get_ear_protection"
+#define EAR_PROTECTION_ARG 1
+
 #define COMSIG_LIVING_ADJUSTED "living_damage_adjusted"
 
 #define COMSIG_LIVING_PREBITE_SELF  "living_prebite"
 #define COMSIG_LIVING_POSTBITE_SELF "living_postbite"
-/// From /mob/living/proc/set_swimming(): (swimming)
-#define COMSIG_LIVING_SWIM	"living_swim"
-
 /// From [mob/living/MiddleClickOn] before a middle mouse intent is performed
 #define COMSIG_MOB_PRE_SPECIAL_MIDDLE "pre_special_middle"
+
+/// From /mob/living/simple_animal/proc/tamed(), sent to the animal being tamed: (mob/tamer)
+/// COMSIG_ANIMAL_TAMED is the objective-side counterpart and fires on the tamer instead.
+#define COMSIG_LIVING_TAMED "living_tamed"
+/// Sent to a mob when one of their bodypart's surgery state changes, OR sent from the basic_surgery_state holder when its surgery state changes (old_state, new_state, changed_states)
+#define COMSIG_LIVING_UPDATING_SURGERY_STATE "carbon_updating_surgery_state"

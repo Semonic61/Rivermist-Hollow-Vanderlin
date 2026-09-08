@@ -54,7 +54,7 @@
 
 /proc/send_prayer(mob/living/follower, prayer, patron_name, bigger = FALSE)
 	var/ident_string = "[follower.key]/([follower.real_name]) (follower of [patron_name])"
-	if(follower.has_quirk(/datum/quirk/vice/godfearing))
+	if(follower.has_quirk(/datum/quirk/vice/addiction/godfearing))
 		ident_string += "[SPAN_GOD_GENERIC("(GODFEARING)")]"
 	/// Usually I hate not using spans properly, but in this case it's going to make my life easier.
 	var/lowercase_god = "generic"
@@ -66,7 +66,7 @@
 	for(var/client/admin_client in GLOB.admins)
 		if(check_rights_for(admin_client, R_ADMIN))
 			to_chat(admin_client, message)
-			if(admin_client.prefs.toggles & SOUND_PRAYERS)
+			if(admin_client.prefs.read_preference(/datum/preference/bitwise/toggles) & SOUND_PRAYERS)
 				admin_client.mob.playsound_local(admin_client, 'sound/misc/yeoldebwoink.ogg', 100)
 
 
@@ -140,22 +140,22 @@
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/scream/painscream/run_emote(mob/user, params, type_override, intentional)
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/scream/firescream/run_emote(mob/user, params, type_override, intentional)
 	. = ..()
 	if(.)
 		for(var/mob/living/carbon/human/L in viewers(7,user))
-			if(L.has_quirk(/datum/quirk/vice/sadist))
-				L.sate_addiction(/datum/quirk/vice/sadist)
+			if(L.has_quirk(/datum/quirk/vice/addiction/sadist))
+				L.sate_addiction(/datum/quirk/vice/addiction/sadist)
 
 /datum/emote/living/aggro
 	key = "aggro"
@@ -170,6 +170,17 @@
 	key = "blush"
 	key_third_person = "blushes"
 	message = "blushes."
+
+/mob/living/carbon/human/verb/emote_blush()
+	set name = "Blush"
+	set category = "Emotes.Silent"
+	emote("blush", intentional = TRUE)
+
+/datum/emote/living/blush/run_emote(mob/user, params, type_override, intentional, targetted)
+	. = ..()
+	if(. && ishuman(user))
+		var/mob/living/carbon/human/human_user = user
+		human_user.show_visual_emote_overlay(/datum/bodypart_feature/visual_emote/blush, 5.2 SECONDS)
 
 /datum/emote/living/breathgasp
 	key = "breathgasp"
@@ -361,7 +372,7 @@
 	. = ..()
 	if(. && iscarbon(user))
 		var/mob/living/carbon/L = user
-		if(L.get_complex_pain() > (GET_MOB_ATTRIBUTE_VALUE(L, STAT_ENDURANCE) * 9))
+		if(L.getShockStage() > (GET_MOB_ATTRIBUTE_VALUE(L, STAT_ENDURANCE) * 9))
 			L.setDir(2)
 			L.SetUnconscious(200)
 		else
@@ -609,6 +620,7 @@
 	if(ishuman(target))
 		var/mob/living/carbon/human/H = target
 		playsound(target, pick('sound/vo/hug.ogg'), 100, FALSE, -1)
+		H.try_ear_flick()
 		if(israkshari(H))
 			if(prob(10))
 				H.emote("purr")
@@ -1068,12 +1080,18 @@
 	key_third_person = "sighs"
 	message = "sighs."
 	message_muffled = "makes a muffled sigh."
-	emote_type = EMOTE_AUDIBLE
+	emote_type = EMOTE_AUDIBLE | EMOTE_VISIBLE
 
 /mob/living/carbon/human/verb/emote_sigh()
 	set name = "Sigh"
 	set category = "Emotes.Noises"
 	emote("sigh", intentional = TRUE)
+
+/datum/emote/living/sigh/run_emote(mob/user, params, type_override, intentional, targetted)
+	. = ..()
+	if(. && ishuman(user))
+		var/mob/living/carbon/human/human_user = user
+		human_user.show_visual_emote_animation("sigh", 2 SECONDS)
 
 /datum/emote/living/snore
 	key = "snore"
@@ -1146,6 +1164,26 @@
 	emote_type = EMOTE_AUDIBLE
 
 // ............... T ..................
+/datum/emote/living/tongue
+	key = "tongue"
+	key_third_person = "tongues"
+	message = "sticks their tongue out."
+	emote_type = EMOTE_VISIBLE
+
+/mob/living/carbon/human/verb/emote_tongue()
+	set name = "Tongue"
+	set category = "Emotes.Silent"
+	emote("tongue", intentional = TRUE)
+
+/datum/emote/living/tongue/run_emote(mob/user, params, type_override, intentional, targetted)
+	var/mob/living/carbon/human/human_user = user
+	if(istype(human_user) && !human_user.getorganslot(ORGAN_SLOT_TONGUE))
+		to_chat(human_user, span_warning("You don't have a tongue!"))
+		return
+	. = ..()
+	if(. && istype(human_user))
+		human_user.show_visual_emote_overlay(/datum/bodypart_feature/visual_emote/tongue, 5.2 SECONDS)
+
 /datum/emote/living/tremble
 	key = "tremble"
 	key_third_person = "trembles"
@@ -1403,7 +1441,7 @@
 			if(!M.client || isnewplayer(M))
 				continue
 			var/T = get_turf(emotelocation)
-			if(M.stat == DEAD && M.client && (M.client.prefs?.chat_toggles & CHAT_GHOSTSIGHT) && !(M in viewers(T, null)))
+			if(M.stat == DEAD && M.client && (M.client.prefs?.read_preference(/datum/preference/bitwise/chat_toggles) & CHAT_GHOSTSIGHT) && !(M in viewers(T, null)))
 				M.show_message(msg)
 		var/runechat_msg_to_use = null
 		var/obfuscated_runechat_msg_to_use = null

@@ -213,8 +213,6 @@
 	droning_index = DRONING_CAVE_GENERIC
 	ambient_index = AMBIENCE_CAVE
 	soundenv = 8
-	//deathsight_message = "a dark cave"
-	ceiling_protected = TRUE
 	threat_region = THREAT_REGION_RMH_BOG
 
 /area/under/rmh_bogforest_caves/moistcaves
@@ -254,8 +252,18 @@
 	name = "Mindflayer Colony"
 	icon = 'modular_rmh/icons/turf/areas.dmi'
 	icon_state = "living"
-	first_time_text = "MINDFLAYER COLONY"
-	//deathsight_message = "Mindflayer Colony"
+	first_time_text = "DEEP TUNNELS"
+	ambush_times = list("night", "dawn", "dusk", "day")
+	ambush_types = list(
+		/turf/open/floor/naturalstone,
+		/turf/open/floor/cobblerock,
+		/turf/open/floor/mushroom,
+	)
+	ambush_mobs = list(
+		/mob/living/simple_animal/hostile/retaliate/tentacle/ambusher = 15,
+		/mob/living/simple_animal/hostile/retaliate/tentacle/ambusher/medium = 35,
+		/mob/living/simple_animal/hostile/retaliate/tentacle/ambusher/small = 50,
+	)
 
 /area/under/rmh_bogforest_caves/forestcaves
 	name = "Forest cave"
@@ -340,7 +348,6 @@
 	background_track_dusk = 'sound/music/area/catacombs.ogg'
 	background_track_night = 'sound/music/area/catacombs.ogg'
 	soundenv = 5
-	ceiling_protected = TRUE
 
 /area/under/town/rmh/basement/bogforest/normal
 	name = "Dark Forest Basement"

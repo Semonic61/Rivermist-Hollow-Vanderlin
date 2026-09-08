@@ -12,7 +12,7 @@
 	melt_amount = 100
 	anvilrepair = /datum/attribute/skill/craft/blacksmithing
 	clothing_flags = CANT_SLEEP_IN
-	armor = ARMOR_NECK_BAD
+	armor_type = /datum/armor/rmh/neck/moonshackle
 	max_integrity = INTEGRITY_STRONG
 	prevent_crits = CUT_AND_MINOR_CRITS
 	sellprice = 180
@@ -48,10 +48,10 @@
 		/obj/item/gem/blue,
 	)
 	created_item = /obj/item/clothing/neck/moonshackle_collar
-	craftdiff = SKILL_LEVEL_LEGENDARY
+	craftdiff = SKILL_RANK_LEGENDARY
 
 /datum/anvil_recipe/valuables/silver/moonshackle_collar/advance(mob/user, breakthrough = FALSE, quality_score = 0)
-	if(GET_MOB_SKILL_VALUE_OLD(user, appro_skill) < SKILL_LEVEL_LEGENDARY)
+	if(GET_MOB_SKILL_VALUE_OLD(user, appro_skill) < SKILL_RANK_LEGENDARY)
 		to_chat(user, span_warning("This silverwork is beyond me. Only a legendary smith could finish it."))
 		return FALSE
 

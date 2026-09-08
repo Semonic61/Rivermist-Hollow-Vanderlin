@@ -104,6 +104,35 @@
 	ready_message = "The bog bug egg in my %CONTAINER% churns like a swamp creature is kicking to get free."
 	hatch_message = "%EGG% bursts with a wet pop, spilling out a ravenous bog bug!"
 
+/datum/oviposition_egg_profile/tentacle
+	egg_type = OVI_EGG_TENTACLE
+	display_name = "tentacle egg"
+	display_desc = "A soft, wine-dark egg whose slick shell twitches beneath the fingers."
+	display_icon_state = "egg_color"
+	display_color = "#713e63"
+	hatch_result_type = /mob/living/simple_animal/hostile/retaliate/tentacle
+	requires_fertilization = FALSE
+	poll_for_ghost = FALSE
+	require_ghost_to_hatch = FALSE
+	internal_hatch_holder_bulk = 6
+	incubation_stage_duration = 1.5 MINUTES
+	ready_message = "The tentacle egg in my %CONTAINER% squirms with impatient coils."
+	hatch_message = "%EGG% splits with a wet tear, spilling out a writhing tentacle mass!"
+
+/datum/oviposition_egg_profile/maneater
+	egg_type = OVI_EGG_MANEATER
+	display_name = "maneater seed egg"
+	display_desc = "A soft green egg threaded through with fine roots and restless veins."
+	display_icon_state = "egg_color"
+	display_color = "#6f843b"
+	hatch_result_type = /obj/item/maneaterseed/seedling
+	requires_fertilization = FALSE
+	poll_for_ghost = FALSE
+	require_ghost_to_hatch = FALSE
+	incubation_stage_duration = 4 MINUTES
+	ready_message = "The green egg in my %CONTAINER% tightens around a vigorously rooting seedling."
+	hatch_message = "%EGG% peels open like a wet flower, releasing a maneater seedling!"
+
 /datum/oviposition_egg_profile/harpy
 	egg_type = OVI_EGG_HARPY
 	display_name = "hardshell egg"
@@ -156,12 +185,11 @@
 	display_icon_state = "egg_color"
 	display_color = "#d7a29d"
 	incubation_stage_duration = 8 MINUTES
-	stage_messages = alist(
-		1 = "Something fertile settles deep in my %CONTAINER%.",
-		2 = "The embryo in my %CONTAINER% grows heavier and more alive.",
-		3 = "A tight, restless pressure builds in my %CONTAINER%.",
+	stage_messages = list(
+    "Something fertile settles deep in my %CONTAINER%.",
+    "The embryo in my %CONTAINER% grows heavier and more alive.",
+    "A tight, restless pressure builds in my %CONTAINER%."
 	)
-
 	ready_message = "The embryo in my %CONTAINER% is fully grown and about to hatch inside me."
 	hatch_message = "Something alive hatches from %EGG% inside my %CONTAINER%!"
 	auto_hatch_when_laid = FALSE
@@ -175,6 +203,29 @@
 	internal_hatch_message = "Something alive hatches inside my %CONTAINER%, forcing it to clench around the newborn."
 	internal_contraction_message = "My %CONTAINER% clenches in sharp contractions around the hatchling inside."
 	internal_birth_message = "%CARRIER% doubles over as a newborn forces its way out of %CONTAINER%!"
+
+/datum/oviposition_egg_profile/leech
+	egg_type = OVI_EGG_LEECH
+	display_name = "leech egg"
+	display_desc = "A small dark egg, slick and faintly twitching."
+	display_icon_state = "egg_color"
+	display_color = "#3c244d"
+	hatch_result_type = /obj/item/natural/worms/leech/erotic/burrowing
+	requires_fertilization = FALSE
+	poll_for_ghost = FALSE
+	require_ghost_to_hatch = FALSE
+	incubation_stage_duration = 90 SECONDS
+	stage_messages = list(
+	"A tiny leech egg settles in my %CONTAINER%.",
+	"The leech egg in my %CONTAINER% twitches with small, eager movements.",
+	"The leech egg in my %CONTAINER% feels ready to split.",
+	)
+	ready_message = "The leech egg in my %CONTAINER% is ready to hatch."
+	hatch_message = "%EGG% splits open with a wet little twitch!"
+	auto_hatch_when_laid = TRUE
+	hatch_inside_host = TRUE
+	allow_manual_host_removal = TRUE
+	internal_hatch_layer = STORAGE_LAYER_DEEP
 
 /proc/get_oviposition_egg_profile(egg_type)
 	var/profile_type = /datum/oviposition_egg_profile
@@ -193,6 +244,12 @@
 			profile_type = /datum/oviposition_egg_profile/harpy
 		if(OVI_EGG_EMBRYO)
 			profile_type = /datum/oviposition_egg_profile/embryo
+		if(OVI_EGG_LEECH)
+			profile_type = /datum/oviposition_egg_profile/leech
+		if(OVI_EGG_TENTACLE)
+			profile_type = /datum/oviposition_egg_profile/tentacle
+		if(OVI_EGG_MANEATER)
+			profile_type = /datum/oviposition_egg_profile/maneater
 	return new profile_type
 
 /proc/get_species_oviposition_egg_type(mob/living/owner)
@@ -209,7 +266,7 @@
 		OVI_EGG_HARPY
 	)
 	if(include_unsafe)
-		options += list(OVI_EGG_SPIDER, OVI_EGG_BOG_BUG)
+		options += list(OVI_EGG_SPIDER, OVI_EGG_BOG_BUG, OVI_EGG_TENTACLE, OVI_EGG_MANEATER)
 	return options
 
 /proc/get_oviposition_egg_trait_options()

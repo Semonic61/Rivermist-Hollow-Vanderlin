@@ -17,7 +17,12 @@
 	shake_camera(owner, 2, 2)
 
 	for(var/mob/living/carbon/human/screech_target in get_hearers_in_view(screech_range, get_turf(consumed)))
-		screech_target.soundbang_act(intensity = 5, stun_pwr = 50, damage_pwr = 10, deafen_pwr = 30)
+		screech_target.soundbang_act(
+			intensity = SOUNDBANG_OVERWHELMING,
+			stun_pwr = 5 SECONDS,
+			damage_pwr = 10,
+			deafen_pwr = 3 SECONDS,
+		)
 		shake_camera(screech_target, 4, 3)
 		to_chat(screech_target, span_userdanger("[consumed] lets out a deafening screech!"))
 

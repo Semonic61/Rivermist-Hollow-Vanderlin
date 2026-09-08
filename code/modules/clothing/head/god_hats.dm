@@ -1,4 +1,5 @@
 /obj/item/clothing/head/padded/pestra
+	item_weight = 250 GRAMS
 	name = "naga hood"
 	desc = "Worn by the faithful of Ilmater. Resembling the face of the Naga clothed in rot."
 	icon_state = "pestrahood"
@@ -14,33 +15,37 @@
 	default_hidden = HIDEEARS|HIDEHAIR
 	dropshrink = 0.8
 
-	armor = ARMOR_WEAK
+	armor_type = /datum/armor/weak
 	prevent_crits = MINOR_CRITICALS
 	salvage_amount = 1
 	salvage_result = /obj/item/natural/silk
 
 /obj/item/clothing/head/padded/deathface
+	item_weight = 250 GRAMS
 	name = "death shroud"
 	desc = "A veil for those in service to the Final Scribe. When inducted into the cult of Jergal, the supplicant must make a talisman to hold the memory of a loved one since passed."
 	icon_state = "deathface"
 	flags_inv = HIDEEARS | HIDEHAIR | HIDEFACIALHAIR
 
-	armor = ARMOR_WEAK
+	armor_type = /datum/armor/weak
 	prevent_crits = MINOR_CRITICALS
 
 /obj/item/clothing/head/padded/deathshroud
+	item_weight = 250 GRAMS
 	name = "death shroud"
 	desc = "Worn by the faithful of Jergal, or less savory individuals."
 	icon_state = "necrahood"
 	flags_inv = HIDEEARS|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR
 
 /obj/item/clothing/head/padded/pestra
+	item_weight = 250 GRAMS
 	name = "naga hood"
 	desc = "Worn by the faithful of Ilmater. Resembling the face of the Naga clothed in rot."
 	icon_state = "pestrahood"
 	flags_inv = HIDEEARS|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR
 
 /obj/item/clothing/head/padded/abyssor
+	item_weight = 250 GRAMS
 	name = "sea hood"
 	desc = "A green hood worn by the faithful of Umberlee."
 	icon_state = "abysshood"
@@ -58,7 +63,7 @@
 	worn_x_dimension = 64
 	worn_y_dimension = 64
 	resistance_flags = FIRE_PROOF // Made of metal
-	armor = ARMOR_WEAK
+	armor_type = /datum/armor/head/eora
 	salvage_result = NUTRITION_LEVEL_HUNGRY
 
 /obj/item/clothing/head/roguehood/astrata
@@ -67,7 +72,7 @@
 	icon_state = "astratahood"
 	resistance_flags = FIRE_PROOF // Not the sun hat!
 
-	armor = ARMOR_MINIMAL
+	armor_type = /datum/armor/minimal
 	prevent_crits = MINOR_CRITICALS
 
 /obj/item/clothing/head/roguehood/priest
@@ -85,7 +90,7 @@
 	default_hidden = HIDEEARS|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR
 	resistance_flags = FIRE_PROOF
 
-	armor = ARMOR_WEAK
+	armor_type = /datum/armor/weak
 	body_parts_covered = FULL_HEAD | NECK
 	prevent_crits = MINOR_CRITICALS
 
@@ -136,6 +141,7 @@
 		. = ..()
 
 /obj/item/clothing/head/priestmask
+	item_weight = 135 GRAMS
 	name = "solar visage"
 	desc = "The sanctified helm of the most devoted. Thieves beware."
 	icon_state = "priesthead"

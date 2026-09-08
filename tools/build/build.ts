@@ -91,6 +91,7 @@ export const DmTarget = new Juke.Target({
   ],
   inputs: [
     '_maps/map_files/generic/**',
+    '_bootstrap/**',
     'maps/**/*.dm',
     'code/**',
     'html/**',

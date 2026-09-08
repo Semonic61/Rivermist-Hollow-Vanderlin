@@ -157,14 +157,18 @@
 
 	. = ..()
 
+	var/movement_distance = 1
 	if((direct & (direct - 1)) && mob.loc == new_loc) //moved diagonally successfully
-		add_delay *= sqrt(2)
+		movement_distance = sqrt(2)
+		add_delay *= movement_distance
 
 	var/after_glide = 0
 	if(visual_delay)
 		after_glide = visual_delay
 	else
-		after_glide = DELAY_TO_GLIDE_SIZE(add_delay)
+		// Match the next available movement tick without rounding away fractional movement speed.
+		var/glide_delay = max(world.tick_lag, CEILING(move_delay + add_delay - world.time, world.tick_lag))
+		after_glide = MOVEMENT_ADJUSTED_GLIDE_SIZE(glide_delay, movement_distance)
 
 	mob.set_glide_size(after_glide)
 
@@ -561,7 +565,7 @@
 					return
 				if(ishuman(L))
 					var/mob/living/carbon/human/H = L
-					if(H.get_encumbrance() >= 0.5)
+					if(H.encumbrance >= ENCUMBRANCE_HEAVY)
 						to_chat(H, span_info("You are too heavy to run!"))
 						return
 			m_intent = MOVE_INTENT_RUN
@@ -570,6 +574,8 @@
 			selector.update_appearance(UPDATE_ICON_STATE)
 	if(!silent)
 		playsound_local(src, 'sound/misc/click.ogg', 100)
+
+	SEND_SIGNAL(src, COMSIG_MOVE_INTENT_TOGGLED)
 
 /mob/proc/toggle_eye_intent(mob/user) //clicking the fixeye button either makes you fixeye or clears your target
 	if(fixedeye)
@@ -591,9 +597,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTEARS
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTEARS)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTEARS)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTEARS))
 		to_chat(src, span_info("I will hear all now."))
 	else
 		to_chat(src, span_info("I will hear like a mortal."))
@@ -605,9 +611,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTWHISPER
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTWHISPER)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTWHISPER)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTWHISPER))
 		to_chat(src, span_info("I will hear all whispers now."))
 	else
 		to_chat(src, span_info("I will hear like a mortal."))
@@ -619,9 +625,9 @@
 		return
 	if(!prefs)
 		return
-	prefs.chat_toggles ^= CHAT_GHOSTSIGHT
+	prefs.preference_toggle_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTSIGHT)
 	prefs.save_preferences()
-	if(prefs.chat_toggles & CHAT_GHOSTSIGHT)
+	if(prefs.preference_has_flag(/datum/preference/bitwise/chat_toggles, CHAT_GHOSTSIGHT))
 		to_chat(src, span_info("I will see all whispers now."))
 	else
 		to_chat(src, span_info("I will see like a mortal."))
@@ -634,7 +640,7 @@
 		return
 	. = TRUE
 	if(isobserver(mob))
-		mob.ghost_up()
+		mob.up()
 
 /client/proc/ghost_down()
 	set category = "Admin.Ghost"
@@ -643,34 +649,71 @@
 		return
 	. = TRUE
 	if(isobserver(mob))
-		mob.ghost_down()
+		mob.down()
 
-///Moves a mob upwards in z level
+/// Compatibility wrappers for the existing ghost HUD and verbs.
 /mob/proc/ghost_up()
-	if(zMove(UP, TRUE))
-		to_chat(src, "<span class='notice'>I move upwards.</span>")
+	return up()
 
-///Moves a mob down a z level
 /mob/proc/ghost_down()
-	if(zMove(DOWN, TRUE))
-		to_chat(src, "<span class='notice'>I move down.</span>")
+	return down()
 
-///Move a mob between z levels, if it's valid to move z's on this turf
-/mob/proc/zMove(dir, feedback = FALSE, swimming = FALSE)
-	if(dir != UP && dir != DOWN)
-		return FALSE
-	var/turf/target = get_step_multiz(src, dir)
-	if(!target)
-		if(feedback)
-			to_chat(src, "<span class='warning'>There's nothing in that direction!</span>")
-		return FALSE
-	if(!canZMove(dir, target, swimming))
-		if(feedback)
-			to_chat(src, "<span class='warning'>I couldn't move there!</span>")
-		return FALSE
-	forceMove(target)
-	return TRUE
+/// Shared upward movement entry point for ladders, swimming, flight, and observers.
+/mob/verb/up()
+	set name = "Move Upwards"
+	set category = "IC"
 
-/// Can this mob move between z levels
-/mob/proc/canZMove(direction, turf/target)
-	return FALSE
+	if(remote_control)
+		return remote_control.relaymove(src, UP)
+	if(ismovable(loc))
+		var/atom/movable/container = loc
+		return container.relaymove(src, UP)
+
+	var/turf/current_turf = get_turf(src)
+	var/obj/structure/ladder/current_ladder = locate() in current_turf
+	if(current_ladder?.up)
+		current_ladder.travel(TRUE, src, FALSE, current_ladder.up)
+		return
+
+	if(isliving(src) && istype(current_turf, /turf/open/water) && HAS_TRAIT(src, TRAIT_MOVE_SWIMMING))
+		var/turf/open/water/current_water = current_turf
+		current_water.try_z_swim(src, going_up = TRUE)
+		return
+
+	if(!can_z_move(UP, current_turf, z_move_flags = ZMOVE_CAN_FLY_CHECKS | ZMOVE_FEEDBACK))
+		return
+	balloon_alert(src, "moving up...")
+	if(!do_after(src, 1 SECONDS, hidden = TRUE))
+		return
+	if(zMove(UP, z_move_flags = ZMOVE_FLIGHT_FLAGS | ZMOVE_FEEDBACK))
+		to_chat(src, span_notice("You move upwards."))
+
+/// Shared downward movement entry point for ladders, swimming, flight, and observers.
+/mob/verb/down()
+	set name = "Move Downwards"
+	set category = "IC"
+
+	if(remote_control)
+		return remote_control.relaymove(src, DOWN)
+	if(ismovable(loc))
+		var/atom/movable/container = loc
+		return container.relaymove(src, DOWN)
+
+	var/turf/current_turf = get_turf(src)
+	var/obj/structure/ladder/current_ladder = locate() in current_turf
+	if(current_ladder?.down)
+		current_ladder.travel(FALSE, src, FALSE, current_ladder.down)
+		return
+
+	if(isliving(src) && istype(current_turf, /turf/open/water) && HAS_TRAIT(src, TRAIT_MOVE_SWIMMING))
+		var/turf/open/water/current_water = current_turf
+		current_water.try_z_swim(src, going_up = FALSE)
+		return
+
+	if(!can_z_move(DOWN, current_turf, z_move_flags = ZMOVE_CAN_FLY_CHECKS | ZMOVE_FEEDBACK))
+		return
+	balloon_alert(src, "moving down...")
+	if(!do_after(src, 1 SECONDS, hidden = TRUE))
+		return
+	if(zMove(DOWN, z_move_flags = ZMOVE_FLIGHT_FLAGS | ZMOVE_FEEDBACK))
+		to_chat(src, span_notice("You move downwards."))

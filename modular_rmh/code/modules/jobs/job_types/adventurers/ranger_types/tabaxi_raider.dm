@@ -35,6 +35,7 @@
 
 	traits = list(
 		TRAIT_DODGEEXPERT,
+		TRAIT_DODGE_THROUGH_MOBS,
 		TRAIT_STEELHEARTED
 	)
 
@@ -61,6 +62,6 @@
 
 	scabbards = list(/obj/item/weapon/scabbard/sword)
 	backpack_contents = list(
-		/obj/item/storage/belt/pouch/coins/poor = 1,
+		/obj/item/storage/belt/pouch/cloth/coins/poor = 1,
 		/obj/item/weapon/knife/dagger = 1
 	)

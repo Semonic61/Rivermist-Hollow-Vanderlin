@@ -10,13 +10,32 @@
 	if(isclothing(wear_mask)) //Mask
 		. += wear_mask.flash_protect
 
-/mob/living/carbon/get_ear_protection()
-	. = ..()
-	var/obj/item/organ/ears/E = getorganslot(ORGAN_SLOT_EARS)
-	if(!E)
-		return INFINITY
-	else
-		. += E.bang_protect
+/mob/living/carbon/sound_damage(damage, deafen)
+	if(status_flags & GODMODE)
+		return
+	var/obj/item/organ/ears/ears = getorganslot(ORGAN_SLOT_EARS)
+	if(QDELETED(ears))
+		return
+	if(damage)
+		ears.applyOrganDamage(damage * ears.damage_multiplier)
+	if(deafen)
+		ears.adjust_temporary_deafness(deafen)
+
+/mob/living/carbon/get_ear_protection(ignore_deafness = FALSE)
+	var/obj/item/organ/ears/ears = getorganslot(ORGAN_SLOT_EARS)
+	return ..() + ears?.bang_protect
+
+/mob/living/carbon/proc/virus_immunity()
+	var/antibiotic_boost = max(0, get_antibiotics() / 100)
+	. = max(immunity / 100 * (1 + antibiotic_boost), antibiotic_boost)
+	if(HAS_TRAIT(src, TRAIT_IMMUNITY_CRIPPLED))
+		. = max(. - 50, antibiotic_boost)
+
+/mob/living/carbon/proc/immunity_weakness()
+	return max(2 - virus_immunity(), 0)
+
+/mob/living/carbon/proc/get_antibiotics()
+	return get_chem_effect(CE_ANTIBIOTIC)
 
 /mob/living/carbon/proc/check_equipment_cover_flags(flags = NONE)
 	for(var/obj/item/thing in get_equipped_items())
@@ -35,11 +54,18 @@
 		needed_coverage |= MASKCOVERSMOUTH
 	return check_equipment_cover_flags(needed_coverage)
 
-/mob/living/carbon/is_eyes_covered(check_glasses = TRUE, check_head = TRUE, check_mask = TRUE)
-	if(check_head && head && (head.flags_cover & HEADCOVERSEYES))
+/mob/living/carbon/is_eyes_covered(check_flags = ALL)
+	if((check_flags & ITEM_SLOT_HEAD) && head && (head.flags_cover & HEADCOVERSEYES))
 		return head
-	if(check_mask && wear_mask && (wear_mask.flags_cover & MASKCOVERSEYES))
+
+	if((check_flags & ITEM_SLOT_MASK) && wear_mask && (wear_mask.flags_cover & MASKCOVERSEYES))
 		return wear_mask
+
+	if((check_flags & ITEM_SLOT_MOUTH) && mouth && (mouth.flags_cover & GLASSESCOVERSEYES))
+		return mouth
+
+	return null
+
 /mob/living/carbon/is_pepper_proof(check_head = TRUE, check_mask = TRUE)
 	if(check_head &&(head?.flags_cover & PEPPERPROOF))
 		return head
@@ -84,7 +110,7 @@
 	var/obj/item/bodypart/BP = get_bodypart(check_zone(def_zone))
 	if(BP)
 		var/newdam = P.damage * (100-blocked)/100
-		BP.bodypart_attacked_by(P.woundclass, newdam, zone_precise = def_zone, crit_message = TRUE, reduce_crit = P.reduce_crit_chance)
+		BP.bodypart_attacked_by(P.woundclass, newdam, zone_precise = def_zone, crit_message = TRUE, modifiers = list(CRIT_MOD_CHANCE = -P.reduce_crit_chance))
 		return TRUE
 
 /mob/living/carbon/check_projectile_embed(obj/projectile/P, def_zone, blocked)
@@ -203,6 +229,21 @@
 				if(G.limb_grabbed == BP)
 					return G
 
+/mob/living/carbon/proc/adjust_germ_level_directed(add_germs, minimum_germs, maximum_germs, body_zone)
+	var/list/bodypart_zone = ALL_BODYPARTS
+	if(body_zone)
+		if(!islist(body_zone))
+			bodypart_zone = list(body_zone)
+		else
+			bodypart_zone = body_zone
+
+	for(var/zone in bodypart_zone)
+		var/obj/item/bodypart/part = get_bodypart(deprecise_zone(zone))
+		for(var/datum/injury/injury in part.injuries)
+			injury.adjust_germ_level(add_germs, minimum_germs, maximum_germs)
+
+/mob/living/carbon/adjust_germ_level(add_germs, minimum_germs, maximum_germs)
+	adjust_germ_level_directed(add_germs, minimum_germs, maximum_germs)
 
 /mob/living/carbon/attacked_by(obj/item/I, mob/living/user)
 	var/obj/item/bodypart/affecting
@@ -219,84 +260,58 @@
 	SEND_SIGNAL(I, COMSIG_ITEM_ATTACK_ZONE, src, user, affecting)
 	I.funny_attack_effects(src, user)
 	var/statforce = get_complex_damage(I, user)
-	if(statforce)
-		next_attack_msg.Cut()
-		affecting.bodypart_attacked_by(user.used_intent.blade_class, statforce, crit_message = TRUE)
-		apply_damage(statforce, I.damtype, affecting)
-		if(I.damtype == BRUTE && affecting.status == BODYPART_ORGANIC)
-			if(prob(statforce))
-				I.add_mob_blood(src)
-				user.update_inv_hands()
-				var/turf/location = get_turf(src)
-				add_splatter_floor(location)
-				if(get_dist(user, src) <= 1)	//people with TK won't get smeared with blood
-					user.add_mob_blood(src)
-				var/splatter_dir = get_dir(user, src)
-				new /obj/effect/temp_visual/dir_setting/bloodsplatter(loc, splatter_dir)
-				if(affecting.body_zone == BODY_ZONE_HEAD)
-					if(wear_mask)
-						wear_mask.add_mob_blood(src)
-						update_inv_wear_mask()
-					if(wear_neck)
-						wear_neck.add_mob_blood(src)
-						update_inv_neck()
-					if(head)
-						head.add_mob_blood(src)
-						update_inv_head()
 
 	if(user == src || pulledby == user)
 		send_item_attack_message(I, user, precise_attack_check(useder, affecting))
 	else
 		send_item_attack_message(I, user, affecting.name)
 
-	if(statforce)
-		var/probability = I.get_dismemberment_chance(affecting, user)
-		if(prob(probability) && affecting.dismember(I.damtype, user.used_intent?.blade_class, user, user.zone_selected))
-			I.add_mob_blood(src)
-		return TRUE //successful attack
-
-/mob/living/carbon/attack_hand(mob/living/carbon/human/user)
-	. = ..()
-	if(.)
+	if(!statforce)
 		return TRUE
 
-	if(!lying_attack_check(user))
-		return FALSE
+	var/real_damage = apply_damage(statforce, I.damtype, affecting)
 
-	if(!get_bodypart(check_zone(user.zone_selected)))
-		to_chat(user, "<span class='warning'>[src] is missing that.</span>")
-		return FALSE
+	if(real_damage)
+		affecting.bodypart_attacked_by(user.used_intent.blade_class, real_damage, crit_message = TRUE, pre_applied = TRUE)
 
-	if(!user.cmode && (istype(user.rmb_intent, /datum/rmb_intent/weak) || istype(user.rmb_intent, /datum/rmb_intent/strong)))
-		var/try_to_fail = !istype(user.rmb_intent, /datum/rmb_intent/weak)
-		var/list/possible_steps = list()
-		for(var/datum/surgery_step/surgery_step as anything in GLOB.surgery_steps)
-			if(!surgery_step.name)
-				continue
-			if(surgery_step.can_do_step(user, src, user.zone_selected, null, user.used_intent))
-				possible_steps[surgery_step.name] = surgery_step
-		var/possible_len = length(possible_steps)
-		if(possible_len)
-			var/datum/surgery_step/done_step
-			if(possible_len > 1)
-				var/input = input(user, "Which surgery step do you want to perform?", "PESTRA", ) as null|anything in possible_steps
-				if(input)
-					done_step = possible_steps[input]
-			else
-				done_step = possible_steps[possible_steps[1]]
-			if(done_step?.try_op(user, src, user.zone_selected, null, user.used_intent, try_to_fail))
-				return TRUE
-	/*
-	for(var/datum/surgery/S in surgeries)
-		if(!(mobility_flags & MOBILITY_STAND) || !S.lying_required)
-			if(user.used_intent.type == INTENT_HELP || user.used_intent.type == INTENT_DISARM)
-				if(S.next_step(user, user.used_intent))
-					return TRUE
-	*/
-	return FALSE
+	if(!can_see_cone(user) && user.m_intent == MOVE_INTENT_SNEAK && user.alpha <= 15)//From Dreamkeep
+		if(user.mind && !HAS_TRAIT(src, TRAIT_BLINDFIGHTING) && !user.has_status_effect(/datum/status_effect/debuff/stealthcd))
+			var/sneakmult = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/misc/sneaking)
+			statforce *= max(1,sneakmult)
+			statforce += 15
+			user.apply_status_effect(/datum/status_effect/debuff/stealthcd)
+			to_chat(src, span_userdanger("SNEAK ATTACK!!!"))
+			to_chat(user, span_userdanger("SNEAK ATTACK!!!"))
+			user.adjust_experience(/datum/skill/misc/sneaking, user.STAINT * 5, FALSE)
 
+	if(I.damtype == BRUTE && affecting.status == BODYPART_ORGANIC)
+		if(prob(statforce))
+			I.add_mob_blood(src)
+			user.update_inv_hands()
+			var/turf/location = get_turf(src)
+			add_splatter_floor(location)
+			if(get_dist(user, src) <= 1)	//people with TK won't get smeared with blood
+				user.add_mob_blood(src)
+			var/splatter_dir = get_dir(user, src)
+			new /obj/effect/temp_visual/dir_setting/bloodsplatter(loc, splatter_dir, get_blood_type())
+			if(affecting.body_zone == BODY_ZONE_HEAD)
+				if(wear_mask)
+					wear_mask.add_mob_blood(src)
+					update_inv_wear_mask()
+				if(wear_neck)
+					wear_neck.add_mob_blood(src)
+					update_inv_neck()
+				if(head)
+					head.add_mob_blood(src)
+					update_inv_head()
 
-/mob/living/carbon/attack_paw(mob/living/carbon/monkey/M)
+	var/probability = I.get_dismemberment_chance(affecting, user)
+	if(prob(probability) && affecting.dismember(I.damtype, user.used_intent?.blade_class, user, user.zone_selected))
+		I.add_mob_blood(src)
+
+	return TRUE //successful attack
+
+/mob/living/carbon/attack_paw(mob/living/carbon/M)
 	if(M.used_intent.type == INTENT_HELP)
 		help_shake_act(M)
 		return 0
@@ -332,6 +347,8 @@
 		return
 	//Propagation through pulling, fireman carry
 	if(!(flags & SHOCK_ILLUSION))
+		if(undergoing_cardiac_arrest())
+			set_heartattack(FALSE)
 		var/list/shocking_queue = list()
 		if(iscarbon(pulling) && source != pulling)
 			shocking_queue += pulling
@@ -382,6 +399,17 @@
 			M.gloves.take_damage(10, BURN, "fire")
 		else
 			to_chat(M, span_warning("I can't put [p_them()] out with just my bare hands!"))
+		return
+
+	if(has_status_effect(/datum/status_effect/defeat_knockout))
+		if(!defeat_can_be_rescued_by(M))
+			to_chat(M, span_warning("I can't safely rescue [src] right now."))
+			return
+		M.visible_message(span_notice("[M] kneels and works to bring [src] back from defeat..."), span_notice("I begin carefully bringing [src] back from defeat..."))
+		if(begin_defeat_recovery(/datum/defeat_recovery_profile/manual, M, "help_shake"))
+			M.visible_message(span_notice("[M] helps [src] back from defeat."), span_notice("I help [src] back from defeat."))
+			return
+		to_chat(M, span_warning("I stop tending to [src]."))
 		return
 
 //	if(!(mobility_flags & MOBILITY_STAND))
@@ -455,35 +483,6 @@
 			to_chat(src, "<span class='notice'>Something bright flashes in the corner of my vision!</span>")
 
 
-/mob/living/carbon/soundbang_act(intensity = 1, stun_pwr = 20, damage_pwr = 5, deafen_pwr = 15)
-	var/list/reflist = list(intensity) // Need to wrap this in a list so we can pass a reference
-	SEND_SIGNAL(src, COMSIG_CARBON_SOUNDBANG, reflist)
-	intensity = reflist[1]
-	var/ear_safety = get_ear_protection()
-	var/obj/item/organ/ears/ears = getorganslot(ORGAN_SLOT_EARS)
-	var/effect_amount = intensity - ear_safety
-	if(effect_amount > 0)
-		if(stun_pwr)
-			Paralyze((stun_pwr*effect_amount)*0.1)
-			Knockdown(stun_pwr*effect_amount)
-
-		if(istype(ears) && (deafen_pwr || damage_pwr))
-			var/ear_damage = damage_pwr * effect_amount
-			var/deaf = deafen_pwr * effect_amount
-			adjustEarDamage(ear_damage,deaf)
-
-			if(ears.damage >= 15)
-				to_chat(src, "<span class='warning'>My ears start to ring badly!</span>")
-				if(prob(ears.damage - 5))
-					to_chat(src, "<span class='danger'>I can't hear anything!</span>")
-					ears.damage = min(ears.damage, ears.maxHealth)
-					// you need earmuffs, inacusiate, or replacement
-			else if(ears.damage >= 5)
-				to_chat(src, "<span class='warning'>My ears start to ring!</span>")
-			SEND_SOUND(src, sound('sound/blank.ogg',0,1,0,250))
-		return effect_amount //how soundbanged we are
-
-
 /mob/living/carbon/damage_clothes(damage_amount, damage_type = BRUTE, damage_flag = 0, def_zone)
 	if(damage_type != BRUTE && damage_type != BURN)
 		return
@@ -500,10 +499,7 @@
 			hit_clothes.take_damage(damage_amount, damage_type, damage_flag, 0)
 
 /mob/living/carbon/can_hear()
-	. = FALSE
-	var/obj/item/organ/ears/ears = getorganslot(ORGAN_SLOT_EARS)
-	if((istype(ears) && !ears.deaf) || (src.stat == DEAD)) // 2nd check so you can hear messages when beheaded
-		. = TRUE
+	return stat == DEAD || !HAS_TRAIT(src, TRAIT_DEAF)
 
 /mob/living/carbon/adjustOxyLoss(amount, updating_health = TRUE, forced = FALSE)
 	. = ..()
@@ -514,6 +510,8 @@
 			ADD_TRAIT(src, TRAIT_KNOCKEDOUT, OXYLOSS_TRAIT)
 	else if(getOxyLoss() <= 75)
 		REMOVE_TRAIT(src, TRAIT_KNOCKEDOUT, OXYLOSS_TRAIT)
+	var/obj/item/organ/brain = getorganslot(ORGAN_SLOT_BRAIN)
+	brain?.consider_processing()
 
 /mob/living/carbon/setOxyLoss(amount, updating_health = TRUE, forced = FALSE)
 	. = ..()
@@ -524,3 +522,100 @@
 			ADD_TRAIT(src, TRAIT_KNOCKEDOUT, OXYLOSS_TRAIT)
 	else if(getOxyLoss() <= 75)
 		REMOVE_TRAIT(src, TRAIT_KNOCKEDOUT, OXYLOSS_TRAIT)
+
+
+/mob/living/carbon/proc/pump_heart(mob/user, forced_pump)
+	if(!forced_pump)
+		var/heymedic = GET_MOB_SKILL_VALUE(user, /datum/attribute/skill/misc/medicine)/SKILL_MASTER
+		recent_heart_pump = list("[world.time]" = (0.3 + CEILING(heymedic, 0.1)))
+	else
+		recent_heart_pump = list("[world.time]" = (0.3 + CEILING(forced_pump, 0.1)))
+	return TRUE
+
+/mob/living/carbon/proc/check_pulse(mob/living/carbon/user)
+	. = TRUE
+	var/self = FALSE
+	if(user == src)
+		self = TRUE
+
+	var/obj/item/bodypart/pulsating_part = get_bodypart(check_zone(user.zone_selected))
+	if(!pulsating_part)
+		to_chat(user, span_warning("I cannot measure [self ? "my" : p_their()] pulse without \a [parse_zone(user.zone_selected)]."))
+		return
+	if(DOING_INTERACTION_WITH_TARGET(user, src))
+		to_chat(user, span_warning("I'm unable to check [self ? "my" : "<b>[src]</b>'s"] pulse.</"))
+		return
+
+	add_fingerprint(user)
+	if(!self)
+		user.visible_message(span_notice("<b>[user]</b> puts \his hand on <b>[src]</b>'s wrist and begins counting their pulse."),\
+		span_notice("I begin counting <b>[src]</b>'s pulse..."))
+	else
+		user.visible_message(span_notice("<b>[user]</b> begins counting their own pulse."),\
+		span_notice("I begin counting my pulse..."))
+
+
+	if(!do_after(user, 0.5 SECONDS, src))
+		to_chat(user, span_warning("I failed to check [self ? "my" : "<b>[src]</b>'s"] pulse."))
+		return
+
+	if(pulse)
+		to_chat(user, span_notice("[self ? "I have a" : "<b>[src]</b> has a"] pulse! Counting..."))
+	else
+		to_chat(user, span_danger("[self ? "I have no" : "<b>[src]</b> has no"] pulse!"))
+		return
+
+	if(do_after(user, 2.5 SECONDS, src))
+		to_chat(user, span_notice("[self ? "My" : "<b>[src]</b>'s"] pulse is approximately <b>[src.get_pulse(GETPULSE_BASIC)] BPM</b>."))
+	else
+		to_chat(user, span_warning("I failed to check [self ? "my" : "<b>[src]</b>'s"] pulse."))
+
+
+/// A pulse to be read by players
+/mob/living/carbon/proc/get_pulse_as_number(raw_pulse = pulse)
+	switch(raw_pulse)
+		if(PULSE_NONE)
+			return 0
+		if(PULSE_SLOW)
+			return rand(40, 60)
+		if(PULSE_NORM)
+			return rand(60, 90)
+		if(PULSE_FAST)
+			return rand(90, 120)
+		if(PULSE_FASTER)
+			return rand(120, 160)
+		if(PULSE_THREADY)
+			return PULSE_MAX_BPM
+	CRASH("For some reason, on a get_pulse_as_number() call, someone's pulse is not a valid integer!")
+
+/// Generates realistic-ish pulse output based on preset levels as text
+/mob/living/carbon/proc/get_pulse(method)	//method 0 is for hands, 1 is for machines, more accurate
+	if(method == GETPULSE_PERFECT)
+		return pulse
+
+	var/list/hearts = getorganslotlist(ORGAN_SLOT_HEART)
+	if(!length(hearts))
+		// No heart, no pulse
+		return "0"
+
+	var/bypassed_heart = FALSE
+	for(var/thing in hearts)
+		var/obj/item/organ/heart/heart = thing
+		if(heart.open)
+			bypassed_heart = TRUE
+
+	if(bypassed_heart && (method <= GETPULSE_BASIC))
+		// Heart is a open type (?) and cannot be checked unless it's a machine
+		return "muddled and unclear"
+
+	var/bpm = get_pulse_as_number()
+	if(bpm >= PULSE_MAX_BPM)
+		if(method == GETPULSE_ADVANCED)
+			return ">[PULSE_MAX_BPM]"
+		else
+			return "extremely weak and fast"
+
+	if(method == GETPULSE_ADVANCED)
+		return "[bpm]"
+	else
+		return "[bpm > 0 ? max(0, bpm + rand(-10, 10)) : 0]"

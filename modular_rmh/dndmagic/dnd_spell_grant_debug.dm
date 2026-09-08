@@ -4,6 +4,10 @@
 /mob/living/carbon/human/verb/debug_grant_dnd_spell_pack()
 	set name = "Grant DND Spell Pack"
 	set category = "Debug"
+	set hidden = TRUE
+
+	if(usr != src || !check_rights(R_DEBUG))
+		return
 
 	setup_default_dnd_spell_slots()
 	grant_dnd_spell_hud()
@@ -20,19 +24,21 @@
 	)
 
 	for(var/spell_type in spells_to_grant)
-		var/datum/action/cooldown/spell/S = new spell_type
-		S.Grant(src)
+		add_spell(spell_type)
 
 	to_chat(src, span_notice("DND spell pack granted."))
 
 /mob/living/carbon/human/verb/debug_grant_dnd_fireball_v2()
 	set name = "Grant DND Fireball V2"
 	set category = "Debug"
+	set hidden = TRUE
+
+	if(usr != src || !check_rights(R_DEBUG))
+		return
 
 	setup_default_dnd_spell_slots()
 	grant_dnd_spell_hud()
 
-	var/datum/action/cooldown/spell/projectile/dnd_fireball/F = new
-	F.Grant(src)
+	add_spell(/datum/action/cooldown/spell/projectile/dnd_fireball)
 
 	to_chat(src, span_notice("DND Fireball granted."))

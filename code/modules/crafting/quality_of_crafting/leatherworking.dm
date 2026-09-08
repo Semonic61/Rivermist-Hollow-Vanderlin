@@ -103,6 +103,16 @@
 /datum/repeatable_crafting_recipe/leather/storage/backpack/create_blacklisted_paths()
 	blacklisted_paths = subtypesof(/obj/item/rope)
 
+/datum/repeatable_crafting_recipe/leather/storage/backpack/longhike
+	name = "longhike backpack"
+	requirements = list(
+		/obj/item/natural/hide/cured = 3,
+		/obj/item/rope = 1,
+		/obj/item/ingot/iron = 1,
+	)
+	output = /obj/item/storage/backpack/backpack/longhike
+	craftdiff = 3
+
 /datum/repeatable_crafting_recipe/leather/storage/knife_sheath
 	name = "knife sheath"
 	output = /obj/item/weapon/scabbard/knife
@@ -279,6 +289,16 @@
 /datum/repeatable_crafting_recipe/leather/corset
 	name = "corset"
 	output = /obj/item/clothing/armor/corset
+
+/datum/repeatable_crafting_recipe/leather/bellyriding_harness
+	name = "bellyriding harness"
+	requirements = list(
+		/obj/item/natural/hide/cured = 2,
+		/obj/item/rope = 1,
+		/obj/item/ingot/iron = 1,
+	)
+	output = /obj/item/clothing/armor/bellyriding_harness
+	craftdiff = 3
 
 /datum/repeatable_crafting_recipe/leather/sandals
 	name = "sandals"
@@ -1107,3 +1127,12 @@
 	output = /obj/item/clothing/shoes/courtphysician/female
 	craftdiff = 3
 	category = "Shoes"
+
+/datum/repeatable_crafting_recipe/leather/tossbladebelt
+	name = "tossbladebelt"
+	requirements = list(
+		/obj/item/natural/hide/cured = 1,
+		/obj/item/natural/fibers = 1,
+	)
+	output = /obj/item/storage/belt/leather/knifebelt
+	craftdiff = 2

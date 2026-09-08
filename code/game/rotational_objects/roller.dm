@@ -99,7 +99,7 @@
 
 /obj/structure/roller/can_connect(obj/structure/connector)
 	. = ..()
-	if(!.)
+	if(. == FALSE)
 		return FALSE
 
 	var/connect_dir = get_dir(src, connector)
@@ -107,10 +107,10 @@
 	// If connecting from front/back, only allow other aligned rollers
 	if(connect_dir == movedir || connect_dir == REVERSE_DIR(movedir))
 		if(!istype(connector, /obj/structure/roller))
-			return FALSE
+			return null
 		var/obj/structure/roller/other_roller = connector
 		if(other_roller.movedir != movedir && other_roller.movedir != REVERSE_DIR(movedir))
-			return FALSE
+			return null
 
 	return TRUE
 
@@ -139,13 +139,7 @@
 			stop_conveying(movable)
 
 	update_appearance()
-	propagate_rotation()
 	return TRUE
-
-/obj/structure/roller/proc/propagate_rotation()
-	for(var/obj/structure/roller/connected in connected_rollers)
-		if(connected.rotations_per_minute != rotations_per_minute)
-			connected.set_rotations_per_minute(rotations_per_minute)
 
 /obj/structure/roller/proc/build_roller_chain()
 	var/turf/forward_turf = get_step(src, movedir)
@@ -214,7 +208,7 @@
 
 	connected_rollers = list()
 	build_roller_chain()
-	return TRUE
+	return ITEM_INTERACT_SUCCESS
 
 /obj/structure/roller/update_appearance()
 	. = ..()
@@ -347,23 +341,22 @@
 	. += span_notice("Attack items to add them to the sorting list.")
 	. += span_notice("Alt-Click to reset the sorting list.")
 
-/obj/item/roller_sorter_lister/afterattack(atom/target, mob/user, proximity_flag, list/modifiers)
-	if(target == src || !proximity_flag)
-		return ..()
+/obj/item/roller_sorter_lister/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!ismovable(interacting_with))
+		return NONE
 
-	if(!ismovable(target))
-		return ..()
-
-	if(is_type_in_list(target, current_sort))
-		to_chat(user, span_warning("[target] is already in the sorting list!"))
-		return
+	if(is_type_in_list(interacting_with, current_sort))
+		to_chat(user, span_warning("[interacting_with] is already in the sorting list!"))
+		return ITEM_INTERACT_BLOCKING
 
 	if(length(current_sort) >= max_items)
 		to_chat(user, span_warning("The sorting list is full!"))
-		return
+		return ITEM_INTERACT_BLOCKING
 
-	current_sort += target.type
-	to_chat(user, span_notice("[target] has been added to the sorting list."))
+	current_sort += interacting_with.type
+	to_chat(user, span_notice("[interacting_with] has been added to the sorting list."))
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/roller_sorter_lister/AltClick(mob/user, list/modifiers)
 	. = ..()

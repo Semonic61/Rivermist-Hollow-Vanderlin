@@ -356,6 +356,12 @@ SUBSYSTEM_DEF(ticker)
 	log_game("GAME SETUP: equip characters success")
 	transfer_characters()	//transfer keys to the new mobs
 	log_game("GAME SETUP: transfer characters success")
+	SSfamilytree.ResolvePendingFamilies()
+	log_game("GAME SETUP: family relation resolution success")
+	SSrelations.run_rival_matchmaking()
+	log_game("GAME SETUP: rival matchmaking success")
+	SSrelations.spread_gossip()
+	log_game("GAME SETUP: gossip spreading success")
 
 	for(var/datum/callback/cb as anything in round_start_events)
 		cb.InvokeAsync()
@@ -402,7 +408,7 @@ SUBSYSTEM_DEF(ticker)
 */
 
 	PostSetup()
-	INVOKE_ASYNC(world, TYPE_PROC_REF(/world, flush_byond_tracy))
+	INVOKE_ASYNC(Tracy, TYPE_PROC_REF(/datum/tracy, flush))
 	log_game("GAME SETUP: postsetup success")
 
 	return TRUE
@@ -566,7 +572,7 @@ SUBSYSTEM_DEF(ticker)
 		return
 	var/hpc = CONFIG_GET(number/hard_popcap)
 	if(!hpc)
-		listclearnulls(queued_players)
+		list_clear_nulls(queued_players)
 		for (var/mob/dead/new_player/NP in queued_players)
 			to_chat(NP, span_danger("The alive players limit has been released!<br><a href='byond://?src=[REF(NP)];late_join=override'>[html_encode(">>Join Game<<")]</a>"))
 			SEND_SOUND(NP, sound('sound/blank.ogg'))
@@ -580,7 +586,7 @@ SUBSYSTEM_DEF(ticker)
 
 	switch(queue_delay)
 		if(5) //every 5 ticks check if there is a slot available
-			listclearnulls(queued_players)
+			list_clear_nulls(queued_players)
 			if(living_player_count() < hpc)
 				if(next_in_line && next_in_line.client)
 					to_chat(next_in_line, "<span class='danger'>A slot has opened! You have approximately 20 seconds to join. <a href='byond://?src=[REF(next_in_line)];late_join=override'>\>\>Join Game\<\<</a></span>")

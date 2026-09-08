@@ -1,6 +1,7 @@
 
 
 /obj/item/natural/hide
+	item_weight = 350 GRAMS
 	name = "hide"
 	icon_state = "hide"
 	desc = "Hide from one of Silvanus's creatures."
@@ -11,6 +12,25 @@
 	resistance_flags = FLAMMABLE
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
 	sellprice = 5
+
+/obj/item/natural/hide/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/paper/scroll))
+		return NONE
+	if(!isturf(loc) || !locate(/obj/structure/table) in loc)
+		to_chat(user, span_warning("You need to put [src] on a table to work on it."))
+		return ITEM_INTERACT_BLOCKING
+
+	var/crafttime = max(0, 100 - GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/magic/arcane) * 5)
+	if(!do_after(user, crafttime, target = src))
+		return ITEM_INTERACT_BLOCKING
+
+	playsound(src, 'sound/items/book_close.ogg', 100, TRUE)
+	to_chat(user, span_notice("I add the first few pages to the leather cover..."))
+	new /obj/item/spellbook_unfinished(loc)
+	qdel(tool)
+	qdel(src)
+	return ITEM_INTERACT_SUCCESS
+
 /obj/item/natural/hide/cured
 	name = "cured leather"
 	icon_state = "leather"
@@ -32,6 +52,7 @@
 	icon2step = 10
 
 /obj/item/natural/cured/essence
+	item_weight = 300 GRAMS
 	name = "essence of wilderness"
 	icon_state = "wessence"
 	desc = "A mystical essence imbued with the power of Silvanus. Merely holding it transports one's mind to ancient times."
@@ -40,6 +61,7 @@
 	sellprice = 20
 
 /obj/item/natural/fur // a piece of skin with animal hair on it. Could be called a fur but its untanned and also encompasses rat skins and goat skins so pelt is more suitable at least to my ears.
+	item_weight = 300 GRAMS
 	name = "fur"
 	icon_state = "wool1"
 	desc = "Pelt from one of Silvanus's creatures."
@@ -94,6 +116,7 @@
 	color = null
 
 /obj/item/natural/head
+	item_weight = 750 GRAMS
 	possible_item_intents = list(/datum/intent/use)
 	layer = 3.1
 	grid_height = 64
@@ -145,6 +168,7 @@
 	..()
 
 /obj/item/natural/head/volf
+	item_weight = 1.2 KILOGRAMS
 	name = "wolf head"
 	desc = "The severed head of a fearsome wolf."
 	icon_state = "volfhead"
@@ -153,6 +177,7 @@
 	sellprice = 5
 
 /obj/item/natural/head/saiga
+	item_weight = 1.2 KILOGRAMS
 	name = "saiga head"
 	desc = "The severed head of a proud saiga."
 	icon_state = "saigahead"
@@ -160,6 +185,7 @@
 	sellprice = 3
 
 /obj/item/natural/head/troll
+	item_weight = 2.1 KILOGRAMS
 	name = "troll head"
 	desc = "The severed head of a giant troll."
 	icon_state = "trollhead"
@@ -189,6 +215,7 @@
 	sellprice = 200
 
 /obj/item/natural/head/rous
+	item_weight = 500 GRAMS
 	name = "rous head"
 	desc = "The severed head of an unusually large rat."
 	icon_state = "roushead"
@@ -198,6 +225,7 @@
 	meat_to_give = /obj/item/reagent_containers/food/snacks/meat/mince/beef
 
 /obj/item/natural/head/direbear
+	item_weight = 1.6 KILOGRAMS
 	name = "direbear head"
 	desc = "The head of a terrifying direbear."
 	icon_state = "direbearhead"
@@ -205,6 +233,7 @@
 	sellprice = 20
 
 /obj/item/natural/head/fox
+	item_weight = 400 GRAMS
 	name = "venard head"
 	desc = "The head of a majestic venard."
 	icon_state = "foxhead"
@@ -213,6 +242,7 @@
 	sellprice = 6
 
 /obj/item/natural/head/spider
+	item_weight = 200 GRAMS
 	name = "beespider head"
 	desc = "The severed head of a venomous beespider."
 	icon_state = "spiderhead"
@@ -222,6 +252,7 @@
 	meat_to_give = /obj/item/reagent_containers/food/snacks/meat/strange
 
 /obj/item/natural/head/bug
+	item_weight = 400 GRAMS
 	name = "bogbug head"
 	desc = "The severed head of a gross bogbug."
 	icon_state = "boghead"
@@ -231,6 +262,7 @@
 	meat_to_give = /obj/item/reagent_containers/food/snacks/meat/strange
 
 /obj/item/natural/head/mole
+	item_weight = 765 GRAMS
 	name = "mole head"
 	desc = "The severed head of a lesser mole."
 	icon_state = "molehead"
@@ -244,6 +276,7 @@
 	AddComponent(/datum/component/two_handed, require_twohands=TRUE)
 
 /obj/item/natural/head/gote
+	item_weight = 1.1 KILOGRAMS
 	name = "gote head"
 	desc = "The severed head of a fiery gote."
 	icon_state = "gotehead"
@@ -252,6 +285,7 @@
 
 //RTD make this a storage item and make clickign on animals with things put it in storage
 /obj/item/natural/saddle
+	item_weight = 7 KILOGRAMS
 	name = "saddle"
 	desc = "A culmination of leather, fur and hide. Strapped onto the backs of beasts for ease of riding."
 	icon_state = "saddle"

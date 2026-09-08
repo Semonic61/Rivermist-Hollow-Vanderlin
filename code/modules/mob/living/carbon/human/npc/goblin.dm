@@ -5,7 +5,7 @@
 	icon_state = "goblin"
 	race = /datum/species/goblin
 	bodyparts = list(/obj/item/bodypart/chest/goblin, /obj/item/bodypart/head/goblin, /obj/item/bodypart/l_arm/goblin,
-					/obj/item/bodypart/r_arm/goblin, /obj/item/bodypart/r_leg/goblin, /obj/item/bodypart/l_leg/goblin)
+					/obj/item/bodypart/r_arm/goblin, /obj/item/bodypart/r_leg/goblin, /obj/item/bodypart/l_leg/goblin, /obj/item/bodypart/mouth)
 	rot_type = /datum/component/rot/corpse/goblin
 	var/gob_outfit = /datum/outfit/npc/goblin
 	ambushable = FALSE
@@ -40,6 +40,10 @@
 /mob/living/carbon/human/species/goblin/npc
 	ai_controller = /datum/ai_controller/human_npc
 	flee_in_pain = TRUE
+	horny_defeat_threshold_override = 1
+	// Greenskins haul horny-defeated prey back to their warren (same lair tag as the simple-mob orcs).
+	kidnap_lair_tag = "greenskin_lair"
+	kidnap_captivity_profile = /datum/defeat_captivity_profile/shared/greenskin
 
 	wander = FALSE
 
@@ -222,11 +226,11 @@
 	var/list/standing = list()
 	var/mutable_appearance/body_overlay
 	if(wear_armor)
-		body_overlay = mutable_appearance(icon, "[wear_armor.item_state]", -ARMOR_LAYER)
+		body_overlay = mutable_appearance(wear_armor.mob_overlay_icon? wear_armor.mob_overlay_icon : icon, "[wear_armor.item_state]", -ARMOR_LAYER)
 		if(body_overlay)
 			standing += body_overlay
 	if(head)
-		body_overlay = mutable_appearance(icon, "[head.item_state]", -ARMOR_LAYER)
+		body_overlay = mutable_appearance(head.mob_overlay_icon? head.mob_overlay_icon : icon, "[head.item_state]", -ARMOR_LAYER)
 		if(body_overlay)
 			standing += body_overlay
 	if(standing.len)
@@ -235,6 +239,10 @@
 	apply_overlay(ARMOR_LAYER)
 	update_body_parts(TRUE)
 
+//for genitals
+/mob/living/carbon/human/species/goblin/doUnEquip(obj/item/I, force, newloc, no_move, invdrop, silent)
+	. = ..()
+	update_body_parts(TRUE)
 
 /mob/living/carbon/human/species/goblin/update_inv_head(hide_nonstandard = FALSE)
 	update_wearable()
@@ -259,22 +267,29 @@
 			headdy.icon_state = "[src.dna.species.id]_head"
 			headdy.headprice = rand(7,20)
 			headdy.sellprice = rand(7,20)
-	var/obj/item/organ/eyes/eyes = src.getorganslot(ORGAN_SLOT_EYES)
-	if(eyes)
+	var/list/eye_list = getorganslotlist(ORGAN_SLOT_EYES)
+	for(var/obj/item/organ/eyes/eyes as anything in eye_list)
 		eyes.Remove(src,1)
 		QDEL_NULL(eyes)
-	eyes = new /obj/item/organ/eyes/night_vision/nightmare
-	eyes.Insert(src)
+
+	var/obj/item/organ/eyes/LE = new /obj/item/organ/eyes/night_vision/nightmare
+	var/obj/item/organ/eyes/RE = new /obj/item/organ/eyes/night_vision/nightmare
+	LE.switch_side(LEFT_SIDE)
+
+	LE.Insert(src)
+	RE.Insert(src)
+
 	for(var/slot in internal_organs_slot)
-		var/obj/item/organ/organ = internal_organs_slot[slot]
-		organ.sellprice = 5
+		for(var/obj/item/organ/organ as anything in internal_organs_slot[slot])
+			organ.sellprice = 5
 	if(length(quirks))
 		clear_quirks()
 	update_body()
-	faction = list(FACTION_ORCS)
+	update_eyes()
+	set_faction(list(FACTION_ORCS))
 	var/turf/turf = get_turf(src)
 	if(SSterrain_generation.get_island_at_location(turf))
-		faction |= "islander"
+		add_faction("islander")
 	name = "goblin"
 	real_name = "goblin"
 	ADD_TRAIT(src, TRAIT_NOMOOD, TRAIT_GENERIC)
@@ -307,7 +322,7 @@
 		return
 	var/should_update = FALSE
 	var/is_matthios = FALSE
-	if(FACTION_MATTHIOS in C.faction)
+	if(C.has_faction(FACTION_MATTHIOS))
 		is_matthios = TRUE
 	if(amount > 20 MINUTES)
 		for(var/obj/item/bodypart/B in C.bodyparts)
@@ -316,10 +331,10 @@
 				should_update = TRUE
 	else if(amount > 12 MINUTES)
 		for(var/obj/item/bodypart/B in C.bodyparts)
-			if(!B.rotted)
-				B.rotted = TRUE
+			if(!HAS_TRAIT(B, TRAIT_ROTTEN))
+				B.kill_limb()
 				should_update = TRUE
-			if(B.rotted && amount < 16 MINUTES && !is_matthios)
+			if(HAS_TRAIT(B, TRAIT_ROTTEN) && amount < 16 MINUTES && !is_matthios)
 				var/turf/open/T = C.loc
 				if(istype(T))
 					T.pollute_turf(/datum/pollutant/rot, 4)

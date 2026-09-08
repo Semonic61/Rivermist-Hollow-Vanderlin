@@ -5,7 +5,7 @@
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	blade_dulling = DULLING_CUT
 	max_integrity = 200
-	integrity_failure = 0.1
+	integrity_failure = ARMOR_INTEG_FAILURE
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
 
 	//Here we have salvage vars!
@@ -116,11 +116,12 @@
 /obj/item/clothing/get_inspect_entries(list/inspect_list)
 	. = ..()
 
-	if(armor)
+	var/datum/armor/item_armor = get_armor()
+	if(item_armor.has_any_armor())
 		. += "\n<u><b>DEFENSE:</b></u>\n"
 		var/list/defense_strings = list()
-		for(var/damage_key in ARMOR_LIST_DAMAGE())
-			var/rating = armor.get_rating(damage_key)
+		for(var/damage_key in ARMOR_LIST_DAMAGE)
+			var/rating = item_armor.get_rating(damage_key)
 			defense_strings += "<font color='[armor_to_color(rating)]'>[armor_to_protection_name(damage_key)] [armor_to_protection_class(rating)]</font>"
 		. += defense_strings.Join(" | ")
 
@@ -131,7 +132,7 @@
 	if(body_parts_covered)
 		. += "\n<u><b>COVERAGE:</b></u>\n"
 		var/list/parsed_zones = list()
-		for(var/zone in body_parts_covered2organ_names(body_parts_covered))
+		for(var/zone in cover_flags2body_zones(body_parts_covered))
 			parsed_zones += "[parse_zone(zone)]"
 		. += parsed_zones.Join(" | ")
 
@@ -332,17 +333,19 @@
 				qdel(src)
 				return
 		qdel(clothing_as_food)
-	if(M.on_fire)
-		if(user == M)
-			return
-		user.changeNext_move(CLICK_CD_MELEE)
-		M.visible_message(span_warning("[user] pats out the flames on [M] with [src]!"))
-		M.adjust_divine_fire_stacks(-2)
-		if(M.fire_stacks > 0)
-			M.adjust_fire_stacks(-2)
-		take_damage(10, BURN, "fire")
-	else
+	if(!M.on_fire)
 		return ..()
+
+	if(user == M)
+		return
+
+	user.changeNext_move(CLICK_CD_MELEE)
+	M.visible_message(span_warning("[user] pats out the flames on [M] with [src]!"))
+	M.adjust_divine_fire_stacks(-2)
+	if(M.fire_stacks > 0)
+		M.adjust_fire_stacks(-2)
+
+	take_damage(10, BURN, "fire")
 
 /obj/item/clothing/dropped(mob/user)
 	..()
@@ -409,7 +412,7 @@
 	if(!damaged_clothes)
 		update_clothes_damaged_state(TRUE)
 	var/brokemessage = FALSE
-	var/list/armorlist = armor?.getList()
+	var/list/armorlist = get_armor().get_rating_list()
 	for(var/x in armorlist)
 		if(armorlist[x] > 0)
 			brokemessage = TRUE
@@ -446,7 +449,7 @@ SEE_MOBS  // can see all mobs, no matter what
 SEE_OBJS  // can see all objs, no matter what
 SEE_TURFS // can see all turfs (and areas), no matter what
 SEE_PIXELS// if an object is located on an unlit area, but some of its pixels are
-		  // in a lit area (via pixel_x,y or smooth movement), can see those pixels
+		// in a lit area (via pixel_x,y or smooth movement), can see those pixels
 BLIND     // can't see anything
 */
 
@@ -597,13 +600,18 @@ BLIND     // can't see anything
 		if(HAS_TRAIT(C, TRAIT_NOBLE) && wet.water_stacks == 0)
 			C.add_stress(/datum/stress_event/noble_tarnished_cloth)
 
+		if(wet.dirty_water)
+			C.adjust_germ_level_directed(0.5 * wet.water_stacks, body_zone = slot2body_zone(slot_flags))
 		if(C.mind?.assigned_role == /datum/job/advclass/towner/farmhand || HAS_TRAIT(C, TRAIT_LEECHIMMUNE) || istriton(C))
 			return
 
 	if(wet.water_stacks < 0)
 		if(COOLDOWN_FINISHED(src, wet_stress_cd))
 			COOLDOWN_START(src, wet_stress_cd, 60 SECONDS)
-			C.add_stress(/datum/stress_event/wet_cloth)
+			if(HAS_TRAIT(C, TRAIT_WATER_LOVER) || istriton(C))
+				C.add_stress(/datum/stress_event/wet_cloth_positive)
+			else
+				C.add_stress(/datum/stress_event/wet_cloth)
 
 /obj/item/clothing/take_damage(damage_amount, damage_type, damage_flag, sound_effect, attack_dir, armor_penetration)
 	. = ..()
@@ -621,15 +629,16 @@ BLIND     // can't see anything
 
 	var/text
 	var/sound
+	var/armor_name = capitalize(name)
 
 	if(ratio <= 0.75 && ratio_old > 0.75)
-		text = "Armor <br><font color = '#8aaa4d'>marred</font>"
+		text = "[armor_name]<br><font color = '#8aaa4d'>marred</font>"
 		sound = pick_damage_sound(1)
 	if(ratio <= 0.5 && ratio_old > 0.5)
-		text = "Armor <br><font color = '#d4d36c'>damaged</font>"
+		text = "[armor_name]<br><font color = '#d4d36c'>damaged</font>"
 		sound = pick_damage_sound(2)
 	if(ratio <= 0.25 && ratio_old > 0.25)
-		text = "Armor <br><font color = '#a8705a'>sundered</font>"
+		text = "[armor_name]<br><font color = '#a8705a'>sundered</font>"
 		sound = pick_damage_sound(3)
 
 	if(sound)

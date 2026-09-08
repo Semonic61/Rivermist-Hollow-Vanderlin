@@ -1,36 +1,150 @@
 
-/mob/living/proc/run_armor_check(def_zone = null, attack_flag = "blunt", absorb_text = null, soften_text = null, armor_penetration, penetrated_text, damage, blade_dulling)
-	var/armor = getarmor(def_zone, attack_flag, damage, armor_penetration, blade_dulling)
-	var/armor_check = 0
+/proc/normalize_armor_attack_flag(attack_flag)
+	switch(attack_flag)
+		if(BCLASS_BLUNT, BCLASS_SMASH, BCLASS_PUNCH, BCLASS_BITE)
+			return BLUNT
+		if(BCLASS_CUT, BCLASS_CHOP, BCLASS_LASHING)
+			return SLASH
+		if(BCLASS_STAB, BCLASS_PICK, BCLASS_DRILL, BCLASS_TWIST)
+			return STAB
+		if(BCLASS_PIERCE, BCLASS_SHOT)
+			return PIERCE
+		if(BCLASS_BURN)
+			return FIRE
+	return attack_flag
 
-	// Only run armor logic if there actually is armor
+/proc/legacy_armor_rating_to_tier(rating, max_tier = ARMOR_TIER_BSTEEL)
+	if(!isnum(rating) || rating <= 0)
+		return ARMOR_TIER_NONE
+	if(rating < 25)
+		return min(ARMOR_TIER_LIGHT, max_tier)
+	if(rating < 50)
+		return min(ARMOR_TIER_MEDIUM, max_tier)
+	if(rating < 75)
+		return min(ARMOR_TIER_HEAVY, max_tier)
+	return max_tier
+
+/proc/normalize_armor_rating(attack_flag, rating)
+	attack_flag = normalize_armor_attack_flag(attack_flag)
+	if(!isnum(rating) || rating <= 0)
+		return ARMOR_TIER_NONE
+	if(attack_flag in ARMOR_DBLOCK_TYPES)
+		return legacy_armor_rating_to_tier(rating, ARMOR_TIER_BSTEEL)
+	if(attack_flag in ARMOR_DR_TYPES)
+		if(rating == DR_SUPER)
+			return ARMOR_TIER_SUPER
+		return legacy_armor_rating_to_tier(rating, ARMOR_TIER_ULTRA)
+	return rating
+
+/proc/normalize_penetration(armor_penetration)
+	if(!isnum(armor_penetration) || armor_penetration < PEN_LIGHT)
+		return PEN_NONE
+	if(armor_penetration < PEN_MEDIUM)
+		return ARMOR_TIER_LIGHT
+	if(armor_penetration < PEN_HEAVY)
+		return ARMOR_TIER_MEDIUM
+	if(armor_penetration < PEN_BSTEEL)
+		return ARMOR_TIER_HEAVY
+	return ARMOR_TIER_BSTEEL
+
+/proc/get_pen_info(mob/living/attacker, obj/item/used_weapon, datum/intent/used_intent, armor_penetration = PEN_NONE, armor_rating = 0)
+	// TA-style: passthrough dots = legacy-scale (pen - protection) + stat bonus,
+	// adjusted by sharpness, clamped 1..PEN_PASSTHROUGH_CAP. The result is only
+	// consumed on the penetrating DBLOCK path, hence the clamp floor of 1.
+	var/pen_total = 1
+	if(isnum(armor_penetration) && isnum(armor_rating))
+		// 10 legacy armor points per extra passthrough dot; +1 = baseline dot for penetrating at all
+		pen_total = round((armor_penetration - armor_rating) / 10) + 1
+	var/balance_bonus = 0
+	var/sharpness_bonus = 0
+	if(attacker && used_weapon)
+		if(used_weapon.wbalance >= HARD_TO_DODGE)
+			balance_bonus = max(GET_MOB_ATTRIBUTE_VALUE(attacker, STAT_SPEED) - 10, 0)
+		else
+			balance_bonus = max(GET_MOB_ATTRIBUTE_VALUE(attacker, STAT_STRENGTH) - 10, 0)
+		if(used_weapon.max_blade_int && used_weapon.sharpness != IS_BLUNT)
+			var/dullness_ratio = used_weapon.blade_int / used_weapon.max_blade_int
+			if(dullness_ratio <= SHARPNESS_TIER2_THRESHOLD)
+				sharpness_bonus = -2
+			else if(dullness_ratio < SHARPNESS_TIER1_THRESHOLD)
+				sharpness_bonus = -1
+	if(used_intent?.damfactor > 1)
+		pen_total += round((used_intent.damfactor - 1) * 2)
+	// Don't let a dull blade penalize us below what raw stats would give (TA edge-case rule)
+	if(sharpness_bonus < 0 && balance_bonus >= 0 && abs(balance_bonus) <= abs(sharpness_bonus))
+		balance_bonus = 0
+		sharpness_bonus = 0
+	pen_total += balance_bonus + sharpness_bonus
+	return CLAMP(pen_total, 1, PEN_PASSTHROUGH_CAP)
+
+/proc/get_armor_blocked_damage(attack_flag, armor_rating, armor_penetration = PEN_NONE, damage, pen_info)
+	attack_flag = normalize_armor_attack_flag(attack_flag)
+	var/block_damage = damage || 999
+	var/armor_tier = normalize_armor_rating(attack_flag, armor_rating)
+	if(armor_tier <= ARMOR_TIER_NONE)
+		return 0
+	if(attack_flag in ARMOR_DR_ABSORB_TYPES)
+		return block_damage
+	if(attack_flag in ARMOR_DR_PIERCE_TYPES)
+		var/dr_multiplier = 1 / (1 + (0.2 * armor_tier))
+		return block_damage * (1 - dr_multiplier)
+	if(attack_flag in ARMOR_DBLOCK_TYPES)
+		var/penetration_tier = normalize_penetration(armor_penetration)
+		if(penetration_tier < armor_tier)
+			return block_damage * 10
+		if(attack_flag == PIERCE)
+			if(penetration_tier == armor_tier)
+				return block_damage * PEN_PROJECTILE_EQUAL_BLOCK_RATIO
+			return block_damage * PEN_PROJECTILE_OVERMATCH_BLOCK_RATIO
+		pen_info = isnull(pen_info) ? 1 : CLAMP(pen_info, 1, PEN_PASSTHROUGH_CAP)
+		return block_damage * max(0, 1 - (pen_info * PEN_PASSTHROUGH_RATIO))
+
+	var/legacy_penetration = isnum(armor_penetration) ? armor_penetration : 0
+	return max(0, armor_rating - legacy_penetration)
+
+/mob/living/proc/run_armor_check(def_zone = null, attack_flag = "blunt", absorb_text = null, soften_text = null, armor_penetration = PEN_NONE, penetrated_text, damage, blade_dulling, intdamfactor = 1, used_weapon, pen_info, mob/living/attacker, datum/intent/used_intent)
+	attack_flag = normalize_armor_attack_flag(attack_flag)
+	var/armor = getarmor(def_zone, attack_flag, damage, armor_penetration, blade_dulling, intdamfactor, used_weapon, attacker)
+	var/blocked = get_armor_blocked_damage(attack_flag, armor, armor_penetration, damage, isnull(pen_info) ? get_pen_info(attacker, used_weapon, used_intent, armor_penetration, armor) : pen_info)
+	var/block_damage = damage || 999
+
+	if(alpha <= 100 || rogue_sneaking)
+		apply_status_effect(/datum/status_effect/debuff/stealthcd)
+		mob_timers[MT_SNEAKATTACK] = world.time //Stops you from sneaking after being hit. (Should work!)
+
 	if(armor > 0)
-		if(armor_penetration)
-			armor = max(0, armor - armor_penetration)
-		armor_check = max(0, armor - damage)
-
-		// Decide feedback based on how much damage got through
-		if(armor_check == 0 && armor_penetration)
+		if(blocked < block_damage && armor_penetration)
 			to_chat(src, "<span class='danger'>[penetrated_text || "My armor was penetrated!"]</span>")
-		else if(armor_check > 0)
+			balloon_alert_to_viewers("<font color='#d07171'>armor pierced</font>", balloon_flag = DISABLE_BALLOON_COMBAT, y_offset = -8)
+		else if(blocked > 0)
 			if(armor_penetration)
 				to_chat(src, "<span class='warning'>[soften_text || "My armor softens the blow!"]</span>")
+				balloon_alert_to_viewers("<font color='#d4d36c'>armor softened</font>", balloon_flag = DISABLE_BALLOON_COMBAT, y_offset = -8)
 			else
 				to_chat(src, "<span class='notice'>[absorb_text || "My armor absorbs the blow!"]</span>")
+				balloon_alert_to_viewers("<font color='#8aaa4d'>armor held</font>", balloon_flag = DISABLE_BALLOON_COMBAT, y_offset = -8)
 
-	return armor
+	return blocked
 
 
-/mob/living/proc/getarmor(def_zone, type, damage, armor_penetration, blade_dulling)
+/mob/living/proc/getarmor(def_zone, type, damage, armor_penetration, blade_dulling, intdamfactor = 1, used_weapon, mob/living/attacker)
 	return 0
 
 //this returns the mob's protection against eye damage (number between -1 and 2) from bright lights
 /mob/living/proc/get_eye_protection()
 	return 0
 
-//this returns the mob's protection against ear damage (0:no protection; 1: some ear protection; 2: has no ears)
-/mob/living/proc/get_ear_protection()
-	return 0
+/// Applies both lasting ear damage and temporary deafness where supported.
+/mob/living/proc/sound_damage(damage, deafen)
+	return
+
+/// Returns additive protection against sound trauma.
+/mob/living/proc/get_ear_protection(ignore_deafness = FALSE)
+	if(!ignore_deafness && HAS_TRAIT(src, TRAIT_DEAF))
+		return EAR_PROTECTION_FULL
+	var/list/signal_protection = list(EAR_PROTECTION_NONE)
+	SEND_SIGNAL(src, COMSIG_LIVING_GET_EAR_PROTECTION, signal_protection)
+	return signal_protection[EAR_PROTECTION_ARG]
 
 /**
  * Checks if our mob has their mouth covered.
@@ -43,21 +157,53 @@
  *
  * Retuns a truthy value (a ref to what is covering mouth), or a falsy value (null)
  */
-/mob/living/proc/is_mouth_covered(head_only = 0, mask_only = 0)
+/mob/living/proc/is_mouth_covered(check_flags)
 	return FALSE
 
-/mob/living/proc/is_eyes_covered(check_glasses = 1, check_head = 1, check_mask = 1)
+/mob/living/proc/is_eyes_covered(check_flags)
 	return FALSE
+
 /mob/living/proc/is_pepper_proof(check_head = TRUE, check_mask = TRUE)
 	return FALSE
+
 /mob/living/proc/on_hit(obj/projectile/P)
 	return BULLET_ACT_HIT
 
+/// Guard (clash) or parry-buffer spell counterplay: deflect marked projectiles.
+/// Returns TRUE if deflected (caller should return early).
+/mob/living/proc/guard_deflect_projectile(obj/projectile/P)
+	if(!P.guard_deflectable)
+		return FALSE
+	var/datum/status_effect/buff/clash/guard = has_status_effect(/datum/status_effect/buff/clash)
+	if(guard)
+		if(P.on_guard_deflect(src))
+			apply_status_effect(/datum/status_effect/buff/parry_buffer)
+			guard.deflected_spell = TRUE
+			remove_status_effect(/datum/status_effect/buff/clash)
+			return TRUE
+		return FALSE
+	if(has_status_effect(/datum/status_effect/buff/parry_buffer))
+		// silent: the fanfare already played on the initial deflect.
+		// Deliberately not refreshed - the volley window can't be chained indefinitely.
+		return P.on_guard_deflect(src, silent = TRUE)
+	return FALSE
+
 /mob/living/bullet_act(obj/projectile/P, def_zone = BODY_ZONE_CHEST)
+	if(dodge_projectile(P))
+		return BULLET_ACT_FORCE_PIERCE
+
+	// Also hooked in /mob/living/carbon/human/bullet_act so deflection outranks
+	// species/martial-art/reflect handling there; safe to run twice.
+	if(guard_deflect_projectile(P))
+		return BULLET_ACT_BLOCK
+
 	if(!prob(P.accuracy + P.bonus_accuracy)) //if your accuracy check fails, you wont hit your intended target
 		def_zone = ran_zone(BODY_ZONE_CHEST, 65)//Hits a random part of the body, geared towards the chest
 
-	var/armor = run_armor_check(def_zone, P.flag, "", "",P.armor_penetration, damage = P.damage)
+	var/mob/living/projectile_firer
+	if(isliving(P.firer))
+		projectile_firer = P.firer
+	var/armor = run_armor_check(def_zone, P.flag, "", "", P.armor_penetration, damage = P.damage, attacker = projectile_firer)
 
 	next_attack_msg.Cut()
 
@@ -122,7 +268,10 @@
 		var/zone = ran_zone(BODY_ZONE_CHEST, 65)//Hits a random part of the body, geared towards the chest
 		SEND_SIGNAL(I, COMSIG_MOVABLE_IMPACT_ZONE, src, zone)
 		if(!blocked)
-			var/armor = run_armor_check(zone, damage_type, "", "",I.armor_penetration, damage = I.throwforce)
+			var/mob/living/thrower = throwingdatum?.get_thrower()
+			if(!istype(thrower))
+				thrower = null
+			var/armor = run_armor_check(zone, damage_type, "", "", I.armor_penetration, damage = I.throwforce, used_weapon = I, attacker = thrower)
 			next_attack_msg.Cut()
 			var/nodmg = FALSE
 			var/damagetype = damage_type
@@ -131,10 +280,10 @@
 					damagetype = BRUTE
 				if("fire", "acid")
 					damagetype = BURN
-			if(isliving(throwingdatum?.thrower))
-				var/mob/living/thrower = throwingdatum.thrower
+			if(thrower)
 				set_damage_attack_context(thrower)
-			if(!apply_damage(I.throwforce, damagetype, zone, armor))
+			var/real_damage = apply_damage(I.throwforce, damagetype, zone, armor)
+			if(!real_damage)
 				nodmg = TRUE
 				next_attack_msg += span_warning(" Armor stops the damage.")
 			clear_damage_attack_context()
@@ -142,10 +291,7 @@
 				if(iscarbon(src))
 					var/obj/item/bodypart/affecting = get_bodypart(zone)
 					if(affecting)
-						var/throwee = null
-						if(throwingdatum)
-							throwee = isliving(throwingdatum.thrower) ? throwingdatum.thrower : null
-						affecting.bodypart_attacked_by(I.thrown_bclass, I.throwforce, throwee, affecting.body_zone, crit_message = TRUE)
+						affecting.bodypart_attacked_by(I.thrown_bclass, real_damage, thrower, affecting.body_zone, crit_message = TRUE, incoming_germ = I.germ_level, pre_applied = TRUE)
 					I.do_special_attack_effect(I.thrownby, affecting, null, src, zone, thrown = TRUE)
 				else
 					simple_woundcritroll(I.thrown_bclass, I.throwforce, null, zone, crit_message = TRUE)
@@ -228,7 +374,7 @@
 
 	if(!prob(probby) && !instant && !stat && cmode)
 		var/self_message
-		if(src.client?.prefs.showrolls)
+		if(src.client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 			self_message = span_warning("I struggle with [user]! ([probby]%)")
 		else
 			self_message = span_warning("I struggle with [user]!")
@@ -310,7 +456,9 @@
 
 	var/cached_intent = M.used_intent
 
-	sleep(M.used_intent?.swingdelay)
+	if(!M.do_swing_windup(M.used_intent))
+		M.swinging = FALSE
+		return FALSE
 	M.swinging = FALSE
 	if(M.a_intent != cached_intent)
 		return FALSE
@@ -336,7 +484,7 @@
 	return TRUE
 
 
-/mob/living/attack_paw(mob/living/carbon/monkey/M)
+/mob/living/attack_paw(mob/living/carbon/M)
 	if(isturf(loc) && istype(loc.loc, /area/start))
 //		to_chat(M, "No attacking people at spawn, you jackass.")
 		return FALSE
@@ -402,9 +550,27 @@
 		return TRUE
 	return FALSE
 
-//called when the mob receives a loud bang
-/mob/living/proc/soundbang_act()
-	return 0
+/// Applies the physical effects of a loud noise after accounting for ear protection.
+/mob/living/proc/soundbang_act(intensity = SOUNDBANG_NORMAL, stun_pwr = 2 SECONDS, damage_pwr = 5, deafen_pwr = 1.5 SECONDS, ignore_deafness = FALSE, send_sound = TRUE)
+	var/protection = get_ear_protection(ignore_deafness)
+	if(protection >= intensity)
+		return FALSE
+	var/effect_amount = protection > 0 ? 1 - (protection / intensity) : 1 - protection
+	if(stun_pwr)
+		Paralyze(stun_pwr * effect_amount * 0.1)
+		Knockdown(stun_pwr * effect_amount)
+	var/obj/item/organ/ears/ears = getorganslot(ORGAN_SLOT_EARS)
+	. = effect_amount
+	if(!ears || !(deafen_pwr || damage_pwr))
+		return
+	sound_damage(damage_pwr * effect_amount, deafen_pwr * effect_amount)
+	if(send_sound)
+		SEND_SOUND(src, sound('sound/flash_ring.ogg', FALSE, TRUE, FALSE, 250))
+	if(ears.damage >= 15 && prob(ears.damage - 5))
+		to_chat(src, span_userdanger("You can't hear anything!"))
+		ears.setOrganDamage(ears.maxHealth)
+	else if(ears.damage >= 5)
+		to_chat(src, span_warning("Your ears start to ring[ears.damage >= 15 ? " badly!" : "!"]"))
 
 //to damage the clothes worn by a mob
 /mob/living/proc/damage_clothes(damage_amount, damage_type = BRUTE, damage_flag = 0, def_zone)

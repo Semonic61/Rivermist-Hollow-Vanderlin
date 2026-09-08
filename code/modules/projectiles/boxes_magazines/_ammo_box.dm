@@ -73,12 +73,16 @@
 /obj/item/ammo_box/proc/can_load(mob/user)
 	return TRUE
 
-/obj/item/ammo_box/attackby(obj/item/A, mob/user, list/modifiers, silent = FALSE, replace_spent = 0)
+/obj/item/ammo_box/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	try_load(user, tool)
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/ammo_box/proc/try_load(mob/living/user, obj/item/tool, silent = FALSE, replace_spent = FALSE)
 	var/num_loaded = 0
 	if(!can_load(user))
 		return
-	if(istype(A, /obj/item/ammo_box))
-		var/obj/item/ammo_box/AM = A
+	if(istype(tool, /obj/item/ammo_box))
+		var/obj/item/ammo_box/AM = tool
 		for(var/obj/item/ammo_casing/AC in AM.stored_ammo)
 			var/did_load = give_round(AC, replace_spent)
 			if(did_load)
@@ -86,8 +90,8 @@
 				num_loaded++
 			if(!did_load || !multiload)
 				break
-	if(istype(A, /obj/item/ammo_casing))
-		var/obj/item/ammo_casing/AC = A
+	if(istype(tool, /obj/item/ammo_casing))
+		var/obj/item/ammo_casing/AC = tool
 		if(give_round(AC, replace_spent))
 			user.update_inv_hands() //give_round already forcemoves round into ammo box
 			num_loaded++
@@ -96,7 +100,7 @@
 		if(!silent)
 			to_chat(user, "<span class='notice'>I load [num_loaded] shell\s into \the [src]!</span>")
 			playsound(src, 'sound/blank.ogg', 60, TRUE)
-		A.update_appearance(UPDATE_ICON_STATE)
+		tool.update_appearance(UPDATE_ICON_STATE)
 		update_appearance(UPDATE_ICON_STATE)
 	return num_loaded
 

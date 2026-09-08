@@ -1,6 +1,7 @@
 /datum/quirk/boon/backstory
 	name = "Experienced Background"
-	desc = "You had a previous career before becoming an adventurer. You've retained skills from that time, but it left its mark on you. (OOC NOTE; COMBAT SKILLS ARE CLAMPED AT AVERAGE FROM THIS, THIS IS YOUR PAST.)"
+	desc = "You had a previous career before becoming an adventurer. You've retained skills from that time, but it left its mark on you."
+	desc_hint = "Combat skills are clamped at average from this, this is your past"
 	point_value = -2
 	customization_label = "Choose Background"
 	customization_options = list()
@@ -137,9 +138,9 @@
 		return TRUE
 
 	// Check age restrictions
-	if(length(allowed_ages) && !(prefs.age in allowed_ages))
+	if(length(allowed_ages) && !(prefs.read_preference(/datum/preference/choiced/age) in allowed_ages))
 		return FALSE
-	if(prefs.age in blocked_ages)
+	if(prefs.read_preference(/datum/preference/choiced/age) in blocked_ages)
 		return FALSE
 
 	// Check species restrictions

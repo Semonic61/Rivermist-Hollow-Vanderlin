@@ -50,6 +50,7 @@
 		for(var/datum/emote/P in key_emotes)
 			mute_time = P.mute_time
 			if(P.run_emote(src, param, m_type, intentional, targetted))
+				SEND_SIGNAL(src, COMSIG_MOB_EMOTE, P)
 				break
 
 	if(custom_me)

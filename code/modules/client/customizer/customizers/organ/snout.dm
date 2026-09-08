@@ -259,7 +259,6 @@
 		/datum/sprite_accessory/snout/otiesmile,
 		/datum/sprite_accessory/snout/pede,
 		/datum/sprite_accessory/snout/sergal,
-		/datum/sprite_accessory/snout/shark,
 		/datum/sprite_accessory/snout/toucan,
 		/datum/sprite_accessory/snout/redpanda,
 		/datum/sprite_accessory/snout/redpandaalt,
@@ -346,7 +345,6 @@
 		/datum/sprite_accessory/snout/otiesmile,
 		/datum/sprite_accessory/snout/pede,
 		/datum/sprite_accessory/snout/sergal,
-		/datum/sprite_accessory/snout/shark,
 		/datum/sprite_accessory/snout/toucan,
 		/datum/sprite_accessory/snout/redpanda,
 		/datum/sprite_accessory/snout/redpandaalt,
@@ -405,7 +403,7 @@
 
 /datum/customizer_choice/organ/snout/lamia
 	name = "Lamian Snout"
-	organ_type = /obj/item/organ/snout/akula
+	organ_type = /obj/item/organ/snout/lamia
 	sprite_accessories = list(
 		/datum/sprite_accessory/snout/shark,
 		/datum/sprite_accessory/snout/sergal,

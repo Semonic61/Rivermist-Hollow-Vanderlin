@@ -16,7 +16,7 @@
 
 /datum/idle_behavior/gnome_enhanced_idle/perform_idle_behavior(delta_time, datum/ai_controller/controller)
 	. = ..()
-	if(!controller.able_to_run())
+	if(!controller.able_to_run)
 		return
 	var/mob/living/simple_animal/hostile/gnome_homunculus/gnome_pawn = controller.pawn
 	if(!istype(gnome_pawn))
@@ -30,8 +30,6 @@
 	if(controller.blackboard[BB_BASIC_MOB_FOOD_TARGET]) // this means we are likely eating a corpse
 		return
 	if(controller.blackboard[BB_RESISTING]) //we are trying to resist
-		return
-	if(controller.blackboard[BB_IS_BEING_RIDDEN])
 		return
 
 
@@ -55,10 +53,10 @@
 		SEND_SIGNAL(gnome_pawn, EMOTION_BUFFER_SPEAK_FROM_BUFFER)
 
 	// Standard random walk behavior
-	if(prob(walk_chance) && !HAS_TRAIT(gnome_pawn, TRAIT_IMMOBILIZED) && isturf(gnome_pawn.loc) && !gnome_pawn.pulledby)
+	if(controller.can_move() && prob(walk_chance) && !HAS_TRAIT(gnome_pawn, TRAIT_IMMOBILIZED) && isturf(gnome_pawn.loc) && !gnome_pawn.pulledby)
 		var/move_dir = pick(GLOB.alldirs)
 		var/turf/step_turf = get_step(gnome_pawn, move_dir)
-		if(is_type_in_typecache(step_turf, GLOB.dangerous_turfs))
+		if(ai_turf_is_hazardous(step_turf))
 			return
 		gnome_pawn.Move(step_turf, move_dir)
 
@@ -169,7 +167,7 @@
 	gnome.say(pick("*hops excitedly*", "*bounces up and down*", "*springs about*", "*does happy little jumps*"))
 
 	// Actually move around a bit
-	if(prob(70))
+	if(gnome.ai_controller?.can_move() && prob(70))
 		var/turf/target = get_step(gnome, pick(GLOB.cardinals))
 		if(target && target.density == FALSE)
 			gnome.Move(target)

@@ -4,6 +4,12 @@
 #define AI_STATUS_OFF		"ai_off"
 #define AI_STATUS_IDLE      "ai_idle"
 
+//Flags returned by get_able_to_run()
+///pauses AI processing
+#define AI_UNABLE_TO_RUN (1<<1)
+///bypass canceling our actions on set_ai_status()
+#define AI_PREVENT_CANCEL_ACTIONS (1<<2)
+
 ///Carbon checks
 #define SHOULD_RESIST(source) (source.on_fire || source.buckled || HAS_TRAIT(source, TRAIT_RESTRAINED) || (source.pulledby && (source.pulledby != source) && source.pulledby.grab_state > GRAB_PASSIVE))
 #define SHOULD_STAND(source) (source.resting)
@@ -149,6 +155,14 @@
 #define BB_THREAT_THRESHOLD "threat_threshold" // Minimum threat to be considered hostile
 #define BB_AGGRO_RANGE "aggro_range" // Range at which mobs can detect and add threats
 #define BB_AGGRO_MAINTAIN_RANGE "aggro_maintain_range" // Range at which target is dropped if exceeded
+#define BB_AI_ALERT_MODE_UNTIL "ai_alert_mode_until"
+#define BB_LAST_RANGED_HIT_TIME "bb_last_ranged_hit_time"
+#define BB_LAST_RANGED_ATTACKER "bb_last_ranged_attacker"
+#define AI_ALERT_ON_CLIENT_TIME (30 SECONDS)
+#define AI_ALERT_ON_ATTACK_TIME (30 SECONDS)
+/// Max distance a newly-arrived client may be from the pawn to arm the client alert grace period. Farther passers-by crossing our wide tracking radius must not keep us awake.
+#define AI_ALERT_ON_CLIENT_DIST 7
+#define AI_RANGED_HOT_PURSUIT_TIME (15 SECONDS)
 #define BB_HEALING_SOURCE "healing_source" // Who last healed the mob
 #define BB_SNEAKING "bb_sneaking"
 #define BB_SNEAK_COOLDOWN "bb_sneak_cooldown"
@@ -161,6 +175,7 @@
 #define BB_CURRENTLY_SWIMMING "currently_swimming"
 ///key holds how long we will be swimming for
 #define BB_KEY_SWIMMER_COOLDOWN "key_swimmer_cooldown"
+#define BB_SEAL_NEXT_DIVE "seal_next_dive"
 
 #define BB_LEYLINE_SOURCE "leyline_source"
 #define BB_TELEPORT_COOLDOWN "teleport_cooldown"
@@ -228,6 +243,10 @@
 #define BB_HUMAN_NPC_ATTACK_ZONE_COUNTER "human_npc_attack_zone_counter"
 #define BB_HUMAN_NPC_LAST_ATTACK_ZONE    "human_npc_last_attack_zone"
 #define BB_HUMAN_NPC_WEAKPOINT           "human_npc_weakpoint"
+#define BB_HUMAN_NPC_WEAKPOINT_ARMOR_TYPE "human_npc_weakpoint_armor_type"
+#define BB_HUMAN_NPC_WEAKPOINT_EXPIRES   "human_npc_weakpoint_expires"
+#define BB_HUMAN_NPC_WEAKPOINT_SCAN_COOLDOWN "human_npc_weakpoint_scan_cooldown"
+#define BB_HUMAN_NPC_WEAKPOINT_TARGET    "human_npc_weakpoint_target"
 #define BB_HUMAN_NPC_JUMP_COOLDOWN       "human_npc_jump_cooldown"
 #define BB_HUMAN_NPC_FLANK_ANGLE         "human_npc_flank_angle"
 #define BB_HUMAN_NPC_FLANK_TARGET        "human_npc_flank_target"
@@ -235,6 +254,8 @@
 #define BB_HUMAN_NPC_HARASS_RETREATING   "human_npc_harass_retreating"
 #define BB_HUMAN_NPC_HARASS_COOLDOWN     "human_npc_harass_cooldown"
 #define BB_HUMAN_NPC_JUKE_COOLDOWN       "human_npc_juke_cooldown"
+#define BB_HUMAN_NPC_COMMITTED_SWING_TOKEN "human_npc_committed_swing_token"
+#define BB_HUMAN_NPC_COMBAT_BARK_COOLDOWN "human_npc_combat_bark_cooldown"
 #define BB_HUMAN_NPC_CURRENT_INTENT_ATTACKS_LEFT "human_npc_intent_attacks"
 #define BB_BEGGING_FOOD_ITEM "item_beg_target"
 #define BB_ARCHER_NPC_TARGET_ARROW      "archer_target_arrow"
@@ -367,5 +388,5 @@ GLOBAL_LIST_INIT(ai_item_flags, list(
 ))
 
 #define AI_INVENTORY_WATCHED_SLOTS (ITEM_SLOT_BELT | ITEM_SLOT_BACK_L | ITEM_SLOT_BACK_R | \
-    ITEM_SLOT_BELT_L | ITEM_SLOT_BELT_R | ITEM_SLOT_ARMOR | ITEM_SLOT_PANTS | \
-    ITEM_SLOT_SHIRT | ITEM_SLOT_CLOAK | ITEM_SLOT_BACK | ITEM_SLOT_NECK)
+	ITEM_SLOT_BELT_L | ITEM_SLOT_BELT_R | ITEM_SLOT_ARMOR | ITEM_SLOT_PANTS | \
+	ITEM_SLOT_SHIRT | ITEM_SLOT_CLOAK | ITEM_SLOT_BACK | ITEM_SLOT_NECK)

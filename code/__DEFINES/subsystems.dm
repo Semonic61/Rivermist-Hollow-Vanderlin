@@ -100,6 +100,7 @@
 // Subsystem init_order, from highest priority to lowest priority
 // Subsystems shutdown in the reverse of the order they initialize in
 // The numbers just define the ordering, they are meaningless otherwise.
+#define INIT_ORDER_PROFILER 103
 #define INIT_ORDER_ASSETS 102
 #define INIT_ORDER_TITLE 101
 #define INIT_ORDER_QUIRKS 100
@@ -130,6 +131,7 @@
 #define INIT_ORDER_DUNGEON 48
 #define INIT_ORDER_POCKETS 47
 #define INIT_ORDER_NETWORKS 45
+#define INIT_ORDER_TIMETRACK 44
 #define INIT_ORDER_SPATIAL_GRID 43
 #define INIT_ORDER_ECONOMY 40
 #define INIT_ORDER_OUTPUTS 35
@@ -193,6 +195,7 @@
 #define FIRE_PRIORITY_TGUI 110
 #define FIRE_PRIORITY_TICKER 120
 #define FIRE_PRIORITY_ATMOS_ADJACENCY 130
+
 #define FIRE_PRIORITY_STATPANEL 135
 #define FIRE_PRIORITY_CHAT 140
 #define FIRE_PRIORITY_RUNECHAT 150
@@ -242,3 +245,5 @@
 	* * flags flags for this timer, see: code\__DEFINES\subsystems.dm
 */
 #define addtimer(args...) _addtimer(args, file = __FILE__, line = __LINE__)
+
+#define SSMOBS_DT (SSmobs.wait/10)

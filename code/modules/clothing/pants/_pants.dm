@@ -13,7 +13,7 @@
 	prevent_crits = list(BCLASS_LASHING)
 	permeability_coefficient = 0.9
 	slot_flags = ITEM_SLOT_PANTS
-	armor = list("blunt" = 0, "slash" = 0, "stab" = 0,  "piercing" = 0, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/none
 	flags_inv = HIDEUNDIESBOT|HIDECROTCH
 
 	equip_sound = 'sound/foley/equip/cloak_equip.ogg'
@@ -33,7 +33,7 @@
 	r_sleeve_status = SLEEVE_NORMAL
 	l_sleeve_status = SLEEVE_NORMAL
 
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 	anvilrepair = null
 
 	var/fitted = NO_FEMALE_UNIFORM // For use in alternate clothing styles for women

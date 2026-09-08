@@ -12,6 +12,31 @@
 	grid_width = 32
 	flags_ai_inventory = AI_ITEM_POWDER
 
+/obj/item/reagent_containers/powder/return_recipe_data()
+	var/list/milled_from_paths = GLOB.snack_mill_reverse[type]
+	if(!length(milled_from_paths))
+		return null
+
+	var/list/data = list()
+	data["type"] = "snack_processing"
+	data["name"] = name
+	data["category"] = "Processing"
+	data["_output_path"] = "[type]"
+	data["output_name"] = name
+	data["output_icon"] = "[icon]"
+	data["output_state"] = "[icon_state]"
+
+	var/list/milled_from = list()
+	for(var/atom/src_path as anything in milled_from_paths)
+		milled_from += list(list(
+			"name" = initial(src_path.name),
+			"icon" = "[initial(src_path.icon)]",
+			"icon_state" = "[initial(src_path.icon_state)]",
+			"_path" = "[src_path]",
+		))
+	data["milled_from"] = milled_from
+	return data
+
 /obj/item/reagent_containers/powder/canconsume(mob/eater, mob/user, silent)
 	. = ..()
 	if(!.)
@@ -30,29 +55,34 @@
 		if(canconsume(C, silent = TRUE))
 			if(reagents.total_volume)
 				playsound(C, 'sound/items/sniff.ogg', 100, FALSE)
-				reagents.trans_to(C, 1, transfered_by = thrownthing.thrower, method = "swallow")
+				reagents.trans_to(C, 1, transfered_by = thrownthing.get_thrower(), method = "swallow")
 				qdel(src)
 
-/obj/item/reagent_containers/powder/attack(mob/M, mob/user, list/modifiers)
+/obj/item/reagent_containers/powder/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isliving(interacting_with))
+		return NONE
+
+	var/mob/living/M = interacting_with
+
 	if(!canconsume(M, user))
-		return FALSE
+		return ITEM_INTERACT_BLOCKING
+
 	if(M == user)
 		M.visible_message(span_notice("[user] sniffs [src]."))
-	else
-		if(iscarbon(M))
-			var/mob/living/carbon/C = M
-			var/obj/item/bodypart/CH = C.get_bodypart(BODY_ZONE_HEAD)
-			if(!CH)
-				to_chat(user, span_warning("[C.p_theyre(TRUE)] missing their head."))
-				return FALSE
-			C.visible_message(span_danger("[user] attempts to force [C] to inhale [src]."), \
-							span_danger("[user] attempts to force me to inhale [src]!"))
-			if(C.cmode)
-				if(!CH.grabbedby)
-					to_chat(user, span_info("[C.p_they(TRUE)] steals [C.p_their()] face from it."))
-					return FALSE
-			if(!do_after(user, 1 SECONDS, M))
-				return FALSE
+	else if(iscarbon(M))
+		var/mob/living/carbon/C = M
+		var/obj/item/bodypart/CH = C.get_bodypart(BODY_ZONE_HEAD)
+		if(!CH)
+			to_chat(user, span_warning("[C.p_theyre(TRUE)] missing their head."))
+			return ITEM_INTERACT_BLOCKING
+		C.visible_message(span_danger("[user] attempts to force [C] to inhale [src]."), \
+						span_danger("[user] attempts to force me to inhale [src]!"))
+		if(C.cmode)
+			if(!CH.grabbedby)
+				to_chat(user, span_info("[C.p_they(TRUE)] steals [C.p_their()] face from it."))
+				return ITEM_INTERACT_BLOCKING
+		if(!do_after(user, 1 SECONDS, M))
+			return ITEM_INTERACT_BLOCKING
 
 	playsound(M, 'sound/items/sniff.ogg', 100, FALSE)
 
@@ -61,8 +91,11 @@
 		SEND_SIGNAL(M, COMSIG_DRUG_SNIFFED, user)
 		record_featured_stat(FEATURED_STATS_CRIMINALS, user)
 		record_round_statistic(STATS_DRUGS_SNORTED)
+
+	user.changeNext_move(CLICK_CD_MELEE)
 	qdel(src)
-	return TRUE
+
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/reagent_containers/powder/spice
 	name = "spice"
@@ -88,17 +121,17 @@
 	blend_mode = 0
 	show_when_dead = FALSE
 
-/datum/reagent/druqks/on_mob_life(mob/living/carbon/M)
+/datum/reagent/druqks/on_mob_life(mob/living/carbon/M, efficiency)
 	SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
-	M.set_drugginess(30 SECONDS)
+	M.set_drugginess(30 SECONDS * efficiency)
 	M.apply_status_effect(/datum/status_effect/buff/druqks)
 	if(prob(5))
 		if(M.gender == FEMALE)
 			M.emote(pick("twitch_s","giggle"))
 		else
 			M.emote(pick("twitch_s","chuckle"))
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	..()
 
 /datum/reagent/druqks/on_mob_metabolize(mob/living/M)
@@ -140,10 +173,20 @@
 	overdose_threshold = 16
 	metabolization_rate = 0.2
 
-/datum/reagent/ozium/on_mob_life(mob/living/carbon/M)
+/datum/reagent/ozium/on_mob_metabolize(mob/living/L)
+	. = ..()
+	L.add_chem_effect(CE_PAINKILLER, 100, "[type]")
+	L.add_chem_effect(CE_STIMULANT, 2, "[type]")
+
+/datum/reagent/ozium/on_mob_end_metabolize(mob/living/L)
+	. = ..()
+	L.remove_chem_effect(CE_PAINKILLER, "[type]")
+	L.remove_chem_effect(CE_STIMULANT, "[type]")
+
+/datum/reagent/ozium/on_mob_life(mob/living/carbon/M, efficiency)
 	SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	if(prob(5))
 		M.flash_fullscreen("whiteflash")
 	M.apply_status_effect(/datum/status_effect/buff/ozium)
@@ -176,24 +219,26 @@
 /datum/reagent/moondust/on_mob_metabolize(mob/living/M)
 	animate(M.client, pixel_y = 1, time = 1, loop = -1, flags = ANIMATION_RELATIVE)
 	animate(pixel_y = -1, time = 1, flags = ANIMATION_RELATIVE)
+	M.add_chem_effect(CE_PULSE, 1, "[type]")
 
 /datum/reagent/moondust/on_mob_end_metabolize(mob/living/M)
 	M.remove_status_effect(/datum/status_effect/buff/moondust)
 	animate(M.client)
+	M.remove_chem_effect(CE_PULSE, "[type]")
 
-/datum/reagent/moondust/on_mob_life(mob/living/carbon/M)
+/datum/reagent/moondust/on_mob_life(mob/living/carbon/M, efficiency)
 	SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
 	if(M.has_reagent(/datum/reagent/moondust_purest))
 		M.Sleeping(40, 0)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	M.apply_status_effect(/datum/status_effect/buff/moondust)
 	if(prob(2))
 		M.flash_fullscreen("whiteflash")
 	..()
 
 /datum/reagent/moondust/overdose_process(mob/living/M)
-	M.adjustToxLoss(0.25*REM, 0)
+	M.adjustOrganLoss(ORGAN_SLOT_HEART,0.25*REM, 0)
 	. = ..()
 
 /datum/reagent/moondust/overdose_start(mob/living/M)
@@ -221,25 +266,27 @@
 	M.overlay_fullscreen("purest_kaif", /atom/movable/screen/fullscreen/purest)
 	animate(M.client, pixel_y = 1, time = 1, loop = -1, flags = ANIMATION_RELATIVE)
 	animate(pixel_y = -1, time = 1, flags = ANIMATION_RELATIVE)
+	M.add_chem_effect(CE_PULSE, 2, "[type]")
 
 /datum/reagent/moondust_purest/on_mob_end_metabolize(mob/living/M)
 	animate(M.client)
 	M.clear_fullscreen("purest_kaif")
 	M.remove_status_effect(/datum/status_effect/buff/moondust_purest)
+	M.remove_chem_effect(CE_PULSE, "[type]")
 
-/datum/reagent/moondust_purest/on_mob_life(mob/living/carbon/M)
+/datum/reagent/moondust_purest/on_mob_life(mob/living/carbon/M, efficiency)
 	SEND_SIGNAL(src, COMSIG_DRUG_INDULGE)
 	if(M.has_reagent(/datum/reagent/moondust))
-		M.Sleeping(40, 0)
-	if(M.has_quirk(/datum/quirk/vice/junkie))
-		M.sate_addiction(/datum/quirk/vice/junkie)
+		M.Sleeping(40 * efficiency, 0)
+	if(M.has_quirk(/datum/quirk/vice/addiction/junkie))
+		M.sate_addiction(/datum/quirk/vice/addiction/junkie)
 	M.apply_status_effect(/datum/status_effect/buff/moondust_purest)
 	if(prob(20))
 		M.flash_fullscreen("whiteflash")
 	..()
 
 /datum/reagent/moondust_purest/overdose_process(mob/living/M)
-	M.adjustToxLoss(0.25*REM, 0)
+	M.adjustOrganLoss(ORGAN_SLOT_HEART,0.25*REM, 0)
 	. = ..()
 
 /datum/reagent/moondust_purest/overdose_start(mob/living/M)

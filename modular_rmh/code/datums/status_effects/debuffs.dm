@@ -42,7 +42,7 @@
 /datum/status_effect/edged_penis_cooldown
 	id = "tired_penis"
 	alert_type = null
-	duration = 7 MINUTES
+	duration = 4 MINUTES
 
 /datum/status_effect/blue_bean
 	id = "blue_bean"
@@ -74,7 +74,7 @@
 	id = "close_to_orgasm"
 	duration = 1 MINUTES
 	alert_type = /atom/movable/screen/alert/status_effect/close_to_orgasm
-	effectedstats = list("strength" = -1, "speed" = -1, "intelligence" = -2)
+	effectedstats = list("intelligence" = -1)
 
 /datum/stress_event/close_to_orgasm
 	desc = "<span class='love_low'>I am really close to release.</span>"
@@ -97,9 +97,9 @@
 
 /datum/status_effect/edging_overstimulation
 	id = "edging_overstimulation"
-	duration = 5 MINUTES
+	duration = 3 MINUTES
 	alert_type = /atom/movable/screen/alert/status_effect/edging_overstimulation
-	effectedstats = list("strength" = -1, "speed" = -2, "intelligence" = -2)
+	effectedstats = list("speed" = -1, "intelligence" = -1)
 
 /datum/stress_event/edging_overstimulation
 	desc = "<span class='love_low'>I have been going at it for too long without release, I need relief...</span>\n"
@@ -121,7 +121,7 @@
 /datum/status_effect/debuff/orgasmbroken
 	id = "orgasmbroken"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/orgasmbroken
-	effectedstats = list("intelligence" = -2, "strength" = -1, "speed" = -1, "perception" = -2, "endurance" = 2, "constitution" = -1)
+	effectedstats = list("intelligence" = -1, "speed" = -1, "perception" = -1, "endurance" = 1)
 	duration = -1
 
 /datum/stress_event/orgasmbroken
@@ -130,31 +130,22 @@
 	stress_change = -5
 
 /datum/status_effect/debuff/orgasmbroken/on_apply()
-	owner.add_stress(/datum/stress_event/orgasmbroken)
 	. = ..()
+	owner.add_stress(/datum/stress_event/orgasmbroken)
 
 /datum/status_effect/debuff/orgasmbroken/on_remove()
 	owner.remove_stress(/datum/stress_event/orgasmbroken)
 	. = ..()
 
-/datum/status_effect/debuff/orgasmbroken/on_apply()
-	. = ..()
-	owner.add_movespeed_modifier("ORGASM_SLOWDOWN", multiplicative_slowdown=4)
-
-/datum/status_effect/debuff/orgasmbroken/on_remove()
-	. = ..()
-	owner.remove_movespeed_modifier("ORGASM_SLOWDOWN")
-
 /atom/movable/screen/alert/status_effect/debuff/orgasmbroken
 	name = "Orgasm Broken"
 	desc = "My legs are shaking, but I need more."
 	icon = 'modular_rmh/icons/mob/screen_alert.dmi'
-	icon_state = "fentanyl"
+	icon_state = "orgasm_broken"
 
 /datum/status_effect/debuff/nympho_addiction
 	id = "nympho_addiction"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/nympho_addiction
-	//effectedstats = list("intelligence" = -20, "strength" = -8, "speed" = -6, "perception" = -5, "endurance" = 2, "constitution" = -2)
 	duration = -1
 
 /datum/stress_event/nympho_addiction
@@ -164,8 +155,9 @@
 
 /datum/status_effect/debuff/nympho_addiction/on_apply()
 	. = ..()
-	var/mob/living/carbon/human/human = owner
-	human.add_quirk(/datum/quirk/vice/lovefiend)
+	if(ishuman(owner))
+		var/mob/living/carbon/human/human = owner
+		human.add_quirk(/datum/quirk/vice/addiction/lovefiend)
 	owner.add_stress(/datum/stress_event/nympho_addiction)
 
 /datum/status_effect/debuff/nympho_addiction/on_remove()
@@ -175,13 +167,12 @@
 /atom/movable/screen/alert/status_effect/debuff/nympho_addiction
 	name = "Addicted to Sex"
 	desc = "I want to do it again. And again. And again."
-	icon = 'modular_rmh/icons/mob/screen_alert.dmi'
-	icon_state = "fentanyl"
+	icon_state = "debuff"
 
 /datum/status_effect/debuff/cumbrained
 	id = "cumbrained"
 	alert_type = /atom/movable/screen/alert/status_effect/debuff/cumbrained
-	effectedstats = list("intelligence" = -10, "strength" = -6, "speed" = -6)
+	effectedstats = list("intelligence" = -2, "speed" = -1)
 	duration = -1
 
 /datum/stress_event/cumbrained
@@ -190,8 +181,9 @@
 	stress_change = -1
 
 /datum/status_effect/debuff/cumbrained/on_apply()
-	owner.add_stress(/datum/stress_event/cumbrained)
 	. = ..()
+	owner.add_stress(/datum/stress_event/cumbrained)
+	owner.aroused_slurring = max(owner.aroused_slurring, 4)
 
 /datum/status_effect/debuff/cumbrained/on_remove()
 	owner.remove_stress(/datum/stress_event/cumbrained)
@@ -200,12 +192,15 @@
 /atom/movable/screen/alert/status_effect/debuff/cumbrained
 	name = "Cum Brained"
 	desc = "It's hard to think of anything but sex..."
-	icon_state = "debuff"
+	icon = 'modular_rmh/icons/mob/screen_alert.dmi'
+	icon_state = "cum_brained"
 
 /datum/status_effect/debuff/cumbrained/tick()
 	. = ..()
 	if(!owner)
 		return
+
+	owner.aroused_slurring = max(owner.aroused_slurring, 3)
 
 	if(!MOBTIMER_FINISHED(owner, "cumbrained_ticker", rand(30,90)SECONDS))
 		return
@@ -216,9 +211,9 @@
 	SEND_SIGNAL(owner, COMSIG_SEX_GET_AROUSAL, arousal_data)
 
 	if(arousal_data["arousal"] < 40)
-		SEND_SIGNAL(owner, COMSIG_SEX_ADJUST_AROUSAL, rand(25, 35))//so it instantly fully arouses
+		SEND_SIGNAL(owner, COMSIG_SEX_ADJUST_AROUSAL, rand(8, 14))
 	else
-		SEND_SIGNAL(owner, COMSIG_SEX_ADJUST_AROUSAL, rand(5, 15))
+		SEND_SIGNAL(owner, COMSIG_SEX_ADJUST_AROUSAL, rand(2, 6))
 	to_chat(owner, span_love("My body wants more..."))
 
 /datum/status_effect/debuff/loinspent
@@ -243,13 +238,16 @@
 	name = "Spent Loins"
 	desc = "It's starting to hurt a bit..."
 	icon_state = "debuff"
+	icon = 'modular_rmh/icons/mob/screen_alert.dmi'
+	icon_state = "spent_loins"
 
 
 /datum/status_effect/debuff/loinspent/tick()
 	. = ..()
 	if(!owner)
 		return
-
+	if(!ishuman(owner))
+		return
 	if(!MOBTIMER_FINISHED(owner, "chafing_loins", rand(20,90)SECONDS))
 		return
 
@@ -269,7 +267,7 @@
 
 /datum/status_effect/debuff/bloatone
 	id = "bloatone"
-	duration = 5 MINUTES
+	duration = 8 SECONDS //will be reapplied by the organ if the conditions are still met continiously.
 	alert_type = /atom/movable/screen/alert/status_effect/bloatone
 	examine_text = span_notice("Their belly is bulging...")
 	effectedstats = list("constitution" = 1, "speed" = -1)
@@ -279,14 +277,6 @@
 	timer = 60 MINUTES
 	stress_change = -1
 
-/datum/status_effect/debuff/bloatone/on_apply()
-	owner.add_stress(/datum/stress_event/bloatsex)
-	. = ..()
-
-/datum/status_effect/debuff/bloatone/on_remove()
-	owner.remove_stress(/datum/stress_event/bloatsex)
-	. = ..()
-
 /atom/movable/screen/alert/status_effect/bloatone
 	name = "Bloated"
 	desc = "Bit full..."
@@ -295,7 +285,7 @@
 
 /datum/status_effect/debuff/bloattwo
 	id = "bloattwo"
-	duration = 5 MINUTES
+	duration = 8 SECONDS //will be reapplied by the organ if the conditions are still met continiously.
 	alert_type = /atom/movable/screen/alert/status_effect/bloattwo
 	examine_text = span_notice("Their belly is bulging largely...")
 	effectedstats = list("constitution" = 2, "speed" = -2)
@@ -667,4 +657,52 @@
 /atom/movable/screen/alert/status_effect/debuff/mob_fucked
 	name = "Violated"
 	desc = "You were pinned down, roughed up and fucked - you are in no condition to fight, run while you can. They don't want to hurt you - for now."
-	icon_state = "bait"
+	icon = 'modular_rmh/icons/mob/screen_alert.dmi'
+	icon_state = "violated_f"
+
+/datum/status_effect/debuff/mob_fucked/male
+	alert_type = /atom/movable/screen/alert/status_effect/debuff/mob_fucked/male
+
+/atom/movable/screen/alert/status_effect/debuff/mob_fucked/male
+	icon_state = "violated_m"
+
+
+//STEALTH COOLDOWN
+
+/datum/status_effect/debuff/stealthcd
+	id = "stealth_cd"
+	alert_type = /atom/movable/screen/alert/status_effect/debuff/stealthcd
+	duration = 15 SECONDS
+
+/atom/movable/screen/alert/status_effect/debuff/stealthcd
+	name = "Stealth Broken"
+	desc = "I've been revealed and can not hide again for a while."
+	icon = 'modular_rmh/icons/mob/screen_alert.dmi'
+	icon_state = "stealthcd"
+
+/datum/status_effect/debuff/stealthcd/on_apply()
+	if(owner.mind)
+		duration = duration - (GET_MOB_SKILL_VALUE_OLD(owner, /datum/attribute/skill/misc/sneaking) SECONDS * 2)
+	if(owner.m_intent == MOVE_INTENT_SNEAK)
+		playsound(owner.loc, 'modular_rmh/sound/effects/mgsalert.ogg', 50, FALSE)
+		owner.toggle_rogmove_intent(MOVE_INTENT_WALK)
+		owner.update_sneak_invis()
+	return ..()
+
+//---------------------------------------------------------------------------------------------------------------------------------
+
+// Pregnacy status
+
+/datum/status_effect/debuff/impregnation
+	id = "impregnation"
+	status_type = STATUS_EFFECT_UNIQUE
+	alert_type = /atom/movable/screen/alert/status_effect/debuff/impregnation
+	duration = 2 MINUTES
+
+/atom/movable/screen/alert/status_effect/debuff/impregnation
+	name = "Impregnated"
+	desc = "I feel the seed spreading inside me, soon I will be pregnant."
+	icon = 'modular_rmh/icons/mob/screen_alert.dmi'
+	icon_state = "impregnation"
+
+//---------------------------------------------------------------------------------------------------------------------------------

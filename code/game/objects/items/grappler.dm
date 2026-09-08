@@ -9,6 +9,7 @@ Reel teleports the attached atom to the grabbed turf.
 #define GRAPPLER_NOZ 3
 
 /obj/item/grapplinghook
+	item_weight = 2.5 KILOGRAMS
 	name = "bronze grappler"
 	desc = "The finest innovation in industrial dwarven Engineering. Used to haul crates and kegs in shafts too steep for railcarts. Can be used on people who aren't too large.\nHas a range of VI tiles on the same plane, and a range of III tiles across planes.\nGrappling in the same plane will be blocked by any dense objects."
 	icon = 'icons/roguetown/misc/gadgets.dmi'
@@ -213,9 +214,9 @@ Reel teleports the attached atom to the grabbed turf.
 				grabber.start_pulling(grabby)
 				if(grapple_buckled)
 					if(grabby.mobility_flags & MOBILITY_STAND)	// piggyback carry
-						grabber.buckle_mob(grabby, TRUE, TRUE, FALSE, 0, 0)
+						grabber.buckle_mob(grabby, force = TRUE, check_loc = TRUE, buckle_mob_flags = RIDER_NEEDS_ARMS)
 					else				// fireman carry
-						grabber.buckle_mob(grabby, TRUE, TRUE, 90, 0, 0)
+						grabber.buckle_mob(grabby, force = TRUE, check_loc = TRUE, buckle_mob_flags = CARRIER_NEEDS_ARM)
 			playsound(attached, 'sound/misc/grapple_reel.ogg', 100, FALSE)
 			playsound(grappled_turf, 'sound/misc/grapple_reel.ogg', 100, FALSE)
 			destroy_eligible_objects()

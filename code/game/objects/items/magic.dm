@@ -1,6 +1,7 @@
 /////////////////////////////////////////Scrying///////////////////
 
 /obj/item/scrying
+	item_weight = 400 GRAMS
 	name = "scrying orb"
 	desc = "On its glass depths, you can scry on many unsuspecting beings..."
 	icon = 'icons/roguetown/items/misc.dmi'
@@ -22,6 +23,7 @@
 	var/cooldown = 30 SECONDS
 
 /obj/item/scrying/eye
+	item_weight = 200 GRAMS
 	name = "accursed eye"
 	desc = "It is pulsating."
 	icon = 'icons/roguetown/items/misc.dmi'
@@ -101,7 +103,7 @@
 /obj/structure/nocdevice/attack_hand(mob/user)
 	. = ..()
 	var/mob/living/carbon/human/H = user
-	if(H.virginity)
+	if(HAS_TRAIT(H, TRAIT_VIRGIN))
 		if(world.time < last_scry + 30 SECONDS)
 			to_chat(user, "<span class='warning'>I peer into the sky but cannot focus the lens on Mystra's signs. Maybe I should wait.</span>")
 			return

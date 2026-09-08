@@ -16,18 +16,18 @@
 	drop_sound = 'sound/foley/dropsound/chain_drop.ogg'
 	pickup_sound = 'sound/foley/equip/equip_armor_chain.ogg'
 	equip_sound = 'sound/foley/equip/equip_armor_chain.ogg'
-	anvilrepair = /datum/skill/craft/armorsmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	body_parts_covered = CHEST|GROIN|VITALS
-	armor = list("blunt" = 80, "slash" = 100, "stab" = 80,  "piercing" = 80, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/rmh/armor/guild_guard
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_CHOP, BCLASS_BLUNT, BCLASS_TWIST)
 	max_integrity = 250
 	armor_class = AC_MEDIUM
 	clothing_flags = CANT_SLEEP_IN
-	anvilrepair = /datum/skill/craft/blacksmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	smeltresult = /obj/item/ingot/steel
 	melting_material = /datum/material/steel
 	melt_amount = 100
-	sewrepair = FALSE
+	sewrepair = null
 	ignore_sleeves_code = TRUE // No sleeves, otherwise arms will be over the sprite
 	nodismemsleeves = TRUE
 	sleevetype = null
@@ -54,7 +54,7 @@
 	mob_overlay_icon = 'modular_rmh/icons/clothing/licensed-infraredbaron/onmob/armor.dmi'
 	icon_state = "duke"
 	item_state = "duke"
-	armor = list("blunt" = 30, "slash" = 35, "stab" = 10,  "piercing" = 20, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/rmh/armor/marshall
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_BLUNT)
 	blocksound = SOFTHIT
 	// This doesnt let you wear a belt because the sprite has a cloak and it would appear over the cloak. I cant bother to fix it.
@@ -63,7 +63,7 @@
 	body_parts_covered = CHEST|VITALS|ARMS
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
 	armor_class = AC_LIGHT
 	salvage_result = /obj/item/natural/hide/cured
 	ignore_sleeves_code = TRUE // No sleeves, otherwise arms will be over the sprite
@@ -121,13 +121,13 @@
 	icon_state = "councillor"
 	item_state = "councillor"
 	body_parts_covered = CHEST|GROIN|LEGS|ARMS|VITALS
-	armor = list("blunt" = 60, "slash" = 40, "stab" = 50,  "piercing" = 40, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/rmh/armor/councillor
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT)
 	blocksound = SOFTUNDERHIT
 	blade_dulling = DULLING_BASHCHOP
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/misc/sewing/mending
 	armor_class = AC_LIGHT
 	ignore_sleeves_code = TRUE // No sleeves, otherwise arms will be over the sprite
 	nodismemsleeves = TRUE

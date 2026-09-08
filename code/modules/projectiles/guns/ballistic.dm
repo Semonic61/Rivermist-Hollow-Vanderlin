@@ -231,36 +231,35 @@
 /obj/item/gun/ballistic/can_shoot()
 	return chambered
 
-/obj/item/gun/ballistic/attackby(obj/item/A, mob/user, list/modifiers)
-	. = ..()
-	if (.)
-		return
-	if (!internal_magazine && istype(A, /obj/item/ammo_box/magazine))
-		var/obj/item/ammo_box/magazine/AM = A
-		if (!magazine)
-			insert_magazine(user, AM)
-		else
-			if (tac_reloads)
-				eject_magazine(user, FALSE, AM)
-			else
-				to_chat(user, "<span class='notice'>There's already \a [magazine_wording] in \the [src].</span>")
-		return
-	if (istype(A, /obj/item/ammo_casing) || istype(A, /obj/item/ammo_box))
-		if (bolt_type == BOLT_TYPE_NO_BOLT || internal_magazine)
-			if (chambered && !chambered.BB)
+/obj/item/gun/ballistic/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!internal_magazine && istype(tool, /obj/item/ammo_box/magazine))
+		if(!magazine)
+			insert_magazine(user, tool)
+			return ITEM_INTERACT_SUCCESS
+
+		if(tac_reloads)
+			eject_magazine(user, FALSE, tool)
+			return ITEM_INTERACT_SUCCESS
+
+		balloon_alert(user, "already loaded!")
+		return ITEM_INTERACT_SUCCESS
+
+	if(istype(tool, /obj/item/ammo_casing) || istype(tool, /obj/item/ammo_box))
+		if(bolt_type == BOLT_TYPE_NO_BOLT || internal_magazine)
+			if(chambered && !chambered.BB)
 				chambered.forceMove(drop_location())
 				chambered = null
-			var/num_loaded = magazine.attackby(A, user, modifiers, TRUE)
-			if (num_loaded)
-				to_chat(user, "<span class='notice'>I [verbage] \a [cartridge_wording]\s on \the [src].</span>")
+			var/num_loaded = magazine.try_load(user, tool, silent = TRUE)
+			if(num_loaded)
+				balloon_alert(user, "[num_loaded] [cartridge_wording]\s loaded")
 				playsound(src, load_sound, load_sound_volume, load_sound_vary)
 				if (chambered == null && bolt_type == BOLT_TYPE_NO_BOLT)
 					chamber_round()
-				A.update_appearance()
-				update_appearance(UPDATE_ICON)
-			return
-	user.update_inv_hands()
-	return FALSE
+				tool.update_appearance()
+				update_appearance()
+			return ITEM_INTERACT_SUCCESS
+
+	return NONE
 
 
 /obj/item/gun/ballistic/AltClick(mob/user, list/modifiers)

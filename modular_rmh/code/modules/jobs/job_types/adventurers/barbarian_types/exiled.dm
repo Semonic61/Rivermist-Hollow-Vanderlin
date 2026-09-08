@@ -40,6 +40,7 @@
 		TRAIT_DEADNOSE,
 		TRAIT_CRITICAL_RESISTANCE,
 		TRAIT_NOPAINSTUN,
+		TRAIT_BLINDFIGHTING,
 		TRAIT_DUALWIELDER
 	)
 
@@ -71,4 +72,4 @@
 	l_hand = null
 	r_hand = null
 
-	backpack_contents = list(/obj/item/storage/belt/pouch/coins/poor = 1)
+	backpack_contents = list(/obj/item/storage/belt/pouch/cloth/coins/poor = 1)

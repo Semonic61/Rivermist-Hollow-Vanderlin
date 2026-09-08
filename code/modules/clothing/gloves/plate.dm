@@ -12,20 +12,20 @@
 	pickup_sound = "rustle"
 	break_sound = 'sound/foley/breaksound.ogg'
 	drop_sound = 'sound/foley/dropsound/armor_drop.ogg'
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
-	sewrepair = FALSE
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
+	sewrepair = null
 	smeltresult = /obj/item/ingot/iron //no 1 to 1 conversion
 	melting_material = /datum/material/iron
 	melt_amount = 100
 
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/gloves/plate
 	prevent_crits = ALL_EXCEPT_STAB
 	max_integrity = INTEGRITY_STRONGEST
 
 	grid_width = 64
 	grid_height = 32
-	item_weight = 7 * IRON_MULTIPLIER
+	item_weight = 1.65 KILOGRAMS
 
 	material_category = ARMOR_MAT_PLATE
 
@@ -34,7 +34,7 @@
 	desc = "Plated gauntlets made out of iron. Offers good protection against melee attacks."
 	icon_state = "igauntlets"
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/gloves/plate/bad
 	max_integrity = INTEGRITY_STRONG
 
 /obj/item/clothing/gloves/plate/rust
@@ -49,7 +49,7 @@
 	melting_material = /datum/material/iron
 	melt_amount = 100
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
+	armor_type = /datum/armor/gloves/plate/bad
 	max_integrity = INTEGRITY_STANDARD
 
 /obj/item/clothing/gloves/plate/blk
@@ -64,19 +64,19 @@
 	melting_material = /datum/material/blacksteel
 	melt_amount = 100
 	armor_class = AC_MEDIUM
-	armor = ARMOR_PLATE_GOOD
-	item_weight = 7 * BLACKSTEEL_MULTIPLIER
+	armor_type = /datum/armor/gloves/plate/good
+	item_weight = 1.65 KILOGRAMS
 	sellprice = VALUE_SILVER_ITEM * 2
 
 /obj/item/clothing/gloves/plate/silver
 	name = "silver gauntlets"
 	desc = "Finely forged gauntlets made out of silver."
 	icon_state = "silvergloves"
-	armor = ARMOR_PLATE_SILVER
+	armor_type = /datum/armor/gloves/plate/silver
 	smeltresult = /obj/item/ingot/silver
 	melting_material = /datum/material/silver
 	melt_amount = 100
-	item_weight = 12 * SILVER_MULTIPLIER
+	item_weight = 2.94 KILOGRAMS
 	sellprice = VALUE_SILVER_ITEM
 
 /obj/item/clothing/gloves/plate/silver/Initialize(mapload)

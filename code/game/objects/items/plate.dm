@@ -1,4 +1,5 @@
 /obj/item/plate
+	item_weight = 300 GRAMS
 	name = "platter"
 	desc = "A wood plate that holds food. A powerful tool for morale when you're not eating your meal off a table."
 	icon = 'icons/roguetown/items/cooking.dmi'
@@ -7,7 +8,7 @@
 	possible_item_intents = list(/datum/intent/use, /datum/intent/food)
 	w_class = WEIGHT_CLASS_NORMAL
 	///How many things fit on this plate?
-	var/max_items = 2
+	var/max_items = 4
 	///The offset from side to side the food items can have on the plate
 	var/max_x_offset = 4
 	///The max height offset the food can reach on the plate
@@ -79,16 +80,17 @@
 	else
 		return ..()
 
-/obj/item/plate/pre_attack(atom/A, mob/living/user, list/modifiers)
-	if(!iscarbon(A))
-		return
-	if(!contents.len)
-		return
-	if(user.used_intent.type != /datum/intent/food)
-		return
-	var/obj/item/object_to_eat = contents[1]
-	A.attackby(object_to_eat, user)
-	return TRUE //No normal attack
+/obj/item/plate/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(user.cmode || !istype(user.used_intent, INTENT_FEED))
+		return NONE
+	if(!iscarbon(interacting_with) || !length(contents))
+		return NONE
+
+	var/obj/item/reagent_containers/food/snacks/food = contents[1]
+	if(!istype(food))
+		return NONE
+
+	return food.interact_with_atom(interacting_with, user, modifiers)
 
 ///This proc adds the food to viscontents and makes sure it can deregister if this changes.
 /obj/item/plate/proc/AddToPlate(obj/item/item_to_plate)
@@ -154,15 +156,15 @@
 
 /obj/item/plate/examine(mob/user)
 	. = ..()
-	desc = initial(desc)
 	if(dirty)
-		desc += span_boldwarning("\nThis platter is filthy... absolutely disgusting.")
+		. += span_boldwarning("This platter is filthy... absolutely disgusting.")
 	else if(cleaned)
-		desc += span_notice("\nThis platter was cleaned recently!")
+		. += span_notice("This platter was cleaned recently!")
 	else
-		desc += "\nThis platter looks properly stored and clean enough."
+		. += "This platter looks properly stored and clean enough."
 
 /obj/item/plate/clay
+	item_weight = 400 GRAMS
 	name = "clay platter"
 	desc = "A fragile platter made from fired clay. Probably shouldn't throw it."
 	icon_state = "platter_clay"
@@ -180,6 +182,7 @@
 	qdel(src)
 
 /obj/item/plate/copper
+	item_weight = 600 GRAMS
 	name = "copper platter"
 	desc = "A platter made from a sheet of copper. Known to impart a metallic taste when eating certain foods."
 	icon_state = "platter_copper"
@@ -188,6 +191,7 @@
 	max_fork_usages = 7
 
 /obj/item/plate/pewter
+	item_weight = 500 GRAMS
 	name = "pewter platter"
 	desc = "A tin plate that contains just a tinge of lead."
 	icon_state = "platter_tin"
@@ -196,6 +200,7 @@
 	max_fork_usages = 7
 
 /obj/item/plate/silver
+	item_weight = 700 GRAMS
 	name = "silver platter"
 	desc = "A fancy silver plate often used by the nobility as a symbol of class."
 	icon_state = "platter_silver"
@@ -212,6 +217,7 @@
 	enchant(/datum/enchantment/silver)
 
 /obj/item/plate/gold
+	item_weight = 900 GRAMS
 	name = "gold platter"
 	desc = "A fancy gold plate often used by the nobility as a symbol of class."
 	icon_state = "platter_gold"
@@ -224,6 +230,7 @@
 	max_fork_usages = 11
 
 /obj/item/plate/jade
+	item_weight = 800 GRAMS
 	name = "joapstone platter"
 	desc = "A fancy platter carved out of joapstone."
 	icon_state = "platter_jade"
@@ -233,6 +240,7 @@
 	max_fork_usages = 11
 
 /obj/item/plate/onyxa
+	item_weight = 600 GRAMS
 	name = "onyxa platter"
 	desc = "A fancy platter carved out of onyxa."
 	icon_state = "platter_onyxa"
@@ -242,6 +250,7 @@
 	max_fork_usages = 11
 
 /obj/item/plate/shell
+	item_weight = 400 GRAMS
 	name = "shell platter"
 	desc = "A fancy platter carved out of shell."
 	icon_state = "platter_shell"
@@ -251,6 +260,7 @@
 	max_fork_usages = 11
 
 /obj/item/plate/rose
+	item_weight = 450 GRAMS
 	name = "rosellusk platter"
 	desc = "A fancy platter carved out of rosellusk."
 	icon_state = "platter_rose"
@@ -260,6 +270,7 @@
 	max_fork_usages = 11
 
 /obj/item/plate/amber
+	item_weight = 350 GRAMS
 	name = "petriamber platter"
 	desc = "A fancy platter carved out of petriamber."
 	icon_state = "platter_amber"
@@ -269,6 +280,7 @@
 	max_fork_usages = 11
 
 /obj/item/plate/opal
+	item_weight = 700 GRAMS
 	name = "opaloise platter"
 	desc = "A fancy platter carved out of opaloise."
 	icon_state = "platter_opal"
@@ -278,6 +290,7 @@
 	max_fork_usages = 11
 
 /obj/item/plate/coral
+	item_weight = 750 GRAMS
 	name = "aoetal platter"
 	desc = "A fancy platter carved out of aoetal."
 	icon_state = "platter_coral"
@@ -287,6 +300,7 @@
 	max_fork_usages = 11
 
 /obj/item/plate/turq
+	item_weight = 850 GRAMS
 	name = "ceruleabaster platter"
 	desc = "A fancy platter carved out of ceruleabaster."
 	icon_state = "platter_turq"
@@ -296,6 +310,7 @@
 	max_fork_usages = 11
 
 /obj/item/tray
+	item_weight = 500 GRAMS
 	name = "tray"
 	desc = "Best used when hosting for banquets or drunken taverns."
 	icon = 'icons/obj/food/containers.dmi'
@@ -330,14 +345,13 @@
 	update_appearance(UPDATE_OVERLAYS)
 
 /obj/item/tray/proc/do_scatter(obj/item/I)
-	if(I)
-		for(var/i in 1 to rand(1, 2))
-			var/xOffset = rand(-16, 16)  // Adjust the range as needed
-			var/yOffset = rand(-16, 16)  // Adjust the range as needed
-			I.x = xOffset
-			I.y = yOffset
-
-			sleep(rand(2, 4))
+	if(QDELETED(I))
+		return
+	// This used to assign I.x / I.y, which are world coordinates, not visual
+	// offsets - it teleported everything off the tray to the map edge. Offset
+	// the sprite instead, the way plate/throw_impact already does.
+	I.pixel_x = I.base_pixel_x + rand(-16, 16)
+	I.pixel_y = I.base_pixel_y + rand(-16, 16)
 
 /obj/item/plate/update_overlays()
 	. = ..()

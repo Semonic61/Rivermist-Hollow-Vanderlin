@@ -214,15 +214,26 @@
 //		stoplag(1)
 	if(ismob(M))
 		var/mob/user = M
-		for(var/obj/item/A in things)
+		// Iterate a copy: removing the current entry from the list being looped
+		// makes DM skip the next one, so half the pile was silently ignored.
+		// One complaint per rejected type, and a type we can't hold never
+		// aborts the rest of the gather.
+		var/list/rejections = list()
+		// Cache where the pile is: once the clicked item is stored, I.loc becomes
+		// the container and every remaining item would fail the check.
+		var/atom/gather_from = I.loc
+		for(var/obj/item/A in things.Copy())
 			things -= A
-//			if(A.loc != source_real_location)
-//				continue
-//			if(user.active_storage != src_object)
+			if(A.loc != gather_from)
+				continue
+			if(A.type in rejections)
+				continue
 			if(A.on_found(user))
-				break
-			if(can_be_inserted(A,FALSE,user))
-				handle_item_insertion(A, TRUE, user)
+				continue
+			if(!can_be_inserted(A, TRUE, user))
+				rejections += A.type
+				continue
+			handle_item_insertion(A, TRUE, user)
 //			if (TICK_CHECK)
 //				progress.update(progress.goal - things.len)
 //				return TRUE
@@ -517,6 +528,7 @@
 	M.client.screen |= boxes
 	M.client.screen |= closer
 	M.client.screen |= real_location.contents
+	M.hud_used.inventory_screens = list(boxes, closer) + real_location.contents
 	M.active_storage = src
 	LAZYOR(is_using, M)
 	return TRUE
@@ -533,6 +545,7 @@
 	M.client.screen -= boxes
 	M.client.screen -= closer
 	M.client.screen -= real_location.contents
+	M.hud_used.inventory_screens = list()
 	if(M.active_storage == src)
 		M.active_storage = null
 	LAZYREMOVE(is_using, M)
@@ -735,6 +748,12 @@
 
 /obj/item/proc/StorageBlock(obj/item/I, mob/user)
 	return FALSE
+
+/datum/component/storage/proc/get_carry_weight(atom/carrier)
+	. = 0
+	//we do need a typecheck here
+	for(var/obj/item/stored in contents())
+		. += stored.get_carry_weight(carrier)
 
 //This proc return 1 if the item can be picked up and 0 if it can't.
 //Set the stop_messages to stop it from printing messages

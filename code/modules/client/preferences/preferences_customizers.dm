@@ -1,6 +1,9 @@
-/datum/preferences/proc/validate_customizer_entries()
+/// Pass enforce_genital_rules = FALSE to sanitize the entry list without touching which genital
+/// entries are enabled. Only load_customizer_and_quirk_data() needs that, because the rules
+/// depend on quirks that have not been read out of the savefile yet.
+/datum/preferences/proc/validate_customizer_entries(enforce_genital_rules = TRUE)
 	customizer_entries = SANITIZE_LIST(customizer_entries)
-	listclearnulls(customizer_entries)
+	list_clear_nulls(customizer_entries)
 	var/datum/species/species = pref_species
 	var/list/customizers = species.customizers
 	/// Check if we have any customizer entries that don't match.
@@ -38,7 +41,8 @@
 		var/datum/customizer_choice/customizer_choice = CUSTOMIZER_CHOICE(entry.customizer_choice_type)
 		customizer_choice.validate_entry(src, entry)
 
-	enforce_genital_access_rules()
+	if(enforce_genital_rules)
+		enforce_genital_access_rules()
 
 /datum/preferences/proc/print_customizers_page()
 	var/list/dat = list()
@@ -175,7 +179,7 @@
 	return get_named_body_size_choices(BELLY_SIZES_BY_NAME, get_max_belly_size())
 
 /datum/preferences/proc/get_body_type_genital_set()
-	if(gender == FEMALE)
+	if(read_preference(/datum/preference/choiced/gender) == FEMALE)
 		return "feminine"
 	return "masculine"
 
@@ -243,8 +247,28 @@
 	. |= set_customizer_entry_type_enabled(/datum/customizer_entry/organ/genitals/breasts, !masculine)
 	. |= set_customizer_entry_type_enabled(/datum/customizer_entry/organ/genitals/vagina, !masculine)
 
+/// Enables every gendered genital entry at once. Only legal with the Extra Genitals unlock.
+/datum/preferences/proc/set_mixed_genital_set()
+	. = FALSE
+	. |= set_customizer_entry_type_enabled(/datum/customizer_entry/organ/genitals/penis, TRUE)
+	. |= set_customizer_entry_type_enabled(/datum/customizer_entry/organ/genitals/testicles, TRUE)
+	. |= set_customizer_entry_type_enabled(/datum/customizer_entry/organ/genitals/breasts, TRUE)
+	. |= set_customizer_entry_type_enabled(/datum/customizer_entry/organ/genitals/vagina, TRUE)
+
 /datum/preferences/proc/toggle_genital_set()
-	if(has_masculine_genital_set() && !has_feminine_genital_set())
+	// A mixed set is a state the player deliberately built, so with Extra Genitals the toggle
+	// cycles through it (mixed -> masculine -> feminine -> mixed) instead of silently
+	// discarding half of the selection on the first press.
+	if(has_extra_genital_customizer_unlock() && species_has_masculine_genital_set() && species_has_feminine_genital_set())
+		var/had_masculine = has_masculine_genital_set()
+		var/had_feminine = has_feminine_genital_set()
+		if(had_masculine && had_feminine)
+			set_genital_set("masculine")
+		else if(had_masculine)
+			set_genital_set("feminine")
+		else
+			set_mixed_genital_set()
+	else if(has_masculine_genital_set() && !has_feminine_genital_set())
 		set_genital_set("feminine")
 	else
 		set_genital_set("masculine")
@@ -703,12 +727,11 @@
 	else
 		return "FFFFFF"
 
-/datum/preferences/proc/get_eye_color()
+/datum/preferences/proc/get_eye_color(side = RIGHT_SIDE)
 	var/datum/customizer_entry/organ/eyes/entry = get_customizer_entry_of_type(/datum/customizer_entry/organ/eyes)
-	if(entry)
-		return entry.eye_color
-	else
+	if(!entry)
 		return "FFFFFF"
+	return (side == RIGHT_SIDE) ? entry.right_eye_color : entry.left_eye_color
 
 /datum/preferences/proc/get_chest_color()
 	var/list/zone_list = body_markings[BODY_ZONE_CHEST]
@@ -739,13 +762,18 @@
 	apply_genital_quirk_overrides()
 
 /datum/preferences/proc/clear_flavor()
-	flavortext = null
-	nsfwflavortext = null
-	erpprefs_flavor = null
-	ooc_notes = null
-	ooc_extra = null
-	song_title = null
-	song_artist = null
-	headshot_link = null
-	img_gallery = null
-	nsfw_img_gallery = null
+	write_preference(/datum/preference/text/flavortext, null)
+	write_preference(/datum/preference/text/flavortext_display, null)
+	write_preference(/datum/preference/text/nsfwflavortext, null)
+	write_preference(/datum/preference/text/erpprefs_flavor, null)
+	write_preference(/datum/preference/text/ooc_notes, null)
+	write_preference(/datum/preference/text/ooc_notes_display, null)
+	write_preference(/datum/preference/text/ooc_extra, null)
+	write_preference(/datum/preference/text/ooc_extra_link, null)
+	write_preference(/datum/preference/text/song_title, null)
+	write_preference(/datum/preference/text/song_artist, null)
+	write_preference(/datum/preference/text/song_link, null)
+	write_preference(/datum/preference/text/headshot_link, null)
+	write_preference(/datum/preference/text/nsfw_headshot_link, null)
+	write_preference(/datum/preference/list_type/profile_gallery/images, list())
+	write_preference(/datum/preference/list_type/profile_gallery/nsfw_images, list())

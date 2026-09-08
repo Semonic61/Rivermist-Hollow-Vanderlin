@@ -176,7 +176,7 @@
 
 	return master
 
-/datum/reagents/proc/trans_to(obj/target, amount = 1, multiplier = 1, preserve_data = TRUE, no_react = FALSE, mob/transfered_by, remove_blacklisted = FALSE, method = null, show_message = TRUE, round_robin = FALSE, ignore_stomach = FALSE)
+/datum/reagents/proc/trans_to(obj/target, amount = 1, multiplier = 1, preserve_data = TRUE, no_react = FALSE, mob/transfered_by, remove_blacklisted = FALSE, method = null, show_message = TRUE, round_robin = FALSE, ignore_stomach = FALSE, list/ignored_reagents)
 	//if preserve_data=0, the reagents data will be lost. Usefull if you use data for some strange stuff and don't want it to be transferred.
 	//if round_robin=TRUE, so transfer 5 from 15 water, 15 sugar and 15 plasma becomes 10, 15, 15 instead of 13.3333, 13.3333 13.3333. Good if you hate floating point errors
 	if(isliving(target) && transfered_by != target)
@@ -211,13 +211,20 @@
 			R = target.reagents
 			target_atom = target
 
-	amount = min(min(amount, src.total_volume), R.maximum_volume-R.total_volume)
+	var/used_volume = src.total_volume
+	if(length(ignored_reagents))
+		for(var/datum/reagent/T as anything in cached_reagents)
+			if(is_type_in_list(T, ignored_reagents))
+				used_volume -= T.volume
+	if(used_volume <= 0)
+		return
+	amount = min(min(amount, used_volume), R.maximum_volume - R.total_volume)
 	var/trans_data = null
 	var/transfer_log = list()
 	if(!round_robin)
-		var/part = amount / src.total_volume
+		var/part = amount / used_volume
 		for(var/datum/reagent/T as anything in cached_reagents)
-			if(remove_blacklisted && !T.can_synth)
+			if((remove_blacklisted && !T.can_synth) || is_type_in_list(T, ignored_reagents))
 				continue
 			var/transfer_amount = T.volume * part
 			if(preserve_data)
@@ -237,7 +244,7 @@
 			if(!to_transfer)
 				break
 			var/datum/reagent/T = reagent
-			if(remove_blacklisted && !T.can_synth)
+			if((remove_blacklisted && !T.can_synth) || is_type_in_list(T, ignored_reagents))
 				continue
 			if(preserve_data)
 				trans_data = copy_data(T)
@@ -324,7 +331,7 @@
 	R.handle_reactions()
 	return amount
 
-/datum/reagents/proc/metabolize(mob/living/carbon/C, can_overdose = FALSE, liverless = FALSE)
+/datum/reagents/proc/metabolize(mob/living/carbon/C, can_overdose = FALSE, liverless = FALSE, efficiency = 100, health_update = TRUE)
 	var/list/cached_reagents = reagent_list
 	var/list/cached_addictions = addiction_list
 	if(C)
@@ -363,7 +370,9 @@
 						for(var/datum/reagent/A as anything in cached_addictions)
 							if(istype(R, A))
 								A.addiction_stage = -15 // you're satisfied for a good while.
-				need_mob_update += R.on_mob_life(C)
+				if(!R.liver_chemical)
+					efficiency = 100
+				need_mob_update += R.on_mob_life(C, efficiency * 0.01)
 
 	if(can_overdose)
 		if(addiction_tick == 6)
@@ -384,8 +393,11 @@
 							remove_addiction(R)
 		addiction_tick++
 	if(C && need_mob_update) //some of the metabolized reagents had effects on the mob that requires some updates.
-		C.updatehealth()
-		C.update_stamina()
+		if(health_update)
+			C.updatehealth()
+			C.update_stamina()
+		else
+			. |= ORGAN_PROCESS_UPDATE_HEALTH
 	update_total()
 
 /datum/reagents/proc/remove_addiction(datum/reagent/R)
@@ -767,10 +779,10 @@
 					return FALSE
 	return FALSE
 
-/datum/reagents/proc/get_reagent_amount(reagent)
+/datum/reagents/proc/get_reagent_amount(reagent, strict = TRUE)
 	var/list/cached_reagents = reagent_list
 	for(var/datum/reagent/R as anything in cached_reagents)
-		if (R.type == reagent)
+		if(strict ? R.type == reagent : istype(R, reagent))
 			return round(R.volume, CHEMICAL_QUANTISATION_LEVEL)
 
 	return 0
@@ -1013,3 +1025,16 @@
 			return X
 
 #undef CHEMICAL_QUANTISATION_LEVEL
+
+//===============================Logging==========================================
+/// Outputs a log-friendly list of reagents based on the internal reagent_list.
+/datum/reagents/proc/get_reagent_log_string()
+	if(!length(reagent_list))
+		return "no reagents"
+
+	var/list/data = list()
+
+	for(var/datum/reagent/reagent as anything in reagent_list)
+		data += "[reagent.type] [reagent.volume]u"
+
+	return english_list(data)

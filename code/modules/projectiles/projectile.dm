@@ -44,17 +44,17 @@
 	var/temporary_unstoppable_movement = FALSE
 
 	/** PROJECTILE PIERCING
-	  * WARNING:
-	  * Projectile piercing MUST be done using these variables.
-	  * Ordinary passflags will be **IGNORED**.
-	  * The two flag variables below both use pass flags.
-	  * In the context of LETPASStHROW, it means the projectile will ignore things that are currently "in the air" from a throw.
-	  *
-	  * Also, projectiles sense hits using Bump(), and then pierce them if necessary.
-	  * They simply do not follow conventional movement rules.
-	  * NEVER flag a projectile as PHASING movement type.
-	  * If you so badly need to make one go through *everything*, override check_pierce() for your projectile to always return PROJECTILE_PIERCE_PHASE/HIT.
-	  */
+	* WARNING:
+	* Projectile piercing MUST be done using these variables.
+	* Ordinary passflags will be **IGNORED**.
+	* The two flag variables below both use pass flags.
+	* In the context of LETPASStHROW, it means the projectile will ignore things that are currently "in the air" from a throw.
+	*
+	* Also, projectiles sense hits using Bump(), and then pierce them if necessary.
+	* They simply do not follow conventional movement rules.
+	* NEVER flag a projectile as PHASING movement type.
+	* If you so badly need to make one go through *everything*, override check_pierce() for your projectile to always return PROJECTILE_PIERCE_PHASE/HIT.
+	*/
 	/// The "usual" flags of pass_flags is used in that can_hit_target ignores these unless they're specifically targeted/clicked on. This behavior entirely bypasses process_hit if triggered, rather than phasing which uses prehit_pierce() to check.
 	pass_flags = PASSTABLE
 	/// If FALSE, allow us to hit something directly targeted/clicked/whatnot even if we're able to phase through it
@@ -132,6 +132,8 @@
 	var/hit_stunned_targets = FALSE
 
 	var/woundclass = null
+	/// Percent chance a limb hit is pulled to the chest. 0 disables. Magic uses it to reach lethal zones.
+	var/chest_bias = 0
 	var/embedchance = 0
 	var/obj/item/dropped = null //Holds reference to object drop/embed. DO NOT SET TO TYPEPATH
 	var/ammo_type
@@ -150,8 +152,21 @@
 	///projectile crit reduce chance since more dmg increases the crit chance it can get absurdly high, 0 for nothing.
 	var/reduce_crit_chance = 0
 
+	/// Can a clash guard deflect this projectile? Set TRUE on magic bolts for spell counterplay.
+	var/guard_deflectable = FALSE
+	/// Can a player-controlled dodge grace avoid this direct projectile hit?
+	var/dodgeable = TRUE
+
 /obj/projectile/proc/handle_drop()
 	return
+
+/// Called when a guard or parry buffer deflects this projectile. Returns TRUE if handled.
+/obj/projectile/proc/on_guard_deflect(mob/living/deflector, silent = FALSE)
+	if(!silent)
+		deflector.visible_message(span_boldwarning("[deflector] deflects [src]!"))
+		playsound(deflector, 'sound/combat/clash_struck.ogg', 100, TRUE)
+	qdel(src)
+	return TRUE
 
 /obj/projectile/Initialize(mapload, ...)
 	. = ..()
@@ -351,6 +366,8 @@
 
 	var/distance = get_dist(T, starting) // Get the distance between the turf shot from and the mob we hit and use that for the calculations.
 	def_zone = ran_zone(def_zone, max(100-(7*distance), 5)) //Lower accurancy/longer range tradeoff. 7 is a balanced number to use.
+	if(chest_bias && prob(chest_bias) && !(def_zone in list(BODY_ZONE_HEAD, BODY_ZONE_CHEST)))
+		def_zone = BODY_ZONE_CHEST
 
 	return process_hit(T, select_target(T, A))
 

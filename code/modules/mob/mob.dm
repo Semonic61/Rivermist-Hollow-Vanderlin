@@ -95,6 +95,7 @@ GLOBAL_VAR_INIT(mobids, 1)
 	set_hydration(rand(HYDRATION_LEVEL_START_MIN, HYDRATION_LEVEL_START_MAX))
 	attribute_initialize()
 	. = ..()
+	initialize_actionspeed()
 	update_config_movespeed()
 	update_movespeed(TRUE)
 	become_hearing_sensitive()
@@ -225,6 +226,8 @@ GLOBAL_VAR_INIT(mobids, 1)
  * * ignored_mob (optional) doesn't show any message to a given mob if TRUE.
  */
 /atom/proc/visible_message(message, self_message, blind_message, vision_distance = DEFAULT_MESSAGE_RANGE, list/ignored_mobs, runechat_message = null, log_seen = NONE, log_seen_msg = null)
+	if(visible_message_suppression_count > 0)
+		return
 	var/turf/T = get_turf(src)
 	if(!T)
 		return
@@ -239,6 +242,14 @@ GLOBAL_VAR_INIT(mobids, 1)
 			continue
 		//This entire if/else chain could be in two lines but isn't for readibilties sake.
 		var/msg = message
+		var/signal = SEND_SIGNAL(M, COMSIG_MOB_VISIBLE_MESSAGE, src, message, vision_distance, ignored_mobs)
+		if(signal & COMPONENT_NO_VISIBLE_MESSAGE)
+			msg = null
+		else if(signal & COMPONENT_VISIBLE_MESSAGE_BLIND)
+			msg = blind_message
+		if(!msg)
+			continue
+
 		if(M.see_invisible < invisibility)//if src is invisible to M
 			msg = blind_message
 		if(!msg)
@@ -253,8 +264,16 @@ GLOBAL_VAR_INIT(mobids, 1)
 	portal_skipped_mobs |= ignored_mobs
 	relay_visible_message_to_portals(message, portal_skipped_mobs)
 
+/atom/proc/push_visible_message_suppression()
+	visible_message_suppression_count++
+
+/atom/proc/pop_visible_message_suppression()
+	visible_message_suppression_count = max(visible_message_suppression_count - 1, 0)
+
 ///Adds the functionality to self_message.
 /mob/visible_message(message, self_message, blind_message, vision_distance = DEFAULT_MESSAGE_RANGE, list/ignored_mobs, runechat_message = null, log_seen = NONE, log_seen_msg = null)
+	if(visible_message_suppression_count > 0)
+		return
 	. = ..()
 	if(self_message)
 		show_message(self_message, MSG_VISUAL, blind_message, MSG_AUDIBLE)
@@ -447,6 +466,8 @@ GLOBAL_VAR_INIT(mobids, 1)
 			client.eye = client.mob
 			client.perspective = MOB_PERSPECTIVE
 
+	SEND_SIGNAL(src, COMSIG_MOB_RESET_PERSPECTIVE, new_perspective)
+
 /// Show the mob's inventory to another mob
 /mob/proc/show_inv(mob/user, extra_only = FALSE)
 	return
@@ -474,6 +495,13 @@ GLOBAL_VAR_INIT(mobids, 1)
 
 	if(is_blind())
 		to_chat(src, span_warning("Something is there but I can't see it!"))
+		return
+
+	var/flags = SEND_SIGNAL(src, COMSIG_MOB_EXAMINATE, examinify)
+	if(flags & COMPONENT_NO_EXAMINATE)
+		return
+	else if(flags & COMPONENT_EXAMINATE_BLIND)
+		to_chat(src, span_warning("Something is there but i can't see it!"))
 		return
 
 	if(isturf(examinify.loc) && isliving(src) && stat == CONSCIOUS)
@@ -513,6 +541,13 @@ GLOBAL_VAR_INIT(mobids, 1)
 
 	var/list/result = examinify.examine(src)
 	if(LAZYLEN(result))
+		var/list/mechanics_result = examinify.get_mechanics_examine(src)
+		if(length(mechanics_result))
+			var/mechanics_result_str = "<details><summary>Mechanics</summary>"
+			for(var/line in mechanics_result)
+				mechanics_result_str += " - " + span_blue(line) + "\n"
+			mechanics_result_str += "</details>"
+			result += mechanics_result_str
 		for(var/i in 1 to (length(result) - 1))
 			result[i] += "\n"
 		to_chat(src, examine_block("<span class='infoplain'>[result.Join()]</span>"))
@@ -799,7 +834,7 @@ GLOBAL_VAR_INIT(mobids, 1)
 	if(client)
 		if(world.time < client.last_turn)
 			return FALSE
-	if(stat == DEAD || stat == UNCONSCIOUS)
+	if(stat == DEAD || stat == UNCONSCIOUS || stat == HARD_CRIT)
 		return FALSE
 	if(anchored)
 		return FALSE
@@ -968,29 +1003,26 @@ GLOBAL_VAR_INIT(mobids, 1)
  *
  * Turns you to face the other mob too
  */
-/mob/buckle_mob(mob/living/M, force = FALSE, check_loc = TRUE)
-	if(M.buckled)
-		return 0
-	var/turf/T = get_turf(src)
-	if(M.loc != T)
-		var/old_density = density
-		density = FALSE
-		var/can_step = step_towards(M, T)
-		density = old_density
-		if(!can_step)
-			return 0
+/mob/buckle_mob(mob/living/M, force = FALSE, check_loc = TRUE, buckle_mob_flags = NONE)
+	if(buckled)
+		return FALSE
 	return ..()
 
 ///Call back post buckle to a mob to offset your visual height
 /mob/post_buckle_mob(mob/living/M)
+	. = ..()
+	if(GetComponent(/datum/component/riding))
+		return
 	var/height = M.get_mob_buckling_height(src)
 	M.pixel_y = M.base_pixel_y + height
 	if(M.layer < layer)
 		M.layer = layer + 0.1
 ///Call back post unbuckle from a mob, (reset your visual height here)
 /mob/post_unbuckle_mob(mob/living/M)
-	M.layer = initial(M.layer)
-	M.pixel_y = M.base_pixel_y
+	. = ..()
+	M.layer = M.body_position == LYING_DOWN ? LYING_MOB_LAYER : initial(M.layer)
+	M.pixel_x = M.get_standard_pixel_x_offset()
+	M.pixel_y = M.get_standard_pixel_y_offset()
 
 ///returns the height in pixel the mob should have when buckled to another mob.
 /mob/proc/get_mob_buckling_height(mob/seat)
@@ -1034,43 +1066,67 @@ GLOBAL_VAR_INIT(mobids, 1)
 ///Can this mob use storage
 /mob/proc/canUseStorage()
 	return FALSE
-/**
- * Check if the other mob has any factions the same as us
- *
- * If exact match is set, then all our factions must match exactly
- */
-/atom/movable/proc/faction_check_mob(mob/target, exact_match)
-
-/mob/faction_check_mob(mob/target, exact_match)
-	if(exact_match) //if we need an exact match, we need to do some bullfuckery.
-		var/list/faction_src = faction.Copy()
-		var/list/faction_target = target.faction.Copy()
-		if(!("[REF(src)]" in faction_target)) //if they don't have our ref faction, remove it from our factions list.
-			faction_src -= "[REF(src)]" //if we don't do this, we'll never have an exact match.
-		if(!("[REF(target)]" in faction_src))
-			faction_target -= "[REF(target)]" //same thing here.
-		return faction_check(faction_src, faction_target, TRUE)
-	var/list/faction2use = target.faction.Copy()
-	faction2use += target.name
-	return faction_check(faction, faction2use, FALSE)
-/*
- * Compare two lists of factions, returning true if any match
- *
- * If exact match is passed through we only return true if both faction lists match equally
- */
-/proc/faction_check(list/faction_A, list/faction_B, exact_match)
-	var/list/match_list
-	if(exact_match)
-		match_list = faction_A&faction_B //only items in both lists
-		var/length = LAZYLEN(match_list)
-		if(length)
-			return (length == LAZYLEN(faction_A)) //if they're not the same len(gth) or we don't have a len, then this isn't an exact match.
-	else
-		match_list = faction_A&faction_B
-		return LAZYLEN(match_list)
+/mob/living/proc/ai_targeting_ally_check(mob/living/target)
+	if(!target)
+		return FALSE
+	if(faction_check_atom(target, exact_match = FALSE))
+		return TRUE
+	if(ai_targeting_related_faction_check(target))
+		return TRUE
+	if(ai_targeting_same_job_group(target))
+		return TRUE
+	if(ai_targeting_same_family(target))
+		return TRUE
 	return FALSE
 
+/mob/living/proc/ai_targeting_related_faction_check(mob/living/target)
+	if(!target)
+		return FALSE
+	return ai_faction_relation_check(get_faction(), target.get_faction())
 
+/mob/living/proc/get_ai_targeting_job_group()
+	var/datum/job/role = mind?.assigned_role
+	if(!role)
+		return null
+
+	var/datum/job/group_role = role.parent_job || role
+	if(!group_role.faction || group_role.faction == FACTION_NONE || group_role.faction == FACTION_NEUTRAL)
+		return null
+
+	if(group_role.department_flag)
+		return group_role.department_flag
+
+	return group_role.type
+
+/mob/living/proc/ai_targeting_same_job_group(mob/living/target)
+	if(!target)
+		return FALSE
+	var/source_job_group = get_ai_targeting_job_group()
+	return source_job_group && source_job_group == target.get_ai_targeting_job_group()
+
+/mob/living/proc/ai_targeting_same_family(mob/living/target)
+	if(!ishuman(src) || !ishuman(target))
+		return FALSE
+
+	var/mob/living/carbon/human/source_human = src
+	var/mob/living/carbon/human/target_human = target
+	return source_human.family_datum && source_human.family_datum == target_human.family_datum
+
+/proc/ai_faction_relation_check(list/source_factions, list/target_factions)
+	if(!LAZYLEN(source_factions) || !LAZYLEN(target_factions))
+		return FALSE
+
+	for(var/source_faction in source_factions)
+		var/list/source_allies = GLOB.ai_faction_allies[source_faction]
+		if(LAZYLEN(source_allies) && LAZYLEN(source_allies & target_factions))
+			return TRUE
+
+	for(var/target_faction in target_factions)
+		var/list/target_allies = GLOB.ai_faction_allies[target_faction]
+		if(LAZYLEN(target_allies) && LAZYLEN(target_allies & source_factions))
+			return TRUE
+
+	return FALSE
 /**
  * Fully update the name of a mob
  *
@@ -1326,6 +1382,10 @@ GLOBAL_VAR_INIT(mobids, 1)
 		remove_movespeed_modifier(MOVESPEED_ID_MOB_EQUIPMENT, update=TRUE)
 	else
 		add_movespeed_modifier(MOVESPEED_ID_MOB_EQUIPMENT, update=TRUE, priority=100, override=TRUE, multiplicative_slowdown=speedies, blacklisted_movetypes=FLOATING)
+
+/mob/living/carbon/update_equipment_speed_mods()
+	. = ..()
+	update_carry_weight()
 
 /// Gets the combined speed modification of all worn items
 /// Except base mob type doesnt really wear items

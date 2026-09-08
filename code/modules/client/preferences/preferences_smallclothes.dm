@@ -54,6 +54,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	return GLOB.cached_armsleeves_flat_icons[cache_key]
 
 /datum/preferences/proc/validate_smallclothes_preferences()
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(!smallclothes_preferences)
 		smallclothes_preferences = list()
 
@@ -110,8 +111,10 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 		if(!smallclothes_preferences[SMALCLOTHES_ARMSLEEVE_PREFERENCES])
 			smallclothes_preferences[SMALCLOTHES_ARMSLEEVE_PREFERENCES] = get_random_armsleeve()
 
+	write_preference(/datum/preference/list_type/smallclothes_preferences, smallclothes_preferences)
+
 /datum/preferences/proc/reset_smallclothes_preferences()
-	smallclothes_preferences = list()
+	var/list/smallclothes_preferences = list()
 	smallclothes_preferences[SMALCLOTHES_RANDOM_PREFERENCES] = FALSE
 	smallclothes_preferences[SMALCLOTHES_UNDIE_PREFERENCES] = null
 	smallclothes_preferences[SMALCLOTHES_LEGWEAR_PREFERENCES] = null
@@ -119,6 +122,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	smallclothes_preferences[SMALCLOTHES_GARTER_PREFERENCES] = null
 	smallclothes_preferences[SMALCLOTHES_UNDERSHIRT_PREFERENCES] = null
 	smallclothes_preferences[SMALCLOTHES_ARMSLEEVE_PREFERENCES] = null
+	write_preference(/datum/preference/list_type/smallclothes_preferences, smallclothes_preferences)
 
 /datum/preferences/proc/get_default_undie()
 	return /obj/item/clothing/undies
@@ -175,6 +179,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	return pick(choices)
 
 /datum/preferences/proc/handle_undies_topic(mob/user, href_list)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	//update_preview_icon()
 	switch(href_list["preference"])
 		if("toggle_random_smallclothes")
@@ -210,16 +215,16 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 			var/undie_type = text2path(href_list["undie_type"])
 			var/preference_type = href_list["preference_type"]
 			if(!isnull(undie_type))
-				var/choice = input(user, "Choose a color.", "Underwear Colour") as null|anything in colorlist
+				var/choice = input(user, "Choose a color.", "Underwear Colour") as null|anything in GLOB.colorlist
 				if (choice)
-					var/selected_value = colorlist[choice]
+					var/selected_value = GLOB.colorlist[choice]
 					if(selected_value == "CUSTOM_RGB")
 						var/current_color = smallclothes_preferences[preference_type]||"#FFFFFF"
 						var/new_color = input(user, "Select color:", "Custom Color", current_color) as color|null
 						if(new_color)
 							smallclothes_preferences[preference_type] = sanitize_hexcolor(new_color, include_crunch=1)
 					else
-						smallclothes_preferences[preference_type] = colorlist[choice]
+						smallclothes_preferences[preference_type] = GLOB.colorlist[choice]
 					to_chat(user, "The colour for your underwear has been set to <b>[choice].</b>.")
 				else
 					smallclothes_preferences[preference_type] = null
@@ -230,16 +235,16 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 			var/legwear_type = text2path(href_list["legwear_type"])
 			var/preference_type = href_list["preference_type"]
 			if(!isnull(legwear_type))
-				var/choice = input(user, "Choose a color.", "Legwear Colour") as null|anything in colorlist
+				var/choice = input(user, "Choose a color.", "Legwear Colour") as null|anything in GLOB.colorlist
 				if (choice)
-					var/selected_value = colorlist[choice]
+					var/selected_value = GLOB.colorlist[choice]
 					if(selected_value == "CUSTOM_RGB")
 						var/current_color = smallclothes_preferences[preference_type]||"#FFFFFF"
 						var/new_color = input(user, "Select color:", "Custom Color", current_color) as color|null
 						if(new_color)
 							smallclothes_preferences[preference_type] = sanitize_hexcolor(new_color, include_crunch=1)
 					else
-						smallclothes_preferences[preference_type] = colorlist[choice]
+						smallclothes_preferences[preference_type] = GLOB.colorlist[choice]
 					to_chat(user, "The colour for your legwear has been set to <b>[choice].</b>.")
 				else
 					smallclothes_preferences[preference_type] = null
@@ -296,9 +301,9 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 			var/bra_type = text2path(href_list["bra_type"])
 			var/preference_type = href_list["preference_type"]
 			if(!isnull(bra_type))
-				var/choice = input(user, "Choose a color.", "Bra Colour") as null|anything in colorlist
-				if (choice && colorlist[choice])
-					smallclothes_preferences[preference_type] = colorlist[choice]
+				var/choice = input(user, "Choose a color.", "Bra Colour") as null|anything in GLOB.colorlist
+				if (choice && GLOB.colorlist[choice])
+					smallclothes_preferences[preference_type] = GLOB.colorlist[choice]
 					to_chat(user, "The colour for your bra has been set to <b>[choice].</b>.")
 				else
 					smallclothes_preferences[preference_type] = null
@@ -310,9 +315,9 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 			var/garter_type = text2path(href_list["garter_type"])
 			var/preference_type = href_list["preference_type"]
 			if(!isnull(garter_type))
-				var/choice = input(user, "Choose a color.", "Garter Colour") as null|anything in colorlist
-				if (choice && colorlist[choice])
-					smallclothes_preferences[preference_type] = colorlist[choice]
+				var/choice = input(user, "Choose a color.", "Garter Colour") as null|anything in GLOB.colorlist
+				if (choice && GLOB.colorlist[choice])
+					smallclothes_preferences[preference_type] = GLOB.colorlist[choice]
 					to_chat(user, "The colour for your garter has been set to <b>[choice].</b>.")
 				else
 					smallclothes_preferences[preference_type] = null
@@ -324,9 +329,9 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 			var/undershirt_type = text2path(href_list["undershirt_type"])
 			var/preference_type = href_list["preference_type"]
 			if(!isnull(undershirt_type))
-				var/choice = input(user, "Choose a color.", "Undershirt Colour") as null|anything in colorlist
-				if (choice && colorlist[choice])
-					smallclothes_preferences[preference_type] = colorlist[choice]
+				var/choice = input(user, "Choose a color.", "Undershirt Colour") as null|anything in GLOB.colorlist
+				if (choice && GLOB.colorlist[choice])
+					smallclothes_preferences[preference_type] = GLOB.colorlist[choice]
 					to_chat(user, "The colour for your undershirt has been set to <b>[choice].</b>.")
 				else
 					smallclothes_preferences[preference_type] = null
@@ -338,18 +343,20 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 			var/armsleeve_type = text2path(href_list["armsleeve_type"])
 			var/preference_type = href_list["preference_type"]
 			if(!isnull(armsleeve_type))
-				var/choice = input(user, "Choose a color.", "armsleeve Colour") as null|anything in colorlist
-				if (choice && colorlist[choice])
-					smallclothes_preferences[preference_type] = colorlist[choice]
+				var/choice = input(user, "Choose a color.", "armsleeve Colour") as null|anything in GLOB.colorlist
+				if (choice && GLOB.colorlist[choice])
+					smallclothes_preferences[preference_type] = GLOB.colorlist[choice]
 					to_chat(user, "The colour for your armsleeve has been set to <b>[choice].</b>.")
 				else
 					smallclothes_preferences[preference_type] = null
 					to_chat(user, "The colour for your armsleeve loadout item has been cleared.")
 				update_preview_icon()
 				show_smallclothes_ui(user)
+	write_preference(/datum/preference/list_type/smallclothes_preferences, smallclothes_preferences)
 
 
 /datum/preferences/proc/print_smallclothes_page(mob/user)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(!length(GLOB.selectable_undies))
 		GLOB.selectable_undies = get_global_selectable_undies()
 	if(!length(GLOB.selectable_legwear))
@@ -526,6 +533,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	popup.open(FALSE)
 
 /datum/preferences/proc/apply_smallclothes_preferences(mob/living/carbon/human/character)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(!smallclothes_preferences)
 		return
 
@@ -604,6 +612,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	character.update_body_parts()
 
 /datum/preferences/proc/show_bra_selection_ui(mob/user, preference_type)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(smallclothes_preferences[SMALCLOTHES_RANDOM_PREFERENCES])
 		to_chat(user, span_warning("You cannot choose smallclothes while random preferences are enabled. Disable random preferences first."))
 		return
@@ -645,6 +654,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	popup.open(FALSE)
 
 /datum/preferences/proc/show_garter_selection_ui(mob/user, preference_type)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(smallclothes_preferences[SMALCLOTHES_RANDOM_PREFERENCES])
 		to_chat(user, span_warning("You cannot choose smallclothes while random preferences are enabled. Disable random preferences first."))
 		return
@@ -685,6 +695,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	popup.open(FALSE)
 
 /datum/preferences/proc/show_undershirt_selection_ui(mob/user, preference_type)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(smallclothes_preferences[SMALCLOTHES_RANDOM_PREFERENCES])
 		to_chat(user, span_warning("You cannot choose smallclothes while random preferences are enabled. Disable random preferences first."))
 		return
@@ -726,6 +737,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 
 
 /datum/preferences/proc/show_armsleeve_selection_ui(mob/user, preference_type)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(smallclothes_preferences[SMALCLOTHES_RANDOM_PREFERENCES])
 		to_chat(user, span_warning("You cannot choose smallclothes while random preferences are enabled. Disable random preferences first."))
 		return
@@ -766,6 +778,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	popup.open(FALSE)
 
 /datum/preferences/proc/show_undie_selection_ui(mob/user, preference_type)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(smallclothes_preferences[SMALCLOTHES_RANDOM_PREFERENCES])
 		to_chat(user, span_warning("You cannot choose smallclothes while random preferences are enabled. Disable random preferences first."))
 		return
@@ -807,6 +820,7 @@ GLOBAL_LIST_EMPTY(cached_armsleeves_flat_icons)
 	popup.open(FALSE)
 
 /datum/preferences/proc/show_legwear_selection_ui(mob/user, preference_type)
+	var/list/smallclothes_preferences = read_preference(/datum/preference/list_type/smallclothes_preferences)
 	if(smallclothes_preferences[SMALCLOTHES_RANDOM_PREFERENCES])
 		to_chat(user, span_warning("You cannot choose smallclothes while random preferences are enabled. Disable random preferences first."))
 		return

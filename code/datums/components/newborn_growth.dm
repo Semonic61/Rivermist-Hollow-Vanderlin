@@ -74,13 +74,8 @@
 	if(!protected_parent || protected_parent == growing_mob)
 		return
 
-	if(!islist(growing_mob.faction))
-		growing_mob.faction = isnull(growing_mob.faction) ? list() : list(growing_mob.faction)
-	if(!islist(protected_parent.faction))
-		protected_parent.faction = isnull(protected_parent.faction) ? list() : list(protected_parent.faction)
-
-	growing_mob.faction |= temporary_family_faction
-	protected_parent.faction |= temporary_family_faction
+	growing_mob.add_ally(temporary_family_faction)
+	protected_parent.add_ally(temporary_family_faction)
 	growing_mob.ai_controller?.insert_blackboard_key_lazylist(BB_FRIENDS_LIST, protected_parent)
 	protected_parent.ai_controller?.insert_blackboard_key_lazylist(BB_FRIENDS_LIST, growing_mob)
 
@@ -89,11 +84,11 @@
 		return
 
 	if(growing_mob)
-		growing_mob.faction -= temporary_family_faction
+		growing_mob.remove_ally(temporary_family_faction)
 
 	var/mob/living/protected_parent = protected_parent_ref?.resolve()
 	if(protected_parent)
-		protected_parent.faction -= temporary_family_faction
+		protected_parent.remove_ally(temporary_family_faction)
 		protected_parent.ai_controller?.remove_thing_from_blackboard_key(BB_FRIENDS_LIST, growing_mob)
 
 	if(protected_parent)

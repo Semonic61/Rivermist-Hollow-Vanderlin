@@ -61,7 +61,7 @@
 	name = "Town Physician"
 	head = null
 	mask = /obj/item/clothing/face/courtphysician
-	neck = /obj/item/storage/belt/pouch/coins/mid
+	neck = /obj/item/storage/belt/pouch/cloth/coins/mid
 	cloak = null
 	armor = null
 	shirt = null
@@ -77,6 +77,9 @@
 	ring = /obj/item/clothing/ring/feldsher_ring
 	l_hand = /obj/item/clothing/gloves/leather/thaumgloves
 	r_hand = null
+	backpack_contents = list(
+		/obj/item/book/apothecarys_handbook = 1,
+	)
 
 /datum/outfit/town_scholar/town_physician/pre_equip(mob/living/carbon/human/equipped_human, visuals_only)
 	. = ..()

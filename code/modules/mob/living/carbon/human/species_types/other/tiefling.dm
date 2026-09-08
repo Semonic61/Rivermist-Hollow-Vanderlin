@@ -88,14 +88,14 @@
 		OFFSET_PENIS = list(0,0),\
 		OFFSET_BREASTS = list(0,0),\
 		OFFSET_TESTICLES = list(0,0),\
-		OFFSET_VAGINA = list(0,-2),\
+		OFFSET_VAGINA = list(0,-3),\
 	)
 
 	offset_genitals_f = list(
 		OFFSET_PENIS = list(0,0),\
 		OFFSET_BREASTS = list(0,-1),\
 		OFFSET_TESTICLES = list(0,0),\
-		OFFSET_VAGINA = list(0,0),\
+		OFFSET_VAGINA = list(0,-4),\
 	)
 	statsheet_male = /datum/attribute_holder/sheet/job/species/tieberian/stats
 	statsheet_female = /datum/attribute_holder/sheet/job/species/tieberian/stats
@@ -104,6 +104,7 @@
 
 	organs = list(
 		ORGAN_SLOT_BRAIN = /obj/item/organ/brain,
+		ORGAN_SLOT_SPLEEN = /obj/item/organ/spleen,
 		ORGAN_SLOT_HEART = /obj/item/organ/heart,
 		ORGAN_SLOT_LUNGS = /obj/item/organ/lungs,
 		ORGAN_SLOT_EYES = /obj/item/organ/eyes/night_vision,
@@ -111,7 +112,6 @@
 		ORGAN_SLOT_TONGUE = /obj/item/organ/tongue,
 		ORGAN_SLOT_LIVER = /obj/item/organ/liver,
 		ORGAN_SLOT_STOMACH = /obj/item/organ/stomach,
-		ORGAN_SLOT_APPENDIX = /obj/item/organ/appendix,
 		ORGAN_SLOT_GUTS = /obj/item/organ/guts,
 		ORGAN_SLOT_PUBIC = /obj/item/organ/genitals/pubes,
 		ORGAN_SLOT_ANUS = /obj/item/organ/genitals/filling_organ/anus,
@@ -203,24 +203,33 @@
 
 /datum/species/tieberian/get_skin_list()
 	return sortList(list(
-		"Deep Crimson" = SKIN_COLOR_TIEFLING_RED_DARK,
-		"Blood Red" = SKIN_COLOR_TIEFLING_RED_BLOOD,
-		"Dark Scarlet" = SKIN_COLOR_TIEFLING_RED_SCARLET,
-		"Brick Red" = SKIN_COLOR_TIEFLING_RED_BRICK,
-		"Deep Plum" = SKIN_COLOR_TIEFLING_PURPLE_DARK,
-		"Royal Purple" = SKIN_COLOR_TIEFLING_PURPLE_ROYAL,
-		"Dusky Violet" = SKIN_COLOR_TIEFLING_VIOLET_DUSK,
-		"Midnight Blue" = SKIN_COLOR_TIEFLING_BLUE_MIDNIGHT,
-		"Slate Blue" = SKIN_COLOR_TIEFLING_BLUE_SLATE,
-		"Steel Blue" = SKIN_COLOR_TIEFLING_BLUE_STEEL,
-		"Ash Gray" = SKIN_COLOR_TIEFLING_GRAY_ASH,
-		"Smoky Gray" = SKIN_COLOR_TIEFLING_GRAY_SMOKE,
-		"Charcoal" = SKIN_COLOR_TIEFLING_BLACK_CHAR,
-		"Obsidian" = SKIN_COLOR_TIEFLING_BLACK_OBSID,
-		"Warm Tan" = SKIN_COLOR_TIEFLING_TAN_WARM,
-		"Bronze Brown" = SKIN_COLOR_TIEFLING_BROWN_BRONZE,
-		"Deep Umber" = SKIN_COLOR_TIEFLING_BROWN_UMBER,
-		"Pale White" = SKIN_COLOR_TIEFLING_WHITE_PALE,
+		"Ash Gray"			= SKIN_COLOR_TIEFLING_GRAY_ASH,
+		"Blood Red"			= SKIN_COLOR_TIEFLING_RED_BLOOD,
+		"Brick Red"			= SKIN_COLOR_TIEFLING_RED_BRICK,
+		"Bronze Brown"		= SKIN_COLOR_TIEFLING_BROWN_BRONZE,
+		"Charcoal"			= SKIN_COLOR_TIEFLING_BLACK_CHAR,
+		"Dark Scarlet"		= SKIN_COLOR_TIEFLING_RED_SCARLET,
+		"Deep Crimson"		= SKIN_COLOR_TIEFLING_RED_DARK,
+		"Deep Plum"			= SKIN_COLOR_TIEFLING_PURPLE_DARK,
+		"Deep Umber"		= SKIN_COLOR_TIEFLING_BROWN_UMBER,
+		"Dusky Violet"		= SKIN_COLOR_TIEFLING_VIOLET_DUSK,
+		"Fiery Salmon"		= SKIN_COLOR_TIEFLING_PINK_SALMON,
+		"Frostblue"			= SKIN_COLOR_TIEFLING_BLUE_FROST,
+		"Gilded Gold"		= SKIN_COLOR_TIEFLING_GOLD_GILDED,
+		"Glacial Cyan"		= SKIN_COLOR_TIEFLING_BLUE_GLACIAL,
+		"Hellfire Orange"	= SKIN_COLOR_TIEFLING_ORANGE_HELLFIRE,
+		"Ivory White"		= SKIN_COLOR_TIEFLING_WHITE_IVORY,
+		"Lavender Mist"		= SKIN_COLOR_TIEFLING_VIOLET_LAVENDER,
+		"Midnight Blue"		= SKIN_COLOR_TIEFLING_BLUE_MIDNIGHT,
+		"Obsidian"			= SKIN_COLOR_TIEFLING_BLACK_OBSID,
+		"Olive Green"		= SKIN_COLOR_TIEFLING_GREEN_OLIVE,
+		"Orchid Pink"		= SKIN_COLOR_TIEFLING_PINK_ORCHID,
+		"Plague Green"		= SKIN_COLOR_TIEFLING_GREEN_PLAGUE,
+		"Royal Purple"		= SKIN_COLOR_TIEFLING_PURPLE_ROYAL,
+		"Ruddy Pink"		= SKIN_COLOR_TIEFLING_HUMAN_RUDDY,
+		"Steel Blue"		= SKIN_COLOR_TIEFLING_BLUE_STEEL,
+		"Sulfur Yellow"		= SKIN_COLOR_TIEFLING_YELLOW_SULFUR,
+		"Warm Tan"			= SKIN_COLOR_TIEFLING_TAN_WARM,
 	))
 
 /datum/species/tieberian/get_possible_names(gender = MALE)

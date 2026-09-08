@@ -56,6 +56,20 @@
 	skillcraft = /datum/attribute/skill/craft/traps
 	craftdiff = 1
 
+/datum/repeatable_crafting_recipe/survival/bola
+	name = "bola"
+	requirements = list(
+		/obj/item/rope = 3,
+		/obj/item/natural/stone = 3,
+	)
+
+	starting_atom = /obj/item/rope
+	attacked_atom = /obj/item/natural/stone
+	output = /obj/item/rope/net/bola
+	crafting_message = "begins to bind the stones"
+	skillcraft = /datum/attribute/skill/craft/traps
+	craftdiff = 3
+
 /datum/repeatable_crafting_recipe/survival/woodenbucket
 	name = "wooden bucket"
 	requirements = list(
@@ -224,7 +238,7 @@
 
 	starting_atom = /obj/item/natural/stone
 	attacked_atom = /obj/item/natural/stone
-	output = /obj/item/reagent_containers/glass/bucket/pot
+	output = /obj/item/reagent_containers/glass/bucket/pot/stone
 
 /datum/repeatable_crafting_recipe/survival/flint
 	name = "flint"

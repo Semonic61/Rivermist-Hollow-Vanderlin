@@ -8,7 +8,6 @@
 #define JOB_UNAVAILABLE_SEX 7
 #define JOB_UNAVAILABLE_DEITY 8
 #define JOB_UNAVAILABLE_QUALITY 9
-#define JOB_UNAVAILABLE_DONATOR 10
 #define JOB_UNAVAILABLE_LASTCLASS 11
 #define JOB_UNAVAILABLE_ACCOUNTAGE 12
 #define JOB_UNAVAILABLE_JOB_COOLDOWN 13
@@ -49,8 +48,10 @@
 	FACTION_CABAL, \
 	FACTION_RATS, \
 	FACTION_ORCS, \
+	FACTION_WOLVES, \
 	FACTION_BUMS, \
 	FACTION_VIKINGS, \
+	FACTION_MINOTAURS, \
 	FACTION_MATTHIOS \
 )
 
@@ -66,9 +67,11 @@
 #define FACTION_CABAL		"Cabal"
 #define FACTION_RATS		"Rats"
 #define FACTION_ORCS		"Orcs"
+#define FACTION_WOLVES		"Wolves"
 #define FACTION_BUMS		"Bums"
 #define FACTION_MATTHIOS	"Matthios"
 #define FACTION_VIKINGS     "Vikings"
+#define FACTION_MINOTAURS	"Minotaurs"
 
 #define LORDS			(1<<0)	//For the Vampire Lords and Ladies
 #define KEEP			(1<<1)	//For the Vampire Keep servants and guards
@@ -112,6 +115,7 @@
 //TOWNHALL
 #define JDO_BURGMEISTER 4
 #define JDO_COUNCILOR 4.5
+#define JDO_NAVIGATOR 4.75
 #define JDO_SERVANT 5
 //TOWNWATCH
 #define JDO_WATCH_CAPTAIN 6
@@ -165,8 +169,10 @@
 #define JDO_ADVENTURER_SORCERER 27.5
 #define JDO_ADVENTURER_WARLOCK 28
 #define JDO_ADVENTURER_WIZARD 28.5
-//VILLAINS
-#define JDO_WEREWOLF 29
+	//VILLAINS
+#define JDO_BANDIT 29
+#define JDO_WEREWOLF 29.5
+#define JDO_SUCCUBUS 30
 
 
 #define BITFLAG_CHURCH (1<<0)

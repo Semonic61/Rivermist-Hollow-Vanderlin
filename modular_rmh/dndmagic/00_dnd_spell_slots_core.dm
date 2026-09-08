@@ -63,8 +63,7 @@
 
 /mob/living/carbon/human/proc/restore_all_dnd_spell_slots()
 	if(!dnd_spell_slots_max)
-		setup_default_dnd_spell_slots()
-		return TRUE
+		return FALSE
 
 	if(!dnd_spell_slots_current)
 		dnd_spell_slots_current = list()
@@ -174,8 +173,8 @@
 	return TRUE
 
 /mob/living/carbon/human/proc/use_dnd_short_rest()
-	if(!dnd_spell_slots_max || !dnd_spell_slots_current)
-		setup_default_dnd_spell_slots()
+	if(incapacitated() || !dnd_spell_slots_max || !dnd_spell_slots_current)
+		return FALSE
 
 	if(get_dnd_short_rest_current() <= 0)
 		to_chat(src, span_warning("I have no short rests left."))
@@ -306,35 +305,36 @@
 	apply_dnd_spell_hud_visibility()
 	update_dnd_spell_slots_toggle_hud()
 
-	if(dnd_spell_slots_toggle_hud_button && client && !(dnd_spell_slots_toggle_hud_button in client.screen))
-		client.screen += dnd_spell_slots_toggle_hud_button
-
 	return TRUE
 
 /mob/living/carbon/human/proc/apply_dnd_spell_hud_visibility()
 	if(!client)
 		return FALSE
 
+	var/hud_hidden = hud_used?.hud_version == HUD_STYLE_NOHUD
+
 	if(dnd_spell_slot_hud_buttons)
 		for(var/atom/movable/screen/dnd_spell_slot_hud/button as anything in dnd_spell_slot_hud_buttons)
 			if(!button)
 				continue
 
-			if(dnd_spell_slots_collapsed)
+			if(hud_hidden || dnd_spell_slots_collapsed)
 				client.screen -= button
 			else
 				if(!(button in client.screen))
 					client.screen += button
 
 	if(dnd_short_rest_hud_button)
-		if(dnd_spell_slots_collapsed)
+		if(hud_hidden || dnd_spell_slots_collapsed)
 			client.screen -= dnd_short_rest_hud_button
 		else
 			if(!(dnd_short_rest_hud_button in client.screen))
 				client.screen += dnd_short_rest_hud_button
 
 	if(dnd_spell_slots_toggle_hud_button)
-		if(!(dnd_spell_slots_toggle_hud_button in client.screen))
+		if(hud_hidden)
+			client.screen -= dnd_spell_slots_toggle_hud_button
+		else if(!(dnd_spell_slots_toggle_hud_button in client.screen))
 			client.screen += dnd_spell_slots_toggle_hud_button
 
 	return TRUE
@@ -453,7 +453,7 @@
 /atom/movable/screen/dnd_spell_slot_hud/Click(location, control, params)
 	. = ..()
 
-	if(!owner_mob)
+	if(QDELETED(owner_mob) || usr != owner_mob)
 		return
 
 	owner_mob.select_dnd_spell_slot(slot_level)
@@ -487,7 +487,7 @@
 /atom/movable/screen/dnd_short_rest_hud/Click(location, control, params)
 	. = ..()
 
-	if(!owner_mob)
+	if(QDELETED(owner_mob) || usr != owner_mob)
 		return
 
 	owner_mob.use_dnd_short_rest()
@@ -524,7 +524,7 @@
 /atom/movable/screen/dnd_spell_slots_toggle_hud/Click(location, control, params)
 	. = ..()
 
-	if(!owner_mob)
+	if(QDELETED(owner_mob) || usr != owner_mob)
 		return
 
 	owner_mob.toggle_dnd_spell_hud()

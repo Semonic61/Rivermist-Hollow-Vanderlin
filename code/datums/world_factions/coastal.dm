@@ -74,6 +74,10 @@
 		/datum/supply_pack/tools/wpipe,
 		/datum/supply_pack/tools/fishingline,
 		/datum/supply_pack/tools/fishinghook,
+		/datum/supply_pack/tools/poor_armorkit,
+		/datum/supply_pack/tools/repair_kit,
+		/datum/supply_pack/tools/poor_sewingkit,
+		/datum/supply_pack/tools/sewingkit,
 		/datum/supply_pack/storage/tray,
 		// Materials
 		/datum/supply_pack/rawmats/glass,
@@ -88,7 +92,9 @@
 		/datum/supply_pack/seeds/pineapple,
 		// Livestock - coastal communities
 		/datum/supply_pack/livestock/chicken,
-		/datum/supply_pack/livestock/cat
+		/datum/supply_pack/livestock/cat,
+		// Camp shelter
+		/datum/supply_pack/tools/camp_tent
 	)
 	uncommon_pool = list(
 		// Refined apparel
@@ -139,6 +145,7 @@
 		/datum/supply_pack/tools/medical/prlegl,
 		/datum/supply_pack/tools/medical/prlegr,
 		/datum/supply_pack/tools/medical/health,
+		/datum/supply_pack/tools/medical/antidote,
 		/datum/supply_pack/tools/medical/mana
 	)
 	rare_pool = list(
@@ -195,13 +202,26 @@
 		// Jewelry
 		/datum/supply_pack/jewelry/silverring,
 		// Luxury goods
+		/datum/supply_pack/luxury/chess,
 		/datum/supply_pack/luxury/spectacles_golden,
 		/datum/supply_pack/luxury/spectacles_monocle,
+		/datum/supply_pack/narcotics/perfume/random,
+		/datum/supply_pack/narcotics/perfume/lavender,
+		/datum/supply_pack/narcotics/perfume/cherry,
+		/datum/supply_pack/narcotics/perfume/rose,
+		/datum/supply_pack/narcotics/perfume/jasmine,
+		/datum/supply_pack/narcotics/perfume/mint,
+		/datum/supply_pack/narcotics/perfume/vanilla,
+		/datum/supply_pack/narcotics/perfume/pear,
+		/datum/supply_pack/narcotics/perfume/strawberry,
 		// Seeds
 		/datum/supply_pack/seeds/pear,
 		/datum/supply_pack/seeds/mangosteen,
 		/datum/supply_pack/seeds/dragonfruit,
-		/datum/supply_pack/seeds/poppy
+		/datum/supply_pack/seeds/poppy,
+		/datum/supply_pack/medicine/antipregpot,
+		// Rare restorative - the cure for lingering defeat trauma
+		/datum/supply_pack/tools/medical/mercydraught
 	)
 	exotic_pool = list(
 		/datum/supply_pack/food/drinks/elfred,

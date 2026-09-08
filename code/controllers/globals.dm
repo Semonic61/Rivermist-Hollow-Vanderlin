@@ -19,11 +19,8 @@ GLOBAL_REAL(GLOB, /datum/controller/global_vars)
 	var/list/controller_vars = exclude_these.vars.Copy()
 	controller_vars["vars"] = null
 	gvars_datum_in_built_vars = controller_vars + list(NAMEOF(src, gvars_datum_protected_varlist), NAMEOF(src, gvars_datum_in_built_vars), NAMEOF(src, gvars_datum_init_order))
-	//QDEL_IN(exclude_these, 0)	//signal logging isn't ready
-
-	QDEL_NULL(exclude_these)
-
-	log_world("[vars.len - gvars_datum_in_built_vars.len] global variables")
+	// Defer deletion until the signal/garbage registries are initialized.
+	QDEL_IN(exclude_these, 0)
 
 	Initialize()
 
@@ -40,6 +37,12 @@ GLOBAL_REAL(GLOB, /datum/controller/global_vars)
 	if(gvars_datum_protected_varlist[var_name])
 		return FALSE
 	return ..()
+
+/datum/controller/global_vars/vv_get_var(var_name)
+	switch(var_name)
+		if (NAMEOF(src, vars))
+			return debug_variable(var_name, list(), 0, src)
+	return debug_variable(var_name, vars[var_name], 0, src, display_flags = VV_ALWAYS_CONTRACT_LIST)
 
 /datum/controller/global_vars/Initialize()
 	gvars_datum_init_order = list()
@@ -59,3 +62,6 @@ GLOBAL_REAL(GLOB, /datum/controller/global_vars)
 		var/end_tick = world.time
 		if(end_tick - start_tick)
 			warning("Global [replacetext("[I]", "InitGlobal", "")] slept during initialization!")
+
+	// Preserve RMH registry formats while making them available to static initializers.
+	make_datum_references_lists()

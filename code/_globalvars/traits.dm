@@ -5,9 +5,13 @@ quirks have it's own panel so we don't need them here.
 */
 GLOBAL_LIST_INIT(traits_by_type, list(
 	/atom = list(
+		"TRAIT_AI_MOVEMENT_HALTED" = TRAIT_AI_MOVEMENT_HALTED,
+		"TRAIT_AI_PAUSED" = TRAIT_AI_PAUSED,
 		"TRAIT_ALT_CLICK_BLOCKER" = TRAIT_ALT_CLICK_BLOCKER,
+		"TRAIT_IMMERSE_STOPPED" = TRAIT_IMMERSE_STOPPED,
 	),
 	/atom/movable = list(
+		"TRAIT_IMMERSED" = TRAIT_IMMERSED,
 		"TRAIT_MOVE_GROUND" = TRAIT_MOVE_GROUND,
 		"TRAIT_MOVE_FLYING" = TRAIT_MOVE_FLYING,
 		"TRAIT_MOVE_VENTCRAWLING" = TRAIT_MOVE_VENTCRAWLING,
@@ -17,6 +21,9 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"TRAIT_SHAKY_SPEECH" = TRAIT_SHAKY_SPEECH,
 	),
 	/mob = list(
+		"TRAIT_CANT_RIDE" = TRAIT_CANT_RIDE,
+		"TRAIT_NO_THROWING" = TRAIT_NO_THROWING,
+		"TRAIT_UNDENSE" = TRAIT_UNDENSE,
 		"TRAIT_KNOCKEDOUT" = TRAIT_KNOCKEDOUT,
 		"TRAIT_IMMOBILIZED" = TRAIT_IMMOBILIZED,
 		"TRAIT_FLOORED" = TRAIT_FLOORED,
@@ -82,7 +89,6 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"TRAIT_NOMOBSWAP" = TRAIT_NOMOBSWAP,
 		"TRAIT_XRAY_VISION" = TRAIT_XRAY_VISION,
 		"TRAIT_THERMAL_VISION" = TRAIT_THERMAL_VISION,
-		"TRAIT_SURGEON" = TRAIT_SURGEON,
 		"TRAIT_STRONG_GRABBER" = TRAIT_STRONG_GRABBER,
 		"TRAIT_MAGIC_CHOKE" = TRAIT_MAGIC_CHOKE,
 		"TRAIT_SOOTHED_THROAT" = TRAIT_SOOTHED_THROAT,
@@ -105,6 +111,8 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"Of the Cabal" = TRAIT_CABAL,
 		"Unleechable" = TRAIT_LEECHIMMUNE,
 		"Good Lover" = TRAIT_GOODLOVER,
+		"Identity Shifting" = TRAIT_IDENTITY_SHIFTING,
+		"Lustful Stamina" = TRAIT_LUSTFUL_STAMINA,
 		"Vaginal Egg Layer" = TRAIT_EGG_LAYER,
 		"Webwalker" = TRAIT_WEBWALK,
 		"Brushwalker" = TRAIT_BRUSHWALK,
@@ -122,6 +130,9 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"Noble Blooded" = TRAIT_NOBLE,
 		"Empath" = TRAIT_EMPATH,
 		"Battleready" = TRAIT_BREADY,
+		"Combat Aware" = TRAIT_COMBAT_AWARE,
+		"Tempo Capable" = TRAIT_TEMPO,
+		"Can steer the ship" = TRAIT_CAN_STEER_SHIP,
 		"Sixth-Sense" = TRAIT_BLINDFIGHTING,
 		"Mail Training" = TRAIT_MEDIUMARMOR,
 		"Plate Training" = TRAIT_HEAVYARMOR,
@@ -164,6 +175,7 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"Eyes of Mask" = TRAIT_MATTHIOS_EYES,
 		"Magical Visions" = TRAIT_SEE_LEYLINES,
 		"Poison Bite" = TRAIT_POISONBITE,
+		"Blood Drinker" = TRAIT_BLOODDRINKER,
 		"Tiny" = TRAIT_TINY,
 		"Foreigner" = TRAIT_FOREIGNER,
 		"Beautiful" = TRAIT_BEAUTIFUL,
@@ -176,6 +188,7 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"Light Load" = TRAIT_AMAZING_BACK,
 		"Loved By Kittens" = TRAIT_KITTEN_MOM,
 		"Waterbreathing" = TRAIT_WATER_BREATHING,
+		"WaterLover" = TRAIT_WATER_LOVER,
 		"Moonwater Elixir" = TRAIT_MOONWATER_ELIXIR,
 		"Violator of the Coven" = TRAIT_VIOLATOR,
 		"Endless Slumber" = TRAIT_TORPOR,
@@ -195,6 +208,7 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"Rune Severed" = TRAIT_RUNE_SEVERED,
 		"Inflexible" = TRAIT_UNDODGING,
 		"Freeze Hunger" = TRAIT_FREEZEHUNGER,
+		"Virgin" = TRAIT_VIRGIN,
 	),
 	/obj/item/bodypart = list(
 		"TRAIT_PARALYSIS" = TRAIT_PARALYSIS
@@ -205,6 +219,7 @@ GLOBAL_LIST_INIT(traits_by_type, list(
 		"TRAIT_WIELDED" = TRAIT_WIELDED,
 		"TRAIT_NEEDS_TWO_HANDS" = TRAIT_NEEDS_TWO_HANDS,
 		"TRAIT_HARD_TO_STEAL" = TRAIT_HARD_TO_STEAL,
+		"TRAIT_PASSIVE_LEAK_BLOCKED" = TRAIT_PASSIVE_LEAK_BLOCKED,
 	),
 ))
 
@@ -225,11 +240,15 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_NOBLE = span_blue("I'm of noble blood."),
 	TRAIT_EMPATH = "I can notice when people are stressed.",
 	TRAIT_BREADY = "Defensive stance does not passively fatigue me.",
+	TRAIT_COMBAT_AWARE = span_notice("I can read the shape of a fight and spot important combat details as they happen."),
+	TRAIT_TEMPO = span_notice("I can keep up with multiple opponents at once."),
+	TRAIT_CAN_STEER_SHIP = "I can steer the ship from its wheel.",
 	TRAIT_UNDODGING = span_danger("I am unable to dodge, the only way I could avoid a blow would be by blocking or parrying it."),
-	TRAIT_BLINDFIGHTING = span_info("I have an incredible sense of awareness, allowing me to parry even when I can't see it coming."),
+	TRAIT_BLINDFIGHTING = span_info("I have an incredible sense of awareness, allowing me to parry even when I can't see it coming... And I can not be sneak attacked."),
 	TRAIT_MEDIUMARMOR = "I can move freely in medium armor.",
 	TRAIT_HEAVYARMOR = "I can move freely in heavy armor.",
-	TRAIT_DODGEEXPERT = "I can dodge easily while only wearing light armor.",
+	TRAIT_DODGEEXPERT = "My quick reflexes make dodges more reliable, efficient, and faster to recover.",
+	TRAIT_DODGE_THROUGH_MOBS = "My footwork lets me dodge through other creatures without colliding with them.",
 	TRAIT_VILLAIN = "I am a devious, conniving villain!",
 	TRAIT_CRITICAL_RESISTANCE = "I am resistant to wounds that would be life-threatening to others.",
 	TRAIT_CRITICAL_WEAKNESS = span_danger("I am weak to wounds that others could survive."),
@@ -244,6 +263,7 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_NOFALLDAMAGE2 = span_info("I can handle a fall from any height."),
 	TRAIT_ROT_EATER = span_necrosis("I can eat rotten food."),
 	TRAIT_ORGAN_EATER = span_bloody("I can eat organs and raw flesh."),
+	TRAIT_BLOODDRINKER = span_bloody("I can drink the blood of others and digest it."),
 	TRAIT_CRACKHEAD = span_love("I can use drugs as much as I want!"),
 	TRAIT_CIVILIZEDBARBARIAN = span_info("My rigorous training in the martial arts has turned me into a living weapon. No limb is out of reach for my fists and feet, and my unarmed strikes now have a higher chance to inflict critical damage."),
 	TRAIT_NUDE_SLEEPER = span_warning("I can't fall asleep unless I'm nude and in bed."),
@@ -325,7 +345,7 @@ GLOBAL_LIST_INIT(roguetraits, list(
 	TRAIT_ALLURE = span_love("People notice me the moment I enter a room!"),
 	TRAIT_DARKLING = span_info("I am a creature of the dark and am sensitive to the light. The hateful sun is especially harsh on my eyes."),
 	TRAIT_WILDMAGIC = span_info("Unruly magic sparks and fizzes through my veins. Each time I cast a spell, my magic might surge and trigger a random magical effect.."),
-	TRAIT_DRUNKMASTER = span_info("You are Immune to the negative effects of being drunk. It makes you only stronger!"),
+	TRAIT_DRUNKMASTER = span_info("While perfectly drunk, I become stronger and cannot stumble. Too much drink breaks my balance."),
 	TRAIT_PONYGIRL_RIDEABLE = span_notice("Willing or not, I've been trained to carry other people's burdens."),
 ))
 

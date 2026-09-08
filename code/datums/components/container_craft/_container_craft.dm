@@ -39,6 +39,9 @@
 	on_craft_finished = success
 	RegisterSignal(parent, COMSIG_STORAGE_CLOSED, PROC_REF(async_start))
 	RegisterSignal(parent, COMSIG_MOVABLE_MOVED, PROC_REF(async_start))
+	RegisterSignal(parent, COMSIG_ATOM_ENTERED, PROC_REF(on_entered))
+	RegisterSignal(parent, COMSIG_ATOM_HEAT_SOURCE_LIT, PROC_REF(async_start))
+	RegisterSignal(parent, COMSIG_CONTAINER_CRAFT_ABORTED, PROC_REF(async_start))
 	if(temperature_listener)
 		RegisterSignal(parent, COMSIG_REAGENTS_EXPOSE_TEMPERATURE, PROC_REF(async_start))
 
@@ -49,16 +52,51 @@
 	INVOKE_ASYNC(src, PROC_REF(attempt_crafts), source, user)
 
 /**
+ * Attempt to craft as soon as an item enters the container.
+ *
+ * Debounced: filling a container item-by-item would otherwise run a full recipe
+ * scan per insert (the cooking pot alone has ~105 recipe subtypes), so inserts
+ * are coalesced into a single pass.
+ */
+/datum/component/container_craft/proc/on_entered(datum/source, atom/movable/arrived, atom/old_loc)
+	SIGNAL_HANDLER
+	if(!isitem(arrived))
+		return
+	addtimer(CALLBACK(src, PROC_REF(async_start), source, null), 0.5 SECONDS, TIMER_UNIQUE|TIMER_OVERRIDE|TIMER_DELETE_ME)
+
+/**
  * Attempt to craft all possible recipes - try normal priority first, then fallbacks
  */
 /datum/component/container_craft/proc/attempt_crafts(datum/source, mob/user)
-	var/list/stored_items = list()
 	var/obj/item/host = parent
 	if(!length(host.contents))
 		return
 
 	if(!istype(user))
 		user = get_mob_by_ckey(host.fingerprintslast)
+
+	var/list/stored_items = get_unreserved_items(host)
+
+	for(var/datum/container_craft/recipe as anything in viable_recipe_types)
+		var/datum/container_craft/singleton = GLOB.container_craft_to_singleton[recipe]
+		if(!singleton)
+			continue
+		if(singleton.try_craft(host, stored_items.Copy(), user, on_craft_start, on_craft_failed))
+			stored_items = get_unreserved_items(host)
+
+	for(var/datum/container_craft/recipe as anything in fallback_recipe_types)
+		var/datum/container_craft/singleton = GLOB.container_craft_to_singleton[recipe]
+		if(!singleton)
+			continue
+		if(singleton.try_craft(host, stored_items.Copy(), user, on_craft_start, on_craft_failed))
+			stored_items = get_unreserved_items(host)
+
+/**
+ * Returns a type -> count list of items in the container not already reserved
+ * by an active crafting operation.
+ */
+/datum/component/container_craft/proc/get_unreserved_items(obj/item/host)
+	var/list/stored_items = list()
 
 	// Build list of all items in container by type
 	for(var/obj/item/item in host.contents)
@@ -69,8 +107,6 @@
 	for(var/datum/container_craft_operation/op in GLOB.active_container_crafts)
 		if(op.crafter != host)
 			continue
-
-		// op.stored_items is now a list of item references, convert to type counts
 		for(var/obj/item/reserved_item in op.stored_items)
 			if(QDELETED(reserved_item))
 				continue
@@ -80,20 +116,4 @@
 				if(stored_items[item_type] <= 0)
 					stored_items -= item_type
 
-	// First try normal priority recipes
-	for(var/datum/container_craft/recipe as anything in viable_recipe_types)
-		var/datum/container_craft/singleton = GLOB.container_craft_to_singleton[recipe]
-		if(!singleton)
-			continue
-		// Try to start the craft
-		if(singleton.try_craft(host, stored_items.Copy(), user, on_craft_start, on_craft_failed))
-			return  // Success! Stop here
-
-	// If no normal priority recipes worked, try fallback recipes
-	for(var/datum/container_craft/recipe as anything in fallback_recipe_types)
-		var/datum/container_craft/singleton = GLOB.container_craft_to_singleton[recipe]
-		if(!singleton)
-			continue
-		// Try to start the craft
-		if(singleton.try_craft(host, stored_items.Copy(), user, on_craft_start, on_craft_failed))
-			return  // Success! Stop here
+	return stored_items

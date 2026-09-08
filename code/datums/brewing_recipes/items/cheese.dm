@@ -9,20 +9,21 @@
 	start_verb = "fermenting"
 	brewed_item_count = 2
 	pre_reqs = /datum/reagent/consumable/milk/salted
+	brewing_skill = /datum/attribute/skill/craft/cooking/cheesemaking
 
 /datum/brewing_recipe/cheese/create_items(mob/user, obj/item/attacked_item, atom/source, number_of_repeats)
 	if(brewed_item)
 		for(var/i in 1 to (brewed_item_count * number_of_repeats))
 			new brewed_item(get_turf(source))
 
-/datum/brewing_recipe/cheese/after_finish_attackby(mob/user, obj/item/attacked_item, atom/source)
+/datum/brewing_recipe/cheese/after_finish_interact(mob/user, obj/item/attacked_item, atom/source)
 	if(!istype(attacked_item, /obj/item/natural/cloth))
 		return FALSE
 
 	user.visible_message("<span class='info'>[user] strains out fresh cheese...</span>")
 	playsound(src, pick('sound/foley/waterwash (1).ogg','sound/foley/waterwash (2).ogg'), 100, FALSE)
 
-	if(!do_after(user, (90 - (GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/craft/cooking) * 15)), source))
+	if(!do_after(user, (90 - (GET_MOB_SKILL_VALUE_OLD(user, brewing_skill) * 15)), source))
 		return FALSE
 
 	return TRUE

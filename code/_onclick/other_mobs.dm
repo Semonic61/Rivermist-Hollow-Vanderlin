@@ -45,7 +45,15 @@
 			playsound(src, pick(GLOB.unarmed_swingmiss), 100, FALSE)
 
 		var/intent_drain = used_intent.get_releasedrain()
-		adjust_stamina(ceil(intent_drain * rmb_stam_penalty))
+		var/stamina_cost = ceil(intent_drain * rmb_stam_penalty)
+		if(stamina_cost)
+			if(!check_stamina(stamina_cost))
+				if(client)
+					to_chat(src, span_warning("I'm too tired to attack!"))
+				changeNext_move(CLICK_CD_EXHAUSTED)
+				return TRUE
+			if(!adjust_stamina(stamina_cost))
+				return TRUE
 
 		if(L.checkmiss(src))
 			return TRUE
@@ -87,30 +95,40 @@
 
 	A.attack_hand(src, modifiers)
 
-/mob/living/attack_hand_secondary(mob/user, list/modifiers)
+/mob/living/attack_hand(mob/living/user, list/modifiers)
 	. = ..()
-	if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
+	if(.)
 		return
 
-	user.changeNext_move(CLICK_CD_MELEE)
+	if(user.cmode || !istype(user.rmb_intent, /datum/rmb_intent/weak))
+		return
 
-/*/mob/living/carbon/human/attack_hand_secondary(mob/user, list/modifiers)
+	if(user.perform_surgery(src, IMPLEMENT_HAND, LAZYACCESS(modifiers, RIGHT_CLICK)))
+		return TRUE
+
+/mob/living/carbon/human/attack_hand_secondary(mob/user, list/modifiers)
 	. = ..()
 	if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
 		return
 
 	if(user.cmode)
+		return SECONDARY_ATTACK_CALL_NORMAL // Punch
+
+	if(!ishuman(user) || user == src)
 		return
 
-	if(ishuman(src) && ishuman(user))
-		var/mob/living/carbon/human/target = src
-		var/datum/job/job = SSjob.GetJob(target.job)
-		if(length(user.return_apprentices()) >= user.return_max_apprentices())
-			return
-		if(!target.is_apprentice())
-			to_chat(user, span_notice("You offer apprenticeship to [target]."))
-			user.make_apprentice(target)
-			return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN*/
+	if(istype(user.rmb_intent, /datum/rmb_intent/weak))
+		var/zones = list(
+			BODY_ZONE_PRECISE_NECK,
+			BODY_ZONE_L_ARM,
+			BODY_ZONE_R_ARM,
+			BODY_ZONE_PRECISE_L_HAND,
+			BODY_ZONE_PRECISE_R_HAND,
+		)
+		if(user.zone_selected in zones)
+			check_pulse(user)
+			return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+		return ..()
 
 /atom/proc/onkick(mob/user)
 	return
@@ -169,7 +187,7 @@
 		dmg = apply_damage(dmg, BRUTE, def_zone, run_armor_check(user.zone_selected, "stab", blade_dulling=BCLASS_BITE), user)
 		clear_damage_attack_context()
 		if(dmg)
-			affecting.bodypart_attacked_by(BCLASS_BITE, dmg, user, user.zone_selected, crit_message = TRUE)
+			affecting.bodypart_attacked_by(BCLASS_BITE, dmg, user, user.zone_selected, crit_message = TRUE, incoming_germ = 50)
 			playsound(src, "smallslash", 100, TRUE, -1)
 			if(HAS_TRAIT(user, TRAIT_POISONBITE) && src.reagents)
 				var/poison = GET_MOB_ATTRIBUTE_VALUE(user, STAT_CONSTITUTION)/2
@@ -253,7 +271,8 @@
 					do_attack_animation(M, visual_effect_icon = ATTACK_EFFECT_KICK, used_item = FALSE, atom_bounce = TRUE)
 					playsound(src, pick(PUNCHWOOSH), 100, FALSE, -1)
 
-					sleep(src.used_intent.swingdelay)
+					if(!do_swing_windup(src.used_intent))
+						return
 					if(QDELETED(src) || QDELETED(M))
 						return
 					if(!M.Adjacent(src))
@@ -320,9 +339,9 @@
 	if(SEND_SIGNAL(src, COMSIG_ATOM_ATTACK_HAND_SECONDARY, user, modifiers) & COMPONENT_CANCEL_ATTACK_CHAIN)
 		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
-	if(user.cmode)
-		if(user.rmb_intent?.special_attack(user, src))
-			return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+	if(user.cmode && user.rmb_intent?.special_attack(user, src))
+		user.changeNext_move(CLICK_CD_MELEE)
+		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
 	return SECONDARY_ATTACK_CALL_NORMAL
 
@@ -372,8 +391,7 @@
 		return ui_interact(user)
 	return FALSE
 
-
-/mob/living/carbon/human/RangedAttack(atom/A, list/modifiers)
+/mob/living/carbon/human/ranged_attack(atom/A, list/modifiers)
 	. = ..()
 	if(gloves)
 		var/obj/item/clothing/gloves/G = gloves
@@ -408,7 +426,7 @@
 		var/exp_to_gain = GET_MOB_ATTRIBUTE_VALUE(thief, STAT_INTELLIGENCE) * 1.5
 		var/list/stealablezones = list(BODY_ZONE_CHEST, BODY_ZONE_L_ARM, BODY_ZONE_R_ARM, BODY_ZONE_PRECISE_NECK, BODY_ZONE_PRECISE_GROIN, BODY_ZONE_L_LEG, BODY_ZONE_R_LEG, BODY_ZONE_PRECISE_R_HAND, BODY_ZONE_PRECISE_L_HAND)
 		var/list/stealpos = list()
-		if(client?.prefs.showrolls)
+		if(client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 			to_chat(thief, span_info("Your stealing skill roll of [thiefskill]d6 is [stealroll]..."))
 		if(stealroll >= target_perception)
 			if(thief.get_active_held_item())
@@ -466,8 +484,8 @@
 						record_featured_stat(FEATURED_STATS_CRIMINALS, thief)
 						record_round_statistic(STATS_ITEMS_PICKPOCKETED)
 						SEND_SIGNAL(src, COMSIG_PICKPOCKET_SUCCESS)
-					if(has_quirk(/datum/quirk/vice/kleptomaniac))
-						sate_addiction(/datum/quirk/vice/kleptomaniac)
+					if(has_quirk(/datum/quirk/vice/addiction/kleptomaniac))
+						sate_addiction(/datum/quirk/vice/addiction/kleptomaniac)
 				else
 					exp_to_gain /= 2
 					to_chat(thief, span_warning("I didn't find anything there. Perhaps I should look elsewhere."))
@@ -488,6 +506,10 @@
 /mob/living/proc/jump_action(atom/A)
 	if(istype(get_turf(src), /turf/open/water))
 		to_chat(src, span_warning("I can't jump while floating."))
+		return
+
+	if(HAS_TRAIT(src, TRAIT_DEFEAT_NO_JUMP))
+		to_chat(src, span_warning("My injured leg won't let me jump."))
 		return
 
 	if(A == src || A == loc)
@@ -543,8 +565,8 @@
 
 	if(ishuman(src))
 		var/mob/living/carbon/human/H = src
-		jadded += H.get_complex_pain() / 50
-		if(H.get_encumbrance() >= 0.7)
+		jadded += H.getShockStage() / 50
+		if(H.encumbrance >= ENCUMBRANCE_HEAVY)
 			jadded += 50
 			jrange = 1
 
@@ -554,8 +576,8 @@
 #define FLIP_DIRECTION_CLOCKWISE 1
 #define FLIP_DIRECTION_ANTICLOCKWISE 0
 
-/mob/living/proc/jump_action_resolve(atom/A, jadded, jrange, jextra)
-	var/do_a_flip
+/mob/living/proc/jump_action_resolve(atom/target, stamina_cost, range, extra_tile)
+	var/do_a_flip = FALSE
 	var/flip_direction = FLIP_DIRECTION_CLOCKWISE
 	var/prev_pixel_z = pixel_z
 	var/prev_transform = transform
@@ -564,37 +586,40 @@
 		if((dir & SOUTH) || (dir & WEST))
 			flip_direction = FLIP_DIRECTION_ANTICLOCKWISE
 
-	if(adjust_stamina(min(jadded,100)))
+	if(adjust_stamina(min(stamina_cost, 100)))
 		if(do_a_flip)
 			var/flip_angle = flip_direction ? 120 : -120
-			animate(src, pixel_z = pixel_z + 6, transform = turn(transform, flip_angle), time = 1)
+			animate(src, pixel_z = pixel_z + 6, transform = turn(transform, flip_angle), time = 1, flags = ANIMATION_PARALLEL)
 			animate(transform = turn(transform, flip_angle), time=1)
 			animate(pixel_z = prev_pixel_z, transform = turn(transform, flip_angle), time=1)
 			animate(transform = prev_transform, time = 0)
 		else
-			animate(src, pixel_z = pixel_z + 6, time = 1)
+			animate(src, pixel_z = pixel_z + 6, time = 1, flags = ANIMATION_PARALLEL)
 			animate(pixel_z = prev_pixel_z, transform = turn(transform, pick(-12, 0, 12)), time=2)
 			animate(transform = prev_transform, time = 0)
 
-		if(jextra)
-			throw_at(A, jrange, 1, src, spin = FALSE)
-			while(src.throwing)
-				sleep(1)
-			throw_at(get_step(src, src.dir), 1, 1, src, spin = FALSE)
-		else
-			throw_at(A, jrange, 1, src, spin = FALSE)
-			while(src.throwing)
-				sleep(1)
-		if(isopenturf(src.loc))
-			var/turf/open/T = src.loc
-			if(T.landsound)
-				playsound(T, T.landsound, 100, FALSE)
-			T.Entered(src)
+		throw_at(target, range, 1, spin = FALSE, callback = CALLBACK(src, PROC_REF(jump_ended), extra_tile))
 	else
-		animate(src, pixel_z = pixel_z + 6, time = 1)
+		animate(src, pixel_z = pixel_z + 6, time = 1, flags = ANIMATION_PARALLEL)
 		animate(pixel_z = prev_pixel_z, transform = turn(transform, pick(-12, 0, 12)), time=2)
 		animate(transform = prev_transform, time = 0)
-		throw_at(A, 1, 1, src, spin = FALSE)
+		throw_at(target, 1, 1, spin = FALSE)
+
+/mob/living/proc/jump_ended(extra_tile)
+	if(QDELETED(src) || isopenspace(loc))
+		return
+	if(isopenturf(loc))
+		var/turf/open/landing_turf = loc
+		if(landing_turf.landsound)
+			playsound(landing_turf, landing_turf.landsound, 100, FALSE)
+	if(extra_tile && isturf(loc))
+		addtimer(CALLBACK(src, PROC_REF(jump_extra_step), loc), 0.1 SECONDS)
+
+/// Let the first throw finish cleanup before beginning the running jump's final step.
+/mob/living/proc/jump_extra_step(turf/landing_turf)
+	if(QDELETED(src) || throwing || loc != landing_turf)
+		return
+	throw_at(get_step(src, dir), 1, 1, spin = FALSE)
 
 #undef FLIP_DIRECTION_CLOCKWISE
 #undef FLIP_DIRECTION_ANTICLOCKWISE
@@ -624,37 +649,6 @@
 
 /atom/proc/attack_animal(mob/user)
 	SEND_SIGNAL(src, COMSIG_ATOM_ATTACK_ANIMAL, user)
-
-/*
-	Monkeys
-*/
-/mob/living/carbon/monkey/UnarmedAttack(atom/A, proximity_flag, list/modifiers, atom/source)
-	if(HAS_TRAIT(src, TRAIT_HANDS_BLOCKED))
-		if(a_intent != INTENT_HARM || is_muzzled())
-			return
-		if(!iscarbon(A))
-			return
-		var/mob/living/carbon/victim = A
-		var/obj/item/bodypart/affecting = null
-		if(ishuman(victim))
-			var/mob/living/carbon/human/human_victim = victim
-			affecting = human_victim.get_bodypart(pick(BODY_ZONE_CHEST, BODY_ZONE_PRECISE_L_HAND, BODY_ZONE_PRECISE_R_HAND, BODY_ZONE_L_LEG, BODY_ZONE_R_LEG))
-		var/armor = victim.run_armor_check(affecting, "melee")
-		if(prob(25))
-			victim.visible_message("<span class='danger'>[src]'s bite misses [victim]!</span>",
-				"<span class='danger'>You avoid [src]'s bite!</span>", "<span class='hear'>You hear jaws snapping shut!</span>", COMBAT_MESSAGE_RANGE, src)
-			to_chat(src, "<span class='danger'>Your bite misses [victim]!</span>")
-			return
-		victim.set_damage_attack_context(src)
-		victim.apply_damage(rand(1, 3), BRUTE, affecting, armor)
-		victim.clear_damage_attack_context()
-		victim.visible_message("<span class='danger'>[name] bites [victim]!</span>",
-			"<span class='userdanger'>[name] bites you!</span>", "<span class='hear'>You hear a chomp!</span>", COMBAT_MESSAGE_RANGE, name)
-		to_chat(name, "<span class='danger'>You bite [victim]!</span>")
-		if(armor >= 2)
-			return
-		return
-	A.attack_paw(src)
 
 /atom/proc/attack_paw(mob/user)
 	if(SEND_SIGNAL(src, COMSIG_ATOM_ATTACK_PAW, user) & COMPONENT_CANCEL_ATTACK_CHAIN)

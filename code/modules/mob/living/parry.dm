@@ -18,7 +18,7 @@
 	var/stun_penalty = 0
 	if(incapacitated())
 		stun_penalty = 4
-	if(cmode && (d_intent == INTENT_PARRY))
+	if(cmode && (client || d_intent == INTENT_PARRY))
 		modifier += 2
 	return floor(max(0, 3 + GET_MOB_SKILL_VALUE(src, skill_used)/2 + modifier - stun_penalty - parrying_penalty))
 
@@ -40,11 +40,12 @@
 		return FALSE
 	if(has_status_effect(/datum/status_effect/debuff/vulnerable))
 		return FALSE
-	if(world.time < last_parry + setparrytime && !istype(rmb_intent, /datum/rmb_intent/riposte))
+	if(world.time < last_parry + max(setparrytime - get_tempo_bonus(TEMPO_TAG_PARRYCD_BONUS), DEFENSE_CD_MIN) && !istype(rmb_intent, /datum/rmb_intent/riposte))
 		return FALSE
 	last_parry = world.time
 
 	var/drained = user.defdrain
+	drained = max(drained - get_tempo_bonus(TEMPO_TAG_STAMLOSS_PARRY), 1)
 	var/weapon_parry = FALSE
 	var/obj/item/mainhand = get_active_held_item()
 	var/obj/item/offhand = get_inactive_held_item()
@@ -86,7 +87,7 @@
 	var/defender_dualwielding = dual_wielding_check()
 
 	// Show roll info to defender
-	if(client?.prefs.showrolls)
+	if(client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 		var/text = "Roll to parry... (score: [parry_score])"
 		if(attacker_dualwielding)
 			if(defender_dualwielding)
@@ -115,7 +116,7 @@
 	var/roll_result = diceroll(effective_score, context = DICE_CONTEXT_PHYSICAL)
 
 	// Show attacker feedback
-	if(user.client?.prefs.showrolls && attacker_dualwielding)
+	if(user.client?.prefs.read_preference(/datum/preference/toggle/showrolls) && attacker_dualwielding)
 		var/attacker_feedback = "Attacking with advantage."
 		if(defender_dualwielding)
 			attacker_feedback += " Cancelled out!"
@@ -134,7 +135,7 @@
 	var/obj/item/master = intenty.get_master_item()
 	if(master?.wbalance < 0 && GET_MOB_ATTRIBUTE_VALUE(user, STAT_STRENGTH) > GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH))
 		drained = drained + (master.wbalance * ((GET_MOB_ATTRIBUTE_VALUE(user, STAT_STRENGTH) - GET_MOB_ATTRIBUTE_VALUE(src, STAT_STRENGTH)) * -5))
-	drained = max(drained, 5)
+	drained = max(drained, PARRY_STAMINA_MIN)
 
 	//reduce drain on exceptional parry
 	if(roll_result == DICE_CRIT_SUCCESS)
@@ -148,7 +149,7 @@
 		return FALSE
 	else
 		if(do_unarmed_parry(drained, user))
-			if((body_position != LYING_DOWN) && attacker_skill && (defender_skill < attacker_skill - SKILL_LEVEL_NOVICE))
+			if((body_position != LYING_DOWN) && attacker_skill && (defender_skill < attacker_skill - SKILL_RANK_NOVICE))
 				adjust_experience(/datum/attribute/skill/combat/unarmed, max(round(GET_MOB_ATTRIBUTE_VALUE(src, STAT_INTELLIGENCE)/2), 0), FALSE)
 			flash_fullscreen("blackflash2")
 			return TRUE
@@ -257,7 +258,7 @@
 	var/mob/living/carbon/human/U = ishuman(user) ? user : null
 
 	// Defender skill gain
-	if((body_position != LYING_DOWN) && attacker_skill && (defender_skill < attacker_skill - SKILL_LEVEL_NOVICE))
+	if((body_position != LYING_DOWN) && attacker_skill && (defender_skill < attacker_skill - SKILL_RANK_NOVICE))
 		if(used_weapon == get_inactive_held_item() && istype(used_weapon, /obj/item/weapon/shield))
 			var/boon = H.get_learning_boon(/obj/item/weapon/shield)
 			H.adjust_experience(/datum/attribute/skill/combat/shields, max(round(GET_MOB_ATTRIBUTE_VALUE(H, STAT_INTELLIGENCE) * boon), 0), FALSE)
@@ -266,7 +267,7 @@
 
 	// Attacker skill gain
 	var/obj/item/AB = intenty?.get_master_item()
-	if(U && (U.body_position != LYING_DOWN) && defender_skill && (attacker_skill < defender_skill - SKILL_LEVEL_NOVICE))
+	if(U && (U.body_position != LYING_DOWN) && defender_skill && (attacker_skill < defender_skill - SKILL_RANK_NOVICE))
 		if(AB)
 			U.adjust_experience(AB.associated_skill, max(round(GET_MOB_ATTRIBUTE_VALUE(U, STAT_INTELLIGENCE)/2), 0), FALSE)
 		else
@@ -293,6 +294,10 @@
 		var/intdam = used_weapon.max_blade_int ? INTEG_PARRY_DECAY : INTEG_PARRY_DECAY_NOSHARP
 		used_weapon.take_damage(intdam, BRUTE, used_weapon.damage_type)
 		used_weapon.remove_bintegrity(SHARPNESS_ONHIT_DECAY, user)
+
+	// Reading the attacker's exact aim while parrying earns a weapon bind.
+	if(U && used_weapon)
+		H.try_bind(used_weapon, U)
 
 /**
  * Handle parrying attacks with a weapon
@@ -366,7 +371,7 @@
 
 	if(!(!src.mind || !user.mind))
 		log_defense(src, user, user.get_active_held_item() ? "parried" : "unarmed parried",
-				   "hands", attacking_item, "INTENT:[uppertext(user.used_intent.name)]")
+				"hands", attacking_item, "INTENT:[uppertext(user.used_intent.name)]")
 
 	if(src.client)
 		record_round_statistic(STATS_PARRIES)

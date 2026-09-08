@@ -200,6 +200,7 @@
 	. = ..()
 	if(!proximity)
 		return
+
 	if(prob(break_chance))
 		user.visible_message("<span class='warning'>[src] is smashed to pieces!</span>")
 		if(iscarbon(target))
@@ -217,8 +218,8 @@
 
 /obj/item/chair/stool/bar
 	name = "barstool"
-	icon_state = "barstoolover"
-	item_state = "barstool"
+	icon_state = "barstool"
+	item_state = "baritem"
 	origin_type = /obj/structure/chair/stool/bar
 
 /obj/item/chair/stool/narsie_act()

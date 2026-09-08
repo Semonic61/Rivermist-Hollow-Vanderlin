@@ -6,20 +6,20 @@
 #define GET_PARENT (parent_attached_to || parent)
 
 /**
-	 * Movable atom overlay-based lighting component.
-	 *
-	 * * Component works by applying a visual object to the parent target.
-	 *
-	 * * The component tracks the parent's loc to determine the current_holder.
-	 * * The current_holder is either the parent or its loc, whichever is on a turf. If none, then the current_holder is null and the light is not visible.
-	 *
-	 * * Lighting works at its base by applying a dark overlay and "cutting" said darkness with light, adding (possibly colored) transparency.
-	 * * This component uses the visible_mask visual object to apply said light mask on the darkness.
-	 *
-	 * * The main limitation of this system is that it uses a limited number of pre-baked geometrical shapes, but for most uses it does the job.
-	 *
-	 * * Another limitation is for big lights: you only see the light if you see the object emiting it.
-	 * * For small objects this is good (you can't see them behind a wall), but for big ones this quickly becomes prety clumsy.
+	* Movable atom overlay-based lighting component.
+	*
+	* * Component works by applying a visual object to the parent target.
+	*
+	* * The component tracks the parent's loc to determine the current_holder.
+	* * The current_holder is either the parent or its loc, whichever is on a turf. If none, then the current_holder is null and the light is not visible.
+	*
+	* * Lighting works at its base by applying a dark overlay and "cutting" said darkness with light, adding (possibly colored) transparency.
+	* * This component uses the visible_mask visual object to apply said light mask on the darkness.
+	*
+	* * The main limitation of this system is that it uses a limited number of pre-baked geometrical shapes, but for most uses it does the job.
+	*
+	* * Another limitation is for big lights: you only see the light if you see the object emiting it.
+	* * For small objects this is good (you can't see them behind a wall), but for big ones this quickly becomes prety clumsy.
 */
 /datum/component/overlay_lighting
 	///How far the light reaches, float.
@@ -271,14 +271,13 @@
 
 
 ///Changes the range which the light reaches. 0 means no light, 9 is the maximum value.
-/datum/component/overlay_lighting/proc/set_range(atom/source, old_inner_range, old_outer_range)
+/datum/component/overlay_lighting/proc/set_range(atom/source, new_inner_range, new_outer_range)
 	SIGNAL_HANDLER
-	var/new_range = source.light_outer_range
-	if(range == new_range)
+	if(range == new_outer_range)
 		return
 	if(range == 0)
 		turn_off()
-	range = clamp(CEILING(new_range, 0.5), 1, 9)
+	range = clamp(CEILING(new_outer_range, 0.5), 1, 9)
 	var/pixel_bounds = ((range - 1) * 64) + 32
 	lumcount_range = CEILING(range, 1)
 	visible_mask.icon = light_overlays["[pixel_bounds]"]

@@ -6,7 +6,7 @@
 
 ///mmmm yumymumyumuymuymym
 #define DIET_KOBOLD list(\
-	/obj/item/natural/dirtclod,\
+	/obj/item/natural/clod,\
 	/obj/item/natural/stone,\
 	/obj/item/coin,\
 	/obj/item/gem,\
@@ -56,6 +56,8 @@
 
 	possible_ages = NORMAL_AGES_LIST
 	use_skintones = TRUE
+
+	default_mob_weight = HUMAN_WEIGHT * 0.6
 
 	changesource_flags = WABBAJACK
 
@@ -121,6 +123,7 @@
 
 	organs = list(
 		ORGAN_SLOT_BRAIN = /obj/item/organ/brain/smooth,
+		ORGAN_SLOT_SPLEEN = /obj/item/organ/spleen,
 		ORGAN_SLOT_HEART = /obj/item/organ/heart,
 		ORGAN_SLOT_LUNGS = /obj/item/organ/lungs,
 		ORGAN_SLOT_EYES = /obj/item/organ/eyes/kobold,
@@ -128,7 +131,6 @@
 		ORGAN_SLOT_TONGUE = /obj/item/organ/tongue,
 		ORGAN_SLOT_LIVER = /obj/item/organ/liver,
 		ORGAN_SLOT_STOMACH = /obj/item/organ/stomach,
-		ORGAN_SLOT_APPENDIX = /obj/item/organ/appendix,
 		ORGAN_SLOT_GUTS = /obj/item/organ/guts,
 		ORGAN_SLOT_PUBIC = /obj/item/organ/genitals/pubes,
 		ORGAN_SLOT_ANUS = /obj/item/organ/genitals/filling_organ/anus,
@@ -192,7 +194,7 @@
 	. = ..()
 	RegisterSignal(C, COMSIG_MOB_SAY, PROC_REF(handle_speech))
 	if(hungry_hungry_kobold)
-		C.AddComponent(/datum/component/abberant_eater, DIET_KOBOLD, FALSE, DIET_TURF_KOBOLD)
+		C.AddComponent(/datum/component/abberant_eater, DIET_KOBOLD, FALSE, DIET_TURF_KOBOLD, _keeps_items = TRUE)
 	C.grant_language(/datum/language/common)
 
 /datum/species/kobold/on_species_loss(mob/living/carbon/C)
@@ -213,12 +215,14 @@
 
 /datum/species/kobold/get_skin_list()
 	return sortList(list(
-		"Moonshade" = SKIN_COLOR_MOONSHADE,
-		"Sunstreak" = SKIN_COLOR_SUNSTREAK,
-		"Stonepaw" = SKIN_COLOR_STONEPAW,
-		"Emberhide" = SKIN_COLOR_EMBERHIDE,
-		"Sandswept" = SKIN_COLOR_SANDSWEPT,
-		"Icepack" = SKIN_COLOR_ICEPACK,
+		"Bronze Claw"	= SKIN_COLOR_BRONZECLAW,
+		"Ember Hide"	= SKIN_COLOR_EMBERHIDE,
+		"Ice Pack"		= SKIN_COLOR_ICEPACK,
+		"Malachite"		= SKIN_COLOR_MALACHITE,
+		"Moon Shade"	= SKIN_COLOR_MOONSHADE,
+		"Sand Swept"	= SKIN_COLOR_SANDSWEPT,
+		"Stone Paw"		= SKIN_COLOR_STONEPAW,
+		"Sun Streak"	= SKIN_COLOR_SUNSTREAK,
 	))
 
 /datum/species/kobold/get_possible_names(gender = MALE)

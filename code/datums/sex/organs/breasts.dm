@@ -1,6 +1,5 @@
 /obj/item/organ/genitals/filling_organ/breasts
 	name = "breasts"
-	icon = 'modular_rmh/icons/eaglephntm/icons/obj/surgery.dmi'
 	icon_state = "breasts"
 	visible_organ = TRUE
 	zone = BODY_ZONE_CHEST
@@ -15,9 +14,13 @@
 	blocker = ITEM_SLOT_SHIRT
 	additional_blocker = "bra"
 	organ_sizeable = TRUE
+	var/list/temporary_lactation_sources
+	var/temporary_lactation_original_refilling = FALSE
 
-/obj/item/organ/genitals/filling_organ/breasts/Insert(mob/living/M, special, drop_if_replaced)
+/obj/item/organ/genitals/filling_organ/breasts/Insert(mob/living/M, special, drop_if_replaced, new_zone = null)
 	. = ..()
+	if(!.)
+		return FALSE
 	if(M.breast_milk)
 		reagent_to_make = M.breast_milk
 	if(!refilling)
@@ -30,6 +33,8 @@
 
 
 	var/obj/item/organ/genitals/filling_organ/breasts/badonkas = M.getorganslot(ORGAN_SLOT_BREASTS)
+	if(!badonkas)
+		return TRUE
 	//Making users of big BOOBA suk dikus
 	if(badonkas.organ_size >= BREAST_SIZE_ENORMOUS)
 		M.apply_status_effect(/datum/status_effect/debuff/bigboobs/permanent/lite)
@@ -46,6 +51,28 @@
 	. = ..()
 	var/datum/component/body_storage/breasts/comp = GetComponent(/datum/component/body_storage/breasts)
 	comp?.RemoveComponent()
+
+/obj/item/organ/genitals/filling_organ/breasts/proc/add_temporary_lactation_source(source)
+	if(isnull(source))
+		return FALSE
+	if(!temporary_lactation_sources)
+		temporary_lactation_sources = list()
+		temporary_lactation_original_refilling = refilling
+	temporary_lactation_sources[source] = TRUE
+	refilling = TRUE
+	return TRUE
+
+/obj/item/organ/genitals/filling_organ/breasts/proc/remove_temporary_lactation_source(source)
+	if(isnull(source) || !temporary_lactation_sources)
+		return FALSE
+	temporary_lactation_sources -= source
+	if(length(temporary_lactation_sources))
+		refilling = TRUE
+		return TRUE
+	refilling = temporary_lactation_original_refilling
+	temporary_lactation_original_refilling = FALSE
+	temporary_lactation_sources = null
+	return TRUE
 
 /obj/item/organ/genitals/filling_organ/breasts/get_availability(datum/species/owner_species, mob/living/C, datum/preferences/pref_load)
 	if(issimple(C))

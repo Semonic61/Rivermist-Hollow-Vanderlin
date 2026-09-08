@@ -301,6 +301,7 @@
 	smoothing_list = SMOOTH_GROUP_FLOOR_DIRT_ROAD + SMOOTH_GROUP_FLOOR_GRASS + SMOOTH_GROUP_FLOOR_STONE
 	neighborlay = "dirtedge"
 	spread_chance = 1.1
+	max_integrity = 200
 
 	var/muddy = FALSE
 	var/bloodiness = 20
@@ -312,7 +313,7 @@
 		return
 	if(isliving(user))
 		var/mob/living/L = user
-		var/obj/item/I = new /obj/item/natural/dirtclod(src)
+		var/obj/item/I = new /obj/item/natural/clod/dirt(src)
 		if(L.put_in_active_hand(I))
 			L.visible_message("<span class='warning'>[L] picks up some dirt.</span>")
 			dirt_amt--
@@ -760,7 +761,7 @@
 	icon_state = "church-gold_marble"
 
 /turf/open/floor/churchrough/gold
-	icon_state = "church-gold_marble"
+	icon_state = "church-gold_rough" //RMH FIXED
 
 // Green - Dendor shrines.
 /turf/open/floor/church/green
@@ -898,9 +899,12 @@
 /obj/effect/decal/cobblerockedge/alt
 	icon_state = "cobblealt_edges"
 
-/obj/effect/decal/borderfall
+/obj/effect/decal/borderfall //RMH EDIT
+	name = ""
+	desc = ""
 	icon = 'icons/turf/constructed/misc.dmi'
 	icon_state = "borderfall"
+	mouse_opacity = 0
 
 /*	..................   Miscellany   ................... */
 /turf/open/floor/tile
@@ -931,6 +935,24 @@
 
 /turf/open/floor/tile/masonic/spiral
 	icon_state = "masonicspiral"
+
+/turf/open/floor/tile/masonic/moondark
+	icon_state = "moontile_dark"
+
+/turf/open/floor/tile/masonic/moonbw
+	icon_state = "moontile_bw"
+
+/turf/open/floor/tile/masonic/full
+	icon_state = "masonicfull_white"
+
+/turf/open/floor/tile/masonic/full/inverted
+	icon_state = "masonicfull_black"
+
+/turf/open/floor/tile/masonic/arrow
+	icon_state = "masonicarrow"
+
+/turf/open/floor/tile/masonic/arrow/inverted
+	icon_state = "masonicarrow_invert"
 
 /turf/open/floor/tile/brick
 	icon_state = "bricktile"
@@ -1053,9 +1075,22 @@
 /turf/open/floor/carpet/green
 	icon_state = "carpet_inn"
 
+/turf/open/floor/examine(mob/user)
+	. = ..()
+	if(!is_excavatable_floor(src))
+		return
+	var/ratio = get_integrity() / max_integrity
+	if(ratio >= 1)
+		return
+	if(ratio > 0.5)
+		. += span_notice("It's scarred by digging.")
+	else
+		. += span_warning("It's deeply gouged — not much is holding it together.")
+
 /turf/open/floor/naturalstone
 	icon = 'icons/turf/natural/stones.dmi'
 	icon_state = "digstone"
+	max_integrity = 500
 	heelstep = HEELSTEP_STONE
 	footstep = FOOTSTEP_STONE
 	barefootstep = FOOTSTEP_HARD_BAREFOOT
@@ -1180,6 +1215,19 @@
 /turf/open/floor/sand/Initialize()
 	. = ..()
 	dir = pick(GLOB.cardinals)
+
+/turf/open/floor/sand/attack_hand_secondary(mob/user, params)
+	. = ..()
+	if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
+		return
+	if(isliving(user))
+		var/mob/living/L = user
+		var/obj/item/I = new /obj/item/natural/clod/sand(src)
+		if(L.put_in_active_hand(I))
+			L.visible_message("<span class='warning'>[L] picks up some sand.</span>")
+		else
+			qdel(I)
+	return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
 /turf/open/floor/sand/sandstone
 	name = "sandstone gravel"

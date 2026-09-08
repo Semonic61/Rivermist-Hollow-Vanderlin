@@ -20,10 +20,11 @@
 	name = "studded leather skirt"
 	icon = 'modular_rmh/icons/clothing/armor/pants.dmi'
 	mob_overlay_icon = 'modular_rmh/icons/clothing/armor/onmob/pants.dmi'
-	armor = ARMOR_LEATHER_GOOD
+	armor_type = /datum/armor/rmh/pants/studded_skirt
 	desc = "Short studded skirt made of fine leather and iron."
 	icon_state = "studdedskirt"
 	genital_access = TRUE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
 
 /obj/item/clothing/pants/chainlegs/iron/skirt
 	name = "iron chain skirt"

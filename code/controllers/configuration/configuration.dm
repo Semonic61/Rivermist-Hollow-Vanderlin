@@ -21,6 +21,9 @@
 	var/motd
 	var/policy
 
+	/// Whether config entries have been loaded from disk.
+	var/loaded = FALSE
+
 	var/static/regex/ic_filter_regex
 
 /datum/controller/configuration/proc/admin_reload()
@@ -54,6 +57,7 @@
 	LoadMOTD()
 	LoadPolicy()
 	LoadRelays()
+	loaded = TRUE
 
 	if(Master)
 		Master.OnConfigLoad()
@@ -61,6 +65,7 @@
 /datum/controller/configuration/proc/full_wipe()
 	if(IsAdminAdvancedProcCall())
 		return
+	loaded = FALSE
 	entries_by_type.Cut()
 	QDEL_LIST_ASSOC_VAL(entries)
 	entries = null

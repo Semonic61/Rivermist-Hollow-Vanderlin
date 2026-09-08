@@ -6,10 +6,26 @@ GLOBAL_VAR_INIT(year_integer, text2num(year)) // = 2013???
 	if(href_list["task"] == "view_flavor_text")// && (isobserver(usr) || usr.can_perform_action(src, NEED_LIGHT)))
 		if(!ismob(usr))
 			return
-		var/datum/examine_panel/mob_examine_panel = new(src)
-		mob_examine_panel.holder = src
-		mob_examine_panel.viewing = usr
+		// Reuse the panel for this viewer if their window is still open, so
+		// spam clicking "Examine Closer" refocuses it instead of stacking windows
+		var/datum/examine_panel/mob_examine_panel = LAZYACCESS(examine_panels, REF(usr))
+		//RMH EDITED START - the wipe used to live only in the reuse branch, so a
+		// panel opened fresh (previous window closed) served whatever snapshot the
+		// last session left on the mob. Snapshot model: ANY examine starts clean.
+		var/reusing_panel = !isnull(mob_examine_panel)
+		if(!reusing_panel)
+			mob_examine_panel = new(src)
+			mob_examine_panel.holder = src
+			mob_examine_panel.viewing = usr
+			LAZYSET(examine_panels, REF(usr), mob_examine_panel)
+		reset_examine_preview()
 		mob_examine_panel.ui_interact(usr)
+		if(reusing_panel)
+			// ui_interact() only refocuses an already-open window - it pushes no
+			// payload - so without this the wiped snapshot was never rebuilt and
+			// the stale doll stayed on screen until the viewer hit rotate.
+			mob_examine_panel.update_static_data(usr)
+		//RMH EDITED END
 		return
 
 		/*if(!ismob(usr))
@@ -126,15 +142,10 @@ GLOBAL_VAR_INIT(year_integer, text2num(year)) // = 2013???
 		var/obj/item/natural/worms/leech/invader = locate(href_list["leech"]) in gen.contents
 
 		if(do_after(usr, 2 SECONDS, src) )
-			if(QDELETED(invader))
+			if(QDELETED(invader) || QDELETED(gen))
 				return
-			if(prob(75))
+			if(invader.pull_off_host(usr, src, null, gen))
 				SEND_SIGNAL(src, COMSIG_SEX_ADJUST_AROUSAL, rand(2, 6))
-				invader.horny_leech_unattach(src, gen, STORAGE_LAYER_OUTER)
-				to_chat(usr, span_info("I yank off the leech."))
-			else
-				SEND_SIGNAL(src, COMSIG_SEX_ADJUST_AROUSAL, rand(4, 12))
-				to_chat(usr, span_warn("I fail to take off the leech!"))
 
 	if(href_list["item"]) //canUseTopic check for this is handled by mob/Topic()
 		var/slot = text2num(href_list["item"])
@@ -151,33 +162,62 @@ GLOBAL_VAR_INIT(year_integer, text2num(year)) // = 2013???
 	if(href_list["task"] == "view_rumours_gossip")
 		if(!ismob(usr))
 			return
-		var/msg = ""
-		if(rumour && length(rumour))
-			var/rumour_display = rumour
-			rumour_display = html_encode(rumour_display)
-			rumour_display = parsemarkdown_basic(rumour_display, hyperlink = TRUE)
-			msg += "<b>You recall what you heard around Town about [src]...</b><br>[rumour_display]"
-		if(((HAS_TRAIT(usr, TRAIT_NOBLE)) || isobserver(usr)) && length(noble_gossip))
-			if(msg)
-				msg += "<br><br>"
-			var/gossip_display = noble_gossip
-			gossip_display = html_encode(gossip_display)
-			gossip_display = parsemarkdown_basic(gossip_display, hyperlink = TRUE)
-			msg += "<b>You recall what the other Blue-bloods hushed about [src]...</b><br>[gossip_display]"
-		if(msg)
-			to_chat(usr, "<span class='info'>[msg]</span>")
-		else //Edge-case of there being ONLY noble gossip, but we aren't a noble.
-			to_chat(usr, "<span class='info'>Any tales of intrigue of this one are reserved to the nobility...</span>")
+		var/list/town_rumors = list()
+		var/list/noble_rumors = list()
+		for(var/datum/history/gossip/gossip in usr.mind?.get_gossip_about(mind))
+			if(gossip.is_noble)
+				noble_rumors += gossip.heard_text
+			else
+				town_rumors += gossip.heard_text
+
+		// Preserve RMH's observer overview without exposing unlearned rumors to players.
+		if(isobserver(usr) && client?.prefs)
+			town_rumors |= client.prefs.read_preference(/datum/preference/list_type/rumors)
+			noble_rumors |= client.prefs.read_preference(/datum/preference/list_type/noble_gossip)
+
+		var/list/message = list()
+		if(length(town_rumors))
+			var/list/formatted_rumors = list()
+			for(var/rumor in town_rumors)
+				formatted_rumors += parsemarkdown_basic(html_encode(rumor), hyperlink = TRUE)
+			message += "<b>You recall what you heard around town about [src]...</b><br>[formatted_rumors.Join("<br>")]"
+		if(length(noble_rumors))
+			var/list/formatted_gossip = list()
+			for(var/gossip in noble_rumors)
+				formatted_gossip += parsemarkdown_basic(html_encode(gossip), hyperlink = TRUE)
+			message += "<b>You recall what blue-bloods hushed about [src]...</b><br>[formatted_gossip.Join("<br>")]"
+		if(length(message))
+			to_chat(usr, span_info(message.Join("<br><br>")))
+		else
+			to_chat(usr, span_info("You cannot recall any tales about this person."))
 		return
 
 	return ..() //end of this massive fucking chain. TODO: make the hud chain not spooky. - Yeah, great job doing that.
 
 /mob/living/proc/check_heartbeat(mob/user)
 	var/list/message = list()
+	var/heartbeat_tip = "A stopped or missing heart means blood is not reaching the brain. Restart or replace the heart, treat cardiac arrest and blood loss, and restore breathing or blood oxygen as quickly as possible."
 	if(stat >= DEAD)
-		message += "<B>No heartbeat...</B>"
+		message += span_tooltip(heartbeat_tip, "<B>No heartbeat...</B>")
+	else if(iscarbon(src))
+		var/mob/living/carbon/carbon_target = src
+		var/list/hearts = carbon_target.getorganslotlist(ORGAN_SLOT_HEART)
+		if(!length(hearts))
+			message += span_tooltip(heartbeat_tip, "<B>There is no heart to hear.</B>")
+		else
+			var/list/heart_descriptions = list()
+			for(var/thing in hearts)
+				var/obj/item/organ/heart/heart = thing
+				var/heart_description = heart.beating ? "The heart is beating" : "The heart is silent and still"
+				if(heart.open)
+					heart_description += ", but the beat is muddled by the opened bypass"
+				if(heart.damage)
+					heart_description += ", and it sounds strained"
+				heart_descriptions += "[heart_description]."
+			var/joined_heart_descriptions = heart_descriptions.Join(" ")
+			message += span_tooltip(heartbeat_tip, "<B>[joined_heart_descriptions]</B>")
 	else
-		message += "<B>The heart is still beating.</B>"
+		message += span_tooltip(heartbeat_tip, "<B>The heart is still beating.</B>")
 	var/list/soul_message = soul_examine(user)
 	if(soul_message)
 		message += soul_message

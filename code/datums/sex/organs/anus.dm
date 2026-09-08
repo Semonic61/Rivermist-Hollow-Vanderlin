@@ -1,7 +1,6 @@
 /obj/item/organ/genitals/filling_organ/anus
 	//absorbs faster than womb, less capacity.
 	name = "anus"
-	icon = 'modular_rmh/icons/eaglephntm/icons/obj/surgery.dmi'
 	icon_state = "anus"
 	dropshrink = 0.5
 	visible_organ = TRUE
@@ -20,9 +19,12 @@
 	bloatable = TRUE
 	additional_blocker = "underwear"
 	stretchable = TRUE
+	drips_as_drops = TRUE
 
-/obj/item/organ/genitals/filling_organ/anus/Insert(mob/living/M, special, drop_if_replaced)
+/obj/item/organ/genitals/filling_organ/anus/Insert(mob/living/M, special, drop_if_replaced, new_zone = null)
 	. = ..()
+	if(!.)
+		return FALSE
 	if(!refilling)
 		reagents.clear_reagents()
 	add_bodystorage(M, null, /datum/component/body_storage/anus)

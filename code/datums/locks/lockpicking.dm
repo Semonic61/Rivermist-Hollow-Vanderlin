@@ -38,9 +38,9 @@
 	if(prob(break_prob))
 		to_chat(user, span_notice("My \the [lockpick_used] broke!"))
 		playsound(src, 'sound/items/LPBreak.ogg', min(100 - (15 * skill_level) + (10 * 6 - difficulty), 100), extrarange = SILENCED_SOUND_EXTRARANGE)
-		qdel(lockpick_used)
+		lockpick_used.take_damage(10)
 
-	if(user.client?.prefs.showrolls)
+	if(user.client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 		to_chat(user, span_notice("The chance to break was [break_prob]%!"))
 
 	if(lock)
@@ -60,6 +60,8 @@
 	user.visible_message(span_warning("[user] picks the lock of \the [src]!"), span_notice("I finish picking the lock of \the [src]."))
 	record_featured_stat(FEATURED_STATS_CRIMINALS, user)
 	record_round_statistic(STATS_LOCKS_PICKED)
+	var/datum/antagonist/bandit/bandit = user.mind?.has_antag_datum(/datum/antagonist/bandit)
+	bandit?.record_picked_lock(src)
 	being_picked = FALSE
 	return TRUE
 
@@ -125,7 +127,7 @@
 	var/mouse_status = LOCKPICK_MOUSEUP
 
 	//the lockpick being used
-	var/the_lockpick
+	var/obj/the_lockpick
 	//the wedge being used
 	var/the_wedge
 
@@ -312,14 +314,14 @@
 			if(prob(break_prob))
 				to_chat(picker, span_notice("My \the [the_lockpick] broke!"))
 				playsound(src, 'sound/items/LPBreak.ogg', min(100 - (15 * skill_level) + (10 * 6 - difficulty), 100), extrarange = SILENCED_SOUND_EXTRARANGE)
-				qdel(the_lockpick)
+				the_lockpick.take_damage(10)
 				//one tenth of the usual boost for picking a lock
 				if(isliving(picker))
 					var/mob/living/picker_real = picker
 					var/amt2raise = ((GET_MOB_ATTRIBUTE_VALUE(picker_real, STAT_INTELLIGENCE) / 2) * (20 / difficulty)) / 10
 					var/boon = picker_real.get_learning_boon(/datum/attribute/skill/misc/lockpicking)
 					picker_real.adjust_experience(/datum/attribute/skill/misc/lockpicking, amt2raise * boon)
-			if(picker.client?.prefs.showrolls)
+			if(picker.client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 				to_chat(picker, span_notice("The chance to break was [break_prob]%!"))
 			break_checking_cooldown = world.time + (9 - (7 - difficulty)) SECONDS
 			//break check cooldown at highest difficulty is 3 seconds, at lowest its 8

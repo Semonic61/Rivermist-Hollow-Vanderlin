@@ -59,7 +59,7 @@
 	name = "darkholdian hip-shirt"
 	desc = "A true fashion statement worn by Darkholdian swordsmen."
 	body_parts_covered = CHEST|GROIN|ARMS|VITALS
-	armor = list("blunt" = 20, "slash" = 20, "stab" = 20,  "piercing" = 10, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/shirt/grenzelhoft
 	icon_state = "grenzelshirt"
 	sleeved = 'icons/roguetown/clothing/onmob/helpers/stonekeep_merc.dmi'
 	boobed = TRUE
@@ -148,4 +148,13 @@
 	color = pick(CLOTHING_LINEN, CLOTHING_BARK_BROWN, CLOTHING_FOREST_GREEN, CLOTHING_BERRY_BLUE, CLOTHING_BLOOD_RED, CLOTHING_PEAR_YELLOW, CLOTHING_ROYAL_TEAL)
 	return ..()
 
-
+/obj/item/clothing/shirt/vampire
+	slot_flags = ITEM_SLOT_SHIRT|ITEM_SLOT_ARMOR
+	name = "regal silks"
+	desc = ""
+	body_parts_covered = CHEST|GROIN|LEGS|VITALS
+	prevent_crits = list(BCLASS_BITE, BCLASS_TWIST)
+	icon_state = "vrobe"
+	item_state = "vrobe"
+	r_sleeve_status = SLEEVE_NORMAL
+	l_sleeve_status = SLEEVE_NORMAL

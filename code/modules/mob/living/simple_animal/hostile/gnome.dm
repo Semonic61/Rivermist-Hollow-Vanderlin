@@ -1,7 +1,3 @@
-// ===============================
-// GNOME HOMUNCULUS MOB
-// ===============================
-
 /mob/living/simple_animal/hostile/gnome_homunculus
 	name = "gnome homunculus"
 	desc = "A small, industrious magical construct that resembles a tiny gnome. Its eyes glow with alchemical energy, and it seems eager to help with menial tasks."
@@ -11,6 +7,8 @@
 	icon_dead = "gnome_dead"
 
 	pass_flags = PASSMOB
+
+	animal_type = /datum/blood_type/putrid
 
 	maxHealth = 50
 	health = 50
@@ -142,16 +140,16 @@
 /mob/living/simple_animal/hostile/gnome_homunculus/proc/on_death(datum/source)
 	SEND_SIGNAL(src, COMSIG_EMOTION_STORE, null, EMOTION_SCARED, "is dying!", 0)
 
-	// Collect friends before dying - PROPERLY using befriended_refs
+	// Keep death messages tied to the gnome's current friendships.
 	var/list/my_friends = list()
 	var/datum/component/friendship_container/friendships = GetComponent(/datum/component/friendship_container)
 	if(friendships)
-		// Get friends from the befriended_refs list
-		for(var/datum/weakref/friend_ref in friendships.befriended_refs)
+		// The friendship component stores weakrefs; allies record who is befriended.
+		for(var/datum/weakref/friend_ref in friendships.weakrefed_friends)
 			if(QDELETED(friend_ref))
 				continue
 			var/mob/living/friend_mob = friend_ref.resolve()
-			if(friend_mob && !QDELETED(friend_mob))
+			if(friend_mob && !QDELETED(friend_mob) && has_ally(friend_mob))
 				my_friends += friend_mob
 
 	// Create death message for nearby gnomes to remember
@@ -186,7 +184,9 @@
 
 /mob/living/simple_animal/hostile/gnome_homunculus/hitby(atom/movable/AM, skipcatch, hitpush, blocked, datum/thrownthing/throwingdatum, damage_type)
 	. = ..()
-	SEND_SIGNAL(src, COMSIG_EMOTION_STORE, throwingdatum?.thrower, EMOTION_SCARED, "[throwingdatum.thrower] throw thing at me!", 0)
+	var/mob/thrower = throwingdatum?.get_thrower()
+	if(thrower)
+		SEND_SIGNAL(src, COMSIG_EMOTION_STORE, thrower, EMOTION_SCARED, "[thrower] throw thing at me!", 0)
 
 /mob/living/simple_animal/hostile/gnome_homunculus/attackby(obj/item/item, mob/living/user, list/modifiers)
 	// Check what kind of item interaction this is

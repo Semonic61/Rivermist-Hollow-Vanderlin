@@ -1,8 +1,9 @@
 /obj/item/clothing/armor/plate
+	item_weight = 8.4 KILOGRAMS
 	name = "steel half-plate"
 	desc = "Steel plate armor with shoulder guards. An incomplete, bulky set of excellent armor."
 	icon_state = "halfplate"
-	anvilrepair = /datum/attribute/skill/craft/armorsmithing
+	anvilrepair = /datum/attribute/skill/craft/armor_repair
 	melt_amount = 75
 	melting_material = /datum/material/steel
 	equip_delay_self = 4 SECONDS
@@ -13,10 +14,10 @@
 	clothing_flags = CANT_SLEEP_IN
 	//Plate doesn't protect a lot against blunt
 	armor_class = AC_HEAVY
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/plate
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS //Has shoulder guards, and nothing else to suggest leg protection
 	prevent_crits = ALL_EXCEPT_BLUNT
-	max_integrity = INTEGRITY_STRONGEST
+	max_integrity = ARMOR_INT_CHEST_PLATE_STEEL
 	stand_speed_reduction = 1.2
 
 /obj/item/clothing/armor/plate/Initialize()
@@ -31,8 +32,8 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_ARMOR
-	armor = ARMOR_PLATE_BAD
-	max_integrity = INTEGRITY_STRONG
+	armor_type = /datum/armor/plate/bad
+	max_integrity = ARMOR_INT_CHEST_PLATE_IRON
 
 //................ Full Plate Armor ............... //
 /obj/item/clothing/armor/plate/full
@@ -44,9 +45,9 @@
 	unequip_delay_self = 7 SECONDS
 	sellprice = VALUE_FULL_PLATE
 
-	armor = ARMOR_PLATE
+	armor_type = /datum/armor/plate
 	body_parts_covered = COVERAGE_FULL
-	item_weight = 12 * STEEL_MULTIPLIER
+	item_weight = 17 KILOGRAMS
 
 /obj/item/clothing/armor/plate/full/iron
 	name = "iron plate armor"
@@ -57,9 +58,9 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 
-	armor = ARMOR_PLATE_BAD
-	max_integrity = INTEGRITY_STRONG
-	item_weight = 12 * IRON_MULTIPLIER
+	armor_type = /datum/armor/plate/bad
+	max_integrity = ARMOR_INT_CHEST_PLATE_IRON
+	item_weight = 17 KILOGRAMS
 
 //................ Rusted Half-plate ............... //
 /obj/item/clothing/armor/plate/rust
@@ -73,9 +74,9 @@
 	smeltresult = /obj/item/ingot/iron
 	melting_material = /datum/material/iron
 	sellprice = VALUE_IRON_ARMOR/2
-	armor = ARMOR_PLATE_BAD
-	max_integrity = INTEGRITY_STANDARD
-	item_weight = 12 * IRON_MULTIPLIER
+	armor_type = /datum/armor/plate/bad
+	max_integrity = ARMOR_INT_CHEST_PLATE_DECREPIT
+	item_weight = 8.75 KILOGRAMS
 
 
 /obj/item/clothing/armor/plate/blkknight
@@ -90,9 +91,10 @@
 	anvilrepair = /datum/attribute/skill/craft/blacksmithing
 	smeltresult = /obj/item/ingot/blacksteel
 	melting_material = /datum/material/blacksteel
-	item_weight = 12 * BLACKSTEEL_MULTIPLIER
+	item_weight = 20.45 KILOGRAMS
 	sellprice = VALUE_SILVER_ITEM * 6
 	stand_speed_reduction = 1.05
+	max_integrity = ARMOR_INT_CHEST_PLATE_BLACKSTEEL
 
 //................ Deccorated Half-plate ............... //
 
@@ -150,10 +152,10 @@
 	desc = "A finely forged set of full silver plate, with long tassets protecting the legs."
 	icon_state = "silverarmor"
 	allowed_ages = ALL_AGES_LIST //placeholder until younglings have onmob sprites for this item
-	armor = ARMOR_PLATE_SILVER
+	armor_type = /datum/armor/plate/silver
 	smeltresult = /obj/item/ingot/silver
 	melting_material = /datum/material/silver
-	item_weight = 12 * SILVER_MULTIPLIER
+	item_weight = 22 KILOGRAMS
 	sellprice = VALUE_SILVER_ITEM * 3
 
 /obj/item/clothing/armor/plate/full/silver/Initialize(mapload)
@@ -177,10 +179,10 @@
 			Favored by both the Oratorium Throni Vacui and the Aonic Silver Order. It smells of the madness of an enduring God."
 	icon_state = "ornatehalfplate"
 
-	max_integrity = 400
+	max_integrity = ARMOR_INT_CHEST_PLATE_PSYDON
 	melt_amount = 150
 	melting_material = /datum/material/silver
-	armor = ARMOR_PLATE // overall worse because of the endurance buff //Changed to Plate armor
+	armor_type = /datum/armor/plate // overall worse because of the endurance buff //Changed to Plate armor
 
 
 /obj/item/clothing/armor/plate/fluted/ornate/ordinator
@@ -197,11 +199,11 @@
 /datum/status_effect/buff/psydonic_endurance/on_apply()
 	. = ..()
 	if(HAS_TRAIT(owner, TRAIT_MEDIUMARMOR) && !HAS_TRAIT(owner, TRAIT_HEAVYARMOR))
-		ADD_TRAIT(owner, TRAIT_HEAVYARMOR, src)
+		ADD_TRAIT(owner, TRAIT_HEAVYARMOR, id)
 
 /datum/status_effect/buff/psydonic_endurance/on_remove()
 	. = ..()
-	REMOVE_TRAIT(owner, TRAIT_HEAVYARMOR, src)
+	REMOVE_TRAIT(owner, TRAIT_HEAVYARMOR, id)
 
 /atom/movable/screen/alert/status_effect/buff/psydonic_endurance
 	name = "Psydonic Endurance"

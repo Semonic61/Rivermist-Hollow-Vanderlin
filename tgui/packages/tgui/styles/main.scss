@@ -17,12 +17,14 @@
 
 // Interfaces
 @include meta.load-css('./interfaces/AlertModal.scss');
+@include meta.load-css('./interfaces/AttributeMenu.scss');
 @include meta.load-css('./interfaces/Changelog.scss');
 @include meta.load-css('./interfaces/ColorPicker.scss');
 @include meta.load-css('./interfaces/HotKeysHelp.scss');
 @include meta.load-css('./interfaces/ListInput.scss');
 @include meta.load-css('./interfaces/Orbit.scss');
 @include meta.load-css('./interfaces/PreferencesMenu.scss');
+@include meta.load-css('./interfaces/RecipeBook.scss');
 
 // Layouts
 @include meta.load-css('./layouts/Layout.scss');
@@ -35,6 +37,8 @@
 
 // Themes
 @include meta.load-css('./themes/grim.scss');
+@include meta.load-css('./themes/parchment.scss'); //RMH EDITED
+@include meta.load-css('./themes/vanderlin.scss'); //RMH EDITED
 
 @include meta.load-css('~highlight.js/scss/a11y-dark.scss');
 

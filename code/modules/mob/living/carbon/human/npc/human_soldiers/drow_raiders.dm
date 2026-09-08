@@ -1,5 +1,7 @@
 GLOBAL_LIST_INIT(drowraider_aggro, world.file2list("strings/rt/drowaggrolines.txt"))
 
+#define DROW_RAIDER_MALE_CHANCE 15
+
 /mob/living/carbon/human/species/elf/dark/drowraider
 	ai_controller = /datum/ai_controller/human_npc
 	faction = list("drow")
@@ -15,7 +17,6 @@ GLOBAL_LIST_INIT(drowraider_aggro, world.file2list("strings/rt/drowaggrolines.tx
 /mob/living/carbon/human/species/elf/dark/drowraider/Initialize()
 	. = ..()
 	AddComponent(/datum/component/ai_aggro_system)
-	set_species(/datum/species/elf/dark)
 	addtimer(CALLBACK(src, PROC_REF(after_creation)), 1 SECONDS)
 	is_silent = TRUE
 
@@ -32,7 +33,7 @@ GLOBAL_LIST_INIT(drowraider_aggro, world.file2list("strings/rt/drowaggrolines.tx
 	ADD_TRAIT(src, TRAIT_DUALWIELDER, TRAIT_GENERIC)
 	equipOutfit(new /datum/outfit/job/human/species/elf/dark/drowraider)
 	SEND_SIGNAL(src, COMSIG_MOB_MODIFY_AGGRO_LINES, GLOB.drowraider_aggro, TRUE)
-	if(prob(40))
+	if(prob(DROW_RAIDER_MALE_CHANCE))
 		gender = MALE
 	else
 		gender = FEMALE
@@ -80,7 +81,7 @@ GLOBAL_LIST_INIT(drowraider_aggro, world.file2list("strings/rt/drowaggrolines.tx
 	else
 		real_name = pick(world.file2list("strings/rt/names/elf/elfdm.txt"))
 
-	faction += "spider_lowers"
+	add_faction("spider_lowers")
 
 	update_body()
 
@@ -118,3 +119,5 @@ GLOBAL_LIST_INIT(drowraider_aggro, world.file2list("strings/rt/drowaggrolines.tx
 		l_hand = /obj/item/weapon/knife/dagger/steel/dirk
 
 	H.attributes?.add_sheet(/datum/attribute_holder/sheet/job/npc/drowraider)
+
+#undef DROW_RAIDER_MALE_CHANCE

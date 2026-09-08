@@ -24,7 +24,9 @@
 	if(length(all_moms))
 		var/mob/mom = pick(all_moms)
 		controller.set_blackboard_key(found_mom, mom)
-		controller.set_blackboard_key(BB_FRIENDS_LIST, mom.ai_controller.blackboard[BB_FRIENDS_LIST])
+		APPLY_FACTION_AND_ALLIES_FROM(living_pawn, mom)
+		if(mom.ai_controller)
+			controller.set_blackboard_key(BB_FRIENDS_LIST, mom.ai_controller.blackboard[BB_FRIENDS_LIST])
 		finish_action(controller, TRUE)
 		return
 	finish_action(controller, FALSE)
@@ -52,6 +54,7 @@
 	if(length(all_moms))
 		var/mob/mom = pick(all_moms)
 		controller.set_blackboard_key(found_mom, mom)
+		APPLY_FACTION_AND_ALLIES_FROM(living_pawn, mom)
 		if(mom.ai_controller)
 			controller.set_blackboard_key(BB_FRIENDS_LIST, mom.ai_controller.blackboard[BB_FRIENDS_LIST])
 		finish_action(controller, TRUE)

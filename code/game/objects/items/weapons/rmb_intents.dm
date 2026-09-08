@@ -234,7 +234,7 @@
 
 	if(!prob(perc))
 		playsound(user, 'sound/combat/feint.ogg', 100, TRUE)
-		if(user.client?.prefs.showrolls)
+		if(user.client?.prefs.read_preference(/datum/preference/toggle/showrolls))
 			to_chat(user, span_warning("[defender.p_they(TRUE)] did not fall for my feint... [perc]%"))
 		user.apply_status_effect(/datum/status_effect/debuff/feintcd)
 		if(special_message)
@@ -297,7 +297,7 @@
 	return TRUE
 
 /datum/rmb_intent/guard
-	name = "guarde"
+	name = "guard"
 	desc = "(RMB WHILE DEFENSE IS ACTIVE) Raise your weapon, ready to attack any creature who moves onto the space you are guarding."
 	icon_state = "rmbguard"
 

@@ -7,6 +7,18 @@
 		var/mob/Buckled = buckled
 		. = Buckled.lowest_buckled_mob()
 
+/// True for bodies that belong, or recently belonged, to an actual player.
+/mob/proc/is_player_character()
+	if(ckey)
+		return TRUE
+	if(istext(mind?.key))
+		return TRUE
+	if(iscarbon(src))
+		var/mob/living/carbon/carbon_mob = src
+		if(istext(carbon_mob.last_mind?.key))
+			return TRUE
+	return FALSE
+
 ///Convert a PRECISE ZONE into the BODY_ZONE
 /proc/check_zone(zone)
 	if(!zone)
@@ -17,8 +29,6 @@
 		if(BODY_ZONE_PRECISE_L_EYE)
 			zone = BODY_ZONE_HEAD
 		if(BODY_ZONE_PRECISE_NOSE)
-			zone = BODY_ZONE_HEAD
-		if(BODY_ZONE_PRECISE_MOUTH)
 			zone = BODY_ZONE_HEAD
 		if(BODY_ZONE_PRECISE_SKULL)
 			zone = BODY_ZONE_HEAD
@@ -44,6 +54,34 @@
 			zone = BODY_ZONE_L_ARM
 
 	return zone
+
+/// Collapse an aim zone into its bind group (matching groups = bindable attack).
+/// Returns a BIND_* string, or FALSE if unrecognized.
+/proc/check_bind_subzone(zone_def)
+	if(!zone_def)
+		return FALSE
+	switch(zone_def)
+		if(BODY_ZONE_HEAD, BODY_ZONE_PRECISE_SKULL, BODY_ZONE_PRECISE_EARS, BODY_ZONE_PRECISE_R_EYE, BODY_ZONE_PRECISE_L_EYE, BODY_ZONE_PRECISE_NOSE, BODY_ZONE_PRECISE_MOUTH)
+			return BIND_HEAD
+		if(BODY_ZONE_PRECISE_NECK)
+			return BIND_NECK
+		if(BODY_ZONE_PRECISE_L_HAND, BODY_ZONE_PRECISE_L_INHAND, BODY_ZONE_L_ARM)
+			return BIND_HAND_L
+		if(BODY_ZONE_PRECISE_R_HAND, BODY_ZONE_PRECISE_R_INHAND, BODY_ZONE_R_ARM)
+			return BIND_HAND_R
+		if(BODY_ZONE_PRECISE_L_FOOT, BODY_ZONE_L_LEG)
+			return BIND_FOOT_L
+		if(BODY_ZONE_PRECISE_R_FOOT, BODY_ZONE_R_LEG)
+			return BIND_FOOT_R
+		if(BODY_ZONE_CHEST, BODY_ZONE_PRECISE_GROIN, BODY_ZONE_PRECISE_STOMACH)
+			return BIND_TORSO
+	return FALSE
+
+/// Returns TRUE if the defender's bind subzone matches the attacker's aim zone.
+/proc/check_bind(bindzone, attzone)
+	if(!bindzone || !attzone)
+		return FALSE
+	return bindzone == check_bind_subzone(attzone)
 
 ///Returns a TRUE / FALSE if the zone is a FACE coverage subzone. Used mainly by accuracy_check & bait.
 /proc/check_face_subzone(zone)
@@ -249,6 +287,15 @@
  * Makes you speak like you're drunk
  */
 /proc/slur(n)
+	return slur_words(n, TRUE)
+
+/**
+ * Makes you sound breathless without drunk interjections.
+ */
+/proc/aroused_slur(n)
+	return slur_words(n, FALSE)
+
+/proc/slur_words(n, include_drunk_interjections = TRUE)
 	var/phrase = html_decode(n)
 	var/leng = length(phrase)
 	var/counter=length(phrase)
@@ -267,7 +314,7 @@
 				newletter="oo"
 			if(lowertext(newletter)=="c")
 				newletter="k"
-		if(rand(1,20)==20)
+		if(include_drunk_interjections && rand(1,20)==20)
 			if(newletter==" ")
 				newletter="...huuuhhh..."
 			if(newletter==".")
@@ -544,9 +591,9 @@
 			intents = Masteritem.alt_intents
 	else
 		if(active_hand_index == 1)
-			r_index = r_ua_index
-		else
 			l_index = l_ua_index
+		else
+			r_index = r_ua_index
 		intents = base_intents.Copy()
 	for(var/defintent in intents)
 		if(Masteritem)
@@ -562,9 +609,9 @@
 			intents = Masteritem.alt_intents
 	else
 		if(active_hand_index == 1)
-			l_index = l_ua_index
-		else
 			r_index = r_ua_index
+		else
+			l_index = l_ua_index
 		intents = base_intents.Copy()
 	for(var/defintent in intents)
 		if(Masteritem)
@@ -648,9 +695,6 @@
 		return
 	d_intent = input
 	playsound_local(src, 'sound/misc/click.ogg', 100)
-	if(hud_used)
-		if(hud_used.def_intent)
-			hud_used.def_intent.update_appearance(UPDATE_ICON_STATE)
 	update_inv_hands()
 
 
@@ -665,6 +709,11 @@
 	if(L.IsSleeping() || L.surrendering)
 		if(cmode)
 			cmode = FALSE
+			L.clear_dodge_grace()
+			L.reset_defense_cooldowns()
+			if(ishuman(L))
+				var/mob/living/carbon/human/H = L
+				H.clear_tempo_all()
 		refresh_looping_ambience()
 		hud_used?.cmode_button?.update_appearance(UPDATE_ICON_STATE)
 		return
@@ -672,12 +721,18 @@
 	if(cmode)
 		playsound_local(src, 'sound/misc/comboff.ogg', 100)
 		cmode = FALSE
+		L.clear_dodge_grace()
+		L.reset_defense_cooldowns()
+		if(ishuman(L))
+			var/mob/living/carbon/human/H = L
+			H.clear_tempo_all()
 		if(client && HAS_TRAIT(src, TRAIT_SCHIZO_AMBIENCE) && !HAS_TRAIT(src, TRAIT_SCREENSHAKE))
 			animate(client, pixel_y) // stops screenshake if you're not on 4th wonder yet.
 		cmode_timer = addtimer(TRAIT_CALLBACK_REMOVE(src, TRAIT_BLOCKED_DIAGONAL, "combat"), 10 SECONDS, TIMER_STOPPABLE | TIMER_OVERRIDE | TIMER_UNIQUE)
 	else
 		cmode = TRUE
 		playsound_local(src, 'sound/misc/combon.ogg', 100)
+		L.reset_defense_cooldowns()
 		ADD_TRAIT(src, TRAIT_BLOCKED_DIAGONAL, "combat")
 		if(cmode_timer)
 			deltimer(cmode_timer)
@@ -845,8 +900,8 @@
 		if(source)
 			var/atom/movable/screen/alert/notify_action/A = O.throw_alert("[REF(source)]_notify_action", /atom/movable/screen/alert/notify_action)
 			if(A)
-				if(O.client.prefs && O.client.prefs.UI_style)
-					A.icon = ui_style2icon(O.client.prefs.UI_style)
+				if(O.client.prefs && O.client.prefs.read_preference(/datum/preference/choiced/UI_style))
+					A.icon = ui_style2icon(O.client.prefs.read_preference(/datum/preference/choiced/UI_style))
 				if (header)
 					A.name = header
 				A.desc = message
@@ -1001,7 +1056,7 @@
 			. += "[A.type]"
 
 ///Can the mob see reagents inside of containers?
-/mob/proc/can_see_reagents()
+/mob/proc/can_see_reagents(atom/target)
 	return stat == DEAD || has_unlimited_silicon_privilege //Dead guys and silicons can always see reagents
 
 /mob/living/carbon/human/proc/get_role_title(ignore_pronouns = FALSE, steward_check = FALSE)

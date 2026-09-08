@@ -18,8 +18,8 @@
 /datum/job/advclass/combat/adventurer_fighter/elven_blademaster
 	title = "Elven Blademaster"
 	tutorial = "Honed in the courts of Evereska, you are a master of blade and agility. \
-    With your people scattered or gone, you now roam the wider realms, \
-    lending your skill to those in need—or seeking new challenges worthy of your craft."
+	With your people scattered or gone, you now roam the wider realms, \
+	lending your skill to those in need—or seeking new challenges worthy of your craft."
 	allowed_races = RACES_PLAYER_ELF_ALL
 
 	outfit = /datum/outfit/adventurer_fighter/elven_blademaster
@@ -51,7 +51,7 @@
 	backl = /obj/item/storage/backpack/satchel
 	belt = /obj/item/storage/belt/leather/adventurers_subclasses
 	beltl = null
-	beltl = /obj/item/storage/belt/pouch/coins/mid
+	beltl = /obj/item/storage/belt/pouch/cloth/coins/mid
 	ring = null
 	l_hand = null
 	r_hand = null

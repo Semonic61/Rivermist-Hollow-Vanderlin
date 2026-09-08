@@ -1,6 +1,5 @@
 /obj/item/organ/genitals/filling_organ/testicles
 	name = "testicles"
-	icon = 'modular_rmh/icons/eaglephntm/icons/obj/surgery.dmi'
 	icon_state = "testicles"
 	visible_organ = TRUE
 	zone = BODY_ZONE_PRECISE_GROIN
@@ -26,12 +25,14 @@
 	visible_organ = FALSE
 	accessory_type = /datum/sprite_accessory/none
 
-/obj/item/organ/genitals/filling_organ/testicles/Insert(mob/living/M, special, drop_if_replaced)
+/obj/item/organ/genitals/filling_organ/testicles/Insert(mob/living/M, special, drop_if_replaced, new_zone = null)
 	if(M.cum)
 		reagent_to_make = M.cum
 	if(!virility)
 		reagent_to_make = /datum/reagent/consumable/cum/sterile
 	. = ..()
+	if(!.)
+		return FALSE
 	if(!virility)
 		reagents.clear_reagents()
 		reagents.add_reagent(reagent_to_make, reagents.maximum_volume)

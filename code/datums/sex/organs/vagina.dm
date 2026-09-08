@@ -1,6 +1,5 @@
 /obj/item/organ/genitals/filling_organ/vagina
 	name = "vagina"
-	icon = 'modular_rmh/icons/eaglephntm/icons/obj/surgery.dmi'
 	icon_state = "vagina"
 	visible_organ = TRUE
 	zone = BODY_ZONE_PRECISE_GROIN
@@ -24,6 +23,7 @@
 	additional_blocker = "underwear"
 	bloatable = TRUE
 	stretchable = FALSE
+	drips_as_drops = TRUE
 	// Passive egg production is enabled by a mob trait; these vars only tune the output.
 	var/oviposition_egg_production_type = null // Null keeps the default safe egg type.
 	var/oviposition_egg_production_interval = 20 MINUTES
@@ -39,8 +39,10 @@
 	var/list/egg_traits = list()
 	var/resource_dependent_yield = FALSE
 
-/obj/item/organ/genitals/filling_organ/vagina/Insert(mob/living/M, special, drop_if_replaced)
+/obj/item/organ/genitals/filling_organ/vagina/Insert(mob/living/M, special, drop_if_replaced, new_zone = null)
 	. = ..()
+	if(!.)
+		return FALSE
 	if(M.femcum)
 		reagent_to_make = M.femcum
 	add_bodystorage(M, null, /datum/component/body_storage/vagina)

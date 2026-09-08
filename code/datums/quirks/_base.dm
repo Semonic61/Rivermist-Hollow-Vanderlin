@@ -20,6 +20,7 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 			"name" = initial(quirk_type.name),
 			"type" = quirk_type,
 			"desc" = initial(quirk_type.desc),
+			"desc_hint" = initial(quirk_type.desc_hint),
 			"value" = initial(quirk_type.point_value)
 		))
 		LAZYADDASSOC(GLOB.quirk_singletons, quirk_type, new quirk_type)
@@ -51,11 +52,15 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 	abstract_type = /datum/quirk
 	///this is basically our apply order, if 0 we don't care, higher is better
 	var/apply_order = 0
+	/// Multiplier applied to the holder's defeat damage threshold (see the Defeat system). Below 1 means they are defeated sooner.
+	var/defeat_threshold_mult = 1
 
 	/// The quirk's name shown to players
 	var/name = "Quirk"
 	/// Description of what this quirk does
 	var/desc = "A quirk."
+	/// Optional hint to show below the desc, for OOC or important info
+	var/desc_hint = ""
 	/// Category: QUIRK_BOON, QUIRK_VICE, or QUIRK_PECULIARITY
 	var/quirk_category = QUIRK_PECULIARITY
 	/// Point value (negative = costs points, positive = gives points)
@@ -100,6 +105,8 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 	var/gain_text
 	/// Text shown on quirk loss
 	var/lose_text
+	/// Traits granted for as long as this quirk remains attached.
+	var/list/traits_to_add = list()
 
 /datum/quirk/New(mob/living/new_owner, custom_value = null, list/extra_values = null)
 	. = ..()
@@ -121,6 +128,9 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 /datum/quirk/proc/get_desc(datum/preferences/prefs)
 	return desc
 
+/datum/quirk/proc/get_desc_hint(datum/preferences/prefs)
+	return desc_hint
+
 /datum/quirk/proc/after_job_spawn(datum/job/job)
 	return
 
@@ -137,10 +147,13 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 
 /// Called when the quirk is applied to a character
 /datum/quirk/proc/on_spawn()
+	owner?.add_traits(traits_to_add, "[type]")
 	return
 
 /// Called when the quirk is removed
 /datum/quirk/proc/on_remove()
+	if(!QDELETED(owner))
+		REMOVE_TRAITS_IN(owner, "[type]")
 	return
 
 /datum/quirk/proc/reapply()
@@ -189,9 +202,9 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 		return TRUE
 
 	// Check age restrictions
-	if(length(allowed_ages) && !(prefs.age in allowed_ages))
+	if(length(allowed_ages) && !(prefs.read_preference(/datum/preference/choiced/age) in allowed_ages))
 		return FALSE
-	if(prefs.age in blocked_ages)
+	if(prefs.read_preference(/datum/preference/choiced/age) in blocked_ages)
 		return FALSE
 
 	// Check species restrictions
@@ -245,6 +258,32 @@ GLOBAL_LIST_EMPTY(quirk_points_by_type)
 		if(istype(Q, quirk_type))
 			return Q
 	return null
+
+/mob/living/carbon/human/proc/get_quirk_names_by_category(category)
+	var/list/quirk_names = list()
+	for(var/datum/quirk/Q in quirks)
+		if(Q.quirk_category == category)
+			quirk_names += Q.name
+	if(!length(quirk_names))
+		return "None"
+	return quirk_names.Join(", ")
+
+/mob/living/carbon/human/proc/get_active_addiction_names()
+	var/list/addiction_names = list()
+	for(var/datum/status_effect/status_effect as anything in status_effects)
+		if(!istype(status_effect, /datum/status_effect/debuff/addiction))
+			continue
+		var/atom/movable/screen/alert/status_effect/status_alert = status_effect.alert_type
+		var/addiction_name = initial(status_alert.name)
+		addiction_names += addiction_name || "Addiction"
+	if(!length(addiction_names))
+		return "None active"
+	return addiction_names.Join(", ")
+
+/mob/living/carbon/human/proc/show_self_quirk_summary()
+	to_chat(src, span_info("Boons: [get_quirk_names_by_category(QUIRK_BOON)]"))
+	to_chat(src, span_info("Vices: [get_quirk_names_by_category(QUIRK_VICE)]"))
+	to_chat(src, span_info("Addictions: [get_active_addiction_names()]"))
 
 /mob/living/carbon/human/proc/clear_quirks()
 	for(var/datum/quirk/Q in quirks)

@@ -215,8 +215,8 @@
 	if(. && density && mover.throwing && isitem(mover))
 		var/obj/item/I = mover
 		var/chance = 100 - (I.w_class-1) * 30
-		if(isliving(I.throwing.thrower))
-			var/mob/living/L = I.throwing.thrower
+		var/mob/living/L = I.throwing.get_thrower()
+		if(istype(L))
 			chance += (GET_MOB_ATTRIBUTE_VALUE(L, STAT_FORTUNE) - 10) * 10
 		return prob(clamp(chance, 0, 100))
 
@@ -237,6 +237,13 @@
 /obj/structure/bars/tough
 	max_integrity = 9000
 	damage_deflection = 40
+
+/obj/structure/bars/wood
+	icon_state = "wooden_barrier"
+	name = "wooden barrier"
+	desc = "Decorative wooden barrier made to keep things in or out."
+	icon = 'icons/roguetown/misc/structure.dmi'
+	attacked_sound = list("sound/combat/hits/onmetal/mwoodimpact (1).ogg", "sound/combat/hits/onmetal/woodimpact (2).ogg")
 
 /obj/structure/bars/alt
 	icon_state = "bars_alt"
@@ -424,13 +431,13 @@
 
 /obj/structure/fluff/clock/attack_hand_secondary(mob/user, list/modifiers)
 
-    . = ..()
-    if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
-        return
+	. = ..()
+	if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
+		return
 
-    handle_special_items_retrieval(user, src)
+	handle_special_items_retrieval(user, src)
 
-    return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+	return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
 /obj/structure/fluff/clock/examine(mob/user)
 	. = ..()
@@ -672,13 +679,13 @@
 
 /obj/structure/fluff/statue/attack_hand_secondary(mob/user, list/modifiers)
 
-    . = ..()
-    if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
-        return
+	. = ..()
+	if(. == SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN)
+		return
 
-    handle_special_items_retrieval(user, src)
+	handle_special_items_retrieval(user, src)
 
-    return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+	return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
 /obj/structure/fluff/statue/CanPass(atom/movable/mover, turf/target)
 	. = ..()
@@ -722,6 +729,28 @@
 	desc = "Astrata, the Sun Queen, reigns over light, order, and conquest. She is worshipped and feared in equal measure."
 	icon = 'icons/roguetown/misc/tallandwide.dmi'
 	icon_state = "astrata"
+	max_integrity = 100 // You wanted descructible statues, you'll get them.
+	deconstructible = FALSE
+	density = TRUE
+	blade_dulling = DULLING_BASH
+	SET_BASE_PIXEL(-16, 0)
+
+/obj/structure/fluff/statue/noc
+	name = "statue of Noc"
+	desc = "Noc, the Moon Prince, reigns over magic. Scholars bow to their command of the weave."
+	icon = 'icons/roguetown/misc/tallandwide.dmi'
+	icon_state = "noc"
+	max_integrity = 100 // You wanted descructible statues, you'll get them.
+	deconstructible = FALSE
+	density = TRUE
+	blade_dulling = DULLING_BASH
+	SET_BASE_PIXEL(-16, 0)
+
+/obj/structure/fluff/statue/noc/tall
+	name = "standing statue of Noc"
+	desc = "Noc, the Moon Prince, reigns over magic. Scholars bow to their command of the weave."
+	icon = 'icons/roguetown/misc/64x128.dmi'
+	icon_state = "noc"
 	max_integrity = 100 // You wanted descructible statues, you'll get them.
 	deconstructible = FALSE
 	density = TRUE
@@ -833,6 +862,62 @@
 	icon = 'icons/roguetown/misc/structure.dmi'
 	icon_state = "telescope"
 	density = TRUE
+	anchored = FALSE
+
+/obj/structure/fluff/clutter/shrub/red
+	name = "potted shrub"
+	desc = "A stone pot with a red autumnal shrub there-in."
+	icon = 'icons/roguetown/misc/structure.dmi'
+	icon_state = "pottedshrub_red"
+	density = TRUE
+	anchored = FALSE
+
+/obj/structure/fluff/clutter/shrub/tundra
+	name = "potted shrub"
+	desc = "A stone pot with a cold tundra shrub there-in."
+	icon = 'icons/roguetown/misc/structure.dmi'
+	icon_state = "pottedshrub_tundra"
+	density = TRUE
+	anchored = FALSE
+
+/obj/structure/fluff/clutter/books
+	name = "stack of books & inkpot"
+	desc = "A few stacks of books with a pot of ink & quill waiting for inspiration."
+	icon = 'icons/roguetown/misc/structure.dmi'
+	icon_state = "clutter_books"
+	density = FALSE
+	anchored = FALSE
+
+/obj/structure/fluff/clutter/teapot
+	name = "teapot & cups"
+	desc = "A teapot & accompanying cups on a mat."
+	icon = 'icons/roguetown/misc/structure.dmi'
+	icon_state = "clutter_teapot"
+	density = FALSE
+	anchored = FALSE
+
+/obj/structure/fluff/moonrug
+	name = "moon rug"
+	desc = "A decorative rug depicting the phases of the moon."
+	icon = 'icons/roguetown/misc/96x96.dmi'
+	icon_state = "moonrug"
+	density = FALSE
+	anchored = FALSE
+
+/obj/structure/fluff/fibermat/square
+	name = "square fiber mat"
+	desc = "A rustic mat woven from fiber."
+	icon = 'icons/roguetown/misc/64x64.dmi'
+	icon_state = "fibermat"
+	density = FALSE
+	anchored = FALSE
+
+/obj/structure/fluff/fibermat/round
+	icon = 'icons/roguetown/misc/structure.dmi'
+	name = "round fiber mat"
+	desc = "A rustic mat woven from fiber."
+	icon_state = "fibermat_round"
+	density = FALSE
 	anchored = FALSE
 
 /obj/structure/fluff/telescope/attack_hand(mob/user)
@@ -948,12 +1033,12 @@
 						user.visible_message("<span class='info'>[user] trains on [src]!</span>")
 						var/boon = user.get_learning_boon(W.associated_skill)
 						var/amt2raise = GET_MOB_ATTRIBUTE_VALUE(L, STAT_INTELLIGENCE)/2
-						if(GET_MOB_SKILL_VALUE(user, W.associated_skill) >= 15)
+						if(GET_MOB_SKILL_VALUE_RAW(user, W.associated_skill) >= 15)
 							if(!HAS_TRAIT(user, TRAIT_INTRAINING))
 								to_chat(user, "<span class='warning'>I've learned all I can from doing this, it's time for the real thing.</span>")
 								amt2raise = 0
 							else
-								if(GET_MOB_SKILL_VALUE(user, W.associated_skill) >= 20)
+								if(GET_MOB_SKILL_VALUE_RAW(user, W.associated_skill) >= 20)
 									to_chat(user, "<span class='warning'>I've learned all I can from doing this, it's time for the real thing.</span>")
 									amt2raise = 0
 						if(amt2raise > 0)
@@ -1050,6 +1135,52 @@
 			playsound(src,'sound/misc/eat.ogg', rand(30, 60), TRUE)
 			qdel(W)
 			return
+
+	return ..()
+
+/obj/structure/fluff/statue/evil/mask
+	name = "faceless idol"
+	desc = "A hooded stone idol with a smooth, featureless face: a thieves' shrine to Mask. Bandit companies leave coin, finery, and stolen access at its feet."
+
+/obj/structure/fluff/statue/evil/mask/attackby(obj/item/W, mob/user, list/modifiers)
+	if(user.mind)
+		var/datum/antagonist/bandit/B = user.mind.has_antag_datum(/datum/antagonist/bandit)
+		if(B)
+			if(istype(W, /obj/item/key))
+				var/obj/item/key/offered_key = W
+				if(!B.record_offered_key(offered_key))
+					to_chat(user, span_warning("Mask has no use for this key right now."))
+					return
+				playsound(src, 'sound/misc/eat.ogg', rand(30, 60), TRUE)
+				qdel(offered_key)
+				return TRUE
+
+			var/offering_value = 0
+			if(istype(W, /obj/item/reagent_containers/lux))
+				offering_value = 120
+			else if(istype(W, /obj/item/coin))
+				offering_value = W.get_real_price()
+			else if(istype(W, /obj/item/gem) || istype(W, /obj/item/reagent_containers/glass/cup/silver) || istype(W, /obj/item/reagent_containers/glass/cup/golden) || istype(W, /obj/item/reagent_containers/glass/carafe) || istype(W, /obj/item/clothing/ring) || istype(W, /obj/item/clothing/head/crown/circlet) || istype(W, /obj/item/statue))
+				offering_value = W.get_real_price() / 2
+			if(offering_value <= 0)
+				to_chat(user, span_warning("The idol doesn't want this offering."))
+				return
+			var/has_tribute_contract = B.get_active_bandit_goal(/datum/contract_goal/bandit/tribute)
+			if(B.tri_amt >= 8 && !has_tribute_contract)
+				to_chat(user, span_warning("The idol has already granted me all it will, and the company owes no tribute right now."))
+				return
+
+			record_round_statistic(STATS_SHRINE_VALUE, offering_value)
+			B.record_contract_progress(/datum/contract_goal/bandit/tribute, offering_value)
+			if(B.tri_amt < 8)
+				B.contrib += offering_value
+				if(B.contrib >= 80)
+					give_rewards(B, user)
+				else
+					playsound(src, 'sound/items/matidol1.ogg', 50, TRUE)
+			playsound(src, 'sound/misc/eat.ogg', rand(30, 60), TRUE)
+			qdel(W)
+			return TRUE
 
 	return ..()
 

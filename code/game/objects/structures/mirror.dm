@@ -27,7 +27,6 @@
 			reflection_matrix = reflection_matrix, \
 			can_reflect = CALLBACK(src, PROC_REF(can_reflect)), \
 			update_signals = list(COMSIG_ATOM_BREAK), \
-			check_reflect_signals = list(SIGNAL_ADDTRAIT(TRAIT_NO_REFLECTION), SIGNAL_REMOVETRAIT(TRAIT_NO_REFLECTION)), \
 		)
 
 /obj/structure/mirror/fancy/Initialize(mapload)
@@ -42,19 +41,14 @@
 			reflection_matrix = reflection_matrix_fancymirror, \
 			can_reflect = CALLBACK(src, PROC_REF(can_reflect)), \
 			update_signals = list(COMSIG_ATOM_BREAK), \
-			check_reflect_signals = list(SIGNAL_ADDTRAIT(TRAIT_NO_REFLECTION), SIGNAL_REMOVETRAIT(TRAIT_NO_REFLECTION)), \
 		)
 /obj/structure/mirror/proc/can_reflect(atom/movable/target)
 	///I'm doing it this way too, because the signal is sent before the broken variable is set to TRUE.
 	if(atom_integrity <= integrity_failure * max_integrity)
 		return FALSE
-	if(obj_broken || !isliving(target) || HAS_TRAIT(target, TRAIT_NO_REFLECTION))
+	if(obj_broken)
 		return FALSE
-	if(ishuman(target))
-		var/mob/living/carbon/human/h_target = target
-		if(!h_target.has_reflection)
-			return FALSE
-	return TRUE
+	return target.casts_reflection()
 
 /obj/structure/mirror/attack_hand(mob/user)
 	. = ..()
@@ -186,11 +180,12 @@
 					should_update = TRUE
 
 		if("eye color")
-			var/obj/item/organ/eyes/eyes = H.getorganslot(ORGAN_SLOT_EYES)
-			var/new_eyes = input(user, "Choose your character's eye color:", "Character Preference",eyes.eye_color) as color|null
-			if(new_eyes)
-				eyes.eye_color = sanitize_hexcolor(new_eyes, 6, TRUE, "#FFFFFF")
-				should_update = TRUE
+			var/list/eye_list = H.getorganslotlist(ORGAN_SLOT_EYES)
+			for(var/obj/item/organ/eyes/eyes as anything in eye_list)
+				var/new_eyes = input(user, "Choose your character's eye color:", "Character Preference", eyes.eye_color) as color|null
+				if(new_eyes)
+					eyes.eye_color = sanitize_hexcolor(new_eyes, 6, TRUE, "#FFFFFF")
+					should_update = TRUE
 
 	if(should_update)
 		H.update_body()
@@ -211,26 +206,5 @@
 /obj/structure/mirror/atom_fix()
 	. = ..()
 	icon_state = initial(icon_state)
-
 /obj/structure/mirror/deconstruct(disassembled = TRUE)
 	..()
-
-/obj/structure/mirror/welder_act(mob/living/user, obj/item/I)
-	..()
-	if(user.used_intent.type == INTENT_HARM)
-		return FALSE
-
-	if(!obj_broken)
-		return TRUE
-
-	if(!I.tool_start_check(user, amount=0))
-		return TRUE
-
-	to_chat(user, "<span class='notice'>I begin repairing [src]...</span>")
-	if(I.use_tool(src, user, 10, volume=50))
-		to_chat(user, "<span class='notice'>I repair [src].</span>")
-		atom_fix()
-		icon_state = initial(icon_state)
-		desc = initial(desc)
-
-	return TRUE

@@ -9,7 +9,7 @@
 	if(!usr || !over)
 		return
 	if(SEND_SIGNAL(src, COMSIG_MOUSEDROP_ONTO, over, usr) & COMPONENT_NO_MOUSEDROP)	//Whatever is receiving will verify themselves for adjacency.
-		return
+		return COMPONENT_NO_MOUSEDROP	//overrides that keep running past ..() need to see the block
 	if(!Adjacent(usr) || !over.Adjacent(usr))
 		return // should stop you from dragging through windows
 	var/list/modifiers = params2list(params)
@@ -64,8 +64,6 @@
 	var/doneset
 	var/aghost_toggle
 	var/last_charge_process
-	//var/datum/patreon_data/patreon
-	//var/datum/twitch_data/twitch
 	var/toggled_leylines = FALSE
 	/// The DPI scale of the client. 1 is equivalent to 100% window scaling, 2 will be 200% window scaling
 	var/window_scaling

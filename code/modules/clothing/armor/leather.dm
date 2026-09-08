@@ -9,17 +9,17 @@
 	pickup_sound = 'sound/foley/equip/cloak_take_off.ogg'
 	break_sound = 'sound/foley/cloth_rip.ogg'
 	drop_sound = 'sound/foley/dropsound/cloth_drop.ogg'
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
 	smeltresult = /obj/item/fertilizer/ash
 	sellprice = VALUE_LEATHER_ARMOR
 
 	armor_class = AC_LIGHT
-	armor = ARMOR_LEATHER_BAD
+	armor_type = /datum/armor/leather/bad
 	body_parts_covered = COVERAGE_TORSO
 	prevent_crits = ALL_EXCEPT_CHOP_AND_STAB
-	max_integrity = INTEGRITY_STANDARD
+	max_integrity = ARMOR_INT_CHEST_LIGHT_BASE
 	salvage_result = /obj/item/natural/hide/cured
-	item_weight = 3.2
+	item_weight = 3.2 KILOGRAMS
 
 	material_category = ARMOR_MAT_FABRIC
 
@@ -29,17 +29,17 @@
 /obj/item/clothing/armor/leather/advanced
 	name = "hardened leather armor"
 	desc = "Sturdy, durable, flexible. Will keep you alive."
-	max_integrity = INTEGRITY_STANDARD + 50
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MEDIUM
 	body_parts_covered = CHEST|GROIN|VITALS|LEGS|ARMS
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST)
-	armor = list("blunt" = 75, "slash" = 60, "stab" = 30, "piercing" = 10, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/leather/advanced
 
 /obj/item/clothing/armor/leather/masterwork
 	name = "masterwork leather armor"
 	desc = "This leather armor is a craftsmanship marvel. Made with the finest leather. Strong, nimble, reliable."
-	max_integrity = INTEGRITY_STANDARD + 100
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_TWIST, BCLASS_CHOP) //we're adding chop here!
-	armor = list("blunt" = 100, "slash" = 70, "stab" = 40, "piercing" = 10, "fire" = 0, "acid" = 0)
+	armor_type = /datum/armor/leather/master
 
 /obj/item/clothing/armor/leather/masterwork/Initialize()
 	. = ..()
@@ -52,7 +52,7 @@
 	icon_state = "hidearmor"
 	sellprice = VALUE_LEATHER_ARMOR_FUR
 
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/leather
 	salvage_result = /obj/item/natural/hide/cured
 
 /obj/item/clothing/armor/leather/hide/steppe
@@ -61,10 +61,10 @@
 	icon_state = "hatangafur"
 	sellprice = VALUE_LEATHER_ARMOR_FUR
 
-	armor = ARMOR_LEATHER_GOOD
+	armor_type = /datum/armor/leather/good
 	body_parts_covered = COVERAGE_FULL
-	max_integrity = INTEGRITY_STRONG
-	item_weight = 6.7
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
+	item_weight = 4.5 KILOGRAMS
 
 //................ Splint Mail ............... //
 /obj/item/clothing/armor/leather/splint
@@ -73,10 +73,10 @@
 	icon_state = "splint"
 	sellprice = VALUE_LEATHER_ARMOR_PLUS
 
-	armor = ARMOR_LEATHER_GOOD
+	armor_type = /datum/armor/leather/good
 	prevent_crits = ALL_EXCEPT_STAB
-	max_integrity = INTEGRITY_STRONG
-	item_weight = 6.7
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
+	item_weight = 6.7 KILOGRAMS
 
 //................ Leather Vest ............... //	- has no sleeves.  - can be worn in armor OR shirt slot
 /obj/item/clothing/armor/leather/vest
@@ -87,15 +87,15 @@
 	color = CLOTHING_BARK_BROWN
 	blade_dulling = DULLING_BASHCHOP
 	blocksound = SOFTHIT
-	sewrepair = TRUE
+	sewrepair = /datum/attribute/skill/craft/tanning/patching
 	sleevetype = null
 	sleeved = null
 
-	armor = ARMOR_LEATHER_BAD
+	armor_type = /datum/armor/leather/bad
 	body_parts_covered = COVERAGE_VEST
 	prevent_crits = CUT_AND_MINOR_CRITS
 	salvage_result = /obj/item/natural/hide/cured
-	item_weight = 2.2
+	item_weight = 1.4 KILOGRAMS
 
 /obj/item/clothing/armor/leather/vest/colored
 	misc_flags = CRAFTING_TEST_EXCLUDE
@@ -109,7 +109,7 @@
 	name = "butchers vest"
 	icon_state = "leathervest"
 	color = "#d69c87" // custom coloring
-	item_weight = 1.8
+	item_weight = 1.4 KILOGRAMS
 
 //................ Other Vests ............... //
 /obj/item/clothing/armor/leather/vest/colored/butler
@@ -141,7 +141,7 @@
 	desc = "A heavy leather jacket with wooden buttons, favored by workers who can afford it."
 
 	body_parts_covered = COVERAGE_SHIRT
-	item_weight = 2.2
+	item_weight = 1.5 KILOGRAMS
 	pocket_storage_component_path = /datum/component/storage/concrete/grid/cloak
 
 /obj/item/clothing/armor/leather/jacket/dropped(mob/living/carbon/human/user)
@@ -170,7 +170,7 @@
 	icon_state = "master_coat"
 	blocksound = SOFTHIT
 	slot_flags = ITEM_SLOT_ARMOR
-	armor = ARMOR_MAILLE_IRON
+	armor_type = /datum/armor/maille/iron
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS
 	salvage_result = /obj/item/natural/cloth
 
@@ -179,7 +179,7 @@
 	desc = "A thick cloth padded coat specialty made for the gatemaster."
 	icon_state = "master_coat_cuirass"
 	blocksound = PLATEHIT
-	armor = ARMOR_MAILLE_GOOD
+	armor_type = /datum/armor/maille/good
 
 //................ Sea Jacket ............... //
 /obj/item/clothing/armor/leather/jacket/sea
@@ -189,7 +189,7 @@
 	icon_state = "sailorvest"
 	sleevetype = "shirt"
 
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/leather
 	body_parts_covered = COVERAGE_VEST
 
 //................ Silk Coat ............... //
@@ -227,7 +227,7 @@
 	sleeved = 'icons/roguetown/clothing/onmob/helpers/sleeves_maids.dmi'
 	detail_color = CLOTHING_DARK_INK
 	slot_flags = ITEM_SLOT_ARMOR
-	armor = ARMOR_PADDED
+	armor_type = /datum/armor/padded
 	allowed_ages = ALL_AGES_LIST
 
 /obj/item/clothing/armor/leather/jacket/tailcoat/lord
@@ -288,7 +288,7 @@
 	mob_overlay_icon = 'icons/roguetown/clothing/onmob/leathercoat.dmi'
 	sleeved = 'icons/roguetown/clothing/onmob/leathercoat.dmi'
 	boobed = TRUE
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/leather
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS
 
 /obj/item/clothing/armor/leather/jacket/leathercoat/confessor
@@ -300,9 +300,9 @@
 	mob_overlay_icon = 'icons/roguetown/clothing/onmob/armor.dmi'
 	body_parts_covered = COVERAGE_FULL
 	sleeved = 'icons/roguetown/clothing/onmob/helpers/sleeves_armor.dmi'
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/leather
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_BLUNT, BCLASS_CHOP, BCLASS_SMASH)
-	max_integrity = 250
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MEDIUM
 
 /obj/item/clothing/armor/leather/jacket/leathercoat/black
 	name = "black leather coat"
@@ -312,7 +312,7 @@
 	mob_overlay_icon = 'icons/roguetown/clothing/onmob/leathercoat.dmi'
 	sleeved = 'icons/roguetown/clothing/onmob/leathercoat.dmi'
 	boobed = TRUE
-	armor = ARMOR_LEATHER
+	armor_type = /datum/armor/leather
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS
 
 /obj/item/clothing/armor/leather/jacket/leathercoat/duelcoat
@@ -320,7 +320,7 @@
 	desc = "A stylish coat worn by the Duelists of Silvermoon. Light and flexible, it doesn't impede the complex movements they are known for, Seems to be well-padded."
 	icon_state = "bwleathercoat"
 	boobed = TRUE
-	armor = ARMOR_LEATHER_GOOD
+	armor_type = /datum/armor/leather/good
 	body_parts_covered = COVERAGE_ALL_BUT_LEGS
 	prevent_crits = list(BCLASS_CUT, BCLASS_TWIST, BCLASS_STAB)
 
@@ -349,7 +349,7 @@
 	for its wearer, shielding from blows and weather alike."
 	icon_state = "roguearmor_belt"
 	item_state = "roguearmor_belt"
-	armor = ARMOR_LEATHER_GOOD
+	armor_type = /datum/armor/leather/good
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_BLUNT, BCLASS_CHOP, BCLASS_SMASH)
 	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
 	sellprice = 20

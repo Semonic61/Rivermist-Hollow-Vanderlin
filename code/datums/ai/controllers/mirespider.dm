@@ -17,7 +17,7 @@
 
 		/datum/ai_planning_subtree/simple_self_recovery,
 		/datum/ai_planning_subtree/find_food,
-		/datum/ai_planning_subtree/basic_melee_attack_subtree,
+		/datum/ai_planning_subtree/basic_melee_attack_subtree/agile,
 		/datum/ai_planning_subtree/being_a_minion/mirespider
 	)
 
@@ -56,7 +56,7 @@
 	planning_subtrees = list(
 		/datum/ai_planning_subtree/target_retaliate,
 		/datum/ai_planning_subtree/aggro_find_target,
-		/datum/ai_planning_subtree/basic_ranged_attack_subtree/mirespider_lurker,
+		/datum/ai_planning_subtree/basic_melee_attack_subtree,
 		/datum/ai_planning_subtree/find_cocoon_target,
 		/datum/ai_planning_subtree/cocoon_target
 	)
@@ -145,7 +145,7 @@
 				return SUBTREE_RETURN_FINISH_PLANNING
 
 	var/mob/living/simple_animal/hostile/mirespider_lurker/lurker = controller.pawn
-	if (lurker)
+	if (istype(lurker))
 		lurker.clear_followers_if_any()
 
 	controller.queue_behavior(ranged_attack_behavior, BB_BASIC_MOB_CURRENT_TARGET, BB_TARGETTING_DATUM, BB_BASIC_MOB_CURRENT_TARGET_HIDING_LOCATION)
@@ -176,7 +176,7 @@
 		return
 
 	if (target.stat)
-		if (do_after(pawn, 5 SECONDS, FALSE, target))
+		if (do_after(pawn, 5 SECONDS, target))
 			if (istype(target.loc, /obj/structure/spider/cocoon))
 				finish_action(controller, TRUE, target_key)
 				return

@@ -64,6 +64,7 @@
 	RegisterSignal(owner, aggressive_signals, PROC_REF(on_combat_signal), override = TRUE)
 	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(handle_move))
 
+	ADD_TRAIT(owner, TRAIT_IMPERCEPTIBLE, "[type]")
 	owner.alpha = 10
 
 /datum/coven_power/obfuscate/cloak_of_shadows/deactivate()
@@ -71,6 +72,7 @@
 	UnregisterSignal(owner, aggressive_signals)
 	UnregisterSignal(owner, COMSIG_MOVABLE_MOVED)
 
+	REMOVE_TRAIT(owner, TRAIT_IMPERCEPTIBLE, "[type]")
 	owner.alpha = 255
 
 /datum/coven_power/obfuscate/cloak_of_shadows/proc/handle_move(datum/source, atom/moving_thing, dir)
@@ -100,6 +102,7 @@
 	RegisterSignal(owner, aggressive_signals, PROC_REF(on_combat_signal), override = TRUE)
 	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(handle_move))
 
+	ADD_TRAIT(owner, TRAIT_IMPERCEPTIBLE, "[type]")
 	owner.alpha = 10
 
 /datum/coven_power/obfuscate/unseen_presence/deactivate()
@@ -108,6 +111,7 @@
 	UnregisterSignal(owner, aggressive_signals)
 	UnregisterSignal(owner, COMSIG_MOVABLE_MOVED)
 
+	REMOVE_TRAIT(owner, TRAIT_IMPERCEPTIBLE, "[type]")
 	owner.alpha = 255
 
 /datum/coven_power/obfuscate/unseen_presence/proc/handle_move(datum/source, atom/moving_thing, dir)
@@ -154,8 +158,8 @@
 	old_dna = transformer.dna
 	old_hair = feature?.accessory_type
 	old_hair_color = transformer.get_hair_color()
-	old_eye_color = transformer.get_eye_color(TRUE)
-	old_second_color = transformer.get_eye_color(FALSE)
+	old_eye_color = transformer.get_eye_color(RIGHT_SIDE)
+	old_second_color = transformer.get_eye_color(LEFT_SIDE)
 	old_facial_hair_color = transformer.get_facial_hair_color()
 	old_facial_hair = facial?.accessory_type
 	old_gender = transformer.gender
@@ -207,9 +211,13 @@
 	var/datum/bodypart_feature/hair/target_feature = target.get_bodypart_feature_of_slot(BODYPART_FEATURE_HAIR)
 	var/datum/bodypart_feature/hair/target_facial = target.get_bodypart_feature_of_slot(BODYPART_FEATURE_FACIAL_HAIR)
 
-	var/datum/organ_dna/eyes/eye_dna = target.dna?.organ_dna[ORGAN_SLOT_EYES]
-	if(istype(eye_dna))
-		user.set_eye_color(eye_dna.eye_color, eye_dna.heterochromia ? eye_dna.second_color : eye_dna.eye_color)
+	var/obj/item/organ/eyes/right_eye = LAZYACCESS(target.eye_organs, 2)
+	var/obj/item/organ/eyes/left_eye = LAZYACCESS(target.eye_organs, 1)
+	if(right_eye || left_eye)
+		user.set_eye_color(
+			right_eye?.eye_color || "#FFFFFF",
+			left_eye?.eye_color || right_eye?.eye_color || "#FFFFFF"
+		)
 
 	user.set_hair_color(target.get_hair_color(), FALSE)
 	user.set_hair_style(target_feature?.accessory_type, FALSE)
@@ -270,6 +278,7 @@
 	RegisterSignal(owner, aggressive_signals, PROC_REF(on_combat_signal), override = TRUE)
 	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(handle_move))
 	owner.playsound_local(owner, 'sound/magic/PSY.ogg', 200)
+	ADD_TRAIT(owner, TRAIT_IMPERCEPTIBLE, "[type]")
 	owner.alpha = 10
 
 	// Memory wipe effect - make nearby people forget they saw you
@@ -301,6 +310,7 @@
 	UnregisterSignal(owner, aggressive_signals)
 	UnregisterSignal(owner, COMSIG_MOVABLE_MOVED)
 
+	REMOVE_TRAIT(owner, TRAIT_IMPERCEPTIBLE, "[type]")
 	owner.alpha = 255
 
 /datum/coven_power/obfuscate/vanish_from_the_minds_eye/proc/handle_move(datum/source, atom/moving_thing, dir)
@@ -331,6 +341,7 @@
 	RegisterSignal(owner, aggressive_signals, PROC_REF(on_combat_signal), override = TRUE)
 	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(handle_move))
 
+	ADD_TRAIT(owner, TRAIT_IMPERCEPTIBLE, "[type]")
 	owner.alpha = 10
 	cloaked_mobs = list(owner)
 
@@ -339,6 +350,7 @@
 		if(target.client && target.stat < UNCONSCIOUS)
 			// Add faction/ally checks here as appropriate
 			ADD_TRAIT(target, TRAIT_SILENT_FOOTSTEPS, VAMPIRE_TRAIT)
+			ADD_TRAIT(target, TRAIT_IMPERCEPTIBLE, "[type]")
 			target.alpha = 10
 			cloaked_mobs += target
 			to_chat(target, span_notice("You feel a supernatural veil fall over you..."))
@@ -354,6 +366,7 @@
 	// Restore visibility to all cloaked mobs
 	for(var/mob/living/target in cloaked_mobs)
 		REMOVE_TRAIT(target, TRAIT_SILENT_FOOTSTEPS, VAMPIRE_TRAIT)
+		REMOVE_TRAIT(target, TRAIT_IMPERCEPTIBLE, "[type]")
 		target.alpha = 255
 		UnregisterSignal(target, aggressive_signals)
 		if(target != owner)
@@ -377,6 +390,8 @@
 	to_chat(ally, span_danger("Your actions break the supernatural veil!"))
 
 	// Remove this ally from the cloak
+	REMOVE_TRAIT(ally, TRAIT_SILENT_FOOTSTEPS, VAMPIRE_TRAIT)
+	REMOVE_TRAIT(ally, TRAIT_IMPERCEPTIBLE, "[type]")
 	ally.alpha = 255
 	UnregisterSignal(ally, aggressive_signals)
 	cloaked_mobs -= ally

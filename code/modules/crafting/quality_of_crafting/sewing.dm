@@ -44,7 +44,7 @@
 	output = /obj/item/clothing/shoes/tribal
 
 /datum/repeatable_crafting_recipe/sewing/hide/volfhelm
-	name = "volf helm"
+	name = "wolf helm"
 	requirements = list(
 		/obj/item/natural/hide = 3,
 		/obj/item/natural/fur = 2,
@@ -53,7 +53,7 @@
 	sellprice = 20
 
 /datum/repeatable_crafting_recipe/sewing/hide/volfmantle
-	name = "volf mantle"
+	name = "wolf mantle"
 	attacked_atom = /obj/item/natural/fur/volf
 	requirements = list(
 		/obj/item/natural/hide = 1,
@@ -191,6 +191,17 @@
 	requirements = list(/obj/item/natural/cloth = 2,
 				/obj/item/natural/fibers = 1)
 	category = "Hat"
+
+/datum/repeatable_crafting_recipe/sewing/bunny_ears
+	name = "bunny ears"
+	output = /obj/item/clothing/head/bunny
+	requirements = list(
+		/obj/item/natural/cloth = 2,
+		/obj/item/natural/fibers = 2,
+		/obj/item/natural/fur = 1,
+	)
+	category = "Hat"
+	craftdiff = 1
 
 /datum/repeatable_crafting_recipe/sewing/turban
 	name = "turban"
