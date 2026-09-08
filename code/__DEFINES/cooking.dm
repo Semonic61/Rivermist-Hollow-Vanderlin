@@ -10,6 +10,13 @@
 #define SNACK_VPOOR 2
 #define SNACK_WORST 1
 
+/// Solid food is measured in single-digit nutrition units while cooked reagents
+/// are measured in volume, so a pot of soup dwarfed anything on a plate. Solid
+/// food gets a flat uplift here rather than editing 300 item definitions.
+#define SOLID_FOOD_MULT 1.5
+/// Effective nutriment a solid foodstuff yields, rounded up to a whole unit.
+#define SOLID_FOOD_NUTRITION(base) CEILING((base) * SOLID_FOOD_MULT, 1)
+
 #define COOK_MOD 1.5
 #define DRIED_MOD 0.75
 #define SLICED_MOD (1/6)
