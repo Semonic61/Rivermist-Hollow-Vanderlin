@@ -53,6 +53,8 @@
 
 	if(IsSleeping())
 		if(health > 0)
+			if(has_status_effect(/datum/status_effect/debuff/sleepytime))
+				restore_all_dnd_spell_slots()
 			remove_status_effect(/datum/status_effect/debuff/trainsleep)
 			remove_status_effect(/datum/status_effect/debuff/sleepytime)
 			if(has_status_effect(/datum/status_effect/debuff/dreamytime))
