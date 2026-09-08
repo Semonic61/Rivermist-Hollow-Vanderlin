@@ -1162,6 +1162,11 @@
 /mob/living/carbon/human/wash(clean_types)
 	. = ..()
 
+	// RMH EDITED START - tattoo fading from water/soap
+	if(process_tattoo_wash(clean_types))
+		. = TRUE
+	// RMH EDITED END
+
 	// Wash equipped stuff that cannot be covered
 	if(wear_armor?.wash(clean_types))
 		update_inv_armor()
