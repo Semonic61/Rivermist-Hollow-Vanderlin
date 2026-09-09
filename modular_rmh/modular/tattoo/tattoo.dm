@@ -28,6 +28,14 @@
 /// Max characters allowed per tattoo entry
 #define TATTOO_TEXT_MAX_LENGTH 150
 
+/// Inked under the skin with a needle. Water and soap do nothing; only surgery removes it.
+#define TATTOO_MEDIUM_INK "ink"
+/// Drawn on the skin with a lump of charcoal. Water smudges it, soap takes it off.
+#define TATTOO_MEDIUM_CHARCOAL "charcoal"
+
+/// The only colour a charcoal drawing can be
+#define TATTOO_CHARCOAL_COLOR "#2B2B2B"
+
 /// Movespeed modifier id for the pain of getting hand-poked
 #define MOVESPEED_ID_TATTOO_PAIN "tattoo_pain"
 
@@ -73,34 +81,34 @@
  * genitals) are deliberately not carried over - this is a cosmetic system.
  */
 GLOBAL_LIST_INIT(tattoo_zone_data, list(
-	TATTOO_ZONE_FOREHEAD = list("name" = "forehead", "limb" = BODY_ZONE_HEAD, "cover" = "face"),
-	TATTOO_ZONE_CHEEKS = list("name" = "cheeks", "limb" = BODY_ZONE_HEAD, "cover" = "face"),
-	TATTOO_ZONE_CHIN = list("name" = "chin", "limb" = BODY_ZONE_HEAD, "cover" = "face"),
-	TATTOO_ZONE_LIPS = list("name" = "lips", "limb" = BODY_ZONE_HEAD, "cover" = "face"),
-	BODY_ZONE_HEAD = list("name" = "head", "limb" = BODY_ZONE_HEAD, "cover" = "face"),
-	TATTOO_ZONE_EARS = list("name" = "ears", "limb" = BODY_ZONE_HEAD, "organ" = ORGAN_SLOT_EARS, "cover" = "face"),
-	TATTOO_ZONE_HORNS = list("name" = "horns", "limb" = BODY_ZONE_HEAD, "organ" = ORGAN_SLOT_HORNS, "cover" = "face"),
-	TATTOO_ZONE_NECK = list("name" = "neck", "limb" = BODY_ZONE_CHEST, "cover" = "shirt"),
-	BODY_ZONE_CHEST = list("name" = "torso", "limb" = BODY_ZONE_CHEST, "cover" = "shirt"),
-	TATTOO_ZONE_BACK = list("name" = "back", "limb" = BODY_ZONE_CHEST, "cover" = "shirt"),
-	TATTOO_ZONE_BREASTS = list("name" = "breasts", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_BREASTS, "customizer" = /datum/customizer_entry/organ/genitals/breasts, "cover" = "shirt", "intimate" = TRUE),
-	TATTOO_ZONE_BELLY = list("name" = "belly", "limb" = BODY_ZONE_CHEST, "cover" = "shirt"),
-	TATTOO_ZONE_WINGS = list("name" = "wings", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_WINGS, "cover" = "shirt"),
-	BODY_ZONE_L_ARM = list("name" = "left arm", "limb" = BODY_ZONE_L_ARM, "cover" = "shirt"),
-	BODY_ZONE_R_ARM = list("name" = "right arm", "limb" = BODY_ZONE_R_ARM, "cover" = "shirt"),
-	BODY_ZONE_PRECISE_L_HAND = list("name" = "left hand", "limb" = BODY_ZONE_L_ARM, "cover" = "gloves"),
-	BODY_ZONE_PRECISE_R_HAND = list("name" = "right hand", "limb" = BODY_ZONE_R_ARM, "cover" = "gloves"),
-	TATTOO_ZONE_GROIN = list("name" = "groin", "limb" = BODY_ZONE_CHEST, "cover" = "pants", "intimate" = TRUE),
-	TATTOO_ZONE_PENIS = list("name" = "cock", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_PENIS, "customizer" = /datum/customizer_entry/organ/genitals/penis, "cover" = "pants", "intimate" = TRUE),
-	TATTOO_ZONE_VAGINA = list("name" = "cunt", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_VAGINA, "customizer" = /datum/customizer_entry/organ/genitals/vagina, "cover" = "pants", "intimate" = TRUE),
-	TATTOO_ZONE_BUTTOCKS = list("name" = "buttocks", "limb" = BODY_ZONE_CHEST, "cover" = "pants", "intimate" = TRUE),
-	TATTOO_ZONE_TAIL = list("name" = "tail", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_TAIL, "cover" = "pants"),
-	BODY_ZONE_L_LEG = list("name" = "left leg", "limb" = BODY_ZONE_L_LEG, "cover" = "pants"),
-	BODY_ZONE_R_LEG = list("name" = "right leg", "limb" = BODY_ZONE_R_LEG, "cover" = "pants"),
-	TATTOO_ZONE_L_THIGH = list("name" = "left thigh", "limb" = BODY_ZONE_L_LEG, "cover" = "pants"),
-	TATTOO_ZONE_R_THIGH = list("name" = "right thigh", "limb" = BODY_ZONE_R_LEG, "cover" = "pants"),
-	TATTOO_ZONE_L_FOOT = list("name" = "left foot", "limb" = BODY_ZONE_L_LEG, "cover" = "shoes"),
-	TATTOO_ZONE_R_FOOT = list("name" = "right foot", "limb" = BODY_ZONE_R_LEG, "cover" = "shoes"),
+	TATTOO_ZONE_FOREHEAD = list("name" = "forehead", "limb" = BODY_ZONE_HEAD, "cover" = BODY_ZONE_HEAD),
+	TATTOO_ZONE_CHEEKS = list("name" = "cheeks", "limb" = BODY_ZONE_HEAD, "cover" = BODY_ZONE_HEAD),
+	TATTOO_ZONE_CHIN = list("name" = "chin", "limb" = BODY_ZONE_HEAD, "cover" = BODY_ZONE_HEAD),
+	TATTOO_ZONE_LIPS = list("name" = "lips", "limb" = BODY_ZONE_HEAD, "cover" = BODY_ZONE_PRECISE_MOUTH),
+	BODY_ZONE_HEAD = list("name" = "head", "limb" = BODY_ZONE_HEAD, "cover" = BODY_ZONE_HEAD),
+	TATTOO_ZONE_EARS = list("name" = "ears", "limb" = BODY_ZONE_HEAD, "organ" = ORGAN_SLOT_EARS, "cover" = BODY_ZONE_PRECISE_EARS),
+	TATTOO_ZONE_HORNS = list("name" = "horns", "limb" = BODY_ZONE_HEAD, "organ" = ORGAN_SLOT_HORNS, "cover" = BODY_ZONE_PRECISE_SKULL),
+	TATTOO_ZONE_NECK = list("name" = "neck", "limb" = BODY_ZONE_CHEST, "cover" = BODY_ZONE_PRECISE_NECK),
+	BODY_ZONE_CHEST = list("name" = "torso", "limb" = BODY_ZONE_CHEST, "cover" = BODY_ZONE_CHEST),
+	TATTOO_ZONE_BACK = list("name" = "back", "limb" = BODY_ZONE_CHEST, "cover" = BODY_ZONE_CHEST),
+	TATTOO_ZONE_BREASTS = list("name" = "breasts", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_BREASTS, "customizer" = /datum/customizer_entry/organ/genitals/breasts, "cover" = BODY_ZONE_CHEST, "intimate" = TRUE),
+	TATTOO_ZONE_BELLY = list("name" = "belly", "limb" = BODY_ZONE_CHEST, "cover" = BODY_ZONE_PRECISE_STOMACH),
+	TATTOO_ZONE_WINGS = list("name" = "wings", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_WINGS, "cover" = BODY_ZONE_CHEST),
+	BODY_ZONE_L_ARM = list("name" = "left arm", "limb" = BODY_ZONE_L_ARM, "cover" = BODY_ZONE_L_ARM),
+	BODY_ZONE_R_ARM = list("name" = "right arm", "limb" = BODY_ZONE_R_ARM, "cover" = BODY_ZONE_R_ARM),
+	BODY_ZONE_PRECISE_L_HAND = list("name" = "left hand", "limb" = BODY_ZONE_L_ARM, "cover" = BODY_ZONE_PRECISE_L_HAND),
+	BODY_ZONE_PRECISE_R_HAND = list("name" = "right hand", "limb" = BODY_ZONE_R_ARM, "cover" = BODY_ZONE_PRECISE_R_HAND),
+	TATTOO_ZONE_GROIN = list("name" = "groin", "limb" = BODY_ZONE_CHEST, "cover" = BODY_ZONE_PRECISE_GROIN, "intimate" = TRUE),
+	TATTOO_ZONE_PENIS = list("name" = "cock", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_PENIS, "customizer" = /datum/customizer_entry/organ/genitals/penis, "cover" = BODY_ZONE_PRECISE_GROIN, "intimate" = TRUE),
+	TATTOO_ZONE_VAGINA = list("name" = "cunt", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_VAGINA, "customizer" = /datum/customizer_entry/organ/genitals/vagina, "cover" = BODY_ZONE_PRECISE_GROIN, "intimate" = TRUE),
+	TATTOO_ZONE_BUTTOCKS = list("name" = "buttocks", "limb" = BODY_ZONE_CHEST, "cover" = BODY_ZONE_PRECISE_GROIN, "intimate" = TRUE),
+	TATTOO_ZONE_TAIL = list("name" = "tail", "limb" = BODY_ZONE_CHEST, "organ" = ORGAN_SLOT_TAIL, "cover" = BODY_ZONE_PRECISE_GROIN),
+	BODY_ZONE_L_LEG = list("name" = "left leg", "limb" = BODY_ZONE_L_LEG, "cover" = BODY_ZONE_L_LEG),
+	BODY_ZONE_R_LEG = list("name" = "right leg", "limb" = BODY_ZONE_R_LEG, "cover" = BODY_ZONE_R_LEG),
+	TATTOO_ZONE_L_THIGH = list("name" = "left thigh", "limb" = BODY_ZONE_L_LEG, "cover" = BODY_ZONE_L_LEG),
+	TATTOO_ZONE_R_THIGH = list("name" = "right thigh", "limb" = BODY_ZONE_R_LEG, "cover" = BODY_ZONE_R_LEG),
+	TATTOO_ZONE_L_FOOT = list("name" = "left foot", "limb" = BODY_ZONE_L_LEG, "cover" = BODY_ZONE_PRECISE_L_FOOT),
+	TATTOO_ZONE_R_FOOT = list("name" = "right foot", "limb" = BODY_ZONE_R_LEG, "cover" = BODY_ZONE_PRECISE_R_FOOT),
 ))
 
 /// Maps a targeted body zone (the doll in the player's HUD) to the tattoo zones
@@ -195,6 +203,7 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 		"text" = entry["text"],
 		"style" = entry["style"],
 		"color" = entry["color"],
+		"medium" = entry["medium"],
 		"state" = entry["state"],
 	)
 
@@ -206,7 +215,7 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 			.++
 
 /// Adds a new fresh tattoo entry for the given zone. Returns FALSE if that zone is already full.
-/obj/item/bodypart/proc/add_tattoo(zone, text, style, color)
+/obj/item/bodypart/proc/add_tattoo(zone, text, style, color, medium = TATTOO_MEDIUM_INK)
 	LAZYINITLIST(tattoos)
 	if(count_tattoos_on_zone(zone) >= MAXIMUM_TATTOOS_PER_ZONE)
 		return FALSE
@@ -215,6 +224,7 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 		"text" = text,
 		"style" = style,
 		"color" = color,
+		"medium" = medium,
 		"state" = TATTOO_STATE_FRESH,
 	))
 	return TRUE
@@ -228,27 +238,22 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
  * tattoo" and is cheap to run.
  */
 
+/**
+ * Is the skin at this tattoo zone actually exposed?
+ *
+ * Delegates to the codebase's own coverage check rather than testing single
+ * slots: a dress or robe covers the groin and legs from the shirt slot, and
+ * "is wear_pants empty" would call those tattoos visible. skipundies is FALSE
+ * so smallclothes count as cover for the intimate zones.
+ */
 /mob/living/carbon/human/proc/is_tattoo_zone_visible(zone)
 	var/list/zone_data = GLOB.tattoo_zone_data[zone]
 	if(!zone_data)
 		return FALSE
-	switch(zone_data["cover"])
-		if("gloves")
-			return !gloves
-		if("shoes")
-			return !shoes
-		if("pants")
-			return !wear_pants
-		if("shirt")
-			return !wear_shirt && !wear_armor
-		if("face")
-			if(wear_mask?.flags_inv & HIDEFACE)
-				return FALSE
-			var/obj/item/clothing/head/worn_head = head
-			if(istype(worn_head) && (worn_head.flags_inv & HIDEFACE))
-				return FALSE
-			return TRUE
-	return TRUE
+	var/cover_zone = zone_data["cover"]
+	if(!cover_zone)
+		return TRUE
+	return get_location_accessible(src, cover_zone, grabs = FALSE, skipundies = FALSE)
 
 /// Does this character have the body part a zone needs? Wings zones need wings.
 /mob/living/carbon/human/proc/has_tattoo_zone(zone)
@@ -339,7 +344,9 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 			continue
 		for(var/list/entry in entries.Copy())
 			if(!islist(entry) || !istext(entry["text"]) || !length(entry["text"]))
-				entries -= entry
+				// list(entry), not entry: subtracting a bare list removes its
+				// *contents* from the target rather than the nested entry itself
+				entries -= list(entry)
 				continue
 			entry["zone"] = zone
 			entry["text"] = copytext(entry["text"], 1, TATTOO_TEXT_MAX_LENGTH * 2) // *2: html entities from encoding inflate length
@@ -348,6 +355,9 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 				entry["style"] = TATTOO_STYLE_DESIGN
 			if(entry["state"] != TATTOO_STATE_FRESH && entry["state"] != TATTOO_STATE_FADED)
 				entry["state"] = TATTOO_STATE_FRESH
+			// Anything saved before charcoal existed is needle work
+			if(entry["medium"] != TATTOO_MEDIUM_CHARCOAL)
+				entry["medium"] = TATTOO_MEDIUM_INK
 		if(length(entries) > MAXIMUM_TATTOOS_PER_ZONE)
 			entries.Cut(MAXIMUM_TATTOOS_PER_ZONE + 1)
 		if(!length(entries))
@@ -358,6 +368,8 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 /datum/preferences/proc/apply_tattoos_to_human(mob/living/carbon/human/character)
 	if(!ishuman(character))
 		return
+	// Remember which slot this body came from - see save_tattoos_now()
+	character.tattoo_savefile_slot = default_slot
 	for(var/zone in tattoos)
 		// Tattoo zones are finer-grained than bodyparts ("lips" lives on the
 		// head), so resolve the owning limb rather than looking the zone up
@@ -374,12 +386,25 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 			copied["zone"] = zone // savefiles from before zones were stored per-entry
 			BP.tattoos += list(copied)
 
-/// Reads the current tattoos off the human's bodyparts back into prefs, and saves.
-/// Called after a tattoo is added or changes state, as a safety net against
-/// server crashes losing the change.
+/// Savefile slot this body's tattoos belong to, so in-round changes can never
+/// be written into whichever character the player has selected in the editor.
+/mob/living/carbon/human
+	var/tattoo_savefile_slot = 0
+
+/**
+ * Persists the tattoos currently on this body back to the savefile.
+ *
+ * Deliberately does NOT call save_character(): that writes the whole of
+ * prefs into /character[default_slot], so a player who spawned as one
+ * character and then opened another in the editor would have the spawned
+ * body's tattoos overwrite the selected slot. We write just our own key,
+ * into the slot this body actually came from.
+ */
 /mob/living/carbon/human/proc/save_tattoos_now()
-	if(!client?.prefs)
+	var/datum/preferences/prefs = client?.prefs
+	if(!prefs?.path || !tattoo_savefile_slot)
 		return FALSE
+
 	var/list/new_tattoos = list()
 	for(var/obj/item/bodypart/BP as anything in bodyparts)
 		for(var/list/entry in BP.tattoos)
@@ -389,8 +414,17 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 			if(!new_tattoos[zone])
 				new_tattoos[zone] = list()
 			new_tattoos[zone] += list(copy_tattoo_entry(entry))
-	client.prefs.tattoos = new_tattoos
-	client.prefs.save_character()
+
+	// Only touch the in-memory copy when the editor is sitting on this same
+	// character, or we would show one character's tattoos while editing another.
+	if(prefs.default_slot == tattoo_savefile_slot)
+		prefs.tattoos = new_tattoos
+
+	var/savefile/save_file = new /savefile(prefs.path)
+	if(!save_file)
+		return FALSE
+	save_file.cd = "/character[tattoo_savefile_slot]"
+	WRITE_FILE(save_file["tattoos"], new_tattoos)
 	return TRUE
 
 /*
@@ -413,22 +447,28 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 		if(!length(BP.tattoos))
 			continue
 		for(var/list/entry in BP.tattoos.Copy())
+			// Needle work sits under the skin - washing does nothing to it.
+			// Only charcoal drawn on top of the skin comes off.
+			if(entry["medium"] != TATTOO_MEDIUM_CHARCOAL)
+				continue
 			switch(entry["state"])
 				if(TATTOO_STATE_FRESH)
 					entry["state"] = TATTOO_STATE_FADED
 					faded_any = TRUE
 				if(TATTOO_STATE_FADED)
 					if(is_scrub)
-						BP.tattoos -= entry
+						// list(entry), not entry: subtracting a bare list removes
+						// its *contents*, leaving the nested entry in place
+						BP.tattoos -= list(entry)
 						removed_any = TRUE
 
 	if(!faded_any && !removed_any)
 		return FALSE
 
 	if(removed_any)
-		to_chat(src, span_notice("Some of your tattoos have scrubbed away entirely."))
+		to_chat(src, span_notice("The charcoal marks scrub off your skin."))
 	else
-		to_chat(src, span_notice("Some of your tattoos have washed out a little."))
+		to_chat(src, span_notice("The charcoal marks on your skin smudge and run."))
 	save_tattoos_now()
 	return TRUE
 
@@ -475,8 +515,8 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 	. = ..()
 	. += span_notice("The inkwell holds [ink_style] pigment.")
 	. += span_notice("Alt-click to swap the pigment.")
-	. += span_info("Target a body zone, then click yourself or someone else to tattoo them there.")
-	. += span_warning("A tattoo made with this will only wash away with water and soap - or come off for good under a surgeon's blade.")
+	. += span_info("Target a body zone, then click yourself to tattoo it. To tattoo someone else, grab them first and keep hold.")
+	. += span_warning("Ink from this sits under the skin: washing does nothing, and only a surgeon's blade takes it off. For something temporary, draw with a lump of charcoal instead.")
 
 /obj/item/tattoo_needle/AltClick(mob/user, list/modifiers)
 	. = ..()
@@ -493,7 +533,7 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 /obj/item/tattoo_needle/attack(mob/living/target, mob/living/user, list/modifiers)
 	if(!ishuman(target) || !ishuman(user))
 		return ..()
-	try_tattoo(target, user)
+	try_tattoo(target, user, TATTOO_MEDIUM_INK, ink_color)
 	return TRUE
 
 /// Using it in hand tattoos yourself, as a convenience for the common case.
@@ -504,15 +544,25 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 	if(!ishuman(user))
 		to_chat(user, span_warning("You don't have the right kind of skin for this!"))
 		return
-	try_tattoo(user, user)
+	try_tattoo(user, user, TATTOO_MEDIUM_INK, ink_color)
 
-/obj/item/tattoo_needle/proc/try_tattoo(mob/living/carbon/human/patient, mob/living/carbon/human/artist)
+/**
+ * Shared application flow for anything that puts marks on skin.
+ *
+ * medium decides permanence: TATTOO_MEDIUM_INK survives washing and needs
+ * surgery, TATTOO_MEDIUM_CHARCOAL smudges in water and scrubs off with soap.
+ */
+/obj/item/proc/try_tattoo(mob/living/carbon/human/patient, mob/living/carbon/human/artist, medium = TATTOO_MEDIUM_INK, mark_color = TATTOO_CHARCOAL_COLOR)
 	if(!istype(patient) || !istype(artist))
 		return
 	if(!artist.can_perform_action(src, NEED_DEXTERITY))
 		return
 
 	var/is_self = (patient == artist)
+
+	if(!is_self && !tattoo_has_grab_on(artist, patient))
+		to_chat(artist, span_warning("I need to grab [patient] and hold them still first."))
+		return
 
 	var/selected_zone = pick_tattoo_zone_for_target(patient, artist, is_self)
 	if(!selected_zone)
@@ -529,83 +579,135 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 		return
 
 	if(BP.count_tattoos_on_zone(selected_zone) >= MAXIMUM_TATTOOS_PER_ZONE)
-		to_chat(artist, span_warning("There's no room left on [is_self ? "your" : "[patient]'s"] [zone_name] for another tattoo!"))
+		to_chat(artist, span_warning("There's no room left on [is_self ? "your" : "[patient]'s"] [zone_name] for another mark!"))
 		return
 
-	var/tattoo_text = tgui_input_text(artist, "Describe the tattoo (max [TATTOO_TEXT_MAX_LENGTH] characters):", "Tattoo - [zone_name]", max_length = TATTOO_TEXT_MAX_LENGTH)
+	var/is_charcoal = (medium == TATTOO_MEDIUM_CHARCOAL)
+	var/mark_word = is_charcoal ? "drawing" : "tattoo"
+
+	var/tattoo_text = tgui_input_text(artist, "Describe the [mark_word] (max [TATTOO_TEXT_MAX_LENGTH] characters):", "[capitalize(mark_word)] - [zone_name]", max_length = TATTOO_TEXT_MAX_LENGTH)
 	if(!tattoo_text || !artist.can_perform_action(src, NEED_DEXTERITY))
 		return
 
-	var/style_choice = tgui_alert(artist, "Is this lettering (shown in quotes, e.g. \"ACAB\") or a design (shown plain, e.g. a wolf's head)?", "Tattoo Style", list("Lettering", "Design"))
+	var/style_choice = tgui_alert(artist, "Is this lettering (shown in quotes, e.g. \"ACAB\") or a design (shown plain, e.g. a wolf's head)?", "[capitalize(mark_word)] Style", list("Lettering", "Design"))
 	if(!style_choice || !artist.can_perform_action(src, NEED_DEXTERITY))
 		return
 
 	// Input stalling: the prompts above can be held open indefinitely, so
-	// re-validate everything that could have changed meanwhile.
+	// re-validate everything that could have changed meanwhile. do_after()
+	// only notices movement that happens after it starts, so the reach and
+	// clothing checks have to be repeated here rather than trusted from above.
 	if(QDELETED(BP) || BP.owner != patient || QDELETED(patient))
+		return
+	if(!still_in_reach(patient, artist, selected_zone, is_self))
 		return
 	if(!can_use_tattoo_zone(patient, artist, selected_zone, is_self))
 		return
 	if(BP.count_tattoos_on_zone(selected_zone) >= MAXIMUM_TATTOOS_PER_ZONE)
-		to_chat(artist, span_warning("There's no room left on [is_self ? "your" : "[patient]'s"] [zone_name] for another tattoo!"))
+		to_chat(artist, span_warning("There's no room left on [is_self ? "your" : "[patient]'s"] [zone_name] for another mark!"))
 		return
 
-	var/tattoo_time = is_self ? 8 SECONDS : 12 SECONDS
+	// Charcoal is quick - you're just drawing on skin, not perforating it.
+	var/tattoo_time
+	if(is_charcoal)
+		tattoo_time = is_self ? 3 SECONDS : 5 SECONDS
+	else
+		tattoo_time = is_self ? 8 SECONDS : 12 SECONDS
+
+	var/verb_phrase = is_charcoal ? "smearing a charcoal drawing onto" : "poking a tattoo into"
 
 	if(is_self)
-		to_chat(artist, span_notice("You begin poking a tattoo into your [zone_name]..."))
+		to_chat(artist, span_notice("You begin [verb_phrase] your [zone_name]..."))
 	else
 		artist.visible_message(
-			span_notice("[artist] begins poking a tattoo into [patient]'s [zone_name]..."),
-			span_notice("You begin poking a tattoo into [patient]'s [zone_name]..."),
+			span_notice("[artist] begins [verb_phrase] [patient]'s [zone_name]..."),
+			span_notice("You begin [verb_phrase] [patient]'s [zone_name]..."),
 		)
-		to_chat(patient, span_warning("[artist] begins poking a tattoo into your [zone_name]!"))
+		to_chat(patient, span_warning("[artist] begins [verb_phrase] your [zone_name]!"))
 
-	patient.adjust_jitter(10 SECONDS)
-	artist.add_movespeed_modifier(MOVESPEED_ID_TATTOO_PAIN, multiplicative_slowdown = 0.3)
+	// Needlework stings; charcoal doesn't.
+	if(!is_charcoal)
+		patient.adjust_jitter(10 SECONDS)
+		artist.add_movespeed_modifier(MOVESPEED_ID_TATTOO_PAIN, multiplicative_slowdown = 0.3)
 
-	var/success = do_after(artist, tattoo_time, patient, interaction_key = "tattoo_needle")
+	var/success = do_after(artist, tattoo_time, patient, interaction_key = "tattoo_marking")
 
-	if(!QDELETED(artist))
+	if(!is_charcoal && !QDELETED(artist))
 		artist.remove_movespeed_modifier(MOVESPEED_ID_TATTOO_PAIN)
 
 	if(!success || QDELETED(artist) || QDELETED(patient))
-		to_chat(artist, span_warning("You stop before finishing the tattoo."))
+		to_chat(artist, span_warning("You stop before finishing the [mark_word]."))
 		return
 
 	// The limb may have been lost or swapped during the do_after
 	if(QDELETED(BP) || BP.owner != patient)
-		to_chat(artist, span_warning("You stop before finishing the tattoo."))
+		to_chat(artist, span_warning("You stop before finishing the [mark_word]."))
 		return
 
-	// ...and the needle may have been moved into the very arm being tattooed
+	// ...and the tool may have been moved into the very arm being worked on
 	if(is_self && get_wielding_arm(artist) == tattoo_zone_limb(selected_zone))
-		to_chat(artist, span_warning("You can't tattoo the very arm that's holding [src]."))
+		to_chat(artist, span_warning("You can't work on the very arm that's holding [src]."))
 		return
 
+	if(!still_in_reach(patient, artist, selected_zone, is_self))
+		return
 	if(!can_use_tattoo_zone(patient, artist, selected_zone, is_self))
 		return
 
-	if(!BP.add_tattoo(selected_zone, tattoo_text, (style_choice == "Lettering") ? TATTOO_STYLE_LETTERING : TATTOO_STYLE_DESIGN, ink_color))
-		to_chat(artist, span_warning("There's no room left on [is_self ? "your" : "[patient]'s"] [zone_name] for another tattoo!"))
+	if(!BP.add_tattoo(selected_zone, tattoo_text, (style_choice == "Lettering") ? TATTOO_STYLE_LETTERING : TATTOO_STYLE_DESIGN, mark_color, medium))
+		to_chat(artist, span_warning("There's no room left on [is_self ? "your" : "[patient]'s"] [zone_name] for another [mark_word]!"))
 		return
 
+	var/finish_phrase = is_charcoal ? "the charcoal drawing on" : "the tattoo on"
 	if(is_self)
-		to_chat(artist, span_notice("You finish poking the tattoo into your [zone_name]."))
+		to_chat(artist, span_notice("You finish [finish_phrase] your [zone_name]."))
 	else
 		artist.visible_message(
-			span_notice("[artist] finishes the tattoo on [patient]'s [zone_name]."),
-			span_notice("You finish the tattoo on [patient]'s [zone_name]."),
+			span_notice("[artist] finishes [finish_phrase] [patient]'s [zone_name]."),
+			span_notice("You finish [finish_phrase] [patient]'s [zone_name]."),
 		)
 
-	patient.apply_damage(2, BRUTE, tattoo_zone_limb(selected_zone))
+	if(!is_charcoal)
+		patient.apply_damage(2, BRUTE, tattoo_zone_limb(selected_zone))
 	patient.save_tattoos_now()
+
+/**
+ * Is the artist holding the patient in a grab?
+ *
+ * Working on someone else needs a free hand on them - it keeps a lump of
+ * charcoal from being scrawled across strangers in passing, and means the
+ * subject of a real tattoo has to be held (or willingly let themselves be).
+ */
+/proc/tattoo_has_grab_on(mob/living/carbon/human/artist, mob/living/carbon/human/patient)
+	for(var/obj/item/grabbing/grab in artist.held_items)
+		if(grab.grabbed == patient)
+			return TRUE
+	return FALSE
+
+/**
+ * Is the patient still close enough, still held, and is the spot still bare?
+ * Called before do_after() and again before the tattoo lands.
+ */
+/obj/item/proc/still_in_reach(mob/living/carbon/human/patient, mob/living/carbon/human/artist, zone, is_self)
+	if(!is_self)
+		if(!artist.Adjacent(patient))
+			to_chat(artist, span_warning("[patient] is too far away."))
+			return FALSE
+		if(!tattoo_has_grab_on(artist, patient))
+			to_chat(artist, span_warning("I need to keep a hold of [patient] to work on them."))
+			return FALSE
+	if(!artist.can_perform_action(src, NEED_DEXTERITY))
+		return FALSE
+	if(!patient.is_tattoo_zone_visible(zone))
+		to_chat(artist, span_warning("[is_self ? "Your" : "[patient]'s"] clothes are in the way there!"))
+		return FALSE
+	return TRUE
 
 /**
  * Shared gate for a zone: does the body part exist, and is the artist allowed
  * to work there? Intimate spots on someone else need that person's consent.
  */
-/obj/item/tattoo_needle/proc/can_use_tattoo_zone(mob/living/carbon/human/patient, mob/living/carbon/human/artist, zone, is_self, quiet = FALSE)
+/obj/item/proc/can_use_tattoo_zone(mob/living/carbon/human/patient, mob/living/carbon/human/artist, zone, is_self, quiet = FALSE)
 	if(!patient.has_tattoo_zone(zone))
 		return FALSE
 	if(is_self || !tattoo_zone_is_intimate(zone))
@@ -621,13 +723,13 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
  * Odd held indexes are left hands, even ones are right - same convention the
  * rest of the codebase uses (see /mob/proc/held_index_to_dir).
  */
-/obj/item/tattoo_needle/proc/get_wielding_arm(mob/living/carbon/human/user)
+/obj/item/proc/get_wielding_arm(mob/living/carbon/human/user)
 	var/index = user.get_held_index_of_item(src)
 	if(!index)
 		return null
 	return (index % 2 == 0) ? BODY_ZONE_R_ARM : BODY_ZONE_L_ARM
 
-/obj/item/tattoo_needle/proc/pick_tattoo_zone_for_target(mob/living/carbon/human/patient, mob/living/carbon/human/artist, is_self)
+/obj/item/proc/pick_tattoo_zone_for_target(mob/living/carbon/human/patient, mob/living/carbon/human/artist, is_self)
 	var/targeted = artist.zone_selected
 	var/list/candidates = GLOB.tattoo_zones_by_limb[targeted]
 
@@ -674,6 +776,49 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 	return by_name[choice]
 
 /*
+ * CHARCOAL
+ *
+ * A lump of charcoal draws on skin rather than under it: same placement rules
+ * and the same zones, but the mark is always charcoal-coloured, goes on fast,
+ * hurts no one, and washes off again. Ink from the needle is the permanent
+ * version and only surgery removes it.
+ */
+
+/obj/item/ore/coal/charcoal/examine(mob/user)
+	. = ..()
+	. += span_notice("Target a body zone and click yourself to draw on it - or grab someone and keep hold to draw on them. It washes off.")
+
+/obj/item/ore/coal/charcoal/attack(mob/living/target, mob/living/user, list/modifiers)
+	if(!ishuman(target) || !ishuman(user))
+		return ..()
+	try_tattoo(target, user, TATTOO_MEDIUM_CHARCOAL, TATTOO_CHARCOAL_COLOR)
+	return TRUE
+
+/obj/item/ore/coal/charcoal/attack_self(mob/user, list/modifiers)
+	. = ..()
+	if(.)
+		return
+	if(!ishuman(user))
+		return
+	try_tattoo(user, user, TATTOO_MEDIUM_CHARCOAL, TATTOO_CHARCOAL_COLOR)
+
+/**
+ * Crafting: bind a needle to a lump of charcoal to make the tattooing kit.
+ * Without this the item only existed for admins to spawn - there was no way
+ * for a player to obtain one in a normal round.
+ */
+/datum/repeatable_crafting_recipe/sewing/tattoo_needle
+	name = "tattoo needle"
+	output = /obj/item/tattoo_needle
+	requirements = list(
+		/obj/item/ore/coal/charcoal = 1,
+		/obj/item/natural/cloth = 1,
+	)
+	attacked_atom = /obj/item/ore/coal/charcoal
+	craftdiff = 1
+	category = "Tools"
+
+/*
  * SURGERY
  *
  * Scrapes one tattoo out of the limb. OPERATION_LOOPING lets the surgeon keep
@@ -704,7 +849,10 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 	. += "the limb must have a tattoo"
 
 /datum/surgery_operation/limb/scrape_tattoo/state_check(obj/item/bodypart/limb)
-	return length(limb.tattoos) > 0
+	for(var/list/entry in limb.tattoos)
+		if(entry["medium"] != TATTOO_MEDIUM_CHARCOAL)
+			return TRUE
+	return FALSE
 
 /datum/surgery_operation/limb/scrape_tattoo/on_preop(obj/item/bodypart/limb, mob/living/surgeon, obj/item/tool, list/operation_args)
 	display_results(
@@ -725,8 +873,13 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 		span_notice("[surgeon] scrapes a tattoo out of [limb.owner]'s [parse_zone(limb.body_zone)]!"),
 	)
 
-	if(length(limb.tattoos))
-		limb.tattoos.Cut(1, 2) // remove the oldest tattoo on this limb
+	// Take the oldest inked tattoo. Charcoal drawings aren't worth a scalpel -
+	// they wash off - so surgery ignores them.
+	for(var/list/entry in limb.tattoos)
+		if(entry["medium"] == TATTOO_MEDIUM_CHARCOAL)
+			continue
+		limb.tattoos -= list(entry)
+		break
 
 	limb.receive_damage(6, flashes = TRUE)
 
@@ -903,6 +1056,7 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 				"text" = text,
 				"style" = style,
 				"color" = color,
+				"medium" = TATTOO_MEDIUM_INK,
 				"state" = TATTOO_STATE_FRESH,
 			))
 			prefs.save_character()
@@ -934,6 +1088,9 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 #undef TATTOO_STYLE_LETTERING
 #undef TATTOO_STYLE_DESIGN
 #undef TATTOO_TEXT_MAX_LENGTH
+#undef TATTOO_MEDIUM_INK
+#undef TATTOO_MEDIUM_CHARCOAL
+#undef TATTOO_CHARCOAL_COLOR
 #undef MOVESPEED_ID_TATTOO_PAIN
 #undef TATTOO_ZONE_FOREHEAD
 #undef TATTOO_ZONE_CHEEKS

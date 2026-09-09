@@ -311,8 +311,9 @@ export const TattooManagement = () => {
           }
         >
           <Box color="gray" italic mb={1}>
-            Tattoos written here are inked on your character from the start.
-            Only natural pigments — soot, ash, ochre, madder and woad.
+            Tattoos written here are inked on your character from the start —
+            permanent, and only a surgeon can remove them. Only natural
+            pigments: soot, ash, ochre, madder and woad.
           </Box>
 
           {tattoos.length === 0 ? (
