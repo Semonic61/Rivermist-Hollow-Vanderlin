@@ -492,17 +492,17 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 	default_value = FALSE
 	category = "General"
 
-/obj/item/tattoo_needle
-	name = "tattoo needle"
-	desc = "A wooden handle with a bound needle and a small inkwell. Used to hand-poke tattoos into skin, one prick at a time."
-	icon = 'icons/roguetown/items/misc.dmi'
-	icon_state = "needle" // TODO: dedicated sprite; reusing the sewing needle for now
-	item_weight = 10 GRAMS
+/obj/item/tattoo_machine
+	name = "tattoo machine"
+	desc = "A bronze-framed contraption with a needle driven by a treadle spring, fed from a sealed alchemical vial. It drives pigment under the skin far more evenly than a hand-held needle ever could."
+	icon = 'modular_rmh/icons/obj/items/tattoomachine.dmi'
+	icon_state = "tattoo_machine"
+	item_weight = 1.2 KILOGRAMS
 	w_class = WEIGHT_CLASS_SMALL
 	force = 0
 	throwforce = 0
 	item_flags = NOBLUDGEON
-	resistance_flags = FLAMMABLE
+	max_integrity = 100
 	grid_width = 32
 	grid_height = 32
 
@@ -511,14 +511,14 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 	/// Display name of the current pigment
 	var/ink_style = "Charcoal Black"
 
-/obj/item/tattoo_needle/examine(mob/user)
+/obj/item/tattoo_machine/examine(mob/user)
 	. = ..()
 	. += span_notice("The inkwell holds [ink_style] pigment.")
 	. += span_notice("Alt-click to swap the pigment.")
 	. += span_info("Target a body zone, then click yourself to tattoo it. To tattoo someone else, grab them first and keep hold.")
-	. += span_warning("Ink from this sits under the skin: washing does nothing, and only a surgeon's blade takes it off. For something temporary, draw with a lump of charcoal instead.")
+	. += span_warning("Ink driven by this sits under the skin: washing does nothing, and only a surgeon's blade takes it off. For something temporary, draw with a lump of charcoal instead.")
 
-/obj/item/tattoo_needle/AltClick(mob/user, list/modifiers)
+/obj/item/tattoo_machine/AltClick(mob/user, list/modifiers)
 	. = ..()
 	if(!user.can_perform_action(src, NEED_DEXTERITY))
 		return
@@ -530,14 +530,14 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 	to_chat(user, span_notice("You load [src] with [ink_style] pigment."))
 
 /// Clicking a person - self or otherwise - is the way tattoos get applied.
-/obj/item/tattoo_needle/attack(mob/living/target, mob/living/user, list/modifiers)
+/obj/item/tattoo_machine/attack(mob/living/target, mob/living/user, list/modifiers)
 	if(!ishuman(target) || !ishuman(user))
 		return ..()
 	try_tattoo(target, user, TATTOO_MEDIUM_INK, ink_color)
 	return TRUE
 
 /// Using it in hand tattoos yourself, as a convenience for the common case.
-/obj/item/tattoo_needle/attack_self(mob/user, list/modifiers)
+/obj/item/tattoo_machine/attack_self(mob/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
@@ -803,20 +803,19 @@ GLOBAL_LIST_INIT(tattoo_ink_colors, list(
 	try_tattoo(user, user, TATTOO_MEDIUM_CHARCOAL, TATTOO_CHARCOAL_COLOR)
 
 /**
- * Crafting: bind a needle to a lump of charcoal to make the tattooing kit.
- * Without this the item only existed for admins to spawn - there was no way
- * for a player to obtain one in a normal round.
+ * Crafting: forged on an anvil from a bronze bar, then fitted with an
+ * alchemical vial for the pigment and a needle for the business end.
  */
-/datum/repeatable_crafting_recipe/sewing/tattoo_needle
-	name = "tattoo needle"
-	output = /obj/item/tattoo_needle
-	requirements = list(
-		/obj/item/ore/coal/charcoal = 1,
-		/obj/item/natural/cloth = 1,
+/datum/anvil_recipe/tools/tattoo_machine
+	name = "Tattoo Machine (+Alchemical Vial, +Needle)"
+	recipe_name = "a tattoo machine"
+	req_bar = /obj/item/ingot/bronze
+	additional_items = list(
+		/obj/item/reagent_containers/glass/alchemical,
+		/obj/item/needle,
 	)
-	attacked_atom = /obj/item/ore/coal/charcoal
-	craftdiff = 1
-	category = "Tools"
+	created_item = /obj/item/tattoo_machine
+	craftdiff = 2
 
 /*
  * SURGERY
