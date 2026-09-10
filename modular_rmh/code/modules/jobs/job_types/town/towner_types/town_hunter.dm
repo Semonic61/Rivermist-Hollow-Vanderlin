@@ -1,5 +1,7 @@
 /datum/attribute_holder/sheet/job/advclass/towner/hunter
 	raw_attribute_list = list(
+		/datum/attribute/skill/misc/hunting = 30,
+		/datum/attribute/skill/misc/tracking = 20,
 		STAT_PERCEPTION = 3,
 		/datum/attribute/skill/craft/crafting = 20,
 		/datum/attribute/skill/craft/tanning = 30,
