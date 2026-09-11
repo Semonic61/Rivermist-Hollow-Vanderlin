@@ -30,8 +30,6 @@
 /// Sneaking skill (0-6 scale) needed per +1 tracking difficulty on tracks left while sneaking.
 /// At 1 a legendary sneak adds +6 to a base DC of 11 plus 0-5 entropy.
 #define TRACK_CONCEALMENT_PER_SKILL 1
-/// Chance floor on mud, which takes a print better than anything else.
-#define TRACK_PROB_MUD 40
 
 /mob/living/carbon/human
 	/// Weakref to the mob this human has Marked off their tracks.
@@ -50,19 +48,16 @@
 	. += footprint_marking.knowledge_readout(user)
 
 /obj/effect/skill_tracker/footprint
-	// Deliberately nameless and fully transparent rather than invisible. An atom with
-	// invisibility set cannot be clicked at all, so the click fell through to the turf and the
-	// player examined the ground - which is what the turf handlers further down were a
-	// workaround for. At alpha 0 with MOUSE_OPACITY_ICON the object is unseen but still
-	// hit-tested against its own sprite, so a finder clicks the track itself, while everyone
-	// else gets an unnamed nothing and their examine returns empty.
-	name = ""
-	desc = ""
+	name = "\improper track"
+	desc = null
 	icon = 'modular_rmh/icons/obj/hunting/track.dmi'
 	icon_state = "tracks"
 	real_icon_state = "tracks"
-	invisibility = 0
-	alpha = 0
+	// The object stays invisible to everyone, exactly as in Twilight Axis. What a finder sees and
+	// clicks is their own /image of it, and BYOND routes a mouse event on an image to the atom in
+	// that image's loc - so the image must be anchored to src, not to the turf. Anchoring it to
+	// loc was what made tracks read as part of the ground.
+	invisibility = INVISIBILITY_MAXIMUM
 	// The object stays invisible, but BYOND routes mouse events on an image to the atom in its
 	// loc - so a knower holding a personal image can click and examine the track itself, while
 	// someone who has not found it clicks straight through to the ground. The /turf/open handlers
@@ -136,8 +131,7 @@
 /obj/effect/skill_tracker/footprint/add_knower(mob/living/tracker, competence = 1)
 	known_by[tracker] = competence
 	if(tracker.client)
-		var/image/personal = image(icon, loc, get_state_for(tracker), BULLET_HOLE_LAYER, original_dir || dir)
-		personal.alpha = alpha
+		var/image/personal = image(icon, src, get_state_for(tracker), BULLET_HOLE_LAYER, original_dir || dir)
 		personal.mouse_opacity = MOUSE_OPACITY_ICON
 		knower_images[tracker] = personal
 		tracker.client.images += personal
@@ -166,16 +160,14 @@
 		return
 	if(old_image)
 		tracker.client.images -= old_image
-	var/image/personal = image(icon, loc, wanted_state, BULLET_HOLE_LAYER, original_dir || dir)
-	personal.alpha = alpha
+	var/image/personal = image(icon, src, wanted_state, BULLET_HOLE_LAYER, original_dir || dir)
 	personal.mouse_opacity = MOUSE_OPACITY_ICON
 	knower_images[tracker] = personal
 	tracker.client.images += personal
 
-// Does not chain to ..(): the object is deliberately nameless, so the stock "This is a ..." line
-// would come out empty. Someone who has not found the track gets nothing at all back.
 /obj/effect/skill_tracker/footprint/examine(mob/user)
-	return knowledge_readout(user)
+	. = ..()
+	. += knowledge_readout(user)
 
 /obj/effect/skill_tracker/footprint/attack_hand(mob/user, list/modifiers)
 	. = ..()
@@ -365,11 +357,6 @@
 /// This mob's chance (0-100) of leaving a track on the given turf.
 /mob/living/proc/track_creation_prob(turf/new_turf)
 	. = new_turf.track_prob
-	// Mud is a runtime state of a dirt turf, flipped by become_muddy() in core, which this layer
-	// cannot redefine - so it is read here instead of carried as a track_prob default.
-	var/turf/open/floor/dirt/dirt_turf = new_turf
-	if(istype(dirt_turf) && dirt_turf.muddy)
-		. = max(., TRACK_PROB_MUD)
 	if(!.)
 		return 0
 	if(m_intent == MOVE_INTENT_SNEAK)
@@ -397,4 +384,3 @@
 #undef TRACK_LIFETIME
 #undef TRACK_SEARCH_RANGE
 #undef TRACK_CONCEALMENT_PER_SKILL
-#undef TRACK_PROB_MUD
