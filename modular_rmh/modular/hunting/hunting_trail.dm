@@ -15,6 +15,24 @@
 #define HUNT_IDENTIFY_SKILL_REQ 4
 /// How far apart consecutive signs sit, before per-skill scatter.
 #define HUNT_STEP_DISTANCE 9
+/// How long an uncovered sign sits at full opacity before it starts fading.
+#define HUNT_SIGN_LINGER (5 SECONDS)
+/// Extra linger per point of Hunting skill.
+#define HUNT_SIGN_PER_SKILL (2 SECONDS)
+/// How long the fade-out itself takes. The sign is still readable throughout.
+#define HUNT_SIGN_FADE (20 SECONDS)
+/// How far from the first sign someone can be standing and still join the hunt.
+#define HUNT_PARTY_GATHER_RANGE 5
+/// How far a hunter may drift from the current sign before dropping out of the party.
+#define HUNT_PARTY_KEEP_RANGE 9
+/// Share of the leader's experience everyone else earns.
+#define HUNT_PARTY_FOLLOWER_EXP 0.7
+/// Experience for reading one sign.
+#define HUNT_STEP_EXP 6
+/// Experience for running the quarry down.
+#define HUNT_QUARRY_EXP 35
+/// Extra experience per animal the group flushed out on top of the quarry.
+#define HUNT_BONUS_EXP 15
 
 /// Groups of areas a single trail is allowed to wander between.
 GLOBAL_LIST_INIT(hunting_area_groups, list(
@@ -55,16 +73,24 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 	/// Icon state locked in for the whole chain, so the trail looks consistent.
 	var/locked_track_icon
 	var/track_revealed = FALSE
-	/// Weakref to the hunter working this chain.
+	/// Weakref to whoever is currently leading this chain - the most skilled hunter present.
 	var/datum/weakref/hunter_ref
+	/// Weakrefs to everyone hunting this chain. Set once, at the first sign, from who was standing
+	/// nearby; pruned each step as people die or fall behind.
+	var/list/party_refs = list()
+	/// mob -> the image of this link that mob is being shown.
+	var/list/party_images = list()
 	/// What waits at the end.
 	var/target_animal_type
 	var/datum/hunting_category/hunt_category
+	/// Category a hunter's map argued for, honoured when the chain picks its quarry.
+	var/datum/hunting_category/secret_map_influence
+	/// One map per trail, win or lose - otherwise a stack of maps could be rerolled on one mound.
+	var/influence_attempted = FALSE
 	/// Signs to read before the quarry shows itself.
 	var/max_trail_depth = 6
 	var/min_trail_depth = 4
 	var/track_dir
-	var/image/hunter_image
 
 /obj/effect/hunting_track/Initialize(mapload)
 	. = ..()
@@ -73,31 +99,32 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 	pixel_y = rand(-8, 8)
 
 /obj/effect/hunting_track/Destroy()
-	clear_hunter_image()
+	clear_party_images()
+	party_refs.Cut()
 	hunter_ref = null
 	hunt_category = null
 	return ..()
 
-/obj/effect/hunting_track/proc/clear_hunter_image()
-	if(!hunter_image)
-		return
-	var/mob/living/hunter = hunter_ref?.resolve()
-	if(hunter?.client)
-		hunter.client.images -= hunter_image
-	hunter_image = null
+/obj/effect/hunting_track/proc/clear_party_images()
+	for(var/mob/living/member as anything in party_images)
+		if(member?.client)
+			member.client.images -= party_images[member]
+	party_images.Cut()
 
-/// Makes this link visible to its hunter alone.
+/// Hides this link from the world and shows it to the hunting party only - everyone following,
+/// not just the leader, or a group hunt would have everyone but one person walking blind.
 /obj/effect/hunting_track/proc/setup_hunter_visibility()
-	var/mob/living/hunter = hunter_ref?.resolve()
 	invisibility = INVISIBILITY_MAXIMUM
-	if(!hunter?.client)
-		hunter_ref = null
-		return
-	hunter_image = image(icon, src, icon_state, layer)
-	hunter_image.color = color
-	hunter_image.pixel_x = pixel_x
-	hunter_image.pixel_y = pixel_y
-	hunter.client.images += hunter_image
+	for(var/datum/weakref/member_ref as anything in party_refs)
+		var/mob/living/member = member_ref.resolve()
+		if(!member?.client)
+			continue
+		var/image/personal = image(icon, src, icon_state, layer)
+		personal.color = color
+		personal.pixel_x = pixel_x
+		personal.pixel_y = pixel_y
+		member.client.images += personal
+		party_images[member] = personal
 
 /obj/effect/hunting_track/get_mechanics_examine(mob/user)
 	. = ..()
@@ -123,9 +150,10 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 		return
 	if(track_revealed)
 		return
-	var/mob/living/current_hunter = hunter_ref?.resolve()
-	if(current_hunter && user != current_hunter)
-		return // Someone else's chain. It is invisible to them anyway; this is the safety net.
+	// Anyone in the party may work the trail, not just the leader. A chain with a party already
+	// set is invisible to outsiders anyway; this is the safety net.
+	if(length(party_refs) && !(WEAKREF(user) in party_refs))
+		return
 
 	if(trail_depth == 0)
 		var/datum/component/hunting_blocker/blocker = user.GetComponent(/datum/component/hunting_blocker)
@@ -153,17 +181,103 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 
 	to_chat(user, span_nicegreen("The trail continues further ahead!"))
 	track_revealed = TRUE
-	if(user.mind)
-		var/xp_mod = max(1 + ((GET_MOB_ATTRIBUTE_VALUE(user, STAT_INTELLIGENCE) - 10) / 10), 0.1)
-		user.mind.add_sleep_experience(/datum/attribute/skill/misc/hunting, 6 * xp_mod)
+	distribute_party_exp(HUNT_STEP_EXP)
 	if(trail_depth == 0)
 		var/datum/component/hunting_blocker/blocker = user.GetComponent(/datum/component/hunting_blocker)
 		blocker?.register_hunt()
 	fade_and_die(skill)
 
+/// Everyone with a mind standing near the first sign joins the hunt. The best tracker among them
+/// leads, which is whose skill the trail is read against.
+/obj/effect/hunting_track/proc/initialize_hunt_group(mob/living/revealer)
+	var/list/potential_party = list(revealer)
+	for(var/mob/living/nearby in range(HUNT_PARTY_GATHER_RANGE, src))
+		if(nearby.stat == DEAD || !nearby.mind)
+			continue
+		potential_party |= nearby
+
+	var/mob/living/best_hunter
+	var/highest_skill = -1
+	for(var/mob/living/candidate as anything in potential_party)
+		var/candidate_skill = GET_MOB_SKILL_VALUE_OLD(candidate, /datum/attribute/skill/misc/hunting)
+		if(candidate_skill > highest_skill)
+			highest_skill = candidate_skill
+			best_hunter = candidate
+		party_refs |= WEAKREF(candidate)
+
+	hunter_ref = WEAKREF(best_hunter)
+	if(length(potential_party) > 1)
+		to_chat(potential_party, span_notice("<b>Group hunt started!</b> [best_hunter] is leading the tracks. [length(party_refs)] hunters are following."))
+
+/// Drops anyone who died or fell behind, re-elects the leader from who is still here, and reports
+/// the skill the trail should be read against.
+/obj/effect/hunting_track/proc/process_party_and_get_skill()
+	var/highest_skill = 0
+	var/mob/living/current_leader
+	var/list/valid_party = list()
+
+	for(var/datum/weakref/member_ref as anything in party_refs)
+		var/mob/living/member = member_ref.resolve()
+		if(QDELETED(member) || member.stat == DEAD || get_dist(src, member) > HUNT_PARTY_KEEP_RANGE)
+			continue
+		valid_party |= member_ref
+		var/member_skill = GET_MOB_SKILL_VALUE_OLD(member, /datum/attribute/skill/misc/hunting)
+		if(member_skill >= highest_skill)
+			highest_skill = member_skill
+			current_leader = member
+
+	party_refs = valid_party
+	if(current_leader)
+		hunter_ref = WEAKREF(current_leader)
+	return highest_skill
+
+/// The leader learns the most; everyone else still learns from walking the trail.
+/obj/effect/hunting_track/proc/distribute_party_exp(base_amount)
+	var/mob/living/leader = hunter_ref?.resolve()
+	for(var/datum/weakref/member_ref as anything in party_refs)
+		var/mob/living/member = member_ref.resolve()
+		if(QDELETED(member) || member.stat == DEAD || !member.mind)
+			continue
+		var/exp_modifier = max(1 + ((GET_MOB_ATTRIBUTE_VALUE(member, STAT_INTELLIGENCE) - 10) / 10), 0.1)
+		var/final_amount = base_amount * ((member == leader) ? 1 : HUNT_PARTY_FOLLOWER_EXP)
+		member.mind.add_sleep_experience(/datum/attribute/skill/misc/hunting, final_amount * exp_modifier)
+
+/// A larger party flushes out more than one animal. Nobody but the leader rolls for their own.
+/obj/effect/hunting_track/proc/spawn_group_bonus_animals(turf/origin)
+	if(!hunt_category || !target_animal_type || !hunt_category.bonus_animal_amount)
+		return 0
+
+	var/mob/living/leader = hunter_ref?.resolve()
+	var/list/valid_hunters = list()
+	for(var/datum/weakref/member_ref as anything in party_refs)
+		var/mob/living/member = member_ref.resolve()
+		if(QDELETED(member) || member.stat == DEAD || member == leader)
+			continue
+		valid_hunters += member
+	if(!length(valid_hunters))
+		return 0
+
+	var/group_bonus = length(valid_hunters) * 10
+	var/list/nearby_turfs = list()
+	for(var/direction in GLOB.alldirs)
+		var/turf/neighbour = get_step(origin, direction)
+		if(validate_turf(neighbour))
+			nearby_turfs += neighbour
+
+	var/spawned_count = 0
+	for(var/mob/living/hunter as anything in valid_hunters)
+		if(spawned_count >= hunt_category.bonus_animal_amount)
+			break
+		var/skill = GET_MOB_SKILL_VALUE_OLD(hunter, /datum/attribute/skill/misc/hunting)
+		if(!prob(clamp(((skill + 1) * 20) + group_bonus, 0, 100)))
+			continue
+		var/turf/spawn_turf = length(nearby_turfs) ? pick(nearby_turfs) : origin
+		new /obj/effect/temp_visual/hunting_phantom(spawn_turf, pickweight(hunt_category.animals))
+		spawned_count++
+	return spawned_count
+
 /obj/effect/hunting_track/proc/uncover_trail(mob/living/user)
-	var/skill = GET_MOB_SKILL_VALUE_OLD(user, /datum/attribute/skill/misc/hunting)
-	hunter_ref = WEAKREF(user)
+	var/skill = process_party_and_get_skill()
 
 	var/base_dx = clamp(x - user.x, -1, 1)
 	var/base_dy = clamp(y - user.y, -1, 1)
@@ -193,6 +307,7 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 			if(trail_depth == 0)
 				// Leave something behind that will regrow this trail head later.
 				new /obj/effect/landmark/hunting_spawner(get_turf(src))
+				initialize_hunt_group(user)
 				if(!target_animal_type)
 					initialize_hunt_chain(user)
 
@@ -201,10 +316,13 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 			if(trail_depth >= max_trail_depth)
 				to_chat(user, span_boldwarning("You catch sight of your quarry in the distance!"))
 				new /obj/effect/temp_visual/hunting_phantom(target_turf, target_animal_type)
+				var/bonus_spawned = spawn_group_bonus_animals(target_turf)
+				distribute_party_exp(HUNT_QUARRY_EXP + (HUNT_BONUS_EXP * bonus_spawned))
 				return TRUE
 
 			var/obj/effect/hunting_track/next_trail = new(target_turf)
 			next_trail.hunter_ref = hunter_ref
+			next_trail.party_refs = party_refs.Copy()
 			next_trail.trail_depth = trail_depth + 1
 			next_trail.max_trail_depth = max_trail_depth
 			next_trail.target_animal_type = target_animal_type
@@ -220,7 +338,7 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 /obj/effect/hunting_track/proc/reveal_track(turf/target_turf)
 	if(!locked_track_icon)
 		locked_track_icon = pick(track_types)
-	clear_hunter_image()
+	clear_party_images()
 
 	invisibility = 0
 	icon_state = locked_track_icon
@@ -240,12 +358,16 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 		return FALSE
 	return (there == here) || (there.type in linked_areas)
 
+/// An uncovered sign stays put for a while, then fades out slowly. The fade is the grace period:
+/// it runs a full 20 seconds on top of the wait, so a novice still gets 25 seconds to walk the
+/// trail. Matches Twilight Axis - an earlier version here faded over 2 seconds instead of 20 and
+/// deleted after 2 instead of 20, leaving low-skill hunters about 7 seconds.
 /obj/effect/hunting_track/proc/fade_and_die(skill = 0)
-	addtimer(CALLBACK(src, PROC_REF(start_fade_animation)), 5 SECONDS + (skill * 2 SECONDS))
+	addtimer(CALLBACK(src, PROC_REF(start_fade_animation)), HUNT_SIGN_LINGER + (skill * HUNT_SIGN_PER_SKILL))
 
 /obj/effect/hunting_track/proc/start_fade_animation()
-	animate(src, alpha = 0, time = 2 SECONDS)
-	QDEL_IN(src, 2 SECONDS)
+	animate(src, alpha = 0, time = HUNT_SIGN_FADE, easing = EASE_OUT)
+	QDEL_IN(src, HUNT_SIGN_FADE)
 
 /// Picks what this chain is a trail of, and how long it runs.
 /obj/effect/hunting_track/proc/initialize_hunt_chain(mob/living/user)
@@ -255,6 +377,14 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 
 	// Skilled hunters need fewer signs.
 	max_trail_depth = clamp(max_trail_depth - max(skill - 3, 0), min_trail_depth, max_trail_depth)
+
+	// A map that named a category gets first refusal, provided the terrain agrees with it.
+	if(secret_map_influence)
+		var/datum/hunting_category/mapped = new secret_map_influence()
+		if(mapped.can_spawn_in_area(here))
+			hunt_category = mapped
+		else
+			secret_map_influence = null
 
 	var/list/cat_weights = list()
 	for(var/cat_type as anything in subtypesof(/datum/hunting_category))
@@ -268,7 +398,8 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 		if(weight > 0)
 			cat_weights[category] = weight
 
-	hunt_category = length(cat_weights) ? pickweight(cat_weights) : new /datum/hunting_category/low_tier()
+	if(!hunt_category)
+		hunt_category = length(cat_weights) ? pickweight(cat_weights) : new /datum/hunting_category/low_tier()
 	target_animal_type = pickweight(hunt_category.animals)
 	locked_track_icon = hunt_category.preferred_tracks[target_animal_type] || pick(track_types)
 
@@ -310,3 +441,12 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 #undef HUNTING_RESPAWN_MAX
 #undef HUNT_IDENTIFY_SKILL_REQ
 #undef HUNT_STEP_DISTANCE
+#undef HUNT_SIGN_LINGER
+#undef HUNT_SIGN_PER_SKILL
+#undef HUNT_SIGN_FADE
+#undef HUNT_PARTY_GATHER_RANGE
+#undef HUNT_PARTY_KEEP_RANGE
+#undef HUNT_PARTY_FOLLOWER_EXP
+#undef HUNT_STEP_EXP
+#undef HUNT_QUARRY_EXP
+#undef HUNT_BONUS_EXP

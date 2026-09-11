@@ -50,10 +50,19 @@
 	. += footprint_marking.knowledge_readout(user)
 
 /obj/effect/skill_tracker/footprint
-	name = "\improper track"
+	// Deliberately nameless and fully transparent rather than invisible. An atom with
+	// invisibility set cannot be clicked at all, so the click fell through to the turf and the
+	// player examined the ground - which is what the turf handlers further down were a
+	// workaround for. At alpha 0 with MOUSE_OPACITY_ICON the object is unseen but still
+	// hit-tested against its own sprite, so a finder clicks the track itself, while everyone
+	// else gets an unnamed nothing and their examine returns empty.
+	name = ""
+	desc = ""
 	icon = 'modular_rmh/icons/obj/hunting/track.dmi'
 	icon_state = "tracks"
 	real_icon_state = "tracks"
+	invisibility = 0
+	alpha = 0
 	// The object stays invisible, but BYOND routes mouse events on an image to the atom in its
 	// loc - so a knower holding a personal image can click and examine the track itself, while
 	// someone who has not found it clicks straight through to the ground. The /turf/open handlers
@@ -134,8 +143,9 @@
 		tracker.client.images += personal
 	RegisterSignal(tracker, COMSIG_PARENT_QDELETING, PROC_REF(remove_knower), override = TRUE)
 
+// No SIGNAL_HANDLER here: the base declares it on its own definition, and SpacemanDMM rejects
+// re-declaring the sleep contract on an override.
 /obj/effect/skill_tracker/footprint/remove_knower(mob/living/tracker)
-	SIGNAL_HANDLER
 	UnregisterSignal(tracker, COMSIG_PARENT_QDELETING)
 	var/image/personal = knower_images?[tracker]
 	if(personal)
@@ -162,9 +172,10 @@
 	knower_images[tracker] = personal
 	tracker.client.images += personal
 
+// Does not chain to ..(): the object is deliberately nameless, so the stock "This is a ..." line
+// would come out empty. Someone who has not found the track gets nothing at all back.
 /obj/effect/skill_tracker/footprint/examine(mob/user)
-	. = ..()
-	. += knowledge_readout(user)
+	return knowledge_readout(user)
 
 /obj/effect/skill_tracker/footprint/attack_hand(mob/user, list/modifiers)
 	. = ..()
