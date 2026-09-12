@@ -1,12 +1,10 @@
 // Hunting & Tracking pack - the animal trail chain.
 //
-// Twilight Axis drove trail respawns from a dedicated SShunting subsystem. That is not allowed
-// here ("Never add a new SS* subsystem in RMH" - ai_navigation/modular_guide.md), and it is not
-// needed: each spawner schedules its own respawn timer. That also removes the global spawner list
-// the subsystem kept, so there is no shared list to leak references into.
+// Trail respawns run on per-spawner timers rather than a dedicated subsystem: "Never add a new
+// SS* subsystem in RMH" - ai_navigation/modular_guide.md. Each spawner schedules its own. That
+// also means no global spawner list to leak references into.
 //
-// Solo hunters only. The party/group-hunt machinery, purchasable hunting maps and the secret
-// white-stag category from the original are deliberately left out of this first pass.
+
 
 /// How long before a used-up trail head reappears where it started.
 #define HUNTING_RESPAWN_MIN (4 MINUTES)
@@ -107,7 +105,10 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 
 /obj/effect/hunting_track/proc/clear_party_images()
 	for(var/mob/living/member as anything in party_images)
-		if(member?.client)
+		if(!member)
+			continue
+		UnregisterSignal(member, COMSIG_MOB_LOGIN)
+		if(member.client)
 			member.client.images -= party_images[member]
 	party_images.Cut()
 
@@ -125,6 +126,24 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 		personal.pixel_y = pixel_y
 		member.client.images += personal
 		party_images[member] = personal
+		// Login wipes client.images, and a hunter who reconnects mid-trail would otherwise be
+		// left following a chain they can no longer see, with no way to get it back - the same
+		// defect the footprints had.
+		RegisterSignal(member, COMSIG_MOB_LOGIN, PROC_REF(on_member_login), override = TRUE)
+
+/// Hands a reconnecting hunter their view of this link back.
+/obj/effect/hunting_track/proc/on_member_login(mob/living/member)
+	SIGNAL_HANDLER
+	if(invisibility != INVISIBILITY_MAXIMUM || !member?.client)
+		return
+	if(!(WEAKREF(member) in party_refs))
+		return
+	var/image/personal = image(icon, src, icon_state, layer)
+	personal.color = color
+	personal.pixel_x = pixel_x
+	personal.pixel_y = pixel_y
+	member.client.images += personal
+	party_images[member] = personal
 
 /obj/effect/hunting_track/get_mechanics_examine(mob/user)
 	. = ..()
@@ -309,7 +328,11 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 				new /obj/effect/landmark/hunting_spawner(get_turf(src))
 				initialize_hunt_group(user)
 				if(!target_animal_type)
-					initialize_hunt_chain(user)
+					// The leader's skill decides the quarry and the trail length, not whoever
+					// happened to click first - otherwise a novice standing next to an expert
+					// would set the odds for the whole party.
+					var/mob/living/leader = hunter_ref?.resolve()
+					initialize_hunt_chain(leader || user)
 
 			reveal_track(target_turf)
 
@@ -360,8 +383,8 @@ GLOBAL_LIST_EMPTY(hunting_area_lookup)
 
 /// An uncovered sign stays put for a while, then fades out slowly. The fade is the grace period:
 /// it runs a full 20 seconds on top of the wait, so a novice still gets 25 seconds to walk the
-/// trail. Matches Twilight Axis - an earlier version here faded over 2 seconds instead of 20 and
-/// deleted after 2 instead of 20, leaving low-skill hunters about 7 seconds.
+/// trail. An earlier version faded over 2 seconds instead of 20 and deleted after 2 instead of
+/// 20, which left low-skill hunters about 7 seconds.
 /obj/effect/hunting_track/proc/fade_and_die(skill = 0)
 	addtimer(CALLBACK(src, PROC_REF(start_fade_animation)), HUNT_SIGN_LINGER + (skill * HUNT_SIGN_PER_SKILL))
 

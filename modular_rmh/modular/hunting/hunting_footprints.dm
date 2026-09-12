@@ -9,7 +9,7 @@
 // ai_navigation/modular_guide.md - dropping stop_looking(), update_turf_movespeed() and
 // consider_ambush(). Subtyping one level down is ordinary DM inheritance and chains through ..().
 //
-// Visibility model, matching Twilight Axis: the object itself is invisible to everyone. A mob that
+// Visibility model: the object itself is invisible to everyone. A mob that
 // finds a track gets their own /image of it, so two people standing on the same tile can disagree
 // about whether there is anything there. Examining goes through the turf (see /turf/open/examine
 // below), the same way core routes thieves' cant examines through /turf/closed.
@@ -53,7 +53,7 @@
 	icon = 'modular_rmh/icons/obj/hunting/track.dmi'
 	icon_state = "tracks"
 	real_icon_state = "tracks"
-	// The object stays invisible to everyone, exactly as in Twilight Axis. What a finder sees and
+	// The object stays invisible to everyone. What a finder sees and
 	// clicks is their own /image of it, and BYOND routes a mouse event on an image to the atom in
 	// that image's loc - so the image must be anchored to src, not to the turf. Anchoring it to
 	// loc was what made tracks read as part of the ground.
@@ -104,15 +104,30 @@
 /obj/effect/skill_tracker/footprint/check_for_users()
 	return
 
+/// The other door into the same shortcut. SStrackables.grant_trait() walks every existing
+/// trackable on login and calls this, so blocking check_for_users() alone still handed a Master
+/// Tracker every footprint on the map the moment they reconnected - no distance, no line of
+/// sight, no looking around. The trait's guarantee belongs in check_reveal(), which only runs
+/// when the character actually searches.
+/obj/effect/skill_tracker/footprint/reveal_to_trait_holder(mob/living/user)
+	return
+
 /// Tracks are found by actively looking around (right-click the eye on the HUD), which is what
 /// look_around() fires this global signal for - the same hook /obj/structure/trap uses.
 /obj/effect/skill_tracker/footprint/proc/on_active_perception(datum/source, mob/living/percepter)
 	SIGNAL_HANDLER
-	if(QDELETED(percepter) || (percepter in known_by))
+	if(QDELETED(percepter))
 		return
 	if(get_dist(percepter, src) > TRACK_SEARCH_RANGE)
 		return
 	if(!can_see(percepter, src, TRACK_SEARCH_RANGE + 3))
+		return
+	// Login wipes client.images but leaves known_by intact, so someone who reconnects is still a
+	// knower with nothing to look at. Searching again has to hand the image back rather than
+	// skip them for already knowing.
+	if(percepter in known_by)
+		if(!knower_images?[percepter])
+			restore_image_for(percepter)
 		return
 	if(!check_reveal(percepter))
 		return
@@ -149,6 +164,16 @@
 	known_by -= tracker
 	if(creator == tracker)
 		creator = null
+
+/// Rebuilds a knower's image from scratch - used when they had one and lost it, as happens on
+/// reconnect.
+/obj/effect/skill_tracker/footprint/proc/restore_image_for(mob/living/tracker)
+	if(!tracker?.client)
+		return
+	var/image/personal = image(icon, src, get_state_for(tracker), BULLET_HOLE_LAYER, original_dir || dir)
+	personal.mouse_opacity = MOUSE_OPACITY_ICON
+	knower_images[tracker] = personal
+	tracker.client.images += personal
 
 /// Swaps this mob's image over to the Marked sprite, once they realize whose track this is.
 /obj/effect/skill_tracker/footprint/proc/refresh_image_for(mob/living/tracker)

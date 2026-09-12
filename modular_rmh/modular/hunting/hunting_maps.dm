@@ -1,6 +1,6 @@
 // Hunting & Tracking pack - hunter's maps.
 //
-// Ported from Twilight Fortress Axis. A map is used on a *fresh* mound, before anyone has read it,
+// A map is used on a *fresh* mound, before anyone has read it,
 // and biases what the trail turns out to lead to. It never guarantees anything on its own: the roll
 // scales with Hunting skill, and most maps wear out with use.
 //

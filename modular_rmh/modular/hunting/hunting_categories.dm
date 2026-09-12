@@ -1,7 +1,6 @@
 // Hunting & Tracking pack - what a trail can lead to, and where.
 //
-// The roster and areas are rebuilt against RMH's own fauna and area tree; Twilight Axis's lists
-// referenced species and /area/rogue/... paths that do not exist here. Area matching is istype()
+// The roster and areas are built against RMH's own fauna and area tree. Area matching is istype()
 // based, so listing a parent area covers its subtypes.
 
 /datum/hunting_category
@@ -104,8 +103,8 @@
 		/area/outdoors/bog = 60,
 	)
 
-/// Bramblesnouts are the hunt's heavy prize - rare, and a real fight. Twilight Axis keeps them in
-/// their own category for the same reason, so they cannot crowd out ordinary game.
+/// Bramblesnouts are the hunt's heavy prize - rare, and a real fight. Kept in their own category
+/// so they cannot crowd out ordinary game.
 /datum/hunting_category/boars
 	bonus_animal_amount = 2
 	name = "Bramblesnout"
@@ -121,8 +120,8 @@
 		/area/outdoors/bog = 30,
 	)
 
-/// The hunt's legend. Named to match ordinary deer on purpose, exactly as Twilight Axis does, so
-/// nothing about the trail tells a hunter what is waiting at the end of it until they see it.
+/// The hunt's legend. Named to match ordinary deer on purpose, so nothing about the trail tells a
+/// hunter what is waiting at the end of it until they see it.
 /datum/hunting_category/white_stag
 	bonus_animal_amount = 0
 	name = "Forest Denizens"

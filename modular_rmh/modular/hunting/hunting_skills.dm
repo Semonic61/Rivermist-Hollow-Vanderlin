@@ -1,6 +1,4 @@
 // Hunting & Tracking pack - the two new skills.
-// Ported/adapted from Twilight Fortress Axis (Twilight-Axis).
-//
 // Both are plain new subtypes of /datum/attribute/skill/misc, so no core skill file is touched.
 // Granted by the hunter and ranger job sheets - see the pack README for the spread.
 

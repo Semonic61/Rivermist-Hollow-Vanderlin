@@ -2,10 +2,7 @@
 //
 // Nothing spawns the first trail head of a chain on its own: hunting_spawner only appears once a
 // hunter has already worked a trail, so without seeding the whole hunting half is unreachable.
-// Twilight Axis solves this from its mapgen flora tables ("the flora spawners should be taking
-// care of these" - their animal_spawners.dm), scattering trail heads at weight 2-5 alongside
-// trees and bushes.
-//
+// Trail heads are therefore scattered by the mapgen flora tables, alongside trees and bushes.
 // RMH's mapgen modules are themselves modular, so rather than editing those files this appends to
 // their spawn tables at construction. Weights are relative to the surrounding flora entries, which
 // run 10-80, so these are deliberately rare.

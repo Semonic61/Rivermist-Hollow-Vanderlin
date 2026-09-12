@@ -1,13 +1,7 @@
 // Hunting & Tracking pack - the bramblesnout, hunting's heavy quarry.
 //
-// Ported from Twilight Fortress Axis. Taken from the revision *before* PR #8574
-// ("simpleanimalidea", commit c42c3a0f77) reworked their simple animals onto anatomy_type and
-// MOB_AIM_LEVEL: that later system does not exist here, while the earlier simple_limb_hit(zone)
-// approach maps straight onto RMH's own. Everything below is the pre-rework shape with names and
-// item paths swapped for RMH's.
-//
-// The charge ability is not here - it needs the telegraphed-strike framework, which lands in a
-// later stage. This file is the animal itself.
+// Hit locations go through simple_limb_hit(zone), the same as RMH's other animals. The charge
+// ability lives in hunting_boar_charge.dm; this file is the animal itself.
 
 /// Bramblesnouts are meant to be a fight, not a chore. Kept as a define so it is tunable in one place.
 #define BOAR_HEALTH 250
@@ -55,8 +49,7 @@
 		'modular_rmh/sound/hunting/boar_charge.ogg',
 	)
 	food_type = list(/obj/item/reagent_containers/food/snacks/meat)
-	// Like a pig, but some of the meat and fat is traded for hide. TFA's rogue/meat/fatty and
-	// ham/boar do not exist here, so this uses RMH's steak and fat instead.
+	// Like a pig, but some of the meat and fat is traded for hide.
 	botched_butcher_results = list(
 		/obj/item/reagent_containers/food/snacks/meat/steak = 2,
 		/obj/item/alch/sinew = 2,
@@ -87,8 +80,8 @@
 /mob/living/simple_animal/hostile/retaliate/boar/Initialize(mapload)
 	. = ..()
 	AddComponent(/datum/component/ai_aggro_system)
-	// STASTR/STASPD are final vars here, computed from the attribute system, so TFA's direct
-	// assignment is not possible - these adjust off the base of 10 to reach its 15 STR / 13 SPD.
+	// STASTR/STASPD are final vars, computed from the attribute system, so they cannot be assigned
+	// directly - these adjust off the base of 10 to reach 15 STR / 13 SPD.
 	change_stat(STAT_STRENGTH, 5)
 	change_stat(STAT_SPEED, 3)
 	var/datum/action/cooldown/mob_cooldown/boar_charge/charge = new(src)
@@ -146,13 +139,8 @@
 	penfactor = PEN_HEAVY
 	blade_class = BCLASS_STAB
 
-// Three things were wrong before. The melee subtree was the /opportunistic variant, which only
-// swings at whatever falls into its lap, so the boar would charge and then stand there. The charge
-// was planned ahead of melee and starved it; it now sits after, on continue_planning, as the
-// bear's ability does. And target-finding was aggro_find_target, which only looks once something
-// has already provoked the mob - hence a bramblesnout that waited to be hit first. simple_find
-// _target hunts unprompted, which is what the spider and the other unconditionally hostile mobs
-// use, and what a bramblesnout should do.
+// Target-finding is simple_find_target rather than aggro_find_target: the latter only looks once
+// something has already provoked the mob, which left the boar waiting to be hit first.
 /datum/ai_controller/boar
 	movement_delay = 0.5 SECONDS
 	ai_movement = /datum/ai_movement/hybrid_pathing
@@ -163,8 +151,11 @@
 	)
 	planning_subtrees = list(
 		/datum/ai_planning_subtree/simple_find_target,
-		/datum/ai_planning_subtree/basic_melee_attack_subtree,
+		// Charge is planned before melee, and on continue_planning so it does not starve it.
+		// basic_melee_attack_subtree returns SUBTREE_RETURN_FINISH_PLANNING the moment it has a
+		// target, so anything queued after it never gets reached at all.
 		/datum/ai_planning_subtree/targeted_mob_ability/continue_planning/boar_charge,
+		/datum/ai_planning_subtree/basic_melee_attack_subtree,
 	)
 
 /obj/item/natural/head/boar

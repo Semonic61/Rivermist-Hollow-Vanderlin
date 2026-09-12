@@ -1,26 +1,16 @@
 // Hunting & Tracking pack - the White Stag, the hunt's legend.
 //
-// Ported from Twilight Fortress Axis. It is a carbon there and a carbon here: a humanoid mob
-// wearing a custom species, not a simple animal. TFA hangs it off their wildshape base, but that
-// base exists to let a druid's transform spell store and restore skills - the stag never reverts,
-// so none of it applies. RMH declares species mobs directly (race = /datum/species/X, as goblins
-// and orcs do), which is what this uses, and no core file is touched.
+// A carbon, not a simple animal: a humanoid mob wearing a custom species. Species mobs are
+// declared directly here (race = /datum/species/X, as goblins and orcs do), so no core file is
+// touched.
 //
-// Adaptations forced by the two bases differing:
-//   TRAIT_INFINITE_STAMINA  -> TRAIT_NOSTAMINA, the local equivalent
-//   TRAIT_STRENGTH_UNCAPPED, TRAIT_DEATHLESS, TRAIT_BADTRAINER, TRAIT_DNR, THREAT_LEGENDARY
-//                           -> do not exist here and are dropped; the stag's durability comes from
-//                              its stats, hide and NOBLOOD rather than from those flags
-//   /obj/item/rogueweapon   -> /obj/item, which is where wlength/wdefense/possible_item_intents live
-//   COMSIG_MOB_APPLY_DAMGE  -> COMSIG_MOB_APPLY_DAMAGE (the original has a typo in the define name)
-//   ARMOR_PLATE_BSTEEL      -> an armor_type datum, which is how RMH declares protection
-//   TRAIT_BLOOD_RESISTANCE, CLICK_CD_QUICK, WBALANCE_NORMAL -> absent here; dropped or mapped
-//   saiga_w meat variants   -> RMH's steak, which is what its own game animals butcher into
+// Its durability is meant to come from its stats, its hide and NOBLOOD rather than from a pile of
+// immunity flags, and its damage from a flat sweep rather than from a blade's force.
 
 /// Speed modifier id for the wounded-rush buff.
 #define MOVESPEED_ID_WHITE_RUSH "white_rush"
-/// Flat damage per tile of the antler sweep. TFA sets dam = 80 on their version; RMH's greatsword
-/// swing scales off the blade instead, which would give a weaker hit off the antlers' force of 45.
+/// Flat damage per tile of the antler sweep. The greatsword swing it inherits from scales off the
+/// blade, which off the antlers' force of 45 would land noticeably weaker.
 #define STAG_SWEEP_DAMAGE 80
 
 /datum/species/white_stag
@@ -44,8 +34,8 @@
 	nojumpsuit = TRUE
 	sexes = 1
 
-/// Returning TRUE here is the documented way to opt out: update_damage_overlays_real() bails
-/// before it paints the human wound sprites, which otherwise show up smeared over a stag.
+/// Returning TRUE is the documented way to opt out: update_damage_overlays_real() bails before it
+/// paints the human wound sprites, which otherwise show up smeared over a stag.
 /datum/species/white_stag/update_damage_overlays(mob/living/carbon/human/target)
 	return TRUE
 
@@ -80,7 +70,7 @@
 	AddComponent(/datum/component/ai_aggro_system)
 
 	// Legendary stats. Set through change_stat() because STASTR and friends are final vars here,
-	// computed from the attribute system rather than assigned directly as in TFA.
+	// computed from the attribute system rather than assigned directly.
 	change_stat(STAT_STRENGTH, 6)
 	change_stat(STAT_SPEED, 8)
 	change_stat(STAT_CONSTITUTION, 10)
@@ -143,7 +133,7 @@
 /datum/intent/simple/stag_gore
 	name = "gore"
 	clickcd = CLICK_CD_FAST
-	// "stab" is TFA's intent sprite name; the local sheet calls it "instab".
+	// The intent sheet calls this sprite "instab".
 	icon_state = "instab"
 	blade_class = BCLASS_STAB
 	attack_verb = list("gores", "rams", "skewers")
@@ -172,8 +162,7 @@
 			continue
 		apply_generic_weapon_damage(user, parent, victim, STAG_SWEEP_DAMAGE, PIERCE, BODY_ZONE_CHEST, BCLASS_STAB)
 
-// /obj/item/weapon, not /obj/item/natural: weapon_special is declared there, and this is the
-// counterpart of TFA's /obj/item/rogueweapon branch.
+// /obj/item/weapon, not /obj/item/natural: weapon_special is declared on the weapon branch.
 /obj/item/weapon/stag_antlers
 	name = "ancient antlers"
 	desc = "Sharp, calcified points of power."
@@ -270,7 +259,7 @@
 	qdel(src)
 	return TRUE
 
-// TFA hooks this on attack_turf(); RMH has no such proc, so mounting goes through afterattack().
+// Mounting goes through afterattack(); there is no attack_turf() to hook here.
 /obj/item/natural/head/white_stag/afterattack(atom/target, mob/living/user, proximity_flag, list/modifiers)
 	. = ..()
 	if(!proximity_flag || !isliving(user))

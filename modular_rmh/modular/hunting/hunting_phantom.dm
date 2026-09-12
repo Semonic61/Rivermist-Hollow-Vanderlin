@@ -1,9 +1,8 @@
 // Hunting & Tracking pack - the shape in the brush at the end of a trail.
 //
-// Twilight Axis materializes the quarry on a flat 15-second timer. Here the timer is only the
-// ceiling: the shape darkens in place and turns into the real animal as soon as a player actually
-// lays eyes on it or walks up on it, so the hunter gets the moment of spotting their kill rather
-// than watching a countdown.
+// The timer is only a ceiling: the shape darkens in place and turns into the real animal as soon
+// as a player actually lays eyes on it or walks up on it, so the hunter gets the moment of
+// spotting their kill rather than watching a countdown.
 
 /// How close a watcher has to be for the quarry to break cover.
 #define PHANTOM_TRIGGER_RANGE 4

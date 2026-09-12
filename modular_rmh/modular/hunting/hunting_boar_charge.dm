@@ -1,15 +1,11 @@
 // Hunting & Tracking pack - the bramblesnout's charge.
 //
-// Twilight Axis builds this on their _telegraphed_strike.dm framework (356 lines) plus
-// arcyne_strike(), brace_charge() and their spell-defines - none of which exist here, and importing
-// that whole combat framework into core for one animal ability would be a far bigger change than
-// the ability itself. So the charge is rebuilt on RMH's own /datum/action/cooldown/mob_cooldown,
-// the same base the kraken's abilities use, and wired to the AI through the existing
-// targeted_mob_ability planning subtree. The behaviour is kept faithful:
+// Built on /datum/action/cooldown/mob_cooldown, the same base the kraken's abilities use, and
+// wired to the AI through the existing targeted_mob_ability planning subtree. The shape of it:
 //
 //   telegraph -> run forward in a three-wide lane -> gore the first enemy hit, or slam into
 //   whatever stopped it. A clean miss refunds the cooldown once, so it can immediately wheel
-//   around for a second pass, exactly as the original does with its missed_once flag.
+//   around for a second pass - that is what missed_once tracks.
 
 /// Blackboard key the AI looks up the charge action under. Core's BB_* keys live in
 /// code/__DEFINES/ai/_ai.dm; this one is the pack's own, so it is declared here.
