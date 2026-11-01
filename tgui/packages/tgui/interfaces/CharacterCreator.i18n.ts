@@ -292,6 +292,13 @@ const en = {
     'Mark the subclass you want. At spawn it is offered first whenever you qualify for it.',
   preferredSet: 'Prefer this subclass',
   preferredClear: 'Preferred · click to clear',
+  classBuilder: 'Class Builder',
+  classBuilderOpen: 'Open the Class Builder',
+  classBuilderActive: 'Spawn build',
+  classBuilderNone: 'No build for this role yet.',
+  classBuilderCount: 'builds',
+  classBuilderHint:
+    'This sub-role spawns with your starred build for the role. It is offered only when such a build exists.',
   anySubclass: 'Any',
   notChosen: 'Not chosen',
   // Deity
@@ -819,6 +826,13 @@ const ru: CharacterCreatorStrings = {
     'Отметьте желаемый подкласс. При спавне он предлагается первым, если вы подходите под его условия.',
   preferredSet: 'Предпочитать этот подкласс',
   preferredClear: 'Предпочтён · нажмите, чтобы снять',
+  classBuilder: 'Конструктор класса',
+  classBuilderOpen: 'Открыть конструктор класса',
+  classBuilderActive: 'Билд для спавна',
+  classBuilderNone: 'Для этой роли ещё нет билда.',
+  classBuilderCount: 'билдов',
+  classBuilderHint:
+    'Этот подкласс спавнится с вашим билдом со звездой для этой роли и предлагается, только если такой билд есть.',
   anySubclass: 'Любой',
   notChosen: 'Не выбрано',
   deityTitle: 'Божество',

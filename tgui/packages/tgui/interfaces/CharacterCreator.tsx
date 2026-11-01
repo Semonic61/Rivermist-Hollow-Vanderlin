@@ -206,7 +206,9 @@ type SubclassEntry = {
   title: string;
   tutorial: string;
   has_info: Booleanish;
+  custom?: Booleanish;
 };
+type ClassBuildStatus = { count: number; active: string | null };
 type StatRow = {
   name: string;
   desc?: string;
@@ -338,6 +340,7 @@ type CreatorData = {
   cc_culture?: string;
   cc_cultures_available?: string[];
   cc_subclass_prefs?: Record<string, string>;
+  cc_class_builds?: Record<string, ClassBuildStatus>;
   cc_stats?: StatRow[];
   cc_quirks?: {
     names: string[];
@@ -2716,6 +2719,32 @@ export const CharacterCreator = () => {
     );
   };
 
+  // Custom subclasses spawn with a build from the Class Builder instead of a fixed kit.
+  const renderClassBuilder = (roleId: string) => {
+    const builds = data.cc_class_builds?.[roleId];
+    return (
+      <div className="cc-jobdetails">
+        <Ornament>{L.classBuilder}</Ornament>
+        <div className="cc-muted">
+          {builds?.active
+            ? `${L.classBuilderActive}: ${builds.active}`
+            : L.classBuilderNone}
+          {builds && builds.count > 1
+            ? ` · ${L.classBuilderCount}: ${builds.count}`
+            : ''}
+        </div>
+        <div className="cc-hint">{L.classBuilderHint}</div>
+        <Btn
+          className="fluid primary"
+          icon="hammer"
+          onClick={() => act('class_builder_open', { role: roleId })}
+        >
+          {L.classBuilderOpen}
+        </Btn>
+      </div>
+    );
+  };
+
   const renderSubRole = () => {
     const inspected =
       highSubclasses.find((entry) => entry.id === inspectSubclass) ||
@@ -2745,6 +2774,7 @@ export const CharacterCreator = () => {
               {text(inspected.tutorial, L.noDescription)}
             </div>
             {renderSubclassDetails(inspected.title)}
+            {asBool(inspected.custom) ? renderClassBuilder(inspected.id) : null}
           </>
         ) : null}
       </>,

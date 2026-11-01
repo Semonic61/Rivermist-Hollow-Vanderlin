@@ -76,6 +76,7 @@
 #include "anchored_mobs.dm"
 #include "character_creator.dm"
 #include "chat_macros.dm"
+#include "class_builder.dm"
 #include "component_tests.dm"
 #include "connect_loc.dm"
 #include "container_collision.dm"
