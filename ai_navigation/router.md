@@ -46,6 +46,7 @@ Generated on 2026-03-11. Last validated 2026-05-23. This is the primary Fast Sta
 | explicit `SS*` subsystem — **always check `ai_navigation/subsystem_map.md` before assuming a subsystem doesn't exist or guessing its behavior** | `ai_navigation/subsystem_map.md` |
 | cross-system handoff or dependency | `ai_navigation/system_dependencies.md` |
 | unknown architecture or location | `ai_navigation/system_map.md` or `ai_navigation/architecture.md` |
+| Rivermist-Hollow fork profile, DM include conventions, inheritance across core and RMH, or local build/diagnostics | `ai_navigation/rivermist_hollow_profile.md` |
 | modular_rmh layer, where RMH code lives, overlay rules | `ai_navigation/modular_guide.md` |
 | deep inheritance | `ai_navigation/type_tree.md` — search specific path, do not read whole file |
 | budget rules, engine constraints detail | `ai_navigation/router_deep.md` |
