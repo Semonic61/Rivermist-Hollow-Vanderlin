@@ -1,6 +1,6 @@
 # Type Index
 
-Generated on 2026-05-23. Use this file when the task gives a BYOND type path and you need the cheapest route before opening the full `ai_navigation/type_tree.md`.
+Last route validation 2026-11-16 against main. The large type_tree.md retains its original snapshot date and has not been regenerated; use actual declarations and parent_type for main inheritance.
 
 ## Major Roots
 
@@ -27,8 +27,8 @@ Generated on 2026-05-23. Use this file when the task gives a BYOND type path and
 | `/datum/component/field_of_vision/...` | `code/datums/components/fov.dm` | `code/controllers/subsystem/processing/fov.dm`, `ai_navigation/subsystem_map.md` |
 | `/datum/element/...` | `code/datums/elements/**` | `code/__DEFINES/dcs/**`, `ai_navigation/runtime_flow.md` |
 | `/datum/ai_controller/...` or `/datum/ai_behavior/...` | `code/datums/ai/**` | `code/modules/mob/**`, `ai_navigation/subsystem_map.md` |
-| `/datum/map_template/pocket/...` | `code/modules/mapping/pocket_dimensions.dm` | `code/controllers/subsystem/pocket_dimensions.dm`, `code/controllers/subsystem/mapping.dm` |
-| `/datum/pocket_dimension/...` | `code/modules/mapping/pocket_dimensions.dm` | `code/controllers/subsystem/pocket_dimensions.dm`, `code/modules/admin/verbs/pocket_dimensions.dm` |
+| `/datum/map_template/pocket/...` | `code/modules/mapping/pocket_dimensions/**` | `code/controllers/subsystem/pocket_dimensions.dm`, `code/controllers/subsystem/mapping.dm` |
+| `/datum/pocket_dimension/...` | `code/modules/mapping/pocket_dimensions/**` | `code/controllers/subsystem/pocket_dimensions.dm`, `code/modules/admin/verbs/pocket_dimensions.dm` |
 | `/datum/storyteller/...`, `/datum/round_event_control/...`, `/datum/round_event/...` | `code/datums/storytellers/**`, `code/modules/events/**` | `ai_navigation/runtime_flow.md`, `ai_navigation/system_dependencies.md` |
 | `/datum/migrant_wave/...` or `/datum/migrant_role/...` | `code/datums/migrants/**` | `code/modules/jobs/**`, `modular_rmh/code/modules/jobs/**` |
 | `/mob/living/...` | `code/modules/mob/living/**` | feature modules touching that mob family |
@@ -37,6 +37,10 @@ Generated on 2026-05-23. Use this file when the task gives a BYOND type path and
 | `/obj/item/...` | `code/game/objects/items/**` or matching feature module | `code/modules/**` for system-specific behavior |
 | `/obj/structure/...` | `code/game/objects/structures/**` | mapping, events, or feature module that owns the structure |
 | `/obj/effect/...` | `code/game/objects/effects/**` | mapping landmarks, event spawners, temporary gameplay effects |
+| `/datum/contract_party or /datum/antag_contract` | `modular_rmh/code/modules/antagonists/contracts/**` | SScontracts and the contract_party/antag_contract definitions |
+| `/datum/lootpanel` | `code/modules/lootpanel/_lootpanel.dm` | SSlooting in code/modules/lootpanel/ss_looting.dm |
+| `/datum/component/relic` | `code/datums/relics/_component.dm` | SSrelics in code/controllers/subsystem/relics.dm |
+| `/datum/quest` | `code/modules/questing/quests/_quest.dm` | SSquestboard and code/modules/questing/quest_object.dm |
 
 ## Cheap Rules
 

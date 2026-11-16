@@ -1,6 +1,6 @@
 # Signal Map
 
-Generated on 2026-03-11. Last full rebuild 2026-03-14. Use this file when behavior is indirect, component-driven, or routed through DCS signals instead of obvious proc calls.
+Last declaration/path validation 2026-11-16 against main. Selected payload notes are not an exhaustive runtime audit.
 
 ## Disambiguation: Debug vs. Implement
 
@@ -9,14 +9,17 @@ Generated on 2026-03-11. Last full rebuild 2026-03-14. Use this file when behavi
 
 ## Why This Matters
 
-This repository has a large signal layer:
+This repository declares 780 distinct COMSIG macro names in directly
+included DM files, including return flags and parameterized definitions.
+Lexical name-plus-parenthesis occurrences (not executable call counts): SEND_SIGNAL=1179, SEND_GLOBAL_SIGNAL=22,
+RegisterSignal=1508, UnregisterSignal=857.
+These counts can include macro definitions and comments; no preprocessor or runtime activity is inferred.
+Reproduce: python -B ai_navigation/validate_navigation.py --inventory.
 
-- `685` `COMSIG_*` defines across `code/__DEFINES/dcs/**` and `code/__DEFINES/components.dm`
-- `991` `SEND_SIGNAL(` call sites
-- `1209` `RegisterSignal(` call sites
-- `668` `UnregisterSignal(` call sites
+SEND_GLOBAL_SIGNAL targets **SSdcs**, as defined in
+[helpers.dm](../code/__DEFINES/dcs/helpers.dm). Register corresponding listeners on
+SSdcs; do not infer GLOB as the target from a global event name or prefix.
 
-Signals are a first-class behavior path here, not an edge case.
 
 ## Contract-First Helpers
 
@@ -31,47 +34,62 @@ If a system has a dedicated contract helper, prefer that over this generic map.
 
 ## Signal Definition Locations
 
-| Location | What lives there |
-|---|---|
-| `code/__DEFINES/dcs/signals_atoms/signals_atom.dm` | atom attackby, attack_hand, destruction, integrity, lighting, steam/water hooks |
-| `code/__DEFINES/dcs/signals_atoms/signals_atom_movable.dm` | pre_move, moved, cross, bump, throw, pull, grab, hear, dispose |
-| `code/__DEFINES/dcs/signals_atoms/signals_atom_movement.dm` | moveloop, moveloop step phases |
-| `code/__DEFINES/dcs/signals_atoms/signals_atom_mouse.dm` | Click, ShiftClick, CtrlClick, AltClick, MouseDrop, MouseWheel |
-| `code/__DEFINES/dcs/signals_atoms/signals_obj.dm` | item equip, item attack self/pre/attack/afterattack, gun fired, quality |
-| `code/__DEFINES/dcs/signals_atoms/signals_fuse.dm` | fuse lit/extinguished/cut/end |
-| `code/__DEFINES/dcs/signals_atoms/appearance.dm` | update_appearance, update_name, update_icon, update_overlays, set_dir |
-| `code/__DEFINES/dcs/signals_atoms/lighting.dm` | set_light, set_light_power/range/color/on/flags/curve |
-| `code/__DEFINES/dcs/signals_atoms/movable_lighting.dm` | movable dynamic light overlays |
-| `code/__DEFINES/dcs/signals/signals_mob/signals_mob.dm` | login, logout, stat_change, do_after, phase_change, restrict_magic, swap_hand |
-| `code/__DEFINES/dcs/signals/signals_mob/signals_living.dm` | buckle, resting, resist, ignite, electrocute, stun/knockdown/paralyze, health, death, mana, devotion, life-tick, wabbajack, shapeshift |
-| `code/__DEFINES/dcs/signals/signals_mob/signals_carbon.dm` | pray, regenerate_limbs |
-| `code/__DEFINES/dcs/signals/signals_mob/signals_mind.dm` | mind_transferred |
-| `code/__DEFINES/dcs/signals/signals_mob/signals_broodmother.dm` | biomass_change |
-| `code/__DEFINES/dcs/signals/signals_action.dm` | action trigger/grant/remove, cooldown start/finish/end, specific spell actions |
-| `code/__DEFINES/dcs/signals/signals_ai.dm` | ai path generation, path swap, worker task lifecycle |
-| `code/__DEFINES/dcs/signals/signals_beam.dm` | beam draw, beam entered/exited/turfs changed |
-| `code/__DEFINES/dcs/signals/signals_client.dm` | client verb add/remove |
-| `code/__DEFINES/dcs/signals/signals_coven_powers.dm` | coven power try/pre/activate/deactivate |
-| `code/__DEFINES/dcs/signals/signals_datum.dm` | ui_act, divine punishment hooks |
-| `code/__DEFINES/dcs/signals/signals_divine.dm` | (extends signals_datum — divine punishment categories) |
-| `code/__DEFINES/dcs/signals/signals_global.dm` | new_z, mob_created, mob_death, job_after_spawn, lord_colors_set, marriage, fish_released, role_converted |
-| `code/__DEFINES/dcs/signals/signals_hud.dm` | lobby collapse/expand/ready |
-| `code/__DEFINES/dcs/signals/signals_leash.dm` | leash force teleport, path start/complete |
-| `code/__DEFINES/dcs/signals/signals_movable.dm` | buckle/unbuckle, ridden driver move, overlay force remove/update, mob client pre_move/moved, food eat |
-| `code/__DEFINES/dcs/signals/signals_moveloop.dm` | moveloop start/stop/preprocess/postprocess/jps_repath |
-| `code/__DEFINES/dcs/signals/signals_objectives.dm` | various gameplay milestone signals (mocked, baptism, lux, skill rank, craft, torture, grave, taming, hug, etc.) |
-| `code/__DEFINES/dcs/signals/signals_organ.dm` | organ removed/inserted, chimeric organ failure/trigger, devour, infusion |
-| `code/__DEFINES/dcs/signals/signals_rage.dm` | rage changed/bottomed/overrage |
-| `code/__DEFINES/dcs/signals/signals_spatial_grid.dm` | spatial_grid_cell_entered/exited (parameterized) |
-| `code/__DEFINES/dcs/signals/signals_spell.dm` | before_cast, spell cast phases, cooldown, projectile hit, aoe/cone/touch variants, jaunt, lichdom, instant summons, charge |
-| `code/__DEFINES/dcs/signals/signals_subsystems.dm` | ticker pregame/setting_up/round_starting, subsystem post_initialize |
-| `code/__DEFINES/dcs/signals/signals_tgui.dm` | tgui window visible |
-| `code/__DEFINES/dcs/signals/signals_tram.dm` | tram travelling/travel/collision/platform/empty, lift direction, dispatch cargo |
-| `code/__DEFINES/dcs/signals/signals_turf.dm` | turf_enter/entered/exited, movable_turf_entered/exited, footstep sound, industrial lift |
-| `code/__DEFINES/dcs/signals/signals_twohand.dm` | two_handed wield/unwield |
-| `code/__DEFINES/components.dm` | item attack chain, human unarmed, projectile, combat target, mob attack hand, gun fire, movespeed, keybindings, and ~100 more component-attached signals |
+Generated from the direct-include scan; counts include COMSIG return flags.
 
-## Full Signal Family Reference
+| Source file | Definitions |
+|---|---:|
+| `code/__DEFINES/ai/_ai.dm` | 4 |
+| `code/__DEFINES/components.dm` | 215 |
+| `code/__DEFINES/cooldowns.dm` | 2 |
+| `code/__DEFINES/dcs/signals/signals_action.dm` | 11 |
+| `code/__DEFINES/dcs/signals/signals_ai.dm` | 15 |
+| `code/__DEFINES/dcs/signals/signals_beam.dm` | 4 |
+| `code/__DEFINES/dcs/signals/signals_client.dm` | 2 |
+| `code/__DEFINES/dcs/signals/signals_coven_powers.dm` | 10 |
+| `code/__DEFINES/dcs/signals/signals_datum.dm` | 1 |
+| `code/__DEFINES/dcs/signals/signals_fov.dm` | 7 |
+| `code/__DEFINES/dcs/signals/signals_global.dm` | 13 |
+| `code/__DEFINES/dcs/signals/signals_hud.dm` | 3 |
+| `code/__DEFINES/dcs/signals/signals_leash.dm` | 3 |
+| `code/__DEFINES/dcs/signals/signals_mob/signals_broodmother.dm` | 1 |
+| `code/__DEFINES/dcs/signals/signals_mob/signals_carbon.dm` | 3 |
+| `code/__DEFINES/dcs/signals/signals_mob/signals_living.dm` | 68 |
+| `code/__DEFINES/dcs/signals/signals_mob/signals_mind.dm` | 2 |
+| `code/__DEFINES/dcs/signals/signals_mob/signals_mob.dm` | 22 |
+| `code/__DEFINES/dcs/signals/signals_movable.dm` | 20 |
+| `code/__DEFINES/dcs/signals/signals_moveloop.dm` | 5 |
+| `code/__DEFINES/dcs/signals/signals_objectives.dm` | 33 |
+| `code/__DEFINES/dcs/signals/signals_organ.dm` | 7 |
+| `code/__DEFINES/dcs/signals/signals_rage.dm` | 3 |
+| `code/__DEFINES/dcs/signals/signals_spell.dm` | 23 |
+| `code/__DEFINES/dcs/signals/signals_subsystems.dm` | 5 |
+| `code/__DEFINES/dcs/signals/signals_surgery.dm` | 6 |
+| `code/__DEFINES/dcs/signals/signals_tgui.dm` | 1 |
+| `code/__DEFINES/dcs/signals/signals_tools.dm` | 2 |
+| `code/__DEFINES/dcs/signals/signals_tram.dm` | 8 |
+| `code/__DEFINES/dcs/signals/signals_turf.dm` | 6 |
+| `code/__DEFINES/dcs/signals/signals_twohand.dm` | 2 |
+| `code/__DEFINES/dcs/signals_atoms/appearance.dm` | 16 |
+| `code/__DEFINES/dcs/signals_atoms/lighting.dm` | 13 |
+| `code/__DEFINES/dcs/signals_atoms/movable_lighting.dm` | 4 |
+| `code/__DEFINES/dcs/signals_atoms/signals_atom.dm` | 24 |
+| `code/__DEFINES/dcs/signals_atoms/signals_atom_mouse.dm` | 11 |
+| `code/__DEFINES/dcs/signals_atoms/signals_atom_movable.dm` | 21 |
+| `code/__DEFINES/dcs/signals_atoms/signals_atom_movement.dm` | 5 |
+| `code/__DEFINES/dcs/signals_atoms/signals_atom_x_act.dm` | 12 |
+| `code/__DEFINES/dcs/signals_atoms/signals_fuse.dm` | 4 |
+| `code/__DEFINES/dcs/signals_atoms/signals_obj.dm` | 25 |
+| `code/__DEFINES/devotion.dm` | 25 |
+| `code/__DEFINES/emotions.dm` | 29 |
+| `code/__DEFINES/fish.dm` | 26 |
+| `code/__DEFINES/liquids.dm` | 2 |
+| `code/__DEFINES/magic.dm` | 3 |
+| `code/__DEFINES/offer.dm` | 2 |
+| `code/__DEFINES/putrid.dm` | 5 |
+| `code/__DEFINES/sex.dm` | 44 |
+| `modular_rmh/code/_DEFINES/partial_transformation.dm` | 2 |
+
+## Selected Signal Family Reference
 
 ### Atom — Core Interaction
 
@@ -242,7 +260,7 @@ Most live in `code/__DEFINES/components.dm`.
 | `COMSIG_PROJECTILE_ON_HIT` | `projectile/on_hit()` | |
 | `COMSIG_PROJECTILE_SELF_ON_HIT` | projectile self-hit | |
 
-### Mob Signals — Base (`signals_mob.dm`)
+### Mob Signals — Base (`code/__DEFINES/dcs/signals/signals_mob/signals_mob.dm`)
 
 | Signal | Notes |
 |---|---|
@@ -266,7 +284,7 @@ Most live in `code/__DEFINES/components.dm`.
 | `COMSIG_MOB_ACTIVE_PERCEPTION` | `mob/living/look_around()` — perception event |
 | `COMSIG_MOB_PRE_SPECIAL_MIDDLE` | `mob/living/MiddleClickOn()` — before middle-click intent |
 
-### Mob Signals — Living (`signals_living.dm`)
+### Mob Signals — Living (`code/__DEFINES/dcs/signals/signals_mob/signals_living.dm`)
 
 | Signal | Notes |
 |---|---|
@@ -397,7 +415,7 @@ Most live in `code/__DEFINES/components.dm`.
 | `COMSIG_RAGE_BOTTOMED` | rage hit zero |
 | `COMSIG_RAGE_OVERRAGE` | rage exceeded max |
 
-### Global Signals (listen with `GLOB` registration)
+### Global Signals (hub: SSdcs)
 
 | Signal | Notes |
 |---|---|
@@ -500,7 +518,7 @@ Most live in `code/__DEFINES/components.dm`.
 | `COMSIG_MOVETYPE_FLAG_ENABLED` | movement type flag gained — flag, old_movement_type |
 | `COMSIG_MOVETYPE_FLAG_DISABLED` | movement type flag lost |
 
-### Objectives / Gameplay Milestone Signals (in `signals_objectives.dm`)
+### Objectives / Gameplay Milestone Signals (in `code/__DEFINES/dcs/signals/signals_objectives.dm`)
 
 These are fired when specific gameplay events happen and are typically listened to by faith, devotion, quirk, stress, and skill systems.
 
@@ -568,4 +586,4 @@ These are fired when specific gameplay events happen and are typically listened 
 - If a component or element exists, assume it probably enters through signals.
 - If a feature changes state "by itself", search signals before tracing every proc by hand.
 - Combat and item signals live in `code/__DEFINES/components.dm`, not the DCS subfolder — check both.
-- Global signals (prefixed `!`) must be registered on `GLOB` rather than a specific atom or datum.
+- Global signals sent through SEND_GLOBAL_SIGNAL are dispatched on SSdcs. Verify each sender and payload in source.

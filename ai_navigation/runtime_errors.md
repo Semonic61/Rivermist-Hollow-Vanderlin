@@ -7,6 +7,12 @@ The navigation layer may lag behind the live documents. If this file and source 
 
 ---
 
+Main lifecycle correction (2026-11-16): qdel can leave a still-referenced object
+marked for deletion while cleanup/queueing proceeds. A null check alone does
+not prove it is usable; use the local QDELETED/QDELING contract. See
+code/datums/datum.dm and code/controllers/subsystem/garbage.dm. The remaining
+error catalog and illustrative snippets have not been runtime-tested.
+
 ## Reading a Runtime Error
 
 Enable debug mode first: Dream Maker → Build → Preferences → tick **Debug mode**. Without it, errors lack file/line information.
@@ -227,7 +233,7 @@ Full patterns with code examples: `coding_standards.md` §Garbage Collection and
 
 ### Diagnosing hard deletes
 
-Enable `REFERENCE_TRACKING_STANDARD` in `_compile_options.dm`. When a hard deletion would occur, the runtime instead performs the memory scan and prints findings to `[log_dir]/harddels.log`. Output identifies:
+Enable `REFERENCE_TRACKING_STANDARD` in `code/_compile_options.dm`. When a hard deletion would occur, the runtime instead performs the memory scan and prints findings to `[log_dir]/harddels.log`. Output identifies:
 - Which object holds the surviving reference (if in a var)
 - The list traversal path to reach the reference (if in a list)
 - Remaining reference count
@@ -240,7 +246,7 @@ Enable `REFERENCE_TRACKING_STANDARD` in `_compile_options.dm`. When a hard delet
 |---|---|---|
 | `Cannot read null.X` | Object deleted or never assigned | Null-check after `sleep()`; check `Del()` parent call order |
 | `Type mismatch` | Math on wrong types or null list | List initialized? Types compatible? |
-| `null.Find/Add/len` | List never created | Initialize in `Initialize()` with `list()` or `new()` |
+| `null.Find`, `null.Add`, `null.len` | List never created | Initialize in `Initialize()` with `list()` or `new()` |
 | `List index out of bounds` | Index < 1 or > len | Guard `list.len > 0` before access |
 | `Undefined variable/proc` | Colon `:` operator used | Replace `:` with `.`; typecast if needed |
 | `Division by zero` | Divisor var is 0 | Guard before dividing |

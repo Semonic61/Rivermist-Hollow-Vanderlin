@@ -1,6 +1,6 @@
 # Coding Standards
 
-Generated on 2026-03-14. Derived from the project's official STANDARDS.md, STYLE.md, CI.md, and HARDDELETES.md documents.
+Main configuration/source corrections: 2026-11-16. Anchors are .editorconfig, SpacemanDMM.toml, root AGENTS.md, the live CI workflow, and .github/guides/HARDDELETES.md. Other advice is engineering guidance; this audit does not certify every example.
 This file is the AI navigation layer's normative reference for code quality. When writing or reviewing code, treat these as hard requirements unless a maintainer explicitly overrides them.
 
 The navigation layer may lag behind the live documents. If this file and the source docs disagree, trust the source docs.
@@ -16,8 +16,8 @@ The navigation layer may lag behind the live documents. If this file and the sou
 | Need to store a reference you don't "own" | Use `WEAKREF()` |
 | Registering a signal handler | Add `SIGNAL_HANDLER` macro at top of proc |
 | Referencing a proc in `RegisterSignal` | Use `PROC_REF`, `TYPE_PROC_REF`, or `GLOBAL_PROC_REF` |
-| Time value in a proc argument | Include unit in name: `seconds_per_tick`, not `delta_time` |
-| Using `process()` for timed effects | Multiply by `seconds_per_tick` — never frame-dependent |
+| Time value in a proc argument | Respect the local process(delta_time) signature; make units explicit for new helpers |
+| Using `process()` for timed effects | Scale rates by the caller interval in seconds; generic processing uses delta_time |
 | Overlay visuals | Cache as `static` appearances via `iconstate2appearance` / `icon2appearance` |
 | Player input validation | Always sanitize; check state before AND after async input |
 | SQL queries with input data | Always use parameterized queries and `format_table_name` |
@@ -79,7 +79,7 @@ var/path_type = /obj/item/baseball_bat
 
 ### Modular file placement
 
-New additions should go in their own file unless the content naturally belongs with similar items (e.g. a new tool type goes in `tools.dm`). Modular placement makes PRs easier to review and revert.
+New additions should go in their own file unless the content naturally belongs with similar items (e.g. a new tool type goes in an existing adjacent tool file). Modular placement makes PRs easier to review and revert.
 
 ### File naming
 
@@ -251,7 +251,7 @@ Registering the same signal twice on the same object is normally a bug and throw
 
 ## Garbage Collection and Hard Deletes
 
-For the full theory, see the project's `HARDDELETES.md`. This section is the navigation-layer summary.
+For the full theory, see the project's `.github/guides/HARDDELETES.md`. This section is the navigation-layer summary.
 
 ### What causes a hard delete
 
@@ -308,7 +308,7 @@ An object hard-deletes when the GC cannot find and clear all references to it au
 
 ### Detecting hard deletes
 
-Enable `REFERENCE_TRACKING_STANDARD` in `_compile_options.dm`. Output goes to `[log_dir]/harddels.log` inside the round's log folder. The output identifies which object or list path holds the reference.
+Enable `REFERENCE_TRACKING_STANDARD` in `code/_compile_options.dm`. Output goes to `[log_dir]/harddels.log` inside the round's log folder. The output identifies which object or list path holds the reference.
 
 ### BYOND walk procs — do not use
 
@@ -327,16 +327,16 @@ Raw BYOND `walk()` family of procs interferes with the master controller. Use `S
 
 ## Delta-Time and Frame Independence
 
-`process()` procs must be frame-independent. Multiply by `seconds_per_tick`, never use a fixed per-process value.
+`process()` procs must be frame-independent. The generic process(delta_time) receives wait * 0.1 seconds. Scale rates by that interval; inspect other callers and do not rename inherited APIs mechanically.
 
 ```dm
 // Bad — breaks if subsystem fire rate changes
-/mob/testmob/process(seconds_per_tick)
+/mob/testmob/process(delta_time)
     health -= 4   // assumes 2-second fire interval
 
 // Good — rate-per-second, scaled by actual interval
-/mob/testmob/process(seconds_per_tick)
-    health -= health_loss_per_second * seconds_per_tick
+/mob/testmob/process(delta_time)
+    health -= health_loss_per_second * delta_time
 ```
 
 ---
@@ -368,7 +368,7 @@ See `ai_navigation/visuals_guide.md` §Overlays and `ai_navigation/performance_g
 
 ### Associated lists — avoid where flat lists suffice
 
-Associated lists cost 24 bytes/item vs. 8 bytes/item for flat lists. Use indexed flat lists with named `#define`s instead of string-keyed associations when the key set is fixed.
+Use the container shape required by the access pattern. The imported fixed per-item byte estimates were not measured in main; consult the universal skill data-design reference for build-specific evidence.
 
 ### Prefer `for(A in list)` over index loops
 
@@ -451,17 +451,9 @@ A macro that executes code at call time should use the `(...)` call syntax so th
 
 ## Continuous Integration
 
-CI runs on every PR. Failures block merge. The pipeline stages are:
+Source: `.github/workflows/ci_suite.yml`. Main declares these jobs: `start_gate`, `run_linters`, `compile_all_maps`, `collect_data`, `run_all_tests`, `completion_gate`.
 
-| Stage | What it checks |
-|---|---|
-| **Run Linters** | Files included in `.dme`, spelling, map formatting. If "Run Linters" fails but "Annotate Lints" passes, check "Annotate Lints" for the actual error — it appears in "Files Changed" tab too. |
-| **Compile Maps** | All maps (including ruins) compile cleanly. Passes here + fails below = code compiles but doesn't work. |
-| **Integration Tests** | Round starts, tests run on every station map. Any runtime = failure. Map-specific failures → map-specific bug or a flaky test (ask maintainer to re-run). |
-| **Screenshot Tests** | Appearance regressions. Auto-posts before/after diff on PR if something changes visually. |
-| **Codeowner Reviews** | Alerts contributors who created a file that their file was changed. Not a test — if it fails, contact a maintainer. |
-
-If a CI check is failing and the cause is unclear after reading the output, ask on the PR or in the coding Discord channel.
+Read the current workflow for conditions and commands. This audit checked the definitions, not a CI run, and does not promise screenshot coverage or a successful pipeline. Root AGENTS.md additionally requires the include sorter after include changes.
 
 ---
 

@@ -1,6 +1,6 @@
 # Performance Gotchas
 
-Situation-indexed hazards derived from the BYOND/Dream Maker Designer's Guide. Each entry is a concrete scenario that causes server slowdown or correctness failures.
+Main source-path and selected contract corrections: 2026-11-16. These are investigation routes and cost hypotheses, not performance measurements of main. Consult the universal DM skill for engine semantics.
 
 Read `engine_limits.md` first for the underlying numbers. This file answers "what specific code patterns trigger those limits?"
 
@@ -12,33 +12,44 @@ Read `engine_limits.md` first for the underlying numbers. This file answers "wha
 
 **Effect:** The single-threaded server cannot process any other procedure or player input until the loop exits. The engine's **automatic abort** will eventually kill the procedure, but not before causing a visible freeze.
 
-**Fix:** Any long-running background loop must `sleep(N)` inside its body. Use the subsystem `fire()` / `process()` pattern instead of raw loops in gameplay code.
+**Fix:** Use the existing subsystem or timer pattern and its tick checks for recurring work. Do not add a sleep to a non-sleeping handler or create a second heartbeat loop.
 
 **Repo anchor:** `code/controllers/subsystem.dm` → `fire()` is the correct scheduling unit for recurring work. See `ai_navigation/subsystem_map.md` for the full subsystem list.
 
 ---
 
-## 2. Looping Over `world.contents` While Mutating It → Undefined Behavior
+## 2. Mutating an Indexed Processing Registry
 
-**Situation:** Iterating `for(X in world.contents)` while simultaneously creating (`new`) or deleting (`del`) objects.
+**Situation:** Removing entries while a manual index loop is reading the same live list.
 
-**Effect:** `world.contents` is explicitly excluded from the engine's "copy the list at loop start" protection. Results are unpredictable — objects may be skipped or double-processed.
+**Effect:** Indices and bounds can stop referring to the intended objects. Do not
+reuse an old blanket claim that world.contents has undefined for-in behavior.
 
-**Fix:** Take an explicit temporary copy before iterating: `var/list/snapshot = world.contents.Copy()`, then loop over `snapshot`.
+**Fix:** Inspect the caller's iteration contract. Main's generic processing loop
+uses currentrun = processing.Copy() and checks QDELETED while it drains that
+snapshot. Keep add/remove, resume state, and deletion checks paired. Ordinary
+for-in semantics belong to the universal DM runtime reference; an extra Copy is
+not automatically required on every ordinary list.
 
-**Repo anchor:** Any proc that spawns or deletes atoms inside an area-wide sweep. Common in mapgen (`code/modules/mapping/**`, `code/modules/procedural_mapping/**`) and round-end cleanup.
+**Repo anchor:** code/controllers/subsystem/processing/_processing.dm.
 
 ---
 
-## 3. Sleeping Inside a Server-Callback Proc → Silent No-Op Delay
+## 3. Yielding Without Checking Caller and waitfor Semantics
 
-**Situation:** Calling `sleep()` inside procs that the engine calls directly: `Enter()`, `Exit()`, `Login()`, `Logout()`, `New()` on atoms, etc.
+**Situation:** A shared process/callback path sleeps or waits for input.
 
-**Effect:** The engine immediately resumes as if the proc returned — the intended delay does **not** block the triggering action. This is not an error; it is engine behavior. The remaining code after the sleep runs later but the server-side action (e.g. the mob moving) has already completed.
+**Effect:** Whether the caller waits depends on the actual call and waitfor
+contract. A pause can suspend an owning loop or detach work; it is not a
+guaranteed delay of the original game action. Signal handlers are explicitly
+non-sleeping in the local SIGNAL_HANDLER macro.
 
-**Fix:** Use `spawn()` to detach delayed work from server callbacks. Never expect `sleep()` inside `Enter`/`Exit`/`Login` to postpone the event itself.
+**Fix:** Trace the owning subsystem and callback chain. Use the existing async
+or timer mechanism for delayed work and revalidate references afterward. Do
+not apply the imported claim that every server callback treats sleep identically.
 
-**Repo anchor:** `code/game/atoms_movable.dm` (Move/Enter/Exit chains), `code/modules/mapping/**` (area enter hooks). Also relevant in signal handlers — see `ai_navigation/signal_map.md`.
+**Repo anchors:** code/controllers/subsystem.dm, code/controllers/master.dm,
+code/__DEFINES/dcs/helpers.dm.
 
 ---
 
@@ -51,8 +62,8 @@ Read `engine_limits.md` first for the underlying numbers. This file answers "wha
 **Fix:** After every `sleep`, treat all object references as potentially null. Pattern:
 ```dm
 sleep(10)
-if(!istype(src)) return   // src auto-cancels; this is for other refs
-if(!myobj) return
+if(QDELETED(src) || QDELETED(myobj))
+    return
 ```
 
 **Repo anchor:** Common in status effect procs (`code/datums/status_effects/**`), timed combat effects, and any `do_after`-style pattern in `code/__HELPERS/**`.
@@ -77,7 +88,7 @@ if(!myobj) return
 
 **Effect:** Resources are automatically transmitted to all clients that don't have them cached. Sending many large files simultaneously creates a bandwidth spike that manifests as network lag (distinct from server CPU lag).
 
-**Fix:** Prefer targeted sends. Pre-load resources during init if they will be needed at runtime. Use `world.cpu` vs. perceived lag to distinguish network lag from CPU lag.
+**Fix:** Prefer targeted sends. Pre-load resources during init if they will be needed at runtime. Use profiling and client/network evidence; low world.cpu alone does not distinguish network latency from rendering cost.
 
 **Repo anchor:** `code/modules/tgui/**` (UI updates to all clients), `code/modules/visual_ui/**` (visual effect broadcasts), sound subsystem.
 
@@ -113,7 +124,7 @@ if(!myobj) return
 
 **Fix:** Cache the view list when the mob has not moved. Compute it only on movement or at a longer interval using a lower-priority subsystem. Use `range()` (ignores opacity) instead of `view()` if line-of-sight is not needed.
 
-**Repo anchor:** NPC AI subsystem, spell AoE code (`code/datums/spells/**`), combat detection procs.
+**Repo anchor:** NPC AI subsystem, spell AoE code (`code/modules/spells/**`), combat detection procs.
 
 ---
 

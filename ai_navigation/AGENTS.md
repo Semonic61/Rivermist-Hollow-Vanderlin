@@ -1,11 +1,13 @@
 # Repository Agent Guide
 
-# Navigation snapshot imported from Map-again
+## Main validation boundary
 
-**Important for `main`:** The documentation in this directory was imported from `Map-again` on 2026-11-16. It has **not** been comprehensively revalidated against `main` (which has substantial independent DM changes). Treat navigation entries and fork-specific descriptions as leads only; confirm the actual `main` source, `.dme`, and toolchain before implementing anything. Read [MAIN_PORT_STATUS.md](MAIN_PORT_STATUS.md) for provenance and refresh steps. Do not silently switch to `Map-again` for missing or mismatched definitions.
-
----
-
+Static routing and selected source contracts were revalidated on 2026-11-16 against
+main commit b1b55fefc102b1432aa3d5c78ce3b4fa70759aa6. Read
+[MAIN_PORT_STATUS.md](MAIN_PORT_STATUS.md) for checked areas, corrections, and
+remaining limits. The imported full type tree and unexercised runtime behavior
+are not certified by this audit. Always use the selected branch's real code;
+do not silently switch to Map-again when a definition differs.
 
 This repository is meant to be handed to agents after a separate goal statement from the user.
 

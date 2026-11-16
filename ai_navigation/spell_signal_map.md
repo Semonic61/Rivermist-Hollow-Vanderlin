@@ -2,6 +2,8 @@
 
 Generated on 2026-03-11. Use this file when a spell, miracle, rituos effect, or cooldown-based magical ability is routed through both core procs and DCS signals.
 
+Main source-path and COMSIG-name check: 2026-11-16. The base spell.dm chain was read; individual spells, D&D costs, and cancellation/after-cast outcomes were not exercised.
+
 ## Why Spells Need Their Own Map
 
 Spells are not just subtype overrides under `code/modules/spells/**`.
@@ -15,7 +17,7 @@ They sit on a reusable contract rooted at `/datum/action/cooldown/spell`, with:
 
 Detected spell-signal footprint:
 
-- `19` spell-related signal defines in `signals_spell.dm`
+- `19` spell-related signal defines in `code/__DEFINES/dcs/signals/signals_spell.dm`
 - `54` spell-signal references across `code/**` and `modular_rmh/**`
 
 ## Canonical Spell Contract

@@ -1,6 +1,6 @@
 # Router
 
-Generated on 2026-03-11. Last validated 2026-05-23. This is the primary Fast Start entrypoint for normal tasks.
+Last route validation 2026-11-16 against main. Source-contract coverage and remaining limits are recorded in MAIN_PORT_STATUS.md.
 
 ## Always
 
@@ -15,6 +15,7 @@ Generated on 2026-03-11. Last validated 2026-05-23. This is the primary Fast Sta
 
 | Task | Helper |
 |---|---|
+| main audit provenance, verified scope, or remaining navigation limitations | `ai_navigation/MAIN_PORT_STATUS.md` |
 | planned change may be broad, risky, or needs approval before edits | `ai_navigation/human_checking.md` |
 | refresh the navigation layer, rebuild its docs, or migrate this repository-orientation stack to another codebase | `ai_navigation/update_policy.md` |
 | new mechanic, gameplay content, or extension to an existing feature — and the implementation shape is already known | `ai_navigation/content_creation.md` |
@@ -37,7 +38,7 @@ Generated on 2026-03-11. Last validated 2026-05-23. This is the primary Fast Sta
 | iconstate2appearance, icon2appearance, appearance cache, build_appearance_list, vis_contents cache | `ai_navigation/icon_rendering.md` §Part2 |
 | performance, tick budget, CPU, server lag | `ai_navigation/engine_limits.md` → `ai_navigation/performance_gotchas.md` |
 | code style, signal pattern, GC, harddel, CI, walk procs, delta-time | `ai_navigation/coding_standards.md` |
-| reagents, chemistry, holder, reagent container, splash | `code/modules/reagents/**` — start with `chemistry/holder.dm` and `chemistry/readme.md` |
+| reagents, chemistry, holder, reagent container, splash | `code/modules/reagents/**` — start with `code/modules/reagents/chemistry/holder.dm` and `code/modules/reagents/chemistry/readme.md` |
 | TGUI interface, ui_interact, ui_data, ui_act, React component | `ai_navigation/tgui_guide.md` |
 | keyword or feature-name routing | `ai_navigation/entrypoints.md` |
 | BYOND type path `/datum/...` `/mob/...` `/obj/...` | `ai_navigation/type_index.md` |

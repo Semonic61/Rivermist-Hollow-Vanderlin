@@ -13,11 +13,7 @@ It is split across:
 - movable signal families for crossing, bumping, pulling, throwing, and buckling
 - automated movement loops in `code/controllers/subsystem/movement/**`
 
-Detected movement-signal footprint:
-
-- `54` movement-related `COMSIG_*` defines
-- `440` movement-related signal references
-- `245` references in the most important client, movable, and moveloop families
+Main path and COMSIG-definition checks: 2026-11-16. See signal_map.md for regenerated totals; selected contracts do not enumerate every feature override.
 
 ## Canonical Movement Contracts
 
@@ -130,7 +126,7 @@ Use this path for AI walking, `walk_to`-style behavior, repathing, or movement t
 
 1. Open `code/modules/mob/mob_movement.dm`.
 2. Open `code/modules/mob/living/living_movement.dm` or the exact movable subtype.
-3. If the movement is automated, open `code/controllers/subsystem/movement/movement_loop.dm` and `move_manager.dm`.
+3. If the movement is automated, open `code/controllers/subsystem/movement/movement_loop.dm` and `code/controllers/subsystem/movement/move_manager.dm`.
 4. Search `RegisterSignal(` for the relevant `COMSIG_MOB_CLIENT_*`, `COMSIG_MOVABLE_*`, or `COMSIG_MOVELOOP_*`.
 5. Only then widen into components, elements, vehicles, or modular overlays.
 

@@ -41,7 +41,7 @@ Navigation docs drift. A missing or wrong entry does not mean the thing doesn't 
 5. **Propose a navigation fix** so the same miss doesn't happen again.
 
 **Example of the failure this prevents:**
-Navigation had `SSatoms` listed as "Handles atoms" with no lifecycle detail. AI assumed `LateInitialize` had no mechanism and invented a workaround instead of reading `code/controllers/subsystem/atoms.dm`. Correct behavior: notice the thin entry, grep for `LateInitialize`, find `atoms.dm`, read it, use `INITIALIZE_HINT_LATELOAD`.
+Navigation had `SSatoms` listed as "Handles atoms" with no lifecycle detail. AI assumed `LateInitialize` had no mechanism and invented a workaround instead of reading `code/controllers/subsystem/atoms.dm`. Correct behavior: notice the thin entry, grep for `LateInitialize`, find `code/controllers/subsystem/atoms.dm`, read it, use `INITIALIZE_HINT_LATELOAD`.
 
 ## What Drifts First
 
@@ -67,7 +67,7 @@ Not all files drift at the same rate. Check in this order:
 ### Stage 2 — Runtime ownership ⬅ always refresh
 - rebuild `ai_navigation/subsystem_map.md`:
   ```
-  rg -n "^(SUBSYSTEM_DEF|PROCESSING_SUBSYSTEM_DEF|TIMER_SUBSYSTEM_DEF|MOVEMENT_SUBSYSTEM_DEF|AI_CONTROLLER_SUBSYSTEM_DEF|VERB_MANAGER_SUBSYSTEM_DEF)\(" code/controllers/subsystem -g "*.dm"
+  rg -n "^(SUBSYSTEM_DEF|PROCESSING_SUBSYSTEM_DEF|TIMER_SUBSYSTEM_DEF|MOVEMENT_SUBSYSTEM_DEF|AI_CONTROLLER_SUBSYSTEM_DEF|VERB_MANAGER_SUBSYSTEM_DEF)\(" code modular_rmh -g "*.dm"
   ```
 - verify each SS* global still matches a real file
 - update the Quick Lookup category anchors if categories shifted
@@ -108,6 +108,20 @@ Not all files drift at the same rate. Check in this order:
 - `ai_navigation/coding_standards.md`, `ai_navigation/visuals_guide.md`, `ai_navigation/tgui_guide.md`
 - `ai_navigation/modular_guide.md` — verify modular_rmh directory structure still matches
 
+## Main Revalidation Commands
+
+Read MAIN_PORT_STATUS.md for the source revision and checked vs untested areas.
+Subsystems may be declared outside code/controllers/subsystem, including RMH.
+Use the direct-include inventory rather than assuming the controller folder is complete.
+
+- python -B ai_navigation/validate_navigation.py --inventory (static source inventory)
+- python -B ai_navigation/validate_navigation.py (routes, relative links, SS mappings, COMSIG names)
+- python -B tools/ticked_file_enforcement/sort_includes.py --check (read-only include ordering)
+- git diff --check, then review the complete modified-file list
+
+Only re-stamp the actual validation scope. A source/path audit is not a compiled
+build, runtime test, or a freshly generated full inheritance tree.
+
 ## Refresh Validation Checklist
 
 Run before closing a refresh:
@@ -129,7 +143,7 @@ For the next agent doing a full rebuild from scratch:
 rg --files --glob "*.dm" | head -20  # sanity check structure
 
 # 2. subsystem declarations
-rg -n "^(SUBSYSTEM_DEF|PROCESSING_SUBSYSTEM_DEF|TIMER_SUBSYSTEM_DEF|MOVEMENT_SUBSYSTEM_DEF|AI_CONTROLLER_SUBSYSTEM_DEF|VERB_MANAGER_SUBSYSTEM_DEF)\(" code/controllers/subsystem -g "*.dm"
+rg -n "^(SUBSYSTEM_DEF|PROCESSING_SUBSYSTEM_DEF|TIMER_SUBSYSTEM_DEF|MOVEMENT_SUBSYSTEM_DEF|AI_CONTROLLER_SUBSYSTEM_DEF|VERB_MANAGER_SUBSYSTEM_DEF)\(" code modular_rmh -g "*.dm"
 
 # 3. type path extraction (pipe to file, then sort/count by root)
 rg -n "^/(datum|mob|obj|turf|area)" code modular_rmh -g "*.dm" | grep -v "//"
@@ -217,7 +231,7 @@ Files: signal maps, core_procs, processing_hazards, failure_modes
 
 - build only the contracts that have stable equivalents
 - name them after the target repo's idioms, not after BYOND/DM terminology
-- if the target repo uses events instead of signals, call the file `event_map.md`
+- if the target repo uses events instead of signals, call the file an event-map document (only if that target system exists)
 
 ### Stage 6 — Workflow helpers
 Files: `human_checking.md`, `content_creation.md`, `content_patterns.md`, `coding_standards.md`
