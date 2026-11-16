@@ -1,0 +1,6 @@
+interface:
+  display_name: "Rivermist Hollow"
+  short_description: "Local BYOND/SS13 profile for Rivermist Hollow"
+  default_prompt: "Use $rivermist-hollow to work in this repository with its local profile and applicable universal BYOND/SS13 skills."
+policy:
+  allow_implicit_invocation: true
