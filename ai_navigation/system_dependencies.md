@@ -1,6 +1,6 @@
 # System Dependencies
 
-Generated on 2026-03-11. Use this file when the task spans more than one system and you need the shortest high-level dependency map.
+Main routing and selected handoff review: 2026-11-16. Full gameplay behavior was not exercised.
 
 ## Read This File When
 
@@ -22,13 +22,15 @@ Generated on 2026-03-11. Use this file when the task spans more than one system 
 | Mapping / worldgen | landmarks, spawn points, dungeon placement, voyage terrain | `SSmapping`, `SSminor_mapping`, `SSdungeon_generator`, `SSterrain_generation` | `_maps/**`, `code/modules/mapping/**`, `code/modules/procedural_mapping/**` |
 | Economy / property / merchants | faction state, housing, treasury flows, settlement simulation | `SSeconomy`, `SStreasury`, `SShousing`, `SSmerchant` | `code/modules/economy/**`, `code/datums/world_factions/**`, `code/datums/nation/**`, `code/datums/rts/**` |
 | UI / tgui / browser UIs | DM-side UI datums -> underlying gameplay system | `SStgui`, `SSvisual_ui`, `SSchat` | `code/modules/tgui/**`, `code/modules/visual_ui/**`, `interface/**`, `tgui/packages/**` |
+| Quest pools | ledgers and target reactions | `SSquestboard` | `code/controllers/subsystem/questboard.dm`, `code/modules/questing/**` |
+| Antagonist contracts | party and deadline processing | `SScontracts` | `modular_rmh/code/modules/antagonists/contracts/**` |
+| Recipe books | shared caches and JSON asset | `SSrecipe_books` | `modular_rmh/code/modules/crafting/recipe_book_db.dm` |
 
 ## Cross-Cutting Contracts
 
-- DCS signals are the main decoupling layer. `RegisterSignal` and `SEND_SIGNAL` appear at `2195` call sites, so indirect behavior often lives in components/elements rather than in the caller.
-- Components are a common attachment mechanism. `AddComponent(...)` appears at `416` call sites across mobs, items, status handling, and feature modules.
-- Status effects are a common state handoff. `apply_status_effect(...)` appears at `345` call sites across spells, combat, liquids, wounds, quirks, and modular content.
-- Mob lifecycle is less direct than it looks. Only `52` direct `new /mob` call sites were detected; round flow, role systems, migrants, events, and map spawners do most of the orchestration.
+- Regenerated declaration/call counts are in signal_map.md; imported numeric estimates were removed.
+- SEND_GLOBAL_SIGNAL uses SSdcs. Other signals are sent to their actual target datum; DCS does not schedule every feature proc.
+- Main has SSquestboard for posting pools, SScontracts for antagonist parties, SSrecipe_books for cache bootstrap, and SSlooting for image queues.
 - `modular_rmh` usually extends an existing branch instead of creating a parallel runtime architecture. After locating the core path in `code/`, check the same branch in `modular_rmh`.
 
 ## Cheap Debugging Routes

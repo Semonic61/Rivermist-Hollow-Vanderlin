@@ -13,11 +13,7 @@ It is split across:
 - projectile lifecycle in `code/modules/projectiles/**`
 - signal listeners in components, AI behaviors, and combat side systems
 
-Detected combat-signal footprint:
-
-- `53` combat-related `COMSIG_*` defines
-- `421` combat-related signal references
-- `168` references in the most important core combat families
+Main path and COMSIG-definition checks: 2026-11-16. See signal_map.md for regenerated totals; selected contracts do not enumerate every feature override.
 
 ## Canonical Combat Contracts
 
@@ -38,15 +34,11 @@ If the bug is specifically species, disarm, or defense-side logic, then add:
 
 ## Held Item Combat Contract
 
-Base proc chain in `code/_onclick/item_attack.dm`:
-
-1. `attack_self`
-2. `pre_attack`
-3. target-side `attackby`
-4. item-side `attack`
-5. `afterattack`
-6. `attack_qdeleted`
-7. `do_special_attack_effect`
+The main melee_attack_chain tries target.base_item_interaction, pre_attack,
+target.attackby, deletion handling, and afterattack. Secondary-click branches
+may cancel or fall through. attack_self is separate held-item activation, not
+the first step of every melee attack. attack and do_special_attack_effect are
+branch-specific hooks, not unconditional stages.
 
 This is the main contract for held item attacks and on-hit style weapon behavior.
 
@@ -73,7 +65,7 @@ Use this path for weapon effects, attack-side components, hit reactions, and ite
 
 ## Unarmed And Hand Attack Contract
 
-Base path in `code/_onclick/other_mobs.dm` with human-specific extensions in `species.dm`:
+Base path in `code/_onclick/other_mobs.dm` with human-specific extensions in `code/modules/mob/living/carbon/human/species.dm`:
 
 1. early unarmed routing
 2. melee unarmed execution

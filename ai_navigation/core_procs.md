@@ -13,6 +13,8 @@ These are common first entrypoints for object and datum behavior:
 
 Use these when behavior appears on creation, mapload, cleanup, or deletion.
 
+Checked main anchors (2026-11-16): code/game/atom/atoms.dm (Initialize), code/datums/datum.dm (Destroy), code/controllers/subsystem/processing/_processing.dm (process(delta_time)), and code/_onclick/item_attack.dm (melee_attack_chain). See runtime_flow.md for their scoped contracts.
+
 ## Interaction Procs
 
 These are common gameplay hook points:

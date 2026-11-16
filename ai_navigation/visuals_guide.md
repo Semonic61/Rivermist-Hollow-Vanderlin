@@ -4,7 +4,7 @@ Generated on 2026-03-14. Derived from the project's official VISUALS.md document
 This file is the AI navigation layer's reference for visual and rendering systems — appearances, overlays, planes, filters, lighting, and related BYOND rendering concepts.
 
 The navigation layer may lag behind the live documents. If this file and the source docs disagree, trust the source docs.
-For the authoritative in-depth guide, see the source at `VISUALS.md` (distributed separately). For the rendering system's relay diagram, see `code/_onclick/hud/rendering/_render_readme.md`.
+For main rendering entrypoints, read `code/_onclick/hud/rendering/plane_master.dm` and `code/_onclick/hud/rendering/plane_master_controller.dm`. The inherited rendering recipes below were not exercised by the main navigation audit.
 
 ---
 
@@ -133,7 +133,7 @@ Planes must be whole integers with absolute value ≤ 10000 (to support `FLOAT_P
 
 Prepend `*` to a `render_target` value to suppress the target's normal render and only display it via the relay.
 
-Used in this codebase to link plane masters together ("render relays") for advanced multi-step effects. See `code/_onclick/hud/rendering/_render_readme.md` for the relay diagram.
+Used in this codebase to link plane masters together ("render relays") for advanced multi-step effects. See `code/_onclick/hud/rendering/plane_master.dm` for the plane-master implementation.
 
 > **Layer matters with render relays.** The layer of the last plane master in the chain determines render order — plane value alone does not guarantee final order.
 
@@ -255,7 +255,7 @@ Physical position snaps to tile increments of `world.icon_size / 2` (due to `LEG
 
 The project currently uses `SIDE_MAP`. Key properties:
 - Layering is based on physical proximity to the front of the screen (not purely layer/plane values).
-- `pixel_y + y` determine physical depth. `bound_width/height/x/y` describe the physical footprint.
+- `pixel_y + y` determine physical depth. `bound_width`, `bound_height`, `bound_x`, `bound_y` describe the physical footprint.
 - Objects closer to the front layer on top.
 - All plane-setting code must accept a turf/context source to support Z-offset calculation.
 - Physical bounds can only change in multiples of 32 (engine limitation from `LEGACY_MOVEMENT_MODE`).
@@ -400,4 +400,4 @@ The atom then sets `greyscale_config` and `greyscale_colors` vars. `SSgreyscale`
 - *Appearance performance hazards: `ai_navigation/performance_gotchas.md` §7*
 - *Appearance object accumulation / overlay cost: `ai_navigation/engine_limits.md` §Overlays and Appearance*
 - *Coding standards for overlay caching: `ai_navigation/coding_standards.md` §Optimization*
-- *Render relay diagram: `code/_onclick/hud/rendering/_render_readme.md`*
+- *Plane-master implementation: `code/_onclick/hud/rendering/plane_master.dm`*

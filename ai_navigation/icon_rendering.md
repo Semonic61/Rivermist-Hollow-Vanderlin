@@ -1,6 +1,6 @@
 # Icon Smoothing and Appearance Caching
 
-Generated 2026-03-14 from source analysis of `code/controllers/subsystem/icon_smooth.dm`, `overlays.dm`, `vis_overlays.dm`, `code/__DEFINES/icon_smoothing.dm`, `code/__HELPERS/icon_smoothing.dm`.
+Generated 2026-03-14 from source analysis of `code/controllers/subsystem/icon_smooth.dm`, `code/controllers/subsystem/overlays.dm`, `code/controllers/subsystem/vis_overlays.dm`, `code/__DEFINES/icon_smoothing.dm`, `code/__HELPERS/icon_smoothing.dm`.
 
 ---
 
@@ -12,7 +12,7 @@ Icon smoothing automatically selects the correct icon_state for a tile or object
 
 ### Two Smoothing Modes
 
-**SMOOTH_BITMASK** — the primary mode. Scans cardinal and optionally diagonal neighbors, builds an 8-bit junction bitmask, then sets `icon_state = "[smoothing_icon]-[bitmask]"`. Requires pre-baked icon states for every possible bitmask value in the DMI. Use `smooth_wall.dmi` as a template.
+**SMOOTH_BITMASK** — the primary mode. Scans cardinal and optionally diagonal neighbors, builds an 8-bit junction bitmask, then sets `icon_state = "[smoothing_icon]-[bitmask]"`. Requires pre-baked icon states for every possible bitmask value in the DMI. Use `icons/turf/smooth_wall.dmi` as a template.
 
 **SMOOTH_EDGE** — turf-only. Instead of changing `icon_state`, adds overlay images at tile edges that visually bridge into adjacent tiles. Uses `neighborlay` and `neighborlay_self` vars. Incompatible with bitmask smoothing.
 
@@ -228,7 +228,7 @@ Key plane ranges:
 - Use `iconstate2appearance(icon, state)` for static overlay icons — one Appearance per unique combo
 - Use `build_appearance_list()` before assigning to `overlays +=`
 - Use `SSvis_overlays.add_vis_overlay()` for vis_contents entries — never create raw `/obj/effect/overlay/vis` manually
-- Use named layer/plane defines from `layers.dm` — never magic numbers
+- Use named layer/plane defines from `code/__DEFINES/layers.dm` — never magic numbers
 - Cache appearance results as `var/static` in proc scope when the same overlay is applied repeatedly:
   ```dm
   /atom/proc/add_fire_overlay()

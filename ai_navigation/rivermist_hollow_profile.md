@@ -1,7 +1,11 @@
 # Rivermist Hollow Repository Profile
 
-Originally verified on **2026-11-16** by static inspection of the `Map-again` checkout. **Ported to `main` as an unrefreshed reference**: paths and behavior must be rechecked against actual `main` sources, which differ substantially from `Map-again`. This is not a completed `main` revalidation; see [MAIN_PORT_STATUS.md](MAIN_PORT_STATUS.md). This is the fork-fact
-reference for the [rivermist-hollow skill](../.agents/skills/rivermist-hollow/SKILL.md).
+Last statically validated **2026-11-16** against main commit
+b1b55fefc102b1432aa3d5c78ce3b4fa70759aa6. Checked source contracts, include order,
+build configuration, and source links; no compiler or running world was used.
+See [MAIN_PORT_STATUS.md](MAIN_PORT_STATUS.md) for provenance and audit limits.
+This is the fork-fact reference for the
+[rivermist-hollow skill](../.agents/skills/rivermist-hollow/SKILL.md).
 
 ## Identity and applicability
 
@@ -32,13 +36,19 @@ Source: [vanderlin.dme](../vanderlin.dme), especially the includes containing
   adds a file; do not invent an aggregator layer.
 - The main code is followed by a small `modular_alizeria` / `modular_ratwood`
   cluster, then the RMH block. This makes RMH the main late extension layer.
-- The RMH block starts with `code/tweaks.dm`, followed by local `_DEFINES` and
+- The RMH block starts with `modular_rmh/code/tweaks.dm`, followed by local `_DEFINES` and
   other RMH files; it also includes `dndmagic` and `modular` files directly.
   Check the exact order for the dependency being changed. A macro declared
   late in this block cannot supply an earlier preprocessor use.
 - A new include or include-order change is a build-graph change. Evaluate it
   against the user's authorized scope and [human_checking.md](human_checking.md).
   The presence of a modular directory is not permission to reorder bootstrap.
+
+Main's [root instructions](../AGENTS.md) require
+[sort_includes.py](../tools/ticked_file_enforcement/sort_includes.py) after changes
+inside the include blocks. Its read-only --check mode confirms both the project
+and unit-test include lists are in CI order at this snapshot. Do not reorder
+includes by an assumed modular hierarchy instead of the actual sorting contract.
 
 ## Inheritance and effective behavior
 
@@ -66,6 +76,13 @@ Source: [vanderlin.dme](../vanderlin.dme), especially the includes containing
   must not add a parent call mechanically. Check the actual caller for other
   processing families.
 
+- Main's [base Destroy](../code/datums/datum.dm) is marked SHOULD_CALL_PARENT(TRUE).
+  It clears tag/weakref state, active timers, components, and signal references,
+  then returns QDEL_HINT_QUEUE. Follow the actual child/parent cleanup contract;
+  qdel is not a promise that every external reference immediately became null.
+- [DCS helpers](../code/__DEFINES/dcs/helpers.dm) dispatch SEND_GLOBAL_SIGNAL on
+  SSdcs. This differs from the imported guide's GLOB registration advice.
+
 ## Modular placement
 
 Use [modular_guide.md](modular_guide.md) for the detailed directory map and
@@ -78,6 +95,11 @@ placement rules. The current main branches are:
 | [modular_rmh/modular/](../modular_rmh/modular/) | Self-contained feature packs |
 | [modular_rmh/dndmagic/](../modular_rmh/dndmagic/) | A separate, explicitly included DM directory |
 | [modular_rmh/code/tweaks.dm](../modular_rmh/code/tweaks.dm) | Existing targeted overrides, including shared-type behavior |
+
+Main already declares SScontracts in
+[contract_subsystem.dm](../modular_rmh/code/modules/antagonists/contracts/contract_subsystem.dm)
+and SSrecipe_books in [recipe_book_db.dm](../modular_rmh/code/modules/crafting/recipe_book_db.dm).
+These share the core scheduler but are not declared in the core controller directory.
 
 Prefer the narrowest existing host and extension point that fits the task.
 Location is not a risk classification: common roots and frequent hooks have a
@@ -106,8 +128,10 @@ Sources: [BUILD.cmd](../BUILD.cmd), [build.bat](../tools/build/build.bat),
 [build.ts](../tools/build/build.ts), and [dependencies.sh](../dependencies.sh).
 
 - `BUILD.cmd` invokes the repository build wrapper. For an agent shell, run
-  `.\tools\build\build.bat build` from the repository root. The wrapper runs
-  `build.ts`; `BuildTarget` depends on both `TguiTarget` and `DmTarget`.
+  `.\tools\build\build.bat build` from the repository root. The wrapper runs build.ts; BuildTarget depends on TguiTarget and DmTarget.
+  Main's local DmTarget also waits for TGUI (except its CI mode), tracks the packed
+  TGUI bundles, and removes an outdated RSC before DreamMaker so those assets
+  are repacked. This is source behavior, not a successfully executed build.
 - `DmTarget` invokes DreamMaker for `vanderlin.dme`. Dependency pins currently
   include BYOND **516.1687**, rust-g **3.9.0**, Bun **1.3.5**, and SpacemanDMM
   **suite-1.11**. Read the live dependency file before a toolchain change;
@@ -117,7 +141,7 @@ Sources: [BUILD.cmd](../BUILD.cmd), [build.bat](../tools/build/build.bat),
   `modular_rmh/dndmagic/**`. After changes there, verify that DreamMaker really
   ran; an `up to date` skip is not evidence that those changes compiled. Use a
   supported forced rebuild when necessary after inspecting the build tooling.
-  This profile records the limitation; it does not change the build script.
+  Other late include roots (modular_alizeria and modular_ratwood) also have no explicit input glob in this target. This profile records the source-level gaps; no incremental rebuild experiment or build-script change was made.
 - The build file also defines test/server targets that start DreamDaemon.
   A normal build does not require starting a world. Runtime verification needs
   the authorization described by the universal skill and the current task.

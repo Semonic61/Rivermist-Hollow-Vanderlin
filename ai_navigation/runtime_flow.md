@@ -1,6 +1,6 @@
 # Runtime Flow
 
-Generated on 2026-03-11. Use this file when the question is about order of execution, ownership, or lifecycle rather than just file location.
+Main source-path and selected lifecycle review: 2026-11-16. Runtime ordering was not exercised; see MAIN_PORT_STATUS.md.
 
 ## Canonical Flows
 
@@ -22,8 +22,16 @@ Generated on 2026-03-11. Use this file when the question is about order of execu
   - `INITIALIZE_HINT_QDEL` = atom is deleted after `Initialize`
   - Parent `Initialize()` returning `..()` propagates the parent's hint — many parents (`fake_machine`, generic `obj/structure`) return `INITIALIZE_HINT_NORMAL`
   - **To use `LateInitialize` in a subclass whose parent doesn't opt in:** override `Initialize()` and `return INITIALIZE_HINT_LATELOAD` explicitly
-  - Atoms spawned mid-round via `new()` outside mapload get `LateInitialize()` called immediately (inline), not deferred
+  - For a non-mapload InitAtom call, only atoms returning INITIALIZE_HINT_LATELOAD get LateInitialize inline; ordinary new atoms do not receive it unconditionally
 - Use when: "my `LateInitialize` isn't firing", "I need other map objects to exist at init time", "when is it safe to use `GLOB.quest_landmarks_list`", world-start preload patterns, anything depending on SSatoms load order
+
+### 1b. Destroy and processing contracts
+
+Base Destroy is code/datums/datum.dm: parent-call enforcement, timer/component/
+signal cleanup, and QDEL_HINT_QUEUE. Queued reclamation is owned by SSgarbage.
+The generic processing subsystem calls process(wait * 0.1); its delta_time is
+configured seconds, and its base returns PROCESS_KILL. Do not add a parent
+process call mechanically. SEND_GLOBAL_SIGNAL uses SSdcs, not GLOB.
 
 ### 2. Round Flow to Antagonist Assignment
 
@@ -74,6 +82,13 @@ Generated on 2026-03-11. Use this file when the question is about order of execu
 - Runtime owner(s): `SStgui`, `SSvisual_ui`, `SSchat`
 - Open first: `code/modules/tgui/**`, `code/modules/visual_ui/**`, `interface/**`, `tgui/packages/**`
 - Use when: UI opens but logic fails, UI state is stale, DM and TS disagree
+
+### 9. Main quest pool and recipe cache
+
+- Quest posting flow: SSquestboard generation/prune/refill -> shared postings -> contract ledger -> player/target reactions.
+- Open first: code/controllers/subsystem/questboard.dm and code/modules/questing/.
+- Antagonist contracts are a separate system: modular_rmh/code/modules/antagonists/contracts/contract_subsystem.dm (SScontracts).
+- Recipe database bootstrap: modular_rmh/code/modules/crafting/recipe_book_db.dm (SSrecipe_books, SS_NO_FIRE) -> shared recipe caches -> JSON asset.
 
 ## Escalation Rules
 

@@ -11,11 +11,16 @@ than copying universal skill instructions here.
 
 ## Establish the repository
 
-Resolve the checkout root from ../../../ relative to this skill directory. Confirm that its
+Resolve the checkout root from ../../../ relative to this skill directory.
+Confirm that its
 `README.md` identifies Rivermist Hollow, `vanderlin.dme` exists, and both
 `modular_rmh/` and `ai_navigation/` are present. Do not identify this fork from
 the project filename alone. If these markers disagree, use source inspection
 and the universal skills without applying this profile's fork facts.
+
+Read the branch-local [main port status](../../../ai_navigation/MAIN_PORT_STATUS.md)
+for validation scope and source revision. Main validation is not evidence that
+another branch or a later checkout has identical contracts.
 
 ## Workflow
 
