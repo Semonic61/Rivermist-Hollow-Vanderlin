@@ -126,6 +126,7 @@
 #include "recipe_book_db.dm"
 #include "required_map_items.dm"
 #include "resist.dm"
+#include "rmh_law_documents.dm"
 #include "rogue_inhands.dm"
 #include "roguetown_clothing.dm"
 #include "runtime_gc_regressions.dm"
