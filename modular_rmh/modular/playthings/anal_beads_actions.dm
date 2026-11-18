@@ -78,7 +78,7 @@
 		return
 	var/obj/item/organ/organ = target.getorganslot(hole_id)
 	var/use_force = force >= SEX_FORCE_HIGH
-	var/pushes = (use_force && prob(force == SEX_FORCE_EXTREME ? 50 : 25)) ? 2 : 1
+	var/pushes = (use_force && prob(force >= SEX_FORCE_EXTREME ? 50 : 25)) ? 2 : 1
 	var/static/list/pushed_results = list(INSERT_FEEDBACK_OK, INSERT_FEEDBACK_OK_FORCE, INSERT_FEEDBACK_ALMOST_FULL, INSERT_FEEDBACK_OK_OVERRIDE)
 	var/pushed = 0
 	var/pleasure = 0
@@ -129,10 +129,10 @@
 	user.visible_message(span_warning("[user] stops feeding beads into [whose(user, target)] [hole_word]."))
 
 /datum/sex_action/beads/feed/anus
-	name = "Feed beads into ass"
+	name = "Feed anal-beads"
 
 /datum/sex_action/beads/feed/vagina
-	name = "Feed beads into pussy"
+	name = "Feed vaginal-beads"
 	hole_id = ORGAN_SLOT_VAGINA
 	hole_word = "pussy"
 
@@ -153,7 +153,7 @@
 		stop_runtime()
 		return
 	var/pulls = 1
-	if(force >= SEX_FORCE_HIGH && prob(force == SEX_FORCE_EXTREME ? 40 : 20))
+	if(force >= SEX_FORCE_HIGH && prob(force >= SEX_FORCE_EXTREME ? 40 : 20))
 		pulls = rand(2, 3)
 	var/popped = 0
 	var/pleasure = 0
@@ -187,10 +187,10 @@
 	user.visible_message(span_warning("[user] lets go of the ring."))
 
 /datum/sex_action/beads/draw/anus
-	name = "Draw beads from ass"
+	name = "Draw anal-beads"
 
 /datum/sex_action/beads/draw/vagina
-	name = "Draw beads from pussy"
+	name = "Draw vaginal-beads"
 	hole_id = ORGAN_SLOT_VAGINA
 	hole_word = "pussy"
 
@@ -241,10 +241,10 @@
 	handle_passive_ejaculation(target)
 
 /datum/sex_action/beads/yank/anus
-	name = "Yank beads from ass"
+	name = "Yank anal-beads"
 
 /datum/sex_action/beads/yank/vagina
-	name = "Yank beads from pussy"
+	name = "Yank vaginal-beads"
 	hole_id = ORGAN_SLOT_VAGINA
 	hole_word = "pussy"
 
@@ -283,10 +283,10 @@
 	user.visible_message(span_warning("[user] lets the ring go."))
 
 /datum/sex_action/beads/tug/anus
-	name = "Tug bead ring (ass)"
+	name = "Tug anal-beads"
 
 /datum/sex_action/beads/tug/vagina
-	name = "Tug bead ring (pussy)"
+	name = "Tug vaginal-beads"
 	hole_id = ORGAN_SLOT_VAGINA
 	hole_word = "pussy"
 
@@ -321,10 +321,10 @@
 	user.visible_message(span_warning("[user] stops working the beads."))
 
 /datum/sex_action/beads/work/anus
-	name = "Work beads in ass"
+	name = "Work anal-beads"
 
 /datum/sex_action/beads/work/vagina
-	name = "Work beads in pussy"
+	name = "Work vaginal-beads"
 	hole_id = ORGAN_SLOT_VAGINA
 	hole_word = "pussy"
 
@@ -371,9 +371,9 @@
 		stop_runtime()
 
 /datum/sex_action/beads/bear_down/anus
-	name = "Bear down on beads (ass)"
+	name = "Expel anal-beads"
 
 /datum/sex_action/beads/bear_down/vagina
-	name = "Bear down on beads (pussy)"
+	name = "Expel vaginal-beads"
 	hole_id = ORGAN_SLOT_VAGINA
 	hole_word = "pussy"

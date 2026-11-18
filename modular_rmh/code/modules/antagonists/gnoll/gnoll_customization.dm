@@ -82,7 +82,8 @@
 	var/list/options = list()
 	for(var/descriptor_type in subtypesof(descriptor_root))
 		var/datum/mob_descriptor/descriptor = MOB_DESCRIPTOR(descriptor_type)
-		if(descriptor)
+		// Gnoll profiles carry no player-written text.
+		if(descriptor && !descriptor.custom_index)
 			options[descriptor.name] = descriptor_type
 	return options
 

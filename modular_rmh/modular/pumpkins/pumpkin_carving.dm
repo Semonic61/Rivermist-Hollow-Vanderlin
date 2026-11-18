@@ -40,7 +40,7 @@
 	var/list/data = list()
 	var/list/carvings = list()
 	var/datum/asset/spritesheet/sheet = get_asset_datum(/datum/asset/spritesheet/pumpkin_carvings)
-	for(var/obj/item/flashlight/flare/torch/lantern/pumpkin/design as anything in typesof(/obj/item/flashlight/flare/torch/lantern/pumpkin))
+	for(var/obj/item/flashlight/flare/torch/lantern/pumpkin/design as anything in pumpkin_carving_designs())
 		carvings += list(list(
 			"name" = initial(design.name),
 			"path" = "[design]",
@@ -55,7 +55,7 @@
 		return
 	// The client sends text; only a real lantern design may be built from it.
 	var/design = text2path(params["path"])
-	if(!(design in typesof(/obj/item/flashlight/flare/torch/lantern/pumpkin)))
+	if(!(design in pumpkin_carving_designs()))
 		return TRUE
 	var/mob/living/carver = ui.user
 	if(!istype(carver))
@@ -88,10 +88,19 @@
 /proc/pumpkin_carving_sprite(design)
 	return sanitize_css_class_name("carving[design]")
 
+/proc/pumpkin_carving_designs()
+	var/static/list/designs
+	if(!designs)
+		designs = list()
+		for(var/obj/item/flashlight/flare/torch/lantern/pumpkin/design as anything in typesof(/obj/item/flashlight/flare/torch/lantern/pumpkin))
+			if(!initial(design.start_lit))
+				designs += design
+	return designs
+
 /datum/asset/spritesheet/pumpkin_carvings
 	name = "pumpkin_carvings"
 	load_immediately = TRUE
 
 /datum/asset/spritesheet/pumpkin_carvings/create_spritesheets()
-	for(var/obj/item/flashlight/flare/torch/lantern/pumpkin/design as anything in typesof(/obj/item/flashlight/flare/torch/lantern/pumpkin))
+	for(var/obj/item/flashlight/flare/torch/lantern/pumpkin/design as anything in pumpkin_carving_designs())
 		Insert(pumpkin_carving_sprite(design), initial(design.icon), initial(design.icon_state))

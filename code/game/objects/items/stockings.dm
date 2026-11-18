@@ -109,6 +109,16 @@
 			return null
 	return stockings
 
+/// Worn stockings [actor] can get at, or null when armor over the legs keeps them off.
+/mob/living/carbon/human/proc/get_sex_reachable_legwear(mob/living/actor)
+	RETURN_TYPE(/obj/item/clothing/legwears)
+	var/obj/item/clothing/legwears/stockings = legwear_socks
+	if(!istype(stockings))
+		return null
+	if(get_sex_covering_garment(BODY_ZONE_L_LEG, actor) || get_sex_covering_garment(BODY_ZONE_R_LEG, actor))
+		return null
+	return stockings
+
 
 /obj/item/clothing/legwears/random
 	misc_flags = CRAFTING_TEST_EXCLUDE

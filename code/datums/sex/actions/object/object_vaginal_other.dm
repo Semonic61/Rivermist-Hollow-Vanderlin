@@ -1,5 +1,5 @@
 /datum/sex_action/object_fuck/object_vaginal_other
-	name = "Fuck their cunt with object"
+	name = "Toy pussy"
 	var/ouchietext = "owie"
 	check_same_tile = FALSE
 

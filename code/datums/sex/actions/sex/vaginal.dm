@@ -1,5 +1,5 @@
 /datum/sex_action/sex/vaginal
-	name = "Fuck their pussy"
+	name = "Fuck pussy"
 	hole_id = ORGAN_SLOT_VAGINA
 	stamina_cost = 0.5
 

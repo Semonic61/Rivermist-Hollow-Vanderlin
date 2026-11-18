@@ -18,10 +18,19 @@
 	strip_delay = 3 SECONDS
 	equip_delay_other = 3 SECONDS
 	abstract_type = /obj/item/clothing/face/bdsm_gag
+	// In the mouth slot the strapped gag does its own muffling and cannot be spat out.
+	muteinmouth = FALSE
+	spitoutmouth = FALSE
 	var/fastened = TRUE
 	var/can_lower = TRUE
 	var/drool_chance = BDSM_GAG_DROOL_CHANCE
-	var/muffled_words = "Mmf..."
+
+/// Concrete default gag used by the technician recipe catalogue. The DMI has
+/// no generic "gag" state, so use the existing black muzzle artwork.
+/obj/item/clothing/face/bdsm_gag/basic
+	name = "gag"
+	icon_state = "black_muzzle"
+	slot_flags = ITEM_SLOT_MASK|ITEM_SLOT_MOUTH
 
 /obj/item/clothing/face/bdsm_gag/Initialize(mapload, ...)
 	. = ..()
@@ -41,13 +50,19 @@
 	fixed_details.appearance_flags = RESET_COLOR
 	. += fixed_details
 
+// Only a gag worn as a mask can be lowered to the neck; in the mouth it stays strapped in.
 /obj/item/clothing/face/bdsm_gag/AdjustClothes(mob/user)
 	if(!can_lower || loc != user)
 		return
 	var/mob/living/carbon/human/wearer = user
 	if(!istype(wearer) || wearer.wear_mask != src)
 		return
-	fastened = !fastened
+	set_fastened(!fastened)
+	to_chat(wearer, span_notice("You [fastened ? "fasten" : "lower"] [src]."))
+	wearer.update_inv_wear_mask()
+
+/obj/item/clothing/face/bdsm_gag/proc/set_fastened(new_state)
+	fastened = new_state
 	icon_state = fastened ? initial(icon_state) : "[initial(icon_state)]_r"
 	if(fastened)
 		clothing_flags |= BLOCKS_SPEECH
@@ -57,18 +72,30 @@
 		clothing_flags &= ~BLOCKS_SPEECH
 		flags_cover &= ~MASKCOVERSMOUTH
 		body_parts_covered = NECK
-	to_chat(wearer, span_notice("You [fastened ? "fasten" : "lower"] [src]."))
-	wearer.update_inv_wear_mask()
 	update_appearance()
 
+/obj/item/clothing/face/bdsm_gag/equipped(mob/user, slot)
+	. = ..()
+	// The parent only hooks speech for the mask slot.
+	if(slot == ITEM_SLOT_MOUTH && modifies_speech)
+		RegisterSignal(user, COMSIG_MOB_SAY, PROC_REF(handle_speech), override = TRUE)
+
+// A gag taken off is put back on fastened, so a lowered one never sits loose in the mouth.
+/obj/item/clothing/face/bdsm_gag/dropped(mob/user)
+	. = ..()
+	if(!fastened)
+		set_fastened(TRUE)
+
+/obj/item/clothing/face/bdsm_gag/update_clothes_damaged_state(damaging = TRUE)
+	. = ..()
+	var/mob/living/carbon/human/wearer = loc
+	if(istype(wearer) && wearer.mouth == src)
+		wearer.update_inv_mouth()
+
+// Say() turns gagged speech into mumbling; the gag only adds drool.
 /obj/item/clothing/face/bdsm_gag/handle_speech(mob/living/carbon/wearer, list/speech_args)
-	if(!fastened || !istype(wearer) || wearer.wear_mask != src)
+	if(!fastened || !istype(wearer) || (wearer.wear_mask != src && wearer.mouth != src))
 		return
-	var/original_words = speech_args[SPEECH_MESSAGE]
-	if(!original_words)
-		return
-	to_chat(wearer, span_notice("You try to say: \"[original_words]\""))
-	speech_args[SPEECH_MESSAGE] = muffled_words
 	if(drool_chance && prob(drool_chance))
 		INVOKE_ASYNC(wearer, TYPE_PROC_REF(/mob, emote), "drool")
 
@@ -90,20 +117,20 @@
 
 /obj/item/clothing/face/bdsm_gag/muzzle
 	abstract_type = /obj/item/clothing/face/bdsm_gag/muzzle
+	slot_flags = ITEM_SLOT_MASK|ITEM_SLOT_MOUTH
 
 /obj/item/clothing/face/bdsm_gag/muzzle/black
 	name = "black leather muzzle"
 	icon_state = "black_muzzle"
-	muffled_words = "Mmph..."
 
 /obj/item/clothing/face/bdsm_gag/muzzle/brown
 	name = "brown leather muzzle"
 	icon_state = "brown_muzzle"
-	muffled_words = "Mmph..."
 
 /obj/item/clothing/face/bdsm_gag/ball
 	abstract_type = /obj/item/clothing/face/bdsm_gag/ball
 	dyeable = TRUE
+	slot_flags = ITEM_SLOT_MASK|ITEM_SLOT_MOUTH
 
 /obj/item/clothing/face/bdsm_gag/ball/black
 	name = "black ball gag"
@@ -120,7 +147,6 @@
 	desc = "A strapped ring that leaves the mouth open while making clear speech difficult."
 	flags_cover = NONE
 	body_parts_covered = FACE
-	muffled_words = "Ah... nnh..."
 	drool_chance = 20
 	abstract_type = /obj/item/clothing/face/bdsm_gag/ring
 
@@ -150,11 +176,17 @@
 	name = "brown harness gag"
 	icon_state = "brown_harnessgag"
 
-// A gag suppresses ordinary vocal speech in the base code. Its own speech
-// handler substitutes an audible muffled phrase, so allow that narrow case.
+/// The fastened gag worn as a mask or in the mouth, if any.
+/mob/living/carbon/human/proc/get_fastened_gag()
+	for(var/obj/item/clothing/face/bdsm_gag/gag in list(wear_mask, mouth))
+		if(gag.fastened)
+			return gag
+	return null
+
+// A fastened gag still lets voice through for muffled emotes; say() mumbles it.
 /mob/living/carbon/human/can_speak_vocal(message)
-	var/obj/item/clothing/face/bdsm_gag/gag = wear_mask
-	if(!istype(gag) || !gag.fastened)
+	var/obj/item/clothing/face/bdsm_gag/gag = get_fastened_gag()
+	if(!gag)
 		return ..()
 	if(HAS_TRAIT(src, TRAIT_MUTE) || HAS_TRAIT(src, TRAIT_BAGGED) || !IsVocal())
 		return FALSE
@@ -170,11 +202,9 @@
 			return FALSE
 	return TRUE
 
-// General speech checks and voice packs should still see a gagged person as
-// unable to speak clearly. Say() uses can_speak_vocal() and the gag's handler.
+// General speech checks and voice packs see a gagged person as unable to speak clearly.
 /mob/living/carbon/human/can_speak(message)
-	var/obj/item/clothing/face/bdsm_gag/gag = wear_mask
-	if(istype(gag) && gag.fastened)
+	if(get_fastened_gag())
 		return FALSE
 	return ..()
 
@@ -189,8 +219,8 @@
 	var/mob/living/carbon/human/wearer = user
 	if(!istype(wearer) || !(emote_type & EMOTE_AUDIBLE) || targetted || only_forced_audio)
 		return ..()
-	var/obj/item/clothing/face/bdsm_gag/gag = wearer.wear_mask
-	if(!istype(gag) || !gag.fastened || istype(gag, /obj/item/clothing/face/bdsm_gag/ring) || (key == "scream" && !intentional))
+	var/obj/item/clothing/face/bdsm_gag/gag = wearer.get_fastened_gag()
+	if(!gag || istype(gag, /obj/item/clothing/face/bdsm_gag/ring) || (key == "scream" && !intentional))
 		return ..()
 	var/old_sound_range = snd_range
 	var/old_message_range = wearer.bdsm_gag_emote_range
@@ -209,8 +239,8 @@
 	var/mob/living/carbon/human/wearer = user
 	if(!istype(wearer))
 		return
-	var/obj/item/clothing/face/bdsm_gag/gag = wearer.wear_mask
-	if(!istype(gag) || !gag.fastened || (key == "scream" && !intentional))
+	var/obj/item/clothing/face/bdsm_gag/gag = wearer.get_fastened_gag()
+	if(!gag || (key == "scream" && !intentional))
 		return
 	if(istype(gag, /obj/item/clothing/face/bdsm_gag/ring))
 		if(key in list("whimper", "gnarl", "alarm", "alert", "notice", "sigh", "chuckle", "moan", "groan", "yawn", "cry"))
@@ -276,6 +306,9 @@
 	name = "collar chain leash"
 	desc = "A chain with a clasp sized for a leather collar or body harness."
 	icon = 'modular_rmh/icons/clothing/bdsm_items.dmi'
+	// The custom DMI has black_chain_leash and brown_chain_leash, not "chain".
+	// The base item defaults to the black variant; the brown subtype overrides it.
+	icon_state = "black_chain_leash"
 
 /obj/item/leash/chain/bdsm/black
 	name = "black collar chain leash"

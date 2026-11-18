@@ -1,5 +1,5 @@
 /datum/sex_action/held_mob_fuck/vaginal
-	name = "Fuck their cunt with them in hand"
+	name = "Held vaginal"
 	hole_id = ORGAN_SLOT_VAGINA
 
 /datum/sex_action/held_mob_fuck/vaginal/on_start(mob/living/user, mob/living/target)

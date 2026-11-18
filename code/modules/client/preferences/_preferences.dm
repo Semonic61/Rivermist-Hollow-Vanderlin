@@ -1370,6 +1370,8 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 		"winflash" = /datum/preference/toggle/windowflashing,
 		"ambientocclusion" = /datum/preference/toggle/ambientocclusion,
 		"auto_fit_viewport" = /datum/preference/toggle/auto_fit_viewport,
+		"descriptor_color" = /datum/preference/toggle/descriptor_color,
+		"hear_speech_barks" = /datum/preference/toggle/hear_speech_barks,
 	)
 	var/toggle_link_type = toggle_link_types[action]
 	if(toggle_link_type)
@@ -1458,6 +1460,16 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 		if("clear_nsfw_gallery")
 			clear_gallery_images(user, TRUE)
 			show_gallery_ui(user, "nsfw")
+			return TRUE
+		if("speech_bark")
+			if(user.client?.prefs != src)
+				return FALSE
+			user.client.set_speech_bark()
+			return TRUE
+		if("speech_moans")
+			if(user.client?.prefs != src)
+				return FALSE
+			user.client.toggle_speech_moans()
 			return TRUE
 		if("voicepack")
 			var/current_voice_pack = read_preference(/datum/preference/choiced/voice_pack)
@@ -2324,8 +2336,6 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 
 			apply_trait_bans(character, parent.ckey)
 
-			if(is_misc_banned(parent.ckey, BAN_MISC_LEPROSY))
-				ADD_TRAIT(character, TRAIT_LEPROSY, TRAIT_BAN_PUNISHMENT)
 			if(is_misc_banned(parent.ckey, BAN_MISC_PUNISHMENT_CURSE))
 				ADD_TRAIT(character, TRAIT_PUNISHMENT_CURSE, TRAIT_BAN_PUNISHMENT)
 
@@ -2334,7 +2344,10 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 		apply_character_kinks(character)
 
 	// RMH EDITED START - self-written tattoos, applied after species/bodyparts are set up
+	apply_prosthetics_to_human(character, character_setup)
 	apply_tattoos_to_human(character)
+	if(!character_setup)
+		apply_stat_allocation_to_human(character)
 	// RMH EDITED END
 
 	if(icon_updates)
@@ -2508,8 +2521,8 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 /// Host names shown in image link prompts; keep in sync with the two allowed_hosts lists below.
 /datum/preferences/proc/get_image_host_names(nsfw = FALSE)
 	if(nsfw)
-		return "gyazo, lensdump, imgbox, catbox, imagechest, pixhost, file garden"
-	return "gyazo, lensdump, imgbox, catbox, postimages, freeimage, imagechest, pixhost, file garden"
+		return "gyazo, lensdump, imgbox, catbox, imagechest, pixhost, file garden, imgbb"
+	return "gyazo, lensdump, imgbox, catbox, postimages, freeimage, imagechest, pixhost, file garden, imgbb"
 
 /datum/preferences/proc/is_valid_headshot_link(mob/user, value, silent = FALSE, list/valid_extensions = list("jpg", "png", "jpeg", "gif"))
 	var/static/list/allowed_hosts = list(
@@ -2521,11 +2534,13 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 		"i.lensdump.com",
 		"images2.imgbox.com",
 		"thumbs2.imgbox.com",
+		"thumbs4.imgbox.com",
 		"files.catbox.moe",
 		"i.postimg.cc",
 		"iili.io",
 		"cdn.imgchest.com",
 		"file.garden",
+		"i.ibb.co",
 	)
 	var/static/list/allowed_host_suffixes = list(".pixhost.to", ".pixhost.cc", ".pixho.st")
 
@@ -2545,6 +2560,7 @@ GLOBAL_LIST_INIT(name_adjustments, list())
 		"files.catbox.moe",
 		"cdn.imgchest.com",
 		"file.garden",
+		"i.ibb.co",
 	)
 	var/static/list/allowed_host_suffixes = list(".pixhost.to", ".pixhost.cc", ".pixho.st")
 

@@ -10,6 +10,7 @@ import {
   Stack,
   Tabs,
 } from 'tgui-core/components';
+import { resolveAsset } from '../assets';
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
 
@@ -43,10 +44,10 @@ type EggData = {
   scale?: number;
   traits?: string[];
   can_remove?: boolean;
+  can_retch?: boolean;
   is_hatchling?: boolean;
   fertilized?: boolean;
-  hatch_inside?: boolean;
-  auto_hatch?: boolean;
+  hatch?: HatchInfo;
   mother_name?: string;
   father_name?: string;
   status: string;
@@ -65,7 +66,6 @@ type OrganSettings = {
   custom_desc?: string;
   custom_organ_desc?: string;
   custom_color?: string | null;
-  auto_hatch?: boolean | null;
   resource_dependent?: boolean;
   egg_scale: number;
   egg_traits?: string[];
@@ -73,6 +73,20 @@ type OrganSettings = {
   available_traits: TraitOption[];
   color_presets: ColorPreset[];
   nutrient_cost?: number;
+};
+
+type HatchInfo = {
+  mode: string;
+  chance: number;
+  decided?: string | null;
+};
+
+type HatchlingData = {
+  ref: string;
+  name: string;
+  word: string;
+  can_push: boolean;
+  can_retch: boolean;
 };
 
 type OrganData = {
@@ -91,6 +105,7 @@ type OrganData = {
   egg_stage?: number;
   is_egg_layer?: boolean;
   hatchling_count?: number;
+  hatchlings?: HatchlingData[];
   next_egg_seconds?: number;
   interval_seconds?: number;
 };
@@ -103,6 +118,7 @@ type WearData = {
   soreness: string | null;
   gaped: boolean;
   gaping_soon: boolean;
+  open_frac?: number;
 } | null;
 
 type FillData = {
@@ -139,10 +155,13 @@ type HoleData = {
   fill: FillData;
   can_hold_in: boolean;
   items: ItemData[];
+  can_push_out: boolean;
   insert: InsertData;
   eggs: EggData[];
   egg_count: number;
   hatchling_count: number;
+  hatchlings?: HatchlingData[];
+  size?: number;
 };
 
 type WombData = {
@@ -161,7 +180,19 @@ type LabourData = {
   births: number;
 } | null;
 
+type BirthsData = {
+  limit: number;
+  births: number;
+  growing: number;
+  held: number;
+  free: number;
+  next_free_seconds: number;
+  clear_seconds: number;
+} | null;
+
 type StatusData = {
+  births: BirthsData;
+  show_art: boolean;
   nutriment: number;
   holding_in: boolean;
   holes: HoleData[];
@@ -175,11 +206,30 @@ type ActiveTab = 'status' | 'settings' | 'genetics';
 
 export type HoleStatusLocale = {
   windowTitle: string;
+  births: {
+    title: string;
+    ofLimit: string;
+    window: string;
+    growing: string;
+    room: string;
+    full: string;
+    freeOnHatch: string;
+    nextSlot: string;
+    clears: string;
+    dormant: string;
+    min: string;
+    sec: string;
+  };
   emptyState: string;
   tabs: Record<ActiveTab, string>;
+  art: {
+    show: string;
+    hide: string;
+  };
   cards: {
     front: string;
     rear: string;
+    breasts: string;
     stomach: string;
     ovipositor: string;
     womb: string;
@@ -215,7 +265,11 @@ export type HoleStatusLocale = {
     stuck: string;
     takeOut: string;
     pushDeeper: string;
+    pushOut: string;
+    pushOutHint: string;
     insert: string;
+    tuckIn: string;
+    cleavage: string;
     holding: string;
     fit: string;
     seconds: string;
@@ -264,11 +318,9 @@ export type HoleStatusLocale = {
     fertilized: string;
     unfertilized: string;
     by: string;
-    autoHatch: string;
-    internalBirth: string;
-    willHatchInside: string;
     extract: string;
     extractAll: string;
+    retchUp: string;
     layEggs: string;
     edit: string;
     pickColor: string;
@@ -286,6 +338,14 @@ export type HoleStatusLocale = {
   organNames: Record<string, string>;
   eggTypes: Record<string, string>;
   traitNames: Record<string, string>;
+  hatch: {
+    inside: string;
+    outside: string;
+    either: string;
+    decidedInside: string;
+    decidedOutside: string;
+  };
+  hatchlingWords: Record<string, string>;
   formatTime: (seconds: number) => string;
   formatFill: (volume: number, capacity: number) => string;
   formatStage: (stage: number, maxStage: number) => string;
@@ -333,6 +393,118 @@ const normalizeHex = (value?: string | null): string => {
   return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : '#eee3c7';
 };
 
+const clampStep = (value: number, max: number) =>
+  Math.max(0, Math.min(max, Math.round(value)));
+
+const fillFraction = (fill?: FillData | null) =>
+  fill && fill.capacity > 0 ? Math.min(1, fill.volume / fill.capacity) : 0;
+
+// Picture steps: the vagina has 12 (10 and 11 gape), the anus 5 (4 gapes).
+const frontPicture = (hole: HoleData): string[] => {
+  const open = hole.wear?.open_frac ?? 0;
+  if (hole.wear?.gaped) {
+    return [`hole_vagina_${open >= 0.6 ? 11 : 10}.png`];
+  }
+  return [`hole_vagina_${clampStep(open * 12, 9)}.png`];
+};
+
+/** The rear view also shows the vagina above: a closed slit, its gape, or nothing. */
+const rearPicture = (hole: HoleData, vagina: HoleData | null): string[] => {
+  const open = hole.wear?.open_frac ?? 0;
+  const layers = [
+    `hole_anus_${hole.wear?.gaped ? 4 : clampStep(open * 6, 3)}.png`,
+  ];
+  if (vagina) {
+    layers.push(
+      vagina.wear?.gaped ? 'hole_anus_gaped_vagina.png' : 'hole_anus_slit.png',
+    );
+  }
+  return layers;
+};
+
+const breastPicture = (hole: HoleData): string[] => [
+  `hole_breasts_${clampStep(hole.size ?? 3, 5)}.png`,
+];
+
+/** Pregnancy first, then eggs and hatchlings, else the empty womb with its seed. */
+const wombPicture = (womb: NonNullable<WombData>): string[] => {
+  if (womb.pregnancy_stage > 0) {
+    const share = womb.pregnancy_stage / Math.max(1, womb.max_stage);
+    return [`hole_womb_preg_${clampStep(2 + share * 4, 6) || 1}.png`];
+  }
+  const passengers = womb.organ.egg_count + (womb.organ.hatchling_count || 0);
+  if (passengers > 5) {
+    return [`hole_womb_stuffed_${Math.min(5, Math.floor((passengers - 6) / 2) + 1)}.png`];
+  }
+  if (passengers > 0) {
+    return [`hole_womb_eggs_${passengers}.png`];
+  }
+  const fill = fillFraction(womb.fill);
+  if (fill <= 0) {
+    return ['hole_womb.png'];
+  }
+  return ['hole_womb.png', `hole_womb_fill_${Math.max(1, Math.ceil(fill * 10))}.png`];
+};
+
+/** Stacked organ picture with a thin fill bar under it. */
+const OrganPicture = (props: {
+  layers: string[];
+  width: number;
+  height: number;
+  fill?: FillData | null;
+  pixel?: boolean;
+}) => {
+  const { layers, width, height, fill, pixel } = props;
+  return (
+    <Box style={{ width: `${width}px` }}>
+      <Box
+        style={{
+          position: 'relative',
+          width: `${width}px`,
+          height: `${height}px`,
+          borderRadius: '3px',
+          overflow: 'hidden',
+          background: 'rgba(0, 0, 0, 0.35)',
+        }}
+      >
+        {layers.map((layer) => (
+          <img
+            key={layer}
+            src={resolveAsset(layer)}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              imageRendering: pixel ? 'pixelated' : 'auto',
+            }}
+          />
+        ))}
+      </Box>
+      {fill && (
+        <ProgressBar mt={0.25} value={fillFraction(fill)} color="pink" />
+      )}
+    </Box>
+  );
+};
+
+/** A card body with its picture on the right when pictures are on. */
+const WithPicture = (props: { picture: ReactNode | null; children: ReactNode }) => {
+  if (!props.picture) {
+    return <>{props.children}</>;
+  }
+  return (
+    <Stack>
+      <Stack.Item grow basis={0} style={{ minWidth: 0 }}>
+        {props.children}
+      </Stack.Item>
+      <Stack.Item>{props.picture}</Stack.Item>
+    </Stack>
+  );
+};
+
 export const HoleStatusView = (props: { locale: HoleStatusLocale }) => {
   const { locale } = props;
   const { act, data } = useBackend<StatusData>();
@@ -344,11 +516,14 @@ export const HoleStatusView = (props: { locale: HoleStatusLocale }) => {
     nutriment = 0,
     holding_in = false,
     labour = null,
+    show_art = false,
+    births = null,
   } = data;
   const [activeTab, setActiveTab] = useState<ActiveTab>('status');
   const vagina = holes.find((hole) => hole.id === 'vagina') || null;
   const anus = holes.find((hole) => hole.id === 'anus') || null;
-  const nothing = !vagina && !anus && !stomach && !ovipositor;
+  const breasts = holes.find((hole) => hole.id === 'breasts') || null;
+  const nothing = !vagina && !anus && !breasts && !stomach && !ovipositor;
 
   return (
     <Window
@@ -358,17 +533,32 @@ export const HoleStatusView = (props: { locale: HoleStatusLocale }) => {
       theme="vanderlin"
     >
       <Window.Content scrollable>
-        <Tabs textAlign="center">
-          {(['status', 'settings', 'genetics'] as ActiveTab[]).map((tab) => (
-            <Tabs.Tab
-              key={tab}
-              selected={activeTab === tab}
-              onClick={() => setActiveTab(tab)}
-            >
-              {locale.tabs[tab]}
-            </Tabs.Tab>
-          ))}
-        </Tabs>
+        <Stack align="center">
+          <Stack.Item grow>
+            <Tabs textAlign="center">
+              {(['status', 'settings', 'genetics'] as ActiveTab[]).map(
+                (tab) => (
+                  <Tabs.Tab
+                    key={tab}
+                    selected={activeTab === tab}
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {locale.tabs[tab]}
+                  </Tabs.Tab>
+                ),
+              )}
+            </Tabs>
+          </Stack.Item>
+          <Stack.Item>
+            <Button
+              icon="image"
+              color={show_art ? 'good' : 'bad'}
+              tooltip={show_art ? locale.art.hide : locale.art.show}
+              tooltipPosition="bottom-end"
+              onClick={() => act('toggle_art')}
+            />
+          </Stack.Item>
+        </Stack>
 
         {nothing && (
           <Section>
@@ -382,6 +572,11 @@ export const HoleStatusView = (props: { locale: HoleStatusLocale }) => {
 
         {activeTab === 'status' && (
           <>
+            {births && !nothing && (
+              <Section>
+                <BirthsLine births={births} locale={locale} />
+              </Section>
+            )}
             {vagina && (
               <Section
                 title={
@@ -391,12 +586,26 @@ export const HoleStatusView = (props: { locale: HoleStatusLocale }) => {
                   </Box>
                 }
               >
-                <HoleBody
-                  act={act}
-                  hole={vagina}
-                  holdingIn={holding_in}
-                  locale={locale}
-                />
+                <WithPicture
+                  picture={
+                    show_art && (
+                      <OrganPicture
+                        layers={frontPicture(vagina)}
+                        width={102}
+                        height={69}
+                        fill={vagina.fill}
+                        pixel
+                      />
+                    )
+                  }
+                >
+                  <HoleBody
+                    act={act}
+                    hole={vagina}
+                    holdingIn={holding_in}
+                    locale={locale}
+                  />
+                </WithPicture>
                 {labour && (
                   <Box bold color="bad" mt={0.5}>
                     <Icon name="heart-pulse" mr={0.5} />
@@ -412,6 +621,7 @@ export const HoleStatusView = (props: { locale: HoleStatusLocale }) => {
                     act={act}
                     womb={womb}
                     nutriment={nutriment}
+                    showArt={show_art}
                     locale={locale}
                   />
                 )}
@@ -432,21 +642,64 @@ export const HoleStatusView = (props: { locale: HoleStatusLocale }) => {
                   </Box>
                 }
               >
-                <HoleBody
+                <WithPicture
+                  picture={
+                    show_art && (
+                      <OrganPicture
+                        layers={rearPicture(anus, vagina)}
+                        width={102}
+                        height={112}
+                        fill={anus.fill}
+                        pixel
+                      />
+                    )
+                  }
+                >
+                  <HoleBody
+                    act={act}
+                    hole={anus}
+                    holdingIn={holding_in}
+                    locale={locale}
+                  />
+                </WithPicture>
+                <EggBlock act={act} eggs={anus.eggs} locale={locale} />
+                <HatchlingList
                   act={act}
-                  hole={anus}
-                  holdingIn={holding_in}
+                  hatchlings={anus.hatchlings}
+                  count={anus.hatchling_count}
                   locale={locale}
                 />
-                <EggBlock act={act} eggs={anus.eggs} locale={locale} />
-                {anus.hatchling_count > 0 && (
-                  <Box mt={0.5} bold color="bad">
-                    <Icon name="baby" mr={0.5} />
-                    {locale.labels.hatchlingsInside}
-                    {': '}
-                    {anus.hatchling_count}
+              </Section>
+            )}
+            {breasts && (
+              <Section
+                title={
+                  <Box inline>
+                    <Icon name="heart" mr={1} />
+                    {locale.cards.breasts}
                   </Box>
-                )}
+                }
+              >
+                <WithPicture
+                  picture={
+                    show_art && (
+                      <OrganPicture
+                        layers={breastPicture(breasts)}
+                        width={102}
+                        height={92}
+                        fill={breasts.fill}
+                        pixel
+                      />
+                    )
+                  }
+                >
+                  <HoleBody
+                    act={act}
+                    hole={breasts}
+                    holdingIn={holding_in}
+                    locale={locale}
+                  />
+                </WithPicture>
               </Section>
             )}
             {stomach && (
@@ -536,7 +789,31 @@ export const HoleStatusView = (props: { locale: HoleStatusLocale }) => {
   );
 };
 
-/** Wear and tear, fill and stored items of one hole. */
+const formatWait = (seconds: number, locale: HoleStatusLocale) =>
+  seconds >= 60
+    ? `${Math.ceil(seconds / 60)} ${locale.births.min}`
+    : `${seconds} ${locale.births.sec}`;
+
+/** How many creature births the body may still carry in the window, and when slots free. */
+const BirthsLine = (props: { births: NonNullable<BirthsData>; locale: HoleStatusLocale }) => {
+  const { births, locale } = props;
+  const t = locale.births;
+  const used = births.births + births.growing;
+  return (
+    <Box color="label">
+      <Icon name="egg" mr={0.5} />
+      {`${t.title}: ${used} ${t.ofLimit} ${births.limit} ${t.window}`}
+      {births.growing > 0 && ` (${births.growing} ${t.growing})`}
+      {'. '}
+      {births.free > 0 ? `${t.room} ${births.free}.` : t.full}
+      {births.free <= 0 && births.births <= 0 && ` ${t.freeOnHatch}`}
+      {births.births > 0 &&
+        ` ${t.nextSlot} ${formatWait(births.next_free_seconds, locale)}, ${t.clears} ${formatWait(births.clear_seconds, locale)}.`}
+      {births.held > 0 && ` ${births.held} ${t.dormant}`}
+    </Box>
+  );
+};
+
 const HoleBody = (props: {
   act: any;
   hole: HoleData;
@@ -545,42 +822,63 @@ const HoleBody = (props: {
 }) => {
   const { act, hole, holdingIn, locale } = props;
   const wear = hole.wear;
+  const cleavage = hole.id === 'breasts';
   return (
     <>
-      {wear && (
-        <LabeledList>
-          <LabeledList.Item label={locale.wear.tightness}>
-            {word(locale.wear.tightnessWords, wear.tightness) ||
-              locale.labels.unknown}
-          </LabeledList.Item>
-          <LabeledList.Item
-            label={locale.wear.feels}
-            color={wear.gaped ? 'bad' : wear.stretch_pct >= 110 ? 'average' : undefined}
-          >
-            {word(locale.wear.stretchWords, wear.stretch)}
-            {wear.stretch_pct > 100 ? ` (${wear.stretch_pct}%)` : ''}
-            {wear.gaping_soon ? ` - ${locale.wear.gapingSoon}` : ''}
-          </LabeledList.Item>
-          <LabeledList.Item label={locale.wear.lube}>
-            {word(locale.wear.lubeWords, wear.lube)}
-          </LabeledList.Item>
-          <LabeledList.Item
-            label={locale.wear.soreness}
-            color={wear.soreness ? 'bad' : 'good'}
-          >
-            {wear.soreness
-              ? word(locale.wear.sorenessWords, wear.soreness)
-              : locale.wear.fine}
-          </LabeledList.Item>
-          <LabeledList.Item label={locale.fill.title}>
-            <FillLine fill={hole.fill} locale={locale} />
-            {hole.can_hold_in && holdingIn ? ` - ${locale.fill.holdingIn}` : ''}
-          </LabeledList.Item>
-          <LabeledList.Item label={locale.items.title}>
-            <ItemLines act={act} items={hole.items} locale={locale} />
-          </LabeledList.Item>
-        </LabeledList>
-      )}
+      <LabeledList>
+        {wear && (
+          <>
+            <LabeledList.Item label={locale.wear.tightness}>
+              {word(locale.wear.tightnessWords, wear.tightness) ||
+                locale.labels.unknown}
+            </LabeledList.Item>
+            <LabeledList.Item
+              label={locale.wear.feels}
+              color={wear.gaped ? 'bad' : wear.stretch_pct >= 110 ? 'average' : undefined}
+            >
+              {word(locale.wear.stretchWords, wear.stretch)}
+              {wear.stretch_pct > 100 ? ` (${wear.stretch_pct}%)` : ''}
+              {wear.gaping_soon ? ` - ${locale.wear.gapingSoon}` : ''}
+            </LabeledList.Item>
+            <LabeledList.Item label={locale.wear.lube}>
+              {word(locale.wear.lubeWords, wear.lube)}
+            </LabeledList.Item>
+            <LabeledList.Item
+              label={locale.wear.soreness}
+              color={wear.soreness ? 'bad' : 'good'}
+            >
+              {wear.soreness
+                ? word(locale.wear.sorenessWords, wear.soreness)
+                : locale.wear.fine}
+            </LabeledList.Item>
+          </>
+        )}
+        <LabeledList.Item label={locale.fill.title}>
+          <FillLine fill={hole.fill} locale={locale} />
+          {hole.can_hold_in && holdingIn ? ` - ${locale.fill.holdingIn}` : ''}
+        </LabeledList.Item>
+        <LabeledList.Item
+          label={cleavage ? locale.items.cleavage : locale.items.title}
+        >
+          <ItemLines
+            act={act}
+            items={hole.items}
+            locale={locale}
+            flat={cleavage}
+          />
+          {hole.can_push_out && (
+            <Button
+              ml={0.5}
+              compact
+              icon="hand"
+              tooltip={locale.items.pushOutHint}
+              onClick={() => act('push_out', { hole: hole.id })}
+            >
+              {locale.items.pushOut}
+            </Button>
+          )}
+        </LabeledList.Item>
+      </LabeledList>
       {hole.insert && (
         <Box mt={0.5}>
           <Button
@@ -596,7 +894,8 @@ const HoleBody = (props: {
             }
             onClick={() => act('insert_item', { hole: hole.id })}
           >
-            {locale.items.insert}: {hole.insert.name}
+            {cleavage ? locale.items.tuckIn : locale.items.insert}:{' '}
+            {hole.insert.name}
           </Button>
         </Box>
       )}
@@ -623,8 +922,9 @@ const ItemLines = (props: {
   act: any;
   items: ItemData[];
   locale: HoleStatusLocale;
+  flat?: boolean;
 }) => {
-  const { act, items, locale } = props;
+  const { act, items, locale, flat } = props;
   if (!items.length) {
     return <>{locale.items.none}</>;
   }
@@ -638,10 +938,12 @@ const ItemLines = (props: {
         }
         return (
           <Box key={layer}>
-            <Box inline color="label">
-              {locale.items[layer]}
-              {': '}
-            </Box>
+            {!flat && (
+              <Box inline color="label">
+                {locale.items[layer]}
+                {': '}
+              </Box>
+            )}
             {entries.map((item) => (
               <Box key={item.ref} inline mr={1}>
                 {item.name}
@@ -686,30 +988,44 @@ const WombBlock = (props: {
   act: any;
   womb: NonNullable<WombData>;
   nutriment: number;
+  showArt: boolean;
   locale: HoleStatusLocale;
 }) => {
-  const { act, womb, nutriment, locale } = props;
+  const { act, womb, nutriment, showArt, locale } = props;
   const organ = womb.organ;
   return (
     <Section title={locale.cards.womb} mt={1}>
-      <LabeledList>
-        <LabeledList.Item
-          label={locale.womb.fertile}
-          color={womb.fertile ? 'good' : 'label'}
-        >
-          {womb.fertile ? locale.womb.fertile : locale.womb.sterile}
-          {womb.contraceptive ? `, ${locale.womb.contraceptive}` : ''}
-        </LabeledList.Item>
-        <LabeledList.Item label={locale.womb.seed}>
-          <FillLine fill={womb.fill} locale={locale} />
-        </LabeledList.Item>
-        {womb.pregnancy_stage > 0 && (
-          <LabeledList.Item label={locale.womb.pregnancy} color="good">
-            {locale.womb.stage}{' '}
-            {locale.formatStage(womb.pregnancy_stage, womb.max_stage)}
+      <WithPicture
+        picture={
+          showArt && (
+            <OrganPicture
+              layers={wombPicture(womb)}
+              width={112}
+              height={112}
+              fill={womb.fill}
+            />
+          )
+        }
+      >
+        <LabeledList>
+          <LabeledList.Item
+            label={locale.womb.fertile}
+            color={womb.fertile ? 'good' : 'label'}
+          >
+            {womb.fertile ? locale.womb.fertile : locale.womb.sterile}
+            {womb.contraceptive ? `, ${locale.womb.contraceptive}` : ''}
           </LabeledList.Item>
-        )}
-      </LabeledList>
+          <LabeledList.Item label={locale.womb.seed}>
+            <FillLine fill={womb.fill} locale={locale} />
+          </LabeledList.Item>
+          {womb.pregnancy_stage > 0 && (
+            <LabeledList.Item label={locale.womb.pregnancy} color="good">
+              {locale.womb.stage}{' '}
+              {locale.formatStage(womb.pregnancy_stage, womb.max_stage)}
+            </LabeledList.Item>
+          )}
+        </LabeledList>
+      </WithPicture>
       {organ.is_egg_layer && (
         <Box mt={1}>
           <OrganSummary organ={organ} nutriment={nutriment} locale={locale} />
@@ -717,15 +1033,93 @@ const WombBlock = (props: {
       )}
       <EggActions act={act} organ={organ} locale={locale} />
       <EggBlock act={act} eggs={organ.eggs} locale={locale} />
-      {(organ.hatchling_count ?? 0) > 0 && (
-        <Box mt={0.5} bold color="bad">
-          <Icon name="baby" mr={0.5} />
-          {locale.labels.hatchlingsInside}
-          {': '}
-          {organ.hatchling_count}
-        </Box>
-      )}
+      <HatchlingList
+        act={act}
+        hatchlings={organ.hatchlings}
+        count={organ.hatchling_count}
+        locale={locale}
+      />
     </Section>
+  );
+};
+
+/** The egg kind decides how it hatches; once ripe the roll is made and shown. */
+const formatHatch = (locale: HoleStatusLocale, hatch: HatchInfo): string => {
+  if (hatch.decided === 'inside') {
+    return locale.hatch.decidedInside;
+  }
+  if (hatch.decided === 'outside') {
+    return locale.hatch.decidedOutside;
+  }
+  if (hatch.mode === 'inside') {
+    return locale.hatch.inside;
+  }
+  if (hatch.mode === 'either') {
+    return `${locale.hatch.either}, ${hatch.chance}%`;
+  }
+  return locale.hatch.outside;
+};
+
+/** Hatchlings waiting inside, what each is doing, and a push-out where its kind allows it. */
+const HatchlingList = (props: {
+  act: any;
+  hatchlings?: HatchlingData[];
+  count?: number;
+  locale: HoleStatusLocale;
+}) => {
+  const { act, hatchlings, count, locale } = props;
+  if (!hatchlings?.length) {
+    if (!count) {
+      return null;
+    }
+    return (
+      <Box mt={0.5} bold color="bad">
+        <Icon name="baby" mr={0.5} />
+        {locale.labels.hatchlingsInside}
+        {': '}
+        {count}
+      </Box>
+    );
+  }
+  return (
+    <Box mt={0.5}>
+      <Box bold color="bad">
+        <Icon name="baby" mr={0.5} />
+        {locale.labels.hatchlingsInside}
+        {': '}
+        {hatchlings.length}
+      </Box>
+      {hatchlings.map((hatchling) => (
+        <Box key={hatchling.ref} ml={1} mt={0.2}>
+          <Box inline bold>
+            {hatchling.name}
+          </Box>
+          <Box inline color="label" ml={0.5}>
+            {locale.hatchlingWords[hatchling.word] || hatchling.word}
+          </Box>
+          {hatchling.can_push && (
+            <Button
+              ml={0.5}
+              compact
+              icon="hand"
+              onClick={() => act('push_out_hatchling', { ref: hatchling.ref })}
+            >
+              {locale.labels.extract}
+            </Button>
+          )}
+          {hatchling.can_retch && (
+            <Button
+              ml={0.5}
+              compact
+              icon="arrow-up"
+              onClick={() => act('retch_up', { ref: hatchling.ref })}
+            >
+              {locale.labels.retchUp}
+            </Button>
+          )}
+        </Box>
+      ))}
+    </Box>
   );
 };
 
@@ -1059,32 +1453,6 @@ const SettingsPanel = (props: {
           {settings.nutrient_cost ?? 0} u
         </Box>
       </SettingRow>
-      <SettingRow label={locale.labels.autoHatch}>
-        {[
-          ['profile', locale.labels.profileDefault],
-          ['true', locale.labels.yes],
-          ['false', locale.labels.no],
-        ].map(([value, label]) => (
-          <Button
-            key={value}
-            selected={
-              value === 'profile'
-                ? settings.auto_hatch === null ||
-                  settings.auto_hatch === undefined
-                : settings.auto_hatch === (value === 'true')
-            }
-            onClick={() =>
-              act('set_organ_setting', {
-                organ_id: organ.id,
-                field: 'auto_hatch',
-                value,
-              })
-            }
-          >
-            {label}
-          </Button>
-        ))}
-      </SettingRow>
     </>
   );
 };
@@ -1401,21 +1769,9 @@ const EggDetail = (props: {
           {egg.father_name ? ` ${locale.labels.by} ${egg.father_name}` : ''}
         </Box>
       )}
-      {egg.hatch_inside && (
+      {egg.hatch && (
         <Box fontSize="0.85em" color="average" mt={0.2} italic>
-          * {locale.labels.willHatchInside}
-        </Box>
-      )}
-      {egg.has_preg && (egg.auto_hatch !== undefined || egg.hatch_inside) && (
-        <Box fontSize="0.85em" color="label" mt={0.2}>
-          {locale.labels.autoHatch}
-          {': '}
-          {egg.auto_hatch ? locale.labels.yes : locale.labels.no}
-          {'. '}
-          {locale.labels.internalBirth}
-          {': '}
-          {egg.hatch_inside ? locale.labels.yes : locale.labels.no}
-          {'.'}
+          {formatHatch(locale, egg.hatch)}
         </Box>
       )}
       <Stack mt={0.5}>
@@ -1428,14 +1784,16 @@ const EggDetail = (props: {
             {locale.labels.extract}
           </Button>
         </Stack.Item>
-        <Stack.Item>
-          <Button.Checkbox
-            checked={!!egg.auto_hatch}
-            onClick={() => act('toggle_egg_auto_hatch', { egg_ref: egg.ref })}
-          >
-            {locale.labels.autoHatch}
-          </Button.Checkbox>
-        </Stack.Item>
+        {egg.can_retch && (
+          <Stack.Item>
+            <Button
+              icon="arrow-up"
+              onClick={() => act('retch_up', { ref: egg.ref })}
+            >
+              {locale.labels.retchUp}
+            </Button>
+          </Stack.Item>
+        )}
       </Stack>
     </Box>
   );

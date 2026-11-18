@@ -46,6 +46,8 @@
 	if(.)
 		return
 	var/mob/user = ui?.user
+	if(action == "toggle_art")
+		return toggle_hole_art(user)
 	if(!owner || QDELETED(owner) || user != owner)
 		return FALSE
 
@@ -58,8 +60,10 @@
 			return edit_organ_text(params, user)
 		if("pick_organ_color")
 			return pick_organ_color(params, user)
-		if("toggle_egg_auto_hatch")
-			return toggle_egg_auto_hatch(params)
+		if("push_out_hatchling")
+			return push_out_hatchling(params)
+		if("retch_up")
+			return retch_up(params)
 		if("extract_egg")
 			return extract_egg(params)
 		if("extract_organ_eggs")
@@ -74,6 +78,8 @@
 		if("push_deeper")
 			var/obj/item/toy = find_owned_toy(params["item_ref"])
 			return toy ? owner.try_push_toy_deeper(toy) : FALSE
+		if("push_out")
+			return owner.try_push_out_random_toy(owner.get_toy_hole(params["hole"]))
 
 	return FALSE
 
@@ -81,7 +87,7 @@
 /datum/hole_status_menu/proc/find_owned_toy(item_ref)
 	if(!item_ref)
 		return null
-	for(var/slot in list(ORGAN_SLOT_VAGINA, ORGAN_SLOT_ANUS))
+	for(var/slot in list(ORGAN_SLOT_VAGINA, ORGAN_SLOT_ANUS, ORGAN_SLOT_BREASTS))
 		var/obj/item/organ/hole = get_real_organ(owner, slot)
 		var/list/layers = hole ? SEND_SIGNAL(hole, COMSIG_BODYSTORAGE_GET_LISTS) : null
 		if(!islist(layers))
@@ -103,6 +109,7 @@
 	if(!owner || QDELETED(owner))
 		return data
 
+	data["show_art"] = hole_art_enabled(user)
 	data["nutriment"] = round(owner.get_reagent_amount(/datum/reagent/consumable/nutriment), 0.1)
 	data["holding_in"] = owner.is_holding_fluids_in()
 	data["holes"] = list()
@@ -112,10 +119,14 @@
 	var/obj/item/organ/genitals/filling_organ/anus/anus = get_real_organ(owner, ORGAN_SLOT_ANUS)
 	if(istype(anus))
 		UNTYPED_LIST_ADD(data["holes"], build_hole(anus, "anus"))
+	var/obj/item/organ/genitals/filling_organ/breasts/breasts = get_real_organ(owner, ORGAN_SLOT_BREASTS)
+	if(istype(breasts))
+		UNTYPED_LIST_ADD(data["holes"], build_hole(breasts, "breasts"))
 	data["womb"] = build_womb()
 	data["stomach"] = build_stomach()
 	data["ovipositor"] = build_ovipositor()
 	data["labour"] = build_labour()
+	data["births"] = owner.get_oviposition_birth_status()
 	return data
 
 /datum/hole_status_menu/proc/build_labour()
@@ -139,13 +150,18 @@
 	d["fill"] = build_fill(hole)
 	d["can_hold_in"] = hole.can_hold_in
 	d["items"] = build_items(hole)
+	d["can_push_out"] = can_push_out_blind(hole)
 	d["insert"] = build_insert(hole)
 	d["eggs"] = list()
 	d["hatchling_count"] = 0
+	d["hatchlings"] = list()
+	if(istype(hole, /obj/item/organ/genitals/filling_organ/breasts))
+		d["size"] = clamp(round(hole.organ_size), MIN_BREASTS_SIZE, MAX_BREASTS_SIZE)
 	if(hole.supports_oviposition_pregnancy())
 		for(var/obj/item/oviposition_egg/egg as anything in hole.get_oviposition_eggs())
 			UNTYPED_LIST_ADD(d["eggs"], build_single_egg(egg))
 		d["hatchling_count"] = hole.count_internal_womb_hatchlings()
+		d["hatchlings"] = build_hatchlings(hole)
 	d["egg_count"] = length(d["eggs"])
 	return d
 
@@ -163,6 +179,7 @@
 	w["soreness"] = opening.get_soreness_id()
 	w["gaped"] = opening.gaped
 	w["gaping_soon"] = !opening.gaped && opening.get_gape_strain() >= ORIFICE_GAPE_WARN_STRAIN
+	w["open_frac"] = round(opening.get_open_fraction(), 0.01)
 	return w
 
 /datum/hole_status_menu/proc/build_fill(obj/item/organ/genitals/filling_organ/organ)
@@ -189,6 +206,8 @@
 		return items
 	var/static/list/layer_ids = list(STORAGE_LAYER_OUTER = "outer", STORAGE_LAYER_INNER = "inner", STORAGE_LAYER_DEEP = "deep")
 	var/free = isnull(owner.get_hole_toy_block_reason(hole))
+	// Picking one item by feel needs Sensitiveness; everyone else pushes blind.
+	var/by_feel = owner.can_feel_stored_items()
 	for(var/layer in layer_ids)
 		for(var/obj/item/stored as anything in layers[layer])
 			if(istype(stored, /obj/item/oviposition_egg) || istype(stored, /obj/item/mob_holder/internal_womb) || istype(stored, /obj/item/penis_fake))
@@ -199,12 +218,18 @@
 				"name" = stored.name,
 				"layer" = layer_ids[layer],
 				"can_remove" = can_remove,
-				"can_take" = free && can_remove,
+				"can_take" = free && by_feel && can_remove,
 				"take_seconds" = round(hole.get_toy_remove_time(stored, layer) / 10, 1),
 				"take_fail_pct" = round(hole.get_toy_remove_fail_chance(stored, layer)),
-				"can_push_deeper" = free && isnull(owner.get_toy_push_deeper_block_reason(hole, stored)),
+				"can_push_deeper" = free && by_feel && isnull(owner.get_toy_push_deeper_block_reason(hole, stored)),
 			))
 	return items
+
+/// Whether the blind push-out button shows: something removable in there, and no feel for which.
+/datum/hole_status_menu/proc/can_push_out_blind(obj/item/organ/genitals/filling_organ/hole)
+	if(owner.can_feel_stored_items() || !isnull(owner.get_hole_toy_block_reason(hole)))
+		return FALSE
+	return length(owner.get_pushable_toys(hole)) > 0
 
 /// What the held item would take to work in: time, fail chance, or the reason it cannot.
 /datum/hole_status_menu/proc/build_insert(obj/item/organ/genitals/filling_organ/hole)
@@ -247,6 +272,7 @@
 	od["egg_count"] = length(womb_eggs)
 	od["is_egg_layer"] = is_egg_layer
 	od["hatchling_count"] = womb.count_internal_womb_hatchlings()
+	od["hatchlings"] = build_hatchlings(womb)
 	if(is_egg_layer)
 		od["egg_capacity"] = womb.oviposition_egg_production_limit
 		od["resource_dependent"] = womb.resource_dependent_yield
@@ -266,13 +292,15 @@
 	if(!organ || !organ.supports_oviposition_pregnancy())
 		return null
 	var/list/organ_eggs = organ.get_oviposition_eggs()
-	if(!length(organ_eggs))
+	if(!length(organ_eggs) && !organ.count_internal_womb_hatchlings())
 		return null
 	var/list/od = list()
 	od["id"] = ORGAN_SLOT_GUTS
 	od["title"] = uppertext(organ.get_oviposition_location_name())
 	od["icon"] = "circle"
 	od["egg_count"] = length(organ_eggs)
+	od["hatchling_count"] = organ.count_internal_womb_hatchlings()
+	od["hatchlings"] = build_hatchlings(organ)
 	od["eggs"] = list()
 	for(var/obj/item/oviposition_egg/egg as anything in organ_eggs)
 		UNTYPED_LIST_ADD(od["eggs"], build_single_egg(egg))
@@ -335,7 +363,6 @@
 	settings["custom_desc"] = ovipositor.custom_egg_desc
 	settings["custom_organ_desc"] = ovipositor.custom_organ_desc
 	settings["custom_color"] = ovipositor.custom_egg_color
-	settings["auto_hatch"] = ovipositor.custom_auto_hatch
 	settings["resource_dependent"] = ovipositor.resource_dependent_yield
 	settings["egg_scale"] = sanitize_oviposition_scale(ovipositor.egg_scale)
 	settings["egg_traits"] = islist(ovipositor.egg_traits) ? ovipositor.egg_traits.Copy() : list()
@@ -358,7 +385,6 @@
 	settings["custom_desc"] = womb.custom_egg_desc
 	settings["custom_organ_desc"] = womb.custom_organ_desc
 	settings["custom_color"] = womb.custom_egg_color
-	settings["auto_hatch"] = womb.custom_auto_hatch
 	settings["resource_dependent"] = womb.resource_dependent_yield
 	settings["egg_scale"] = sanitize_oviposition_scale(womb.egg_scale)
 	settings["egg_traits"] = islist(womb.egg_traits) ? womb.egg_traits.Copy() : list()
@@ -380,8 +406,8 @@
 	d["scale"] = egg.get_egg_scale()
 	d["traits"] = islist(egg.egg_traits) ? egg.egg_traits.Copy() : list()
 	d["can_remove"] = egg.can_remove_from_body_storage(BODYSTORAGE_REMOVE_MANUAL)
-	d["auto_hatch"] = egg.auto_hatch_when_laid
 	d["mother_name"] = egg.oviposition_mother_name
+	d["hatch"] = build_egg_hatch(egg)
 
 	var/datum/component/pregnancy/preg = egg.get_pregnancy_component()
 	if(preg)
@@ -390,8 +416,6 @@
 		d["max_stage"] = preg.max_stage
 		d["progress_pct"] = round((preg.stage / max(1, preg.max_stage)) * 100)
 		d["fertilized"] = preg.fertilized
-		d["hatch_inside"] = egg.hatch_inside_host
-		d["auto_hatch"] = egg.auto_hatch_when_laid
 		d["mother_name"] = egg.oviposition_mother_name
 		d["father_name"] = preg.father_name
 		if(preg.stage >= preg.max_stage)
@@ -412,6 +436,9 @@
 		d["status"] = "dormant"
 		d["time_left"] = 0
 
+	// Only the stomach has a way up, and only for what fits the throat.
+	var/obj/item/organ/host_organ = egg.loc
+	d["can_retch"] = istype(host_organ) && host_organ.slot == ORGAN_SLOT_GUTS && isnull(owner.get_retch_block_reason(egg, host_organ))
 	return d
 
 // ---- Actions ----
@@ -502,13 +529,6 @@
 				ovipositor.resource_dependent_yield = enabled
 			else if(istype(womb))
 				womb.resource_dependent_yield = enabled
-		if("auto_hatch")
-			var/auto_hatch = "[value]"
-			var/new_value = (auto_hatch == "profile") ? null : (auto_hatch == "true")
-			if(istype(ovipositor))
-				ovipositor.custom_auto_hatch = new_value
-			else if(istype(womb))
-				womb.custom_auto_hatch = new_value
 		else
 			return FALSE
 	return TRUE
@@ -625,20 +645,12 @@
 				return egg
 	return null
 
-/datum/hole_status_menu/proc/toggle_egg_auto_hatch(list/params)
-	var/obj/item/oviposition_egg/egg = find_owned_egg(params["egg_ref"])
-	if(!egg)
-		return FALSE
-	egg.custom_auto_hatch = !egg.auto_hatch_when_laid
-	egg.update_egg_appearance()
-	return TRUE
-
 /// Pushing an egg out takes time, costs effort and follows the body's rules; see birthing.dm.
 /datum/hole_status_menu/proc/extract_egg(list/params)
 	var/obj/item/oviposition_egg/egg = find_owned_egg(params["egg_ref"])
 	if(!egg)
 		return FALSE
-	return owner.try_push_out_egg(egg)
+	return owner.try_push_out_passenger(egg)
 
 /datum/hole_status_menu/proc/extract_organ_eggs(list/params)
 	var/obj/item/organ/organ = get_configurable_organ(params["organ_id"])
@@ -650,12 +662,93 @@
 	INVOKE_ASYNC(owner, TYPE_PROC_REF(/mob/living/carbon/human, push_out_all_eggs), organ)
 	return TRUE
 
+/// One egg onto the floor per press, the same beat the panel's floor act loops.
 /datum/hole_status_menu/proc/lay_ovipositor_eggs()
-	var/obj/item/organ/genitals/penis/ovipositor/ovipositor = owner.getorganslot(ORGAN_SLOT_PENIS)
-	var/datum/component/ovipositor/ovipositor_component = ovipositor?.GetComponent(/datum/component/ovipositor)
+	var/datum/component/ovipositor/ovipositor_component = get_working_ovipositor(owner)
 	if(!ovipositor_component)
 		return FALSE
-	return ovipositor_component.lay_egg(get_turf(owner))
+	if(owner.stat != CONSCIOUS || owner.incapacitated())
+		return FALSE
+	// The panel's rules: only armor above light is in the way, and a worn device seals the slot.
+	if(owner.get_sex_covering_garment(BODY_ZONE_PRECISE_GROIN, owner) || owner.is_organ_slot_blocked(ORGAN_SLOT_PENIS))
+		to_chat(owner, span_warning("I cannot get my ovipositor free for that."))
+		return FALSE
+	var/obj/item/oviposition_egg/egg = ovipositor_component.lay_one_egg_on_floor()
+	if(!egg)
+		if(ovipositor_component.last_lay_reason)
+			to_chat(owner, span_warning(ovipositor_component.last_lay_reason))
+		return FALSE
+	var/word = ovipositor_component.get_egg_kind_is_seed() ? "seed" : "egg"
+	owner.visible_message(span_love("[owner] squats and lays a [word] with a shiver."), span_love("I squat and a [word] slides out of me onto the ground."))
+	playsound(owner, 'sound/effects/wounds/splatter.ogg', 30, TRUE)
+	SEND_SIGNAL(owner, COMSIG_SEX_GENERIC_ACTION, owner, 2.5, 0, 3, owner)
+	return TRUE
+
+/// How the egg will hatch: its kind's mode and chance, and the outcome once it is ripe.
+/datum/hole_status_menu/proc/build_egg_hatch(obj/item/oviposition_egg/egg)
+	var/list/h = list()
+	switch(egg.get_hatch_mode())
+		if(OVI_HATCH_INSIDE)
+			h["mode"] = "inside"
+		if(OVI_HATCH_EITHER)
+			h["mode"] = "either"
+		else
+			h["mode"] = "outside"
+	var/datum/component/pregnancy/preg = egg.get_pregnancy_component()
+	h["chance"] = preg ? round(preg.get_inside_hatch_chance()) : egg.get_inside_hatch_base_chance()
+	if(preg && !isnull(preg.hatch_decision))
+		h["decided"] = (preg.hatch_decision == OVI_HATCH_INSIDE) ? "inside" : "outside"
+	return h
+
+/// Hatchlings waiting inside [organ]: what they do, and whether the owner may push them out.
+/datum/hole_status_menu/proc/build_hatchlings(obj/item/organ/organ)
+	var/list/out = list()
+	var/list/layers = SEND_SIGNAL(organ, COMSIG_BODYSTORAGE_GET_LISTS)
+	if(!islist(layers))
+		return out
+	var/free = TRUE
+	var/obj/item/organ/genitals/filling_organ/canal = organ.get_birth_canal()
+	if(istype(canal) && canal.orifice_type)
+		free = isnull(owner.get_hole_toy_block_reason(canal))
+	for(var/layer in layers)
+		for(var/obj/item/mob_holder/internal_womb/holder in layers[layer])
+			var/datum/component/internal_womb_hatchling/hatchling = holder.GetComponent(/datum/component/internal_womb_hatchling)
+			UNTYPED_LIST_ADD(out, list(
+				"ref" = REF(holder),
+				"name" = holder.held_mob?.name || holder.name,
+				"word" = hatchling?.get_word() || "stirring",
+				"can_push" = free && holder.can_remove_from_body_storage(BODYSTORAGE_REMOVE_MANUAL),
+				"can_retch" = organ.slot == ORGAN_SLOT_GUTS && isnull(owner.get_retch_block_reason(holder, organ)),
+			))
+	return out
+
+/datum/hole_status_menu/proc/find_owned_hatchling(holder_ref)
+	if(!holder_ref)
+		return null
+	for(var/slot in list(ORGAN_SLOT_WOMB, ORGAN_SLOT_VAGINA, ORGAN_SLOT_ANUS, ORGAN_SLOT_GUTS))
+		var/obj/item/organ/organ = owner.getorganslot(slot)
+		var/list/layers = organ ? SEND_SIGNAL(organ, COMSIG_BODYSTORAGE_GET_LISTS) : null
+		if(!islist(layers))
+			continue
+		for(var/layer in layers)
+			for(var/obj/item/mob_holder/internal_womb/holder in layers[layer])
+				if(REF(holder) == holder_ref)
+					return holder
+	return null
+
+/// Pushing a hatchling out is a small birth: the push-out rules and the birth feel apply.
+/datum/hole_status_menu/proc/push_out_hatchling(list/params)
+	var/obj/item/mob_holder/internal_womb/holder = find_owned_hatchling(params["ref"])
+	if(!holder)
+		return FALSE
+	return owner.try_push_out_passenger(holder)
+
+/// Bringing a stomach passenger up by the mouth: a costly heave, no feel, small things only.
+/datum/hole_status_menu/proc/retch_up(list/params)
+	var/obj/item/passenger = find_owned_egg(params["ref"]) || find_owned_hatchling(params["ref"])
+	if(!passenger)
+		return FALSE
+	return owner.try_retch_up(passenger)
 
 /// Short display name for egg types.
 /proc/get_egg_type_short_name(egg_type)
@@ -678,6 +771,8 @@
 			return "Embryo"
 		if(OVI_EGG_MANEATER)
 			return "Maneater"
+		if(OVI_EGG_MOTHBUG)
+			return "Mothbug"
 	return "[egg_type]"
 
 /proc/get_oviposition_egg_trait_name(trait_flag)
@@ -691,3 +786,94 @@
 		if(OVI_EGG_TRAIT_FAST_GROWTH)
 			return "Accelerated"
 	return "[trait_flag]"
+
+// ---- Pictures ----
+
+/datum/preference/toggle/hole_view_pictures
+	savefile_key = "hole_view_pictures"
+	savefile_identifier = PREF_PLAYER
+	category = "gameplay"
+	can_randomize = FALSE
+	should_update_preview = FALSE
+	default_value = TRUE
+
+/// Whether viewer sees the organ pictures in the holes window; on unless they turned it off.
+/proc/hole_art_enabled(mob/viewer)
+	var/datum/preferences/prefs = viewer?.client?.prefs
+	if(!prefs)
+		return TRUE
+	return prefs.read_preference(/datum/preference/toggle/hole_view_pictures)
+
+/datum/hole_status_menu/proc/toggle_hole_art(mob/viewer)
+	var/datum/preferences/prefs = viewer?.client?.prefs
+	if(!prefs)
+		return FALSE
+	prefs.toggle_preference(/datum/preference/toggle/hole_view_pictures)
+	prefs.save_preferences()
+	return TRUE
+
+/datum/hole_status_menu/ui_assets(mob/user)
+	return list(get_asset_datum(/datum/asset/simple/hole_art))
+
+/// 0 to 1: the girth now, from the tightest rest girth to the loosest one stretched to a gape.
+/datum/orifice/proc/get_open_fraction()
+	var/low = rest_steps[1]
+	var/high = rest_steps[length(rest_steps)] * gape_ratio
+	return clamp((get_current_girth() - low) / max(high - low, 1), 0, 1)
+
+/// Organ pictures for the holes window; built by hole_art_generator, credits in hole_art/attributions.txt.
+/datum/asset/simple/hole_art
+	assets = list(
+		"hole_anus_0.png" = 'modular_rmh/icons/hole_art/hole_anus_0.png',
+		"hole_anus_1.png" = 'modular_rmh/icons/hole_art/hole_anus_1.png',
+		"hole_anus_2.png" = 'modular_rmh/icons/hole_art/hole_anus_2.png',
+		"hole_anus_3.png" = 'modular_rmh/icons/hole_art/hole_anus_3.png',
+		"hole_anus_4.png" = 'modular_rmh/icons/hole_art/hole_anus_4.png',
+		"hole_anus_gaped_vagina.png" = 'modular_rmh/icons/hole_art/hole_anus_gaped_vagina.png',
+		"hole_anus_slit.png" = 'modular_rmh/icons/hole_art/hole_anus_slit.png',
+		"hole_breasts_0.png" = 'modular_rmh/icons/hole_art/hole_breasts_0.png',
+		"hole_breasts_1.png" = 'modular_rmh/icons/hole_art/hole_breasts_1.png',
+		"hole_breasts_2.png" = 'modular_rmh/icons/hole_art/hole_breasts_2.png',
+		"hole_breasts_3.png" = 'modular_rmh/icons/hole_art/hole_breasts_3.png',
+		"hole_breasts_4.png" = 'modular_rmh/icons/hole_art/hole_breasts_4.png',
+		"hole_breasts_5.png" = 'modular_rmh/icons/hole_art/hole_breasts_5.png',
+		"hole_vagina_0.png" = 'modular_rmh/icons/hole_art/hole_vagina_0.png',
+		"hole_vagina_1.png" = 'modular_rmh/icons/hole_art/hole_vagina_1.png',
+		"hole_vagina_10.png" = 'modular_rmh/icons/hole_art/hole_vagina_10.png',
+		"hole_vagina_11.png" = 'modular_rmh/icons/hole_art/hole_vagina_11.png',
+		"hole_vagina_2.png" = 'modular_rmh/icons/hole_art/hole_vagina_2.png',
+		"hole_vagina_3.png" = 'modular_rmh/icons/hole_art/hole_vagina_3.png',
+		"hole_vagina_4.png" = 'modular_rmh/icons/hole_art/hole_vagina_4.png',
+		"hole_vagina_5.png" = 'modular_rmh/icons/hole_art/hole_vagina_5.png',
+		"hole_vagina_6.png" = 'modular_rmh/icons/hole_art/hole_vagina_6.png',
+		"hole_vagina_7.png" = 'modular_rmh/icons/hole_art/hole_vagina_7.png',
+		"hole_vagina_8.png" = 'modular_rmh/icons/hole_art/hole_vagina_8.png',
+		"hole_vagina_9.png" = 'modular_rmh/icons/hole_art/hole_vagina_9.png',
+		"hole_womb.png" = 'modular_rmh/icons/hole_art/hole_womb.png',
+		"hole_womb_eggs_1.png" = 'modular_rmh/icons/hole_art/hole_womb_eggs_1.png',
+		"hole_womb_eggs_2.png" = 'modular_rmh/icons/hole_art/hole_womb_eggs_2.png',
+		"hole_womb_eggs_3.png" = 'modular_rmh/icons/hole_art/hole_womb_eggs_3.png',
+		"hole_womb_eggs_4.png" = 'modular_rmh/icons/hole_art/hole_womb_eggs_4.png',
+		"hole_womb_eggs_5.png" = 'modular_rmh/icons/hole_art/hole_womb_eggs_5.png',
+		"hole_womb_fill_1.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_1.png',
+		"hole_womb_fill_10.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_10.png',
+		"hole_womb_fill_2.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_2.png',
+		"hole_womb_fill_3.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_3.png',
+		"hole_womb_fill_4.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_4.png',
+		"hole_womb_fill_5.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_5.png',
+		"hole_womb_fill_6.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_6.png',
+		"hole_womb_fill_7.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_7.png',
+		"hole_womb_fill_8.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_8.png',
+		"hole_womb_fill_9.png" = 'modular_rmh/icons/hole_art/hole_womb_fill_9.png',
+		"hole_womb_preg_1.png" = 'modular_rmh/icons/hole_art/hole_womb_preg_1.png',
+		"hole_womb_preg_2.png" = 'modular_rmh/icons/hole_art/hole_womb_preg_2.png',
+		"hole_womb_preg_3.png" = 'modular_rmh/icons/hole_art/hole_womb_preg_3.png',
+		"hole_womb_preg_4.png" = 'modular_rmh/icons/hole_art/hole_womb_preg_4.png',
+		"hole_womb_preg_5.png" = 'modular_rmh/icons/hole_art/hole_womb_preg_5.png',
+		"hole_womb_preg_6.png" = 'modular_rmh/icons/hole_art/hole_womb_preg_6.png',
+		"hole_womb_stuffed_1.png" = 'modular_rmh/icons/hole_art/hole_womb_stuffed_1.png',
+		"hole_womb_stuffed_2.png" = 'modular_rmh/icons/hole_art/hole_womb_stuffed_2.png',
+		"hole_womb_stuffed_3.png" = 'modular_rmh/icons/hole_art/hole_womb_stuffed_3.png',
+		"hole_womb_stuffed_4.png" = 'modular_rmh/icons/hole_art/hole_womb_stuffed_4.png',
+		"hole_womb_stuffed_5.png" = 'modular_rmh/icons/hole_art/hole_womb_stuffed_5.png'
+	)

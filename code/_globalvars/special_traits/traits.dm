@@ -110,7 +110,7 @@
 /datum/special_trait/beautiful
 	name = "Beautiful"
 	greet_text = span_notice("My face is a work of art")
-	weight = 100
+	weight = 0 // never rolled; looks come from Charisma
 
 /datum/special_trait/beautiful/on_apply(mob/living/carbon/human/character, silent)
 	REMOVE_TRAIT(character, TRAIT_UGLY, BE_SPECIAL_TRAIT)
@@ -160,7 +160,7 @@
 /datum/special_trait/too_smart/on_apply(mob/living/carbon/human/character, silent)
 	character.change_stat(STATKEY_INT, 5)
 	ADD_TRAIT(character, TRAIT_BAD_MOOD, "[type]")
-	character.add_quirk(/datum/quirk/vice/paranoid)
+	character.add_quirk(/datum/quirk/negative/paranoid)
 
 /datum/special_trait/bookworm
 	name = "Bookworm"
@@ -443,9 +443,8 @@
 	allowed_ages = list(AGE_MIDDLEAGED, AGE_OLD)
 
 /datum/special_trait/war_veteran/on_apply(mob/living/carbon/human/character, silent)
-	character.add_quirk(/datum/quirk/vice/wooden_arm_left)
-	character.add_quirk(/datum/quirk/vice/cyclops_left)
-	character.add_quirk(/datum/quirk/vice/old_war_wound)
+	fit_veteran_wounds(character) // RMH EDIT - Prosthetics window parts replaced the limb quirks
+	character.add_quirk(/datum/quirk/negative/old_war_wound)
 	character.clamped_adjust_skillrank(/datum/skill/combat/swords, 4, 4, TRUE)
 	character.clamped_adjust_skillrank(/datum/skill/combat/polearms, 4, 4, TRUE)
 	character.adjust_skillrank(/datum/skill/misc/sneaking, 2, TRUE)
@@ -456,7 +455,7 @@
 	weight = 25
 
 /datum/special_trait/sadistic/on_apply(mob/living/carbon/human/character, silent)
-	character.add_quirk(/datum/quirk/vice/addiction/sadist)
+	character.add_quirk(/datum/quirk/negative/addiction/sadist)
 	//add_verb(character, /mob/living/carbon/human/proc/torture_victim)
 	character.mind.special_items["Chains"] = /obj/item/rope/chain
 
@@ -472,7 +471,7 @@
 /datum/special_trait/ugly
 	name = "Ugly"
 	greet_text = span_notice("People find me repulsive.")
-	weight = 100
+	weight = 0 // never rolled; looks come from Charisma
 
 /datum/special_trait/ugly/on_apply(mob/living/carbon/human/character, silent)
 	ADD_TRAIT(character, TRAIT_UGLY, "[type]")

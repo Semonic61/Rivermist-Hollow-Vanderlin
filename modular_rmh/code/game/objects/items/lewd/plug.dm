@@ -105,6 +105,8 @@
 /obj/item/dildo/plug/silver/pickup(mob/user)
 	. = ..()
 	var/mob/living/carbon/human/H = user
+	if(!ishuman(H) || !H.mind)
+		return
 	var/datum/antagonist/vampire/V_lord = H.mind.has_antag_datum(/datum/antagonist/vampire/)
 	var/datum/antagonist/werewolf/W = H.mind.has_antag_datum(/datum/antagonist/werewolf/)
 	if(ishuman(H))
@@ -122,7 +124,7 @@
 		return
 
 	. = ..()
-	if(ishuman(target))
+	if(ishuman(target) && target.mind)
 		//var/mob/living/carbon/human/s_user = user
 		var/mob/living/carbon/human/H = target
 		var/datum/antagonist/werewolf/W = H.mind.has_antag_datum(/datum/antagonist/werewolf/)

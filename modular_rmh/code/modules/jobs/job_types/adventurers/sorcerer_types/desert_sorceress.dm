@@ -24,7 +24,6 @@
 
 	traits = list(
 		TRAIT_GOODLOVER,
-		TRAIT_BEAUTIFUL,
 		TRAIT_NOFIRE,
 	)
 
