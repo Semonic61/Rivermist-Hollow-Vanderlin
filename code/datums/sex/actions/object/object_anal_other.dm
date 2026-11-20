@@ -1,5 +1,5 @@
 /datum/sex_action/object_fuck/object_anal_other
-	name = "Fuck their ass with object"
+	name = "Toy ass"
 	hole_id = ORGAN_SLOT_ANUS
 	var/ouchietext = "owie"
 	check_same_tile = FALSE

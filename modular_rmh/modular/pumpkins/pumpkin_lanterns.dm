@@ -26,6 +26,13 @@
 	sellprice = 8
 	dropshrink = null
 	melting_material = null // The base lantern smelts into iron.
+	var/start_lit = FALSE
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/Initialize(mapload)
+	. = ..()
+	if(start_lit && mapload)
+		fuel = 120 MINUTES
+		spark_act()
 
 /obj/item/flashlight/flare/torch/lantern/pumpkin/examine(mob/user)
 	. = ..()
@@ -108,3 +115,24 @@
 	desc = "A large and decorated pumpkin shell... It seems drunk?!"
 	icon_state = "pumpkinlamp3"
 	item_state = "pumpkinlamp3"
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/lit
+	start_lit = TRUE
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/ten/lit
+	start_lit = TRUE
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/zizo/lit
+	start_lit = TRUE
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/grin/lit
+	start_lit = TRUE
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/frown/lit
+	start_lit = TRUE
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/surprise/lit
+	start_lit = TRUE
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/woozy/lit
+	start_lit = TRUE

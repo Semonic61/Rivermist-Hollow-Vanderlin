@@ -1,6 +1,6 @@
 //non dildo items, thank me later for the big funnies and exploits -- vide noir
 /datum/sex_action/object_fuck/object_vaginal
-	name = "Fuck cunt with object"
+	name = "Toy-fuck pussy"
 	var/ouchietext = "owie"
 	do_time = 4 SECONDS //slower on your own but not as much as pussy since this is on your front.
 

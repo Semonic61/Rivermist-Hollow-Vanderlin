@@ -358,7 +358,7 @@ GLOBAL_VAR_INIT(sky_handler_levy, 0.5)
 	var/tariff_evaded = 0
 	//RMH EDITED END
 	// this is the list of supply groups that you can purchase with this machine
-	var/list/unlocked_cats = list("Hats", "Masks", "Neckwear", "Cloaks", "Coats & Vests", "Shirts & Dresses", "Trousers", "Stockings", "Footwear", "Gloves", "Belts", "Dyes","Storage","Armor(Light)","Armor(Iron)","Armor(Steel)","Food","Drinks","Jewelry","Luxury","Tools","Seeds","Shields","Medicine","Raw Materials",
+	var/list/unlocked_cats = list("Hats", "Masks", "Neckwear", "Cloaks", "Coats & Vests", "Shirts & Dresses", "Trousers", "Stockings", "Footwear", "Gloves", "Belts", "Dyes","Storage","Armor(Light)","Armor(Iron)","Armor(Steel)","Food","Drinks","Jewelry","Luxury","Intimate Toys","Bondage Gear","Tools","Seeds","Shields","Medicine","Raw Materials",
 								"Weapons (Iron)","Weapons (Steel)","Weapons (Ranged)","Ammunition",MERCHANT_CAT_MISC)
 
 /obj/structure/fake_machine/merchantvend/Initialize()
@@ -644,6 +644,8 @@ GLOBAL_VAR_INIT(sky_handler_levy, 0.5)
 		"Jewelry",
 		"Instruments",
 		"Luxury",
+		"Intimate Toys",
+		"Bondage Gear",
 		"Livestock",
 		"Seeds",
 		"Tools",

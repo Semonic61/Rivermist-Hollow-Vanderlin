@@ -1,5 +1,5 @@
 /datum/sex_action/sex/anal
-	name = "Fuck their ass"
+	name = "Fuck ass"
 	hole_id = ORGAN_SLOT_ANUS
 	stamina_cost = 0.5
 
@@ -49,7 +49,7 @@
 
 	perform_sex_action(user, target, 2, 0, 2)
 
-	if(considered_limp())
+	if(considered_limp(user))
 		perform_sex_action(target, user, 1.2, 4, 1.2)
 	else
 		perform_sex_action(target, user, 2.4, 9, 2.4)

@@ -75,7 +75,7 @@ GLOBAL_LIST_INIT(orifice_size_queen_fit_curve, list(0.65, 0.3, 0.85, 0.6, 1.1, 1
 		var/mult = orifice.get_penetrator_fit_multiplier(fit)
 		if(istype(orifice, /datum/orifice/anus) && orifice.get_lube_level() < LUBE_DRY_LEVEL && !orifice.gaped)
 			mult *= 0.9
-			context.pain_amt += 4
+			context.pain_amt += 4 * penetrator.get_strapon_pain_share()
 		context.arousal_amt *= mult
 		context.orgasm_prog_amt *= mult
 
@@ -151,11 +151,17 @@ GLOBAL_LIST_INIT(orifice_size_queen_fit_curve, list(0.65, 0.3, 0.85, 0.6, 1.1, 1
 
 /datum/sex_action/proc/on_orifice_cycle()
 	var/datum/orifice/hole = orifice_ref?.resolve()
-	hole?.on_penetration_cycle(src)
+	if(!hole)
+		return
+	hole.on_penetration_cycle(src)
+	apply_flare_drag(hole)
 
 /datum/sex_action/proc/end_orifice_penetration()
-	end_orifice_pressing()
 	var/datum/orifice/hole = orifice_ref?.resolve()
+	// A finished act with something still inside pulls out: a flared head catches on the way.
+	if(hole && !orifice_pressing && is_runtime_active() && hole.find_penetration(src))
+		flare_pop_out(hole)
+	end_orifice_pressing()
 	hole?.end_penetration(src)
 	orifice_ref = null
 
