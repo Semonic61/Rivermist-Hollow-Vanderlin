@@ -16,6 +16,7 @@
 /datum/admins/proc/show_player_panel(mob/M in GLOB.mob_list)
 	set category = "Admin.Admin"
 	set name = "Show Player Panel"
+	set popup_menu = FALSE // reached through the Admin.../GM.../Debug... right-click entries
 	set desc="Edit player (respawn, ban, heal, etc)"
 
 	if(!check_rights())
@@ -26,7 +27,10 @@
 /client/proc/show_player_panel_next(mob/M)
 	holder?.show_player_panel_next(M)
 
-/datum/admins/proc/show_player_panel_next(mob/M, clicked_flag = null)
+/datum/admins/proc/show_player_panel_next(mob/M, clicked_flag = null, force = FALSE)
+	// Actions started from the Admin Menu refresh that window instead of re-opening this one.
+	if(admin_menu_pp_suppress > 0 && !force)
+		return
 	log_admin("[key_name(usr)] checked the individual player panel for [key_name(M)][isobserver(usr)?"":" while in game"].")
 
 	if(QDELETED(M))
@@ -274,6 +278,7 @@
 
 /datum/admins/proc/admin_heal(mob/living/M in GLOB.mob_list)
 	set name = "Heal Mob"
+	set popup_menu = FALSE // reached through the Admin.../GM.../Debug... right-click entries
 	set desc = "Heal a mob to full health"
 	set category = "Admin.Admin"
 
@@ -285,6 +290,7 @@
 
 /datum/admins/proc/prompt_subclass(mob/living/mob in GLOB.mob_list)
 	set name = "Trigger Subclass Menu"
+	set popup_menu = FALSE // reached through the Admin.../GM.../Debug... right-click entries
 	set desc = "Triggers the subclass menu of a mob."
 	set category = "Admin.Admin"
 
@@ -299,6 +305,7 @@
 
 /datum/admins/proc/admin_curse(mob/living/carbon/human/M in GLOB.mob_list)
 	set name = "Curse"
+	set popup_menu = FALSE // reached through the Admin.../GM.../Debug... right-click entries
 	set desc = "Curse or lift a curse from a character"
 	set category = "GameMaster.Gods"
 	if(!check_rights())
@@ -361,6 +368,7 @@
 
 /datum/admins/proc/admin_sleep(mob/living/M in GLOB.mob_list)
 	set name = "Toggle Sleeping"
+	set popup_menu = FALSE // reached through the Admin.../GM.../Debug... right-click entries
 	set desc = "Toggle a mob's sleeping state"
 	set category = "Admin.Admin"
 
@@ -917,6 +925,8 @@
 	if (!frommob.ckey)
 		return 0
 
+	var/client/admin = usr.client
+	var/ghost_ckey = frommob.ckey
 	var/question = ""
 	if (tomob.ckey)
 		question = "This mob already has a user ([tomob.key]) in control of it! "
@@ -926,9 +936,12 @@
 	if (ask != "Yes")
 		return 1
 
-	if (!frommob || !tomob) //make sure the mobs don't go away while we waited for a response
+	if(QDELETED(frommob) || QDELETED(tomob) || frommob.ckey != ghost_ckey)
+		return 1
+	if(!check_rights_for(admin, R_VAREDIT) || !check_rights_for(admin, R_SPAWN|R_DEBUG))
 		return 1
 
+	var/client/occupant = frommob.client
 	tomob.ghostize(0)
 
 	message_admins("<span class='adminnotice'>[key_name_admin(usr)] has put [frommob.key] in control of [tomob.name].</span>")
@@ -938,6 +951,7 @@
 		REMOVE_TRAIT(frommob, TRAIT_NOSLEEP, "aghost")
 	tomob.ckey = frommob.ckey
 	qdel(frommob)
+	admin.prompt_controlled_body_rune(tomob, occupant)
 
 	return 1
 
@@ -1037,6 +1051,7 @@
 /datum/admins/proc/anoint_priest(mob/living/carbon/human/M in GLOB.human_list)
 	set category = "GameMaster.Interactions"
 	set name = "Anoint New Priest"
+	set popup_menu = FALSE // reached through the Admin.../GM.../Debug... right-click entries
 	set desc = "Choose a new priest. The previous one will be excommunicated."
 
 	if(!check_rights())

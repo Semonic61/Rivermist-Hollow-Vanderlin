@@ -1,6 +1,10 @@
 /datum/targetting_datum/ai_combat_flow_hot_pursuit
 	var/atom/allowed_target
 
+/datum/targetting_datum/ai_combat_flow_hot_pursuit/Destroy(force)
+	allowed_target = null
+	return ..()
+
 /datum/targetting_datum/ai_combat_flow_hot_pursuit/can_attack(mob/living/living_mob, atom/target)
 	return target == allowed_target
 

@@ -119,7 +119,8 @@ GLOBAL_LIST_EMPTY(occupied_spider_cocoons)
 	if(isliving(gone))
 		var/mob/living/escaped = gone
 		escaped.kidnap_protected_until = max(escaped.kidnap_protected_until, world.time + SPIDER_COCOON_ESCAPE_GRACE)
-		if(escaped.stat != DEAD)
+		// A mob deleted inside the silk leaves it too; a new status effect would outlive the mob's cleanup.
+		if(escaped.stat != DEAD && !QDELETED(escaped))
 			escaped.apply_status_effect(/datum/status_effect/cocoon_grace)
 			to_chat(escaped, span_notice("I am out of the silk. For [DisplayTimeText(SPIDER_COCOON_ESCAPE_GRACE)], spiders and other lustful creatures will not try to take me."))
 		LAZYREMOVE(escapers, escaped)

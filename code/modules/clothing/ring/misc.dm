@@ -126,6 +126,7 @@
 	sellprice = 90
 
 /datum/component/boss_ring_stat_boost
+	dupe_mode = COMPONENT_DUPE_ALLOWED
 	var/source_key
 	var/stat_key = STATKEY_STR
 	var/target_value = 16
@@ -141,14 +142,19 @@
 	apply_bonus()
 
 /datum/component/boss_ring_stat_boost/Destroy()
+	var/mob/living/living_parent = parent
 	remove_bonus()
-	return ..()
+	. = ..()
+	for(var/datum/component/boss_ring_stat_boost/other_boost in living_parent?.GetComponents(/datum/component/boss_ring_stat_boost))
+		if(other_boost != src && other_boost.stat_key == stat_key)
+			other_boost.apply_bonus()
 
 /datum/component/boss_ring_stat_boost/proc/apply_bonus()
 	var/mob/living/living_parent = parent
 	if(!living_parent)
 		return
 
+	living_parent.remove_stat_modifier(source_key)
 	var/current_stat = living_parent.get_stat_level(stat_key)
 	applied_bonus_amount = max(0, target_value - current_stat)
 	living_parent.set_stat_modifier(source_key, stat_key, applied_bonus_amount)
@@ -334,114 +340,59 @@
 
 /obj/item/clothing/ring/active/nomag/activate(mob/user)
 	. = ..()
-	AddComponent(/datum/component/anti_magic, TRUE, FALSE, FALSE, ITEM_SLOT_RING, INFINITY, FALSE)
+	var/datum/component/anti_magic/antimagic = AddComponent(/datum/component/anti_magic, MAGIC_RESISTANCE, INFINITY, ITEM_SLOT_RING)
+	if(antimagic && ismob(loc))
+		var/mob/wearer = loc
+		antimagic.on_equip(src, wearer, wearer.get_slot_by_item(src))
 
 /obj/item/clothing/ring/active/nomag/demagicify()
 	. = ..()
 	var/datum/component/magcom = GetComponent(/datum/component/anti_magic)
 	qdel(magcom)
 
-// ................... Ring of Protection ....................... (rare treasure, not for purchase)
+// ................... Ring of Protection ....................... (rare treasure with a random effect)
 /obj/item/clothing/ring/gold/protection
 	name = "ring of protection"
 	desc = "Old ring, inscribed with arcyne words. Once held magical powers, perhaps it does still?"
 	icon_state = "ring_protection"
-	var/antileechy
-	var/antimagika	// will cause bugs if equipped roundstart to wizards
-	var/antishocky
+	var/static/list/random_protection_traits = list(
+		TRAIT_LEECHIMMUNE,
+		TRAIT_LEECHIMMUNE,
+		TRAIT_SHOCKIMMUNE,
+		TRAIT_TRUE_GRIT,
+		TRAIT_NOFALLDAMAGE1,
+		TRAIT_TEMPO,
+		null,
+	)
 
 /obj/item/clothing/ring/gold/protection/Initialize()
 	. = ..()
-	switch(rand(1,4))
-		if(1)
-			antileechy = TRUE
-		if(2)
-			antileechy = TRUE
-		if(3)
-			antishocky = TRUE
-		if(4)
-			return
-
-/obj/item/clothing/ring/gold/protection/equipped(mob/user, slot)
-	. = ..()
-	if(antileechy)
-		if ((slot & ITEM_SLOT_RING) && istype(user))
-			RegisterSignal(user, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(item_removed))
-			ADD_TRAIT(user, TRAIT_LEECHIMMUNE,"[REF(src)]")
-	if(antimagika)
-		if ((slot & ITEM_SLOT_RING) && istype(user))
-			RegisterSignal(user, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(item_removed))
-			ADD_TRAIT(user, TRAIT_ANTIMAGIC,"[REF(src)]")
-	if(antishocky)
-		if ((slot & ITEM_SLOT_RING) && istype(user))
-			RegisterSignal(user, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(item_removed))
-			ADD_TRAIT(user, TRAIT_SHOCKIMMUNE,"[REF(src)]")
-
-/obj/item/clothing/ring/gold/protection/proc/item_removed(mob/living/carbon/wearer, obj/item/dropped_item)
-	SIGNAL_HANDLER
-	if(dropped_item != src)
+	if(length(clothing_traits))
 		return
-	UnregisterSignal(wearer, COMSIG_MOB_UNEQUIPPED_ITEM)
-	REMOVE_TRAIT(wearer, TRAIT_LEECHIMMUNE,"[REF(src)]")
-	REMOVE_TRAIT(wearer, TRAIT_ANTIMAGIC,"[REF(src)]")
-	REMOVE_TRAIT(wearer, TRAIT_SHOCKIMMUNE,"[REF(src)]")
+	var/rolled_trait = pick(random_protection_traits)
+	if(rolled_trait)
+		clothing_traits = list(rolled_trait)
 
 /obj/item/clothing/ring/gold/ravox
-	name = "ring of ravox"
+	name = "ring of Tempus"
 	desc = "Old ring, inscribed with arcyne words. Just being near it imbues you with otherworldly strength."
 	icon_state = "ring_ravox"
-
-/obj/item/clothing/ring/gold/ravox/equipped(mob/living/user, slot)
-	. = ..()
-	if(user.mind)
-		if((slot & ITEM_SLOT_RING) && istype(user))
-			RegisterSignal(user, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(item_removed))
-			user.apply_status_effect(/datum/status_effect/buff/ravox)
-
-/obj/item/clothing/ring/gold/ravox/proc/item_removed(mob/living/carbon/wearer, obj/item/dropped_item)
-	SIGNAL_HANDLER
-	if(dropped_item != src)
-		return
-	UnregisterSignal(wearer, COMSIG_MOB_UNEQUIPPED_ITEM)
-	wearer.remove_status_effect(/datum/status_effect/buff/ravox)
+	worn_effect_type = /datum/status_effect/buff/ravox/ring
+	worn_stats = list(STAT_CONSTITUTION = 1, STAT_ENDURANCE = 1, STAT_STRENGTH = 1)
 
 /obj/item/clothing/ring/silver/calm
 	name = "soothing ring"
 	desc = "A lightweight ring that feels entirely weightless, and easing to your mind as you place it upon a finger."
 	icon_state = "ring_calm"
-
-/obj/item/clothing/ring/silver/calm/equipped(mob/living/user, slot)
-	. = ..()
-	if(user.mind)
-		if ((slot & ITEM_SLOT_RING) && istype(user))
-			RegisterSignal(user, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(item_removed))
-			user.apply_status_effect(/datum/status_effect/buff/calm)
-
-/obj/item/clothing/ring/silver/calm/proc/item_removed(mob/living/carbon/wearer, obj/item/dropped_item)
-	SIGNAL_HANDLER
-	if(dropped_item != src)
-		return
-	UnregisterSignal(wearer, COMSIG_MOB_UNEQUIPPED_ITEM)
-	wearer.remove_status_effect(/datum/status_effect/buff/calm)
+	worn_effect_type = /datum/status_effect/buff/calm/ring
+	worn_stats = list(STAT_FORTUNE = 1)
 
 /obj/item/clothing/ring/silver/noc
-	name = "ring of noc"
+	name = "ring of Mystra"
 	desc = "Old ring, inscribed with arcyne words. Just being near it imbues you with otherworldly knowledge."
 	icon_state = "ring_sapphire"
-
-/obj/item/clothing/ring/silver/noc/equipped(mob/living/user, slot)
-	. = ..()
-	if(user.mind)
-		if (slot & ITEM_SLOT_RING && istype(user))
-			RegisterSignal(user, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(item_removed))
-			user.apply_status_effect(/datum/status_effect/buff/noc)
-
-/obj/item/clothing/ring/silver/noc/proc/item_removed(mob/living/carbon/wearer, obj/item/dropped_item)
-	SIGNAL_HANDLER
-	if(dropped_item != src)
-		return
-	UnregisterSignal(wearer, COMSIG_MOB_UNEQUIPPED_ITEM)
-	wearer.remove_status_effect(/datum/status_effect/buff/noc)
+	worn_effect_type = /datum/status_effect/buff/noc/ring
+	worn_stats = list(STAT_INTELLIGENCE = 3)
 
 
 // ................... Ring of Burden ....................... (Gaffer's ring, there should only be one of these at one time)
@@ -573,49 +524,20 @@
 	icon_state = "ring_g" // supposed to have it's own sprite but I'm lazy asf
 	desc = "Carrying the likeness of a dragon, this glorious ring hums with a subtle energy."
 	sellprice = 666
+	worn_stats = list((STATKEY_STR) = 2, (STATKEY_CON) = 2, (STATKEY_END) = 2)
 	var/active_item
-	var/datum/weakref/dragon_ring_owner_ref
 
 /obj/item/clothing/ring/dragon_ring/equipped(mob/living/user, slot)
 	. = ..()
-	if(!(slot & ITEM_SLOT_RING))
-		remove_dragon_ring_bonus()
-		return
-
-	apply_dragon_ring_bonus(user)
+	if((slot & ITEM_SLOT_RING) && !active_item)
+		to_chat(user, span_notice("Here be dragons."))
+		active_item = TRUE
 
 /obj/item/clothing/ring/dragon_ring/dropped(mob/living/user)
 	..()
-	remove_dragon_ring_bonus()
-	return
-
-/obj/item/clothing/ring/dragon_ring/proc/item_removed(mob/living/carbon/wearer, obj/item/removed_item)
-	SIGNAL_HANDLER
-	if(removed_item != src)
-		return
-	remove_dragon_ring_bonus()
-
-/obj/item/clothing/ring/dragon_ring/proc/apply_dragon_ring_bonus(mob/living/user)
-	remove_dragon_ring_bonus(FALSE)
-	dragon_ring_owner_ref = WEAKREF(user)
-	RegisterSignal(user, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(item_removed))
-	user.set_stat_modifier("dragon_ring_[REF(src)]", STATKEY_STR, 2)
-	user.set_stat_modifier("dragon_ring_[REF(src)]", STATKEY_CON, 2)
-	user.set_stat_modifier("dragon_ring_[REF(src)]", STATKEY_END, 2)
-	if(!active_item)
-		to_chat(user, span_notice("Here be dragons."))
-	active_item = TRUE
-
-/obj/item/clothing/ring/dragon_ring/proc/remove_dragon_ring_bonus(show_message = TRUE)
-	var/mob/living/dragon_ring_owner = dragon_ring_owner_ref?.resolve()
-	if(dragon_ring_owner)
-		UnregisterSignal(dragon_ring_owner, COMSIG_MOB_UNEQUIPPED_ITEM)
-		dragon_ring_owner.remove_stat_modifier("dragon_ring_[REF(src)]")
-		if(show_message && active_item)
-			to_chat(dragon_ring_owner, span_notice("Gone is thy hoard."))
-
-	active_item = FALSE
-	dragon_ring_owner_ref = null
+	if(active_item)
+		to_chat(user, span_notice("Gone is thy hoard."))
+		active_item = FALSE
 
 /obj/item/clothing/ring/signet
 	name = "Signet Ring"

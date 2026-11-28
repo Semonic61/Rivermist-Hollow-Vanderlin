@@ -7,7 +7,9 @@
 		if(ITEM_SLOT_BELT)
 			return belt
 		if(ITEM_SLOT_RING)
-			return wear_ring
+			for(var/obj/item/ring in wear_rings)
+				return ring
+			return null
 		if(ITEM_SLOT_WRISTS)
 			return wear_wrists
 		if(ITEM_SLOT_SHIRT)
@@ -52,7 +54,7 @@
 	if(looking_for == beltr)
 		return ITEM_SLOT_BELT_R
 
-	if(looking_for == wear_ring)
+	if(looking_for && (looking_for in wear_rings))
 		return ITEM_SLOT_RING
 
 	if(looking_for == wear_wrists)
@@ -115,7 +117,6 @@
 /mob/living/carbon/human/get_body_slots()
 	return ..() | list(
 		wear_armor,
-		wear_ring,
 		wear_wrists,
 		wear_pants,
 		wear_shirt,
@@ -129,7 +130,7 @@
 		undershirt,
 		armsleeves,
 		garter,
-	)
+	) | get_worn_rings()
 
 /mob/living/carbon/proc/get_head_slots()
 	return list(
@@ -176,10 +177,12 @@
 			belt = equipping
 			update_inv_belt()
 		if(ITEM_SLOT_RING)
-			if(wear_ring)
+			var/ring_index = get_free_ring_index()
+			if(!ring_index)
 				return
-			wear_ring = equipping
+			wear_rings[ring_index] = equipping
 			update_inv_ring()
+			refresh_ring_bonuses()
 		if(ITEM_SLOT_WRISTS)
 			if(wear_wrists)
 				return
@@ -333,8 +336,10 @@
 		belt = null
 		if(!QDELETED(src))
 			update_inv_belt()
-	else if(I == wear_ring)
-		wear_ring = null
+	else if(I in wear_rings)
+		wear_rings[wear_rings.Find(I)] = null
+		I.update_transform()
+		on_ring_removed(I)
 		if(!QDELETED(src))
 			update_inv_ring()
 	else if(I == wear_wrists)

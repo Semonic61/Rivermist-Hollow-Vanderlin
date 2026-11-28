@@ -23,6 +23,10 @@ GLOBAL_LIST_INIT(stat_alloc_keys, list(
 	var/impression_text_strong
 	var/impression_text_ordinary
 	var/impression_text_poor
+	/// TRUE: points and bonuses the player left unspent are spread at random when the character spawns.
+	var/stat_alloc_auto = TRUE
+	/// The random spread of this round and the saved choices it was made for. Never saved.
+	var/list/stat_alloc_roll
 
 /// Points it takes to raise one stat from the free value to this value.
 /proc/stat_alloc_cost(value)
@@ -106,6 +110,8 @@ GLOBAL_LIST_INIT(stat_alloc_keys, list(
 	impression_text_strong = null
 	impression_text_ordinary = null
 	impression_text_poor = null
+	stat_alloc_auto = TRUE
+	stat_alloc_roll = null
 	if(. && path)
 		var/savefile/S = new /savefile(path)
 		S.cd = "/character[default_slot]"
@@ -132,6 +138,7 @@ GLOBAL_LIST_INIT(stat_alloc_keys, list(
 		"text_strong" = impression_text_strong,
 		"text_ordinary" = impression_text_ordinary,
 		"text_poor" = impression_text_poor,
+		"auto" = stat_alloc_auto,
 	)
 
 /// Takes the choices from a saved or imported list. The caller validates afterwards.
@@ -145,6 +152,79 @@ GLOBAL_LIST_INIT(stat_alloc_keys, list(
 	impression_text_strong = state["text_strong"]
 	impression_text_ordinary = state["text_ordinary"]
 	impression_text_poor = state["text_poor"]
+	// A save from before the option existed has no entry and gets the default, on.
+	stat_alloc_auto = isnull(state["auto"]) ? TRUE : !!state["auto"]
+
+/*
+ * RANDOM SPREAD
+ */
+
+/// Points one step up from this value costs.
+/proc/stat_alloc_step_cost(value)
+	return stat_alloc_cost(value + 1) - stat_alloc_cost(value)
+
+/// The name players see for a stat save key.
+/proc/stat_alloc_name(stat_key)
+	var/datum/attribute/stat/stat = GET_ATTRIBUTE_DATUM(GLOB.stat_alloc_keys[stat_key])
+	return stat ? stat.name : stat_key
+
+/**
+ * Spends the unspent points one random step at a time and puts each bonus not yet placed on a random stat.
+ * The saved choices stay as they are. A stat the player set under the free value is left alone.
+ *
+ * Returns list("values" = save key to value, "major", "minor", "gains" = save key to points added),
+ * or null when there was nothing to spread.
+ */
+/datum/preferences/proc/stat_alloc_random_spread()
+	validate_stat_allocation()
+	var/list/values = stat_allocation.Copy()
+	var/list/gains = list()
+	var/left = stat_alloc_budget() - stat_alloc_spent()
+	while(left > 0)
+		var/list/raisable = list()
+		for(var/stat_key in values)
+			var/value = values[stat_key]
+			if(value >= STAT_ALLOC_FREE && value < STAT_ALLOC_BUY_MAX && stat_alloc_step_cost(value) <= left)
+				raisable += stat_key
+		if(!length(raisable))
+			break
+		var/picked = pick(raisable)
+		left -= stat_alloc_step_cost(values[picked])
+		values[picked]++
+		gains[picked]++
+
+	var/major = stat_bonus_major
+	var/minor = stat_bonus_minor
+	if(!major)
+		major = pick(GLOB.stat_alloc_keys - minor)
+	if(!minor)
+		minor = pick(GLOB.stat_alloc_keys - major)
+	if(!length(gains) && major == stat_bonus_major && minor == stat_bonus_minor)
+		return null
+	return list("values" = values, "major" = major, "minor" = minor, "gains" = gains)
+
+/// The random spread for this round: made once, then used again while the saved choices stay the same.
+/datum/preferences/proc/stat_alloc_round_spread()
+	validate_stat_allocation()
+	var/signature = json_encode(list(default_slot, stat_alloc_budget(), stat_allocation, stat_bonus_major, stat_bonus_minor))
+	if(stat_alloc_roll?["signature"] == signature)
+		return stat_alloc_roll["spread"]
+	var/list/spread = stat_alloc_random_spread()
+	stat_alloc_roll = list("signature" = signature, "spread" = spread)
+	return spread
+
+/// What a random spread added, as one phrase with the stats' own names.
+/datum/preferences/proc/stat_alloc_spread_text(list/spread)
+	var/list/parts = list()
+	var/list/gains = spread["gains"]
+	for(var/stat_key in GLOB.stat_alloc_keys)
+		if(gains[stat_key])
+			parts += "[stat_alloc_name(stat_key)] +[gains[stat_key]]"
+	if(spread["major"] != stat_bonus_major)
+		parts += "the +[STAT_ALLOC_BONUS_MAJOR] bonus on [stat_alloc_name(spread["major"])]"
+	if(spread["minor"] != stat_bonus_minor)
+		parts += "the +[STAT_ALLOC_BONUS_MINOR] bonus on [stat_alloc_name(spread["minor"])]"
+	return english_list(parts)
 
 /*
  * CHARACTER CREATOR
@@ -209,6 +289,7 @@ GLOBAL_LIST_INIT(stat_alloc_keys, list(
 		"text_strong" = impression_text_strong || "",
 		"text_ordinary" = impression_text_ordinary || "",
 		"text_poor" = impression_text_poor || "",
+		"auto" = stat_alloc_auto,
 	)
 
 /// Handles the stat editor's actions. TRUE when a saved choice changed.
@@ -253,6 +334,9 @@ GLOBAL_LIST_INIT(stat_alloc_keys, list(
 			return FALSE
 		if("cc_stat_reset")
 			reset_stat_allocation()
+			return TRUE
+		if("cc_stat_auto")
+			stat_alloc_auto = !stat_alloc_auto
 			return TRUE
 		if("cc_stat_text")
 			var/new_text = impression_clean_text(params["value"])

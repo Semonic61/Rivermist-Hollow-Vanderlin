@@ -5,8 +5,11 @@
 */
 
 /datum/map_adjustment/rivermist
-	map_file_name = "hsector.dmm"
+	// Matched against the first file in _maps/hsector.json.
+	map_file_name = "hsector_new.dmm"
+	// The voyage jobs, from modular_rmh/code/modules/jobs/job_types/_voyage.
 	blacklist = list(
+		/datum/job/navigator,
 		/datum/job/advclass/burgmeister/lord_captain,
 		/datum/job/advclass/councilor/first_mate,
 		/datum/job/advclass/town_scholar/ship_doctor,

@@ -213,7 +213,7 @@
 		var/used_limb = src.find_used_grab_limb(user, accurate = TRUE)
 		B.name = "[src]'s [parse_zone(used_limb)]"
 		var/obj/item/bodypart/BP = get_bodypart(check_zone(used_limb))
-		BP.grabbedby += B
+		LAZYADD(BP.grabbedby, B)
 		B.grabbed = src
 		B.grabbee = user
 		B.limb_grabbed = BP
@@ -489,8 +489,7 @@
 								stealpos.Add(victim.get_item_by_slot(ITEM_SLOT_BELT_L))
 					//RMH EDITED END
 					if(BODY_ZONE_PRECISE_R_HAND, BODY_ZONE_PRECISE_L_HAND)
-						if (victim.get_item_by_slot(ITEM_SLOT_RING))
-							stealpos.Add(victim.get_item_by_slot(ITEM_SLOT_RING))
+						stealpos += victim.get_items_by_slot(ITEM_SLOT_RING)
 				if(length(stealpos) > 0)
 					var/obj/item/picked = pick(stealpos)
 					if(HAS_TRAIT(picked, TRAIT_HARD_TO_STEAL))

@@ -42,7 +42,7 @@
 	)
 
 /datum/quest_map_config/town_snow
-	map_file = "hsector_snow.dmm"
+	map_file = "hsector_new.dmm"
 	map_name = "Rivermist City (Winter)"
 	difficulty_modifier = QUEST_MAP_DIFFICULTY_TOWN_SNOW
 	reward_modifier = QUEST_MAP_REWARD_TOWN_SNOW

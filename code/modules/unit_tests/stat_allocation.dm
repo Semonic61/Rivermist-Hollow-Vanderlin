@@ -78,6 +78,68 @@
 	TEST_ASSERT_EQUAL(target.stat_bonus_major, STATKEY_STR, "The bonus should survive the round trip")
 	TEST_ASSERT_EQUAL(target.impression_text_strong, "Walks like the hall is theirs.", "The custom line should survive the round trip")
 
+/// The random spread spends what is left, keeps the player's own choices, and stays the same for the round.
+/datum/unit_test/stat_allocation_random_spread/Run()
+	var/datum/preferences/prefs = allocate(/datum/preferences)
+	prefs.reset_stat_allocation()
+	prefs.character_creator_stat_act(null, "cc_stat_set", list("stat" = STATKEY_CHA, "value" = STAT_ALLOC_FLOOR))
+	prefs.character_creator_stat_act(null, "cc_stat_set", list("stat" = STATKEY_STR, "value" = 13))
+	prefs.stat_bonus_major = STATKEY_STR
+	var/list/saved = prefs.stat_allocation.Copy()
+
+	var/list/spread = prefs.stat_alloc_random_spread()
+	TEST_ASSERT_NOTNULL(spread, "Unspent points should give a spread")
+	var/list/values = spread["values"]
+	var/spent = 0
+	var/cheapest_step = INFINITY
+	for(var/stat_key in GLOB.stat_alloc_keys)
+		TEST_ASSERT(values[stat_key] >= saved[stat_key], "[stat_key] must not go under the player's own value")
+		TEST_ASSERT(values[stat_key] <= STAT_ALLOC_BUY_MAX, "[stat_key] must not pass the highest value points can buy")
+		spent += stat_alloc_cost(values[stat_key])
+		if(values[stat_key] >= STAT_ALLOC_FREE && values[stat_key] < STAT_ALLOC_BUY_MAX)
+			cheapest_step = min(cheapest_step, stat_alloc_step_cost(values[stat_key]))
+	TEST_ASSERT(spent <= prefs.stat_alloc_budget(), "The spread must stay inside the budget")
+	TEST_ASSERT(prefs.stat_alloc_budget() - spent < cheapest_step, "The spread should spend every point that still buys a step")
+	TEST_ASSERT_EQUAL(values[STATKEY_CHA], STAT_ALLOC_FLOOR, "A stat the player set under the free value is left alone")
+	TEST_ASSERT_EQUAL(spread["major"], STATKEY_STR, "A bonus the player placed stays where it is")
+	TEST_ASSERT(spread["minor"] && spread["minor"] != STATKEY_STR, "An unplaced bonus goes on another stat")
+	TEST_ASSERT_EQUAL(prefs.stat_allocation[STATKEY_STR], 13, "The saved choices must stay as the player made them")
+	TEST_ASSERT_NULL(prefs.stat_bonus_minor, "The saved bonus must stay unplaced")
+
+	var/list/round_spread = prefs.stat_alloc_round_spread()
+	TEST_ASSERT_EQUAL(prefs.stat_alloc_round_spread(), round_spread, "The spread of a round is made once")
+	prefs.character_creator_stat_act(null, "cc_stat_set", list("stat" = STATKEY_STR, "value" = 12))
+	TEST_ASSERT_NOTEQUAL(prefs.stat_alloc_round_spread(), round_spread, "A change of the saved choices gives a new spread")
+
+/// A spawned body gets the random spread only while the option is on.
+/datum/unit_test/stat_allocation_auto_toggle/Run()
+	var/datum/preferences/prefs = allocate(/datum/preferences)
+	prefs.reset_stat_allocation()
+	TEST_ASSERT(prefs.stat_alloc_auto, "The random spread is on for a character that never set it")
+
+	var/mob/living/carbon/human/body = allocate(/mob/living/carbon/human)
+	prefs.apply_stat_allocation_to_human(body)
+	var/list/spread = prefs.stat_alloc_round_spread()
+	var/expected = STAT_ALLOC_BONUS_MAJOR + STAT_ALLOC_BONUS_MINOR
+	var/total = 0
+	for(var/stat_key in GLOB.stat_alloc_keys)
+		expected += spread["values"][stat_key]
+		total += GET_MOB_ATTRIBUTE_VALUE_RAW(body, GLOB.stat_alloc_keys[stat_key])
+	TEST_ASSERT_EQUAL(total, expected, "The body should carry the spread values and both bonuses")
+
+	prefs.character_creator_stat_act(null, "cc_stat_auto", list())
+	TEST_ASSERT(!prefs.stat_alloc_auto, "The action should turn the option off")
+	prefs.apply_stat_allocation_to_human(body)
+	for(var/stat_key in GLOB.stat_alloc_keys)
+		TEST_ASSERT_EQUAL(GET_MOB_ATTRIBUTE_VALUE_RAW(body, GLOB.stat_alloc_keys[stat_key]), STAT_ALLOC_DEFAULT, "With the option off, [stat_key] keeps the saved value")
+
+	var/list/state = json_decode(json_encode(prefs.stat_alloc_state()))
+	var/datum/preferences/other = allocate(/datum/preferences)
+	other.stat_alloc_read(state)
+	TEST_ASSERT(!other.stat_alloc_auto, "The option should survive a save")
+	other.stat_alloc_read(list())
+	TEST_ASSERT(other.stat_alloc_auto, "A save without the option turns it on")
+
 /// Creator stats replace what the species gave, do not stack when applied twice, and keep job stats out.
 /datum/unit_test/stat_allocation_apply/Run()
 	var/mob/living/carbon/human/body = allocate(/mob/living/carbon/human)

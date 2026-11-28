@@ -24,6 +24,7 @@ abstract types are automatically excluded.
 		/obj/item/clothing/ring/gold/burden, // uncraftable
 		/obj/item/clothing/ring/feldsher_ring, // uncraftable
 		/obj/item/clothing/ring/apothecary_ring, // uncraftable
+		/obj/item/clothing/ring/gold/protection/antimagika, // uncraftable, not sold
 		/obj/item/clothing/head/maniac,
 		/obj/item/clothing/cloak/half/shadowcloak/cult, // cultist item
 		/obj/item/clothing/head/helmet/skullcap/cult, // cultist item

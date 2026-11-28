@@ -180,6 +180,7 @@
 	starting = null
 	original = null
 	fired_from = null
+	impacted = null
 	STOP_PROCESSING(SSprojectiles, src)
 	cleanup_beam_segments()
 	QDEL_NULL(trajectory)
@@ -826,7 +827,7 @@
 	trajectory_ignore_forcemove = FALSE
 	starting = get_turf(source)
 	original = target
-	if(targloc || !modifiers)
+	if(targloc)
 		yo = targloc.y - curloc.y
 		xo = targloc.x - curloc.x
 		setAngle(get_angle(src, targloc) + spread)

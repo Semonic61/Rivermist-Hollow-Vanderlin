@@ -1054,6 +1054,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 			C.attributes?.subtract_sheet(female_sheet)
 
 /datum/species/proc/on_gender_update(mob/living/carbon/human/C, old_gender)
+	SEND_SIGNAL(C, COMSIG_HUMAN_GENDER_UPDATED, old_gender)
 	if(!applies_attribute_sheets(C))
 		return
 	var/datum/attribute_holder/sheet/male_sheet = get_gender_attribute_sheet(MALE)
@@ -1079,6 +1080,10 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 
 	if(applies_attribute_sheets(C))
 		remove_attribute_sheets(C)
+
+	if(!HAS_TRAIT(C, TRAIT_IDENTITY_SHIFTING))
+		for(var/stat_key in list(STATKEY_STR, STATKEY_PER, STATKEY_INT, STATKEY_CON, STATKEY_END, STATKEY_SPD, STATKEY_LCK))
+			C.remove_stat_modifier("species_permanent_[stat_key]")
 
 	if(inherent_factions)
 		for(var/i in inherent_factions)
@@ -1367,7 +1372,7 @@ GLOBAL_LIST_EMPTY(roundstart_species)
 				return FALSE
 			return equip_delay_self_check(I, H, bypass_equip_delay_self)
 		if(ITEM_SLOT_RING)
-			if(H.wear_ring)
+			if(!H.get_free_ring_index())
 				return FALSE
 			if( !(I.slot_flags & ITEM_SLOT_RING) )
 				return FALSE

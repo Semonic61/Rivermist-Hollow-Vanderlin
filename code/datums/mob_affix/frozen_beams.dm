@@ -80,4 +80,12 @@
 	addtimer(CALLBACK(src, PROC_REF(remove_hit), victim))
 
 /datum/mob_affix/interconnected/proc/remove_hit(mob/living/victim)
-	LAZYSET(hit_targets, victim, FALSE)
+	LAZYREMOVE(hit_targets, victim)
+
+/datum/mob_affix/interconnected/cleanup_affix(mob/living/simple_animal/hostile/retaliate/target)
+	deltimer(connect_timer)
+	connect_timer = null
+	// The beams never expire on their own and hold both ends.
+	QDEL_LIST(beams)
+	hit_targets = null
+	owner = null

@@ -17,8 +17,15 @@
 
 // Interfaces
 @include meta.load-css('./interfaces/TechnicianWorkshop.scss');
+@include meta.load-css('./interfaces/AdminGhostInventory.scss');
+@include meta.load-css('./interfaces/AdminMenu.scss');
+@include meta.load-css('./interfaces/AdminMobPicker.scss');
+@include meta.load-css('./interfaces/AdminScenes.scss');
+@include meta.load-css('./interfaces/AdminSpellLibrary.scss');
 @include meta.load-css('./interfaces/AlertModal.scss');
+@include meta.load-css('./interfaces/AttributeEditor.scss');
 @include meta.load-css('./interfaces/AttributeMenu.scss');
+@include meta.load-css('./interfaces/BuildMode.scss');
 @include meta.load-css('./interfaces/Changelog.scss');
 @include meta.load-css('./interfaces/CharacterCreator.scss');
 @include meta.load-css('./interfaces/ColorPicker.scss');
@@ -43,6 +50,7 @@
 @include meta.load-css('./themes/grimoire.scss'); //RMH EDITED
 @include meta.load-css('./themes/parchment.scss'); //RMH EDITED
 @include meta.load-css('./themes/vanderlin.scss'); //RMH EDITED
+@include meta.load-css('./themes/vanderlin-classic.scss'); //RMH EDITED
 
 @include meta.load-css('~highlight.js/scss/a11y-dark.scss');
 

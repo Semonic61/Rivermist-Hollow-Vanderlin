@@ -61,6 +61,15 @@
 				qdel(S)
 			else
 				S.be_replaced()
+	// Wounds point back at us through their owner var. Each one removes itself from the lazy list.
+	for(var/datum/wound/wound as anything in simple_wounds)
+		qdel(wound)
+	simple_wounds = null
+	// Affix timers and beams hold this mob; nothing else ends them.
+	for(var/datum/mob_affix/affix as anything in affixes)
+		affix.cleanup_affix(src)
+		qdel(affix)
+	affixes = null
 	if(buckled)
 		buckled.unbuckle_mob(src,force=1)
 
@@ -166,6 +175,8 @@
 	if(..()) //we are thrown onto something
 		return
 	if (buckled || now_pushing)
+		return
+	if(try_bump_climb(A))
 		return
 	if(ismob(A))
 		var/mob/M = A
@@ -554,11 +565,11 @@
 			var/used_limb = C.find_used_grab_limb(src, accurate)
 			O.name = "[C]'s [parse_zone(used_limb)]"
 			var/obj/item/bodypart/BP = C.get_bodypart(check_zone(used_limb))
-			C.grabbedby += O
+			LAZYADD(C.grabbedby, O)
 			O.grabbed = C
 			O.grabbee = src
 			O.limb_grabbed = BP
-			BP.grabbedby += O
+			LAZYADD(BP.grabbedby, O)
 			if(item_override)
 				O.sublimb_grabbed = item_override
 			else
@@ -937,7 +948,7 @@
 	if(pulledby && pulledby.grab_state >= GRAB_AGGRESSIVE)
 		var/fail_resist = resist_grab()
 		if(fail_resist)
-			set_resting(TRUE, silent = TRUE)
+			stand_up_failed()
 			return
 
 	if(iscarbon(src))
@@ -953,12 +964,12 @@
 
 	if(!instant && !do_after(src, timer SECONDS, src, timed_action_flags = (IGNORE_USER_LOC_CHANGE|IGNORE_TARGET_LOC_CHANGE|IGNORE_HELD_ITEM|IGNORE_USER_DIR_CHANGE), extra_checks = CALLBACK(src, TYPE_PROC_REF(/mob/living, rest_checks_callback)), interaction_key = DOAFTER_SOURCE_GETTING_UP))
 		if(body_position == LYING_DOWN) // stay lying down
-			set_resting(TRUE, silent = TRUE)
+			stand_up_failed()
 		return
 
 	if(!rest_checks_callback())
 		if(body_position == LYING_DOWN)
-			set_resting(TRUE, silent = TRUE)
+			stand_up_failed()
 		return
 
 	set_body_position(STANDING_UP)
@@ -1088,7 +1099,7 @@
 	if(full_heal_flags)
 		fully_heal(full_heal_flags)
 
-	if(stat == DEAD && can_be_revived()) //in some cases you can't revive (e.g. no brain)
+	if(stat == DEAD && can_be_revived(full_heal_flags))
 		GLOB.dead_mob_list -= src
 		GLOB.alive_mob_list += src
 		set_suicide(FALSE)
@@ -1206,12 +1217,14 @@
 	SEND_SIGNAL(src, COMSIG_LIVING_POST_FULLY_HEAL, heal_flags)
 
 //proc called by revive(), to check if we can actually ressuscitate the mob (we don't want to revive him and have him instantly die again)
-/mob/living/proc/can_be_revived()
+/mob/living/proc/can_be_revived(full_heal_flags = NONE)
+	if(HAS_TRAIT(src, TRAIT_RUNE_SEVERED) && !(full_heal_flags & HEAL_ADMIN))
+		return FALSE
 	if(health <= HEALTH_THRESHOLD_DEAD)
 		return FALSE
 	return TRUE
 
-/mob/living/carbon/human/can_be_revived()
+/mob/living/carbon/human/can_be_revived(full_heal_flags = NONE)
 	. = ..()
 	var/obj/item/bodypart/head/H = get_bodypart(BODY_ZONE_HEAD)
 	if(!istype(H) || HAS_TRAIT(H, TRAIT_ROTTEN) || H.skeletonized)
@@ -1446,36 +1459,48 @@
 
 	if(!surrendering)
 		if(alert(src, "Yield in surrender?",,"YES","NO") == "YES")
-			if(surrendering || stat)
-				return
-			if(HAS_TRAIT(src, TRAIT_PACIFISM))
-				had_pacifist = TRUE
-			else
-				ADD_TRAIT(src, TRAIT_PACIFISM, TRAIT_GENERIC)
-			surrendering = TRUE
-			record_round_statistic(STATS_YIELDS)
-			changeNext_move(CLICK_CD_EXHAUSTED)
-			if(cmode)
-				toggle_cmode()
-			show_surrender_flag()
-			drop_all_held_items()
-			Stun(20)
-			Knockdown(200)
-			src.visible_message("<span class='notice'>[src] yields utterly - they cannot harm anyone like this!</span>")
-			playsound(src, 'sound/misc/surrender.ogg', 100, FALSE, -1)
-			log_attack("[key_name(src)] has toggled yield ON!")
-			SEND_SIGNAL(src, COMSIG_LIVING_YIELDED)
+			surrender()
 	else
 		if(IsKnockdown() || IsStun())
 			to_chat(src, span_warn("I can't rescind my yield when knocked down!"))
 			return
 
 		if(alert(src, "Rescind your yield?",,"YES","NO") == "YES")
-			surrendering = FALSE
-			if(!had_pacifist)
-				REMOVE_TRAIT(src, TRAIT_PACIFISM, TRAIT_GENERIC)
-			had_pacifist = FALSE
-			src.visible_message("<span class='notice'>[src] no longer yields!</span>")
+			rescind_surrender()
+
+/// Yields in surrender with no confirm dialog; returns TRUE when the yield starts.
+/mob/living/proc/surrender()
+	if(surrendering || stat)
+		return FALSE
+	if(HAS_TRAIT(src, TRAIT_PACIFISM))
+		had_pacifist = TRUE
+	else
+		ADD_TRAIT(src, TRAIT_PACIFISM, TRAIT_GENERIC)
+	surrendering = TRUE
+	record_round_statistic(STATS_YIELDS)
+	changeNext_move(CLICK_CD_EXHAUSTED)
+	if(cmode)
+		toggle_cmode()
+	show_surrender_flag()
+	drop_all_held_items()
+	Stun(20)
+	Knockdown(200)
+	src.visible_message("<span class='notice'>[src] yields utterly - they cannot harm anyone like this!</span>")
+	playsound(src, 'sound/misc/surrender.ogg', 100, FALSE, -1)
+	log_attack("[key_name(src)] has toggled yield ON!")
+	SEND_SIGNAL(src, COMSIG_LIVING_YIELDED)
+	return TRUE
+
+/// Ends a yield with no confirm dialog; returns TRUE when a yield was ended.
+/mob/living/proc/rescind_surrender()
+	if(!surrendering)
+		return FALSE
+	surrendering = FALSE
+	if(!had_pacifist)
+		REMOVE_TRAIT(src, TRAIT_PACIFISM, TRAIT_GENERIC)
+	had_pacifist = FALSE
+	src.visible_message("<span class='notice'>[src] no longer yields!</span>")
+	return TRUE
 
 /mob/living/proc/show_surrender_flag()
 	var/image/flaggy = image('icons/effects/effects.dmi', src, "surrender", ABOVE_MOB_LAYER)
@@ -1922,7 +1947,7 @@
 				if(what == who.get_item_for_held_index(L[2]))
 					if(what.doStrip(src, who))
 						log_combat(src, who, "stripped [what] off")
-			if(what == who.get_item_by_slot(where))
+			if(what in who.get_items_by_slot(where))
 				if(what.doStrip(src, who))
 					log_combat(src, who, "stripped [what] off")
 
@@ -2686,8 +2711,13 @@
 
 /// Proc to append behavior to the condition of being floored. Called when the condition ends.
 /mob/living/proc/on_floored_end()
-	if(!resting)
-		get_up()
+	if(resting)
+		return
+	if(auto_stand_declined())
+		if(body_position == LYING_DOWN)
+			set_resting(TRUE, silent = TRUE)
+		return
+	get_up()
 
 /// Proc to append behavior to the condition of being handsblocked. Called when the condition starts.
 /mob/living/proc/on_handsblocked_start()

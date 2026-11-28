@@ -18,6 +18,7 @@ INITIALIZE_IMMEDIATE(/mob/living/carbon/human/dummy)
 
 /mob/living/carbon/human/dummy/Destroy()
 	in_use = FALSE
+	GLOB.dummy_mob_list -= src
 	return ..()
 
 /mob/living/carbon/human/dummy/Life()

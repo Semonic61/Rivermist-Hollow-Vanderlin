@@ -260,7 +260,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	WRITE_FILE(S["triumphs"], triumphs)
 	WRITE_FILE(S["admin_ghost_icon"], admin_ghost_icon)
 	WRITE_FILE(S["lastclass"], lastclass)
-	WRITE_FILE(S["preferred_ui_language"], parent ? sanitize_preferred_ui_language(parent.preferred_ui_language) : "en")
+	WRITE_FILE(S["preferred_ui_language"], (parent ? sanitize_preferred_ui_language(parent.preferred_ui_language) : "en"))
 	WRITE_FILE(S["lastchangelog"], lastchangelog)
 	WRITE_FILE(S["be_special"], be_special)
 	WRITE_FILE(S["default_slot"], default_slot)
@@ -524,7 +524,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 
 	for(var/custom_name_id in GLOB.preferences_custom_names)
 		var/namedata = GLOB.preferences_custom_names[custom_name_id]
-		custom_names[custom_name_id] = reject_bad_name(custom_names[custom_name_id], namedata["allow_numbers"])
+		custom_names[custom_name_id] = reject_bad_name(replacetext("[custom_names[custom_name_id]]", "~", ""), namedata["allow_numbers"])
 		if(!custom_names[custom_name_id])
 			custom_names[custom_name_id] = get_default_name(custom_name_id)
 

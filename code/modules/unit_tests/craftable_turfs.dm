@@ -87,6 +87,7 @@
 		/turf/open/floor/snowpath/snowpatht,
 		/turf/open/floor/snowpath/snowpathx,
 		/turf/open/floor/dirt/snowy,
+		/turf/open/floor/grass/cold/winter, //mapgen snow cover, nothing builds it
 		/turf/open/floor/AzureSand,
 		/turf/open/floor/dark_ice,
 		/turf/open/floor/desert, // implicit parent for desert floor variants

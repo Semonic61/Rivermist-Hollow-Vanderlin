@@ -35,6 +35,8 @@ export type StatPoints = {
   text_strong: string;
   text_ordinary: string;
   text_poor: string;
+  /** Unspent points and bonuses are spread at random at spawn. */
+  auto: boolean | number;
 };
 export type StatRules = {
   floor: number;
@@ -138,6 +140,7 @@ export const StatEditor = (props: {
   onSet: (stat: string, value: number) => void;
   onBonus: (slot: 'major' | 'minor', stat: string) => void;
   onReset: () => void;
+  onAuto: () => void;
   onText: (band: Band, value: string) => void;
 }) => {
   const { stats, points, rules } = props;
@@ -204,6 +207,16 @@ export const StatEditor = (props: {
         <Btn icon="undo" onClick={props.onReset}>
           {L.statReset}
         </Btn>
+      </div>
+      <Btn
+        className={`fluid ${points.auto ? 'selected' : ''}`}
+        icon="dice"
+        onClick={props.onAuto}
+      >
+        {points.auto ? L.statAutoOn : L.statAutoOff}
+      </Btn>
+      <div className="cc-hint">
+        {points.auto ? L.statAutoHintOn : L.statAutoHintOff}
       </div>
       <div className="cc-se-grid">
         {stats.map((stat) => {

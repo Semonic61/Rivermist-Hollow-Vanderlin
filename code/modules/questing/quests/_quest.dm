@@ -427,7 +427,7 @@
 		"desert.dmm" = "Desert",
 		"frozen_mountains.dmm" = "Frozen Mountains",
 		"hsector.dmm" = "Rivermist City",
-		"hsector_snow.dmm" = "Rivermist City (Winter)",
+		"hsector_new.dmm" = "Rivermist City (Winter)",
 		"underdark.dmm" = "Underdark",
 	)
 

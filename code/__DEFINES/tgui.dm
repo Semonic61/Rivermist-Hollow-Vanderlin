@@ -54,3 +54,10 @@
  * * required_perms: Which admin permission flags to check the user for, such as [R_ADMIN]
  */
 #define ADMIN_STATE(required_perms) (GLOB.admin_states[required_perms] ||= new /datum/ui_state/admin_state(required_perms))
+
+// How a topic call counts toward the client topic limiter; see topic_limiter_cost().
+#define TOPIC_LIMIT_COUNTED 0
+#define TOPIC_LIMIT_FREE 1
+#define TOPIC_LIMIT_FREE_PING 2
+/// Shortest gap between two chat pings that skip the topic limiter.
+#define TOPIC_FREE_PING_INTERVAL (1 SECONDS)

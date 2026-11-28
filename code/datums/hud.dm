@@ -187,8 +187,9 @@ GLOBAL_LIST_INIT(huds, list(
 			next_time_allowed -= former_viewer
 
 		var/turf/their_turf = get_turf(former_viewer)
-		if(their_turf)
-			hud_users[their_turf.z] -= former_viewer
+		// Looking up or down files a user under another z-level, and a user in nullspace has no turf.
+		for(var/list/z_level_users as anything in hud_users)
+			z_level_users -= former_viewer
 
 		if(queued_to_see[former_viewer])
 			queued_to_see -= former_viewer

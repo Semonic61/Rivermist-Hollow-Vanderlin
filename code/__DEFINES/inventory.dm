@@ -54,6 +54,9 @@
 
 #define SLOTS_AMT			29 // Keep this up to date! //This is for UI slots, extra ones not needed.
 
+/// Rings a human can wear at once, all under ITEM_SLOT_RING.
+#define RING_SLOTS 4
+
 #define ITEM_SLOT_BACK			(ITEM_SLOT_BACK_L | ITEM_SLOT_BACK_R)
 #define ITEM_SLOT_HIP			(ITEM_SLOT_BELT_L | ITEM_SLOT_BELT_R)
 

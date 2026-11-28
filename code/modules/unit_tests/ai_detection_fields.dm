@@ -4,6 +4,10 @@
 /datum/targetting_datum/unit_test_one_target
 	var/atom/allowed_target
 
+/datum/targetting_datum/unit_test_one_target/Destroy(force)
+	allowed_target = null
+	return ..()
+
 /datum/targetting_datum/unit_test_one_target/can_attack(mob/living/living_mob, atom/target)
 	return !isnull(target) && target == allowed_target
 

@@ -202,7 +202,10 @@ GLOBAL_LIST_INIT(examine_panel_slot_layout, list(
 	"armor"    = list("flag" = ITEM_SLOT_ARMOR,  "label" = "Armor"),
 	"neck"     = list("flag" = ITEM_SLOT_NECK,   "label" = "Neck"),
 	"cloak"    = list("flag" = ITEM_SLOT_CLOAK,  "label" = "Cape"),
-	"ring"     = list("flag" = ITEM_SLOT_RING,   "label" = "Finger"),
+	"ring1"    = list("flag" = ITEM_SLOT_RING,   "label" = "Finger", "ring_index" = 1),
+	"ring2"    = list("flag" = ITEM_SLOT_RING,   "label" = "Finger", "ring_index" = 2),
+	"ring3"    = list("flag" = ITEM_SLOT_RING,   "label" = "Finger", "ring_index" = 3),
+	"ring4"    = list("flag" = ITEM_SLOT_RING,   "label" = "Finger", "ring_index" = 4),
 	"wrists"   = list("flag" = ITEM_SLOT_WRISTS, "label" = "Wrists"),
 	// bottom corners
 	"backr"    = list("flag" = ITEM_SLOT_BACK_R, "label" = "Right shoulder"),
@@ -364,7 +367,8 @@ GLOBAL_LIST_INIT(examine_panel_slot_layout, list(
 	for(var/slot_id in GLOB.examine_panel_slot_layout)
 		var/list/layout = GLOB.examine_panel_slot_layout[slot_id]
 		var/slot_flag = layout["flag"]
-		var/obj/item/equipped = human_holder.get_item_by_slot(slot_flag)
+		var/ring_index = layout["ring_index"]
+		var/obj/item/equipped = ring_index ? human_holder.get_ring(ring_index) : human_holder.get_item_by_slot(slot_flag)
 		var/list/entry = list("label" = layout["label"])
 		if(!equipped || (equipped.item_flags & ABSTRACT))
 			entry["status"] = "empty"
@@ -477,14 +481,14 @@ GLOBAL_LIST_INIT(examine_panel_slot_layout, list(
 		var/mob/living/carbon/human/holder_human = holder
 		if(!(holder.wear_armor && holder.wear_armor.flags_inv) && !(holder.wear_shirt && holder.wear_shirt.flags_inv) && !(holder_human.underwear) || holder_human.get_erp_pref(/datum/erp_preference/boolean/always_show_nsfw_flavor))
 			is_naked = TRUE
-		obscured = ((!isobserver(user))) && ((holder_human.wear_mask && (holder_human.wear_mask.flags_inv & HIDEFACE)) || (holder_human.head && (holder_human.head.flags_inv & HIDEFACE))) // ((!isobserver(user)) && !holder_human.client?.prefs?.masked_examine)
+		obscured = holder_human.conceals_examine_panel_from(user)
 		flavor_text = obscured ? "Obscured" : (holder.flavortext || "")
 		flavor_text_nsfw = obscured ? "Obscured" : (holder.nsfwflavortext || "")
 		ooc_notes = holder.ooc_notes || ""
 		ooc_notes_nsfw = holder.erpprefs_flavor || ""
 		char_name = holder.name || ""
-		song_url = holder.song_link || ""
 		if(!obscured)
+			song_url = holder.song_link || ""
 			headshot = holder.headshot_link || ""
 			nsfw_headshot = holder.nsfw_headshot_link || ""
 			img_gallery = holder.img_gallery ? holder.img_gallery.Copy() : list()
@@ -586,6 +590,9 @@ GLOBAL_LIST_INIT(examine_panel_slot_layout, list(
 	C = viewing.client
 
 	if(ishuman(holder))
+		// A concealed character's song would give them away.
+		if(!is_playing && holder.conceals_examine_panel_from(viewing))
+			return
 		web_sound_url = holder.song_link
 		if(holder.song_artist)
 			artist_name = holder.song_artist
